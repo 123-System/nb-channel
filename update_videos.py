@@ -1,4 +1,4 @@
-# update_videos.py (最终版)
+# update_videos.py
 import re
 import json
 import sys
@@ -41,13 +41,26 @@ def update_html(videos):
         with open('index.html', 'r', encoding='utf-8') as f:
             content = f.read()
 
+        # 生成新的数组字符串（不带外层括号）
         new_array_str = json.dumps(videos, ensure_ascii=False, indent=4)
 
-        # 匹配 const VIDEOS = [ 到 ]; 之间的所有内容（包括换行），采用非贪婪模式
-        # 注意：确保原文件中的 VIDEOS 是一层数组，没有多余括号
-        pattern = r'(const VIDEOS = \[)([\s\S]*?)(\];)'
-        replacement = r'\1' + new_array_str + r'\3'
-        new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
+        # 使用标记定位：/*<VIDEOS>*/ 和 /*</VIDEOS>*/
+        start_marker = '/*<VIDEOS>*/'
+        end_marker = '/*</VIDEOS>*/'
+
+        start_idx = content.find(start_marker)
+        end_idx = content.find(end_marker)
+
+        if start_idx == -1 or end_idx == -1:
+            print("错误：未找到标记 /*<VIDEOS>*/ 或 /*</VIDEOS>*/")
+            return False
+
+        # 找到标记后的第一个 '[' 和结束标记前的最后一个 ']'，确保替换精确的数组内容
+        # 更简单：直接替换两个标记之间的所有内容，但保留标记本身
+        start_content = content[:start_idx + len(start_marker)]
+        end_content = content[end_idx:]
+
+        new_content = start_content + new_array_str + end_content
 
         if new_content == content:
             print("无变化，跳过")
@@ -62,13 +75,13 @@ def update_html(videos):
         return False
 
 def main():
+    print("开始获取 B站 视频数据...")
     videos = fetch_user_videos_sync(BILIBILI_UID)
-    if videos:
-        print(f"获取到 {len(videos)} 个视频")
-        update_html(videos)
-    else:
+    if not videos:
         print("获取失败，退出")
         sys.exit(1)
+    print(f"成功获取 {len(videos)} 个视频")
+    update_html(videos)
 
 if __name__ == '__main__':
     main()
