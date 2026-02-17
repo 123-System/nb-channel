@@ -1,4 +1,4 @@
-# update_videos.py
+# update_videos.py (最终版)
 import re
 import json
 import sys
@@ -7,12 +7,9 @@ from bilibili_api import user, sync
 BILIBILI_UID = 3493259582114264
 
 def format_count(num):
-    if not num:
-        return '0'
-    try:
-        num = int(num)
-    except:
-        return str(num)
+    if not num: return '0'
+    try: num = int(num)
+    except: return str(num)
     return f"{num/10000:.1f}万" if num >= 10000 else str(num)
 
 def fetch_user_videos_sync(uid):
@@ -36,7 +33,7 @@ def fetch_user_videos_sync(uid):
         videos.sort(key=lambda x: x['pubdate'], reverse=True)
         return videos
     except Exception as e:
-        print(f"获取用户视频失败: {e}", file=sys.stderr)
+        print(f"获取失败: {e}")
         return []
 
 def update_html(videos):
@@ -46,32 +43,32 @@ def update_html(videos):
 
         new_array_str = json.dumps(videos, ensure_ascii=False, indent=4)
 
-        # 精确匹配 const VIDEOS = [  ...  ];
-        # 使用非贪婪匹配，确保只替换最外层数组
-        pattern = r'(const VIDEOS = \[)(.*?)(\];)'
+        # 匹配 const VIDEOS = [ 到 ]; 之间的所有内容（包括换行），采用非贪婪模式
+        # 注意：确保原文件中的 VIDEOS 是一层数组，没有多余括号
+        pattern = r'(const VIDEOS = \[)([\s\S]*?)(\];)'
         replacement = r'\1' + new_array_str + r'\3'
         new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
 
         if new_content == content:
-            print("未发现变化，跳过写入")
+            print("无变化，跳过")
             return False
         else:
             with open('index.html', 'w', encoding='utf-8') as f:
                 f.write(new_content)
-            print("index.html 已更新")
+            print("已更新")
             return True
     except Exception as e:
-        print(f"更新 HTML 失败: {e}", file=sys.stderr)
+        print(f"更新失败: {e}")
         return False
 
 def main():
-    print("开始获取 B站 视频数据...")
     videos = fetch_user_videos_sync(BILIBILI_UID)
-    if not videos:
-        print("获取视频失败，不更新 HTML")
+    if videos:
+        print(f"获取到 {len(videos)} 个视频")
+        update_html(videos)
+    else:
+        print("获取失败，退出")
         sys.exit(1)
-    print(f"成功获取 {len(videos)} 个视频")
-    update_html(videos)
 
 if __name__ == '__main__':
     main()
