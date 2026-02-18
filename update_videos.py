@@ -9,12 +9,21 @@ from bilibili_api import user, sync
 # ==================== 配置区域 ====================
 BILIBILI_UID = 3493259582114264  # 你的UID
 
-# 合集ID配置（已填入你提供的ID）
+# 合集ID配置
 SEASON_IDS = {
     '化学': 4802326,      # 《逝验室·化学》
     '物理': 7287248,      # 《逝验室·物理》
     '救人': 4802339,      # 《“救”人》
     '官网': 7460546,      # 《官网》
+}
+
+# 分类显示名称（硬编码，确保前端按钮正确显示）
+CATEGORY_DISPLAY_NAMES = {
+    '化学': '《逝验室·化学》',
+    '物理': '《逝验室·物理》',
+    '救人': '《“救”人》',
+    '官网': '《官网》',
+    '其他': '《其他》'
 }
 # ==================================================
 
@@ -41,7 +50,7 @@ def seconds_to_time(seconds):
         return f"{m}:{s:02d}"
 
 async def fetch_videos_from_season(season_id, category_key):
-    """从指定合集获取视频列表，返回 (视频列表, 合集标题)"""
+    """从指定合集获取视频列表，返回视频列表"""
     try:
         url = "https://api.bilibili.com/x/polymer/web-space/seasons_archives_list"
         params = {
@@ -51,7 +60,6 @@ async def fetch_videos_from_season(season_id, category_key):
             'page_size': 50,
             'sort_reverse': 0
         }
-        # 添加浏览器请求头，模拟正常访问
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             'Referer': 'https://www.bilibili.com',
@@ -62,15 +70,12 @@ async def fetch_videos_from_season(season_id, category_key):
             async with session.get(url, params=params, headers=headers) as resp:
                 if resp.status != 200:
                     print(f"合集 {category_key} 请求失败: HTTP {resp.status}")
-                    return [], None
+                    return []
                 data = await resp.json()
                 if data['code'] != 0:
                     print(f"合集 {category_key} 返回错误: {data.get('message')}")
-                    return [], None
-
-                # 获取合集标题
-                season_name = data.get('data', {}).get('info', {}).get('season_name', '')
-
+                    return []
+                
                 archives = data.get('data', {}).get('archives', [])
                 videos = []
                 for item in archives:
@@ -82,29 +87,26 @@ async def fetch_videos_from_season(season_id, category_key):
                         'duration': seconds_to_time(item.get('duration', 0)),
                         'pubdate': item.get('pubdate', 0),
                         'category_key': category_key,
-                        'category_name': season_name
+                        'category_name': CATEGORY_DISPLAY_NAMES[category_key]  # 使用硬编码显示名
                     }
                     videos.append(video)
-                print(f"合集 {category_key} 获取到 {len(videos)} 个视频，标题: {season_name}")
-                return videos, season_name
+                print(f"合集 {category_key} 获取到 {len(videos)} 个视频")
+                return videos
     except Exception as e:
         print(f"获取合集 {category_key} 失败: {e}")
-        return [], None
+        return []
 
 async def fetch_all_videos():
     """获取所有合集的视频，并合并"""
     all_videos = []
     seen_bvids = set()
-    category_names = {}  # 记录每个分类的合集标题
 
     # 1. 获取各个合集的视频
     for category_key, season_id in SEASON_IDS.items():
         if season_id == 0:
             print(f"跳过合集 {category_key}：season_id 未配置")
             continue
-        videos, season_name = await fetch_videos_from_season(season_id, category_key)
-        if season_name:
-            category_names[category_key] = season_name
+        videos = await fetch_videos_from_season(season_id, category_key)
         for v in videos:
             if v['bvid'] not in seen_bvids:
                 seen_bvids.add(v['bvid'])
@@ -127,7 +129,7 @@ async def fetch_all_videos():
                     'duration': item.get('length', '00:00'),
                     'pubdate': item.get('created', 0),
                     'category_key': '其他',
-                    'category_name': '《其他》'  # 固定名称
+                    'category_name': CATEGORY_DISPLAY_NAMES['其他']  # 固定名称
                 }
                 all_videos.append(video)
                 seen_bvids.add(bvid)
