@@ -49,7 +49,7 @@ async def fetch_videos_from_season(season_id, category_key):
             'season_id': season_id,
             'page_num': 1,
             'page_size': 50,
-            'sort_reverse': False
+            'sort_reverse': 0  # 关键修改：将 False 改为 0
         }
         async with aiohttp.ClientSession() as session:
             async with session.get(url, params=params) as resp:
@@ -60,10 +60,10 @@ async def fetch_videos_from_season(season_id, category_key):
                 if data['code'] != 0:
                     print(f"合集 {category_key} 返回错误: {data.get('message')}")
                     return [], None
-                
+
                 # 获取合集标题
                 season_name = data.get('data', {}).get('info', {}).get('season_name', '')
-                
+
                 archives = data.get('data', {}).get('archives', [])
                 videos = []
                 for item in archives:
@@ -89,7 +89,7 @@ async def fetch_all_videos():
     all_videos = []
     seen_bvids = set()
     category_names = {}  # 记录每个分类的合集标题
-    
+
     # 1. 获取各个合集的视频
     for category_key, season_id in SEASON_IDS.items():
         if season_id == 0:
@@ -102,13 +102,13 @@ async def fetch_all_videos():
             if v['bvid'] not in seen_bvids:
                 seen_bvids.add(v['bvid'])
                 all_videos.append(v)
-    
+
     # 2. 获取用户所有视频，找出未在合集中的视频归为“其他”
     try:
         u = user.User(uid=BILIBILI_UID)
         page = await u.get_videos(ps=50)
         vlist = page.get('list', {}).get('vlist', [])
-        
+
         for item in vlist:
             bvid = item.get('bvid')
             if bvid not in seen_bvids:
@@ -126,7 +126,7 @@ async def fetch_all_videos():
                 seen_bvids.add(bvid)
     except Exception as e:
         print(f"获取用户视频列表失败: {e}")
-    
+
     # 按发布时间倒序排序
     all_videos.sort(key=lambda x: x['pubdate'], reverse=True)
     print(f"总计获取 {len(all_videos)} 个视频")
@@ -137,24 +137,24 @@ def update_html(videos):
     try:
         with open('index.html', 'r', encoding='utf-8') as f:
             content = f.read()
-        
+
         new_array_str = json.dumps(videos, ensure_ascii=False, indent=4)
-        
+
         start_marker = '/*<VIDEOS>*/'
         end_marker = '/*</VIDEOS>*/'
-        
+
         start_idx = content.find(start_marker)
         end_idx = content.find(end_marker)
-        
+
         if start_idx == -1 or end_idx == -1:
             print("错误：未找到标记 /*<VIDEOS>*/ 或 /*</VIDEOS>*/")
             return False
-        
+
         start_content = content[:start_idx + len(start_marker)]
         end_content = content[end_idx:]
-        
+
         new_content = start_content + new_array_str + end_content
-        
+
         if new_content == content:
             print("无变化，跳过写入")
             return False
