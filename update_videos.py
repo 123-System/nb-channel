@@ -49,10 +49,17 @@ async def fetch_videos_from_season(season_id, category_key):
             'season_id': season_id,
             'page_num': 1,
             'page_size': 50,
-            'sort_reverse': 0  # 关键修改：将 False 改为 0
+            'sort_reverse': 0
+        }
+        # 添加浏览器请求头，模拟正常访问
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Referer': 'https://www.bilibili.com',
+            'Origin': 'https://www.bilibili.com',
+            'Accept': 'application/json, text/plain, */*'
         }
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params) as resp:
+            async with session.get(url, params=params, headers=headers) as resp:
                 if resp.status != 200:
                     print(f"合集 {category_key} 请求失败: HTTP {resp.status}")
                     return [], None
@@ -75,7 +82,7 @@ async def fetch_videos_from_season(season_id, category_key):
                         'duration': seconds_to_time(item.get('duration', 0)),
                         'pubdate': item.get('pubdate', 0),
                         'category_key': category_key,
-                        'category_name': season_name  # 保存合集标题
+                        'category_name': season_name
                     }
                     videos.append(video)
                 print(f"合集 {category_key} 获取到 {len(videos)} 个视频，标题: {season_name}")
