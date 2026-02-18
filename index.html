@@ -27,6 +27,12 @@
             --footer-bg: #f0f0f0;
             --footer-text: #444;
             --footer-border: #ddd;
+            --cat-btn-bg: #e0e0e0;
+            --cat-btn-text: #333;
+            --cat-btn-hover-bg: #00a1d6;
+            --cat-btn-hover-text: white;
+            --cat-btn-active-bg: #00a1d6;
+            --cat-btn-active-text: white;
         }
 
         /* 暗色模式变量 */
@@ -50,6 +56,12 @@
             --footer-bg: #2a2a2a;
             --footer-text: #aaa;
             --footer-border: #444;
+            --cat-btn-bg: #3a3a3a;
+            --cat-btn-text: #ccc;
+            --cat-btn-hover-bg: #4a9eff;
+            --cat-btn-hover-text: #fff;
+            --cat-btn-active-bg: #4a9eff;
+            --cat-btn-active-text: #fff;
         }
 
         * {
@@ -75,7 +87,7 @@
             margin-bottom: 10px;
             font-weight: 600;
             font-size: 2rem;
-            color: #00a1d6;
+            color: #00a1d6; /* 品牌色保持不变 */
         }
         .author-info {
             text-align: center;
@@ -215,7 +227,6 @@
             margin-left: 40px;
             margin-bottom: 20px;
         }
-        /* 视频数量显示区域 */
         .video-count {
             text-align: center;
             margin-bottom: 20px;
@@ -225,6 +236,34 @@
             padding: 8px;
             border-radius: 8px;
             border-left: 4px solid var(--count-border);
+        }
+        /* 分类筛选按钮样式 */
+        .category-filter {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .cat-btn {
+            padding: 8px 16px;
+            font-size: 0.95rem;
+            border: 1px solid var(--card-border);
+            background: var(--cat-btn-bg);
+            color: var(--cat-btn-text);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .cat-btn:hover {
+            background: var(--cat-btn-hover-bg);
+            color: var(--cat-btn-hover-text);
+            border-color: var(--cat-btn-hover-bg);
+        }
+        .cat-btn.active {
+            background: var(--cat-btn-active-bg);
+            color: var(--cat-btn-active-text);
+            border-color: var(--cat-btn-active-bg);
         }
         .video-grid {
             display: grid;
@@ -362,10 +401,11 @@
             </div>
         </div>
 
-        <!-- 视频页（已添加视频数量显示） -->
+        <!-- 视频页 -->
         <div class="page" id="videosPage">
-            <!-- 新增：视频数量显示 -->
             <div class="video-count" id="videoCountDisplay"></div>
+            <!-- 分类按钮容器（由JavaScript动态生成） -->
+            <div class="category-filter" id="categoryFilter"></div>
             <div class="video-grid" id="videoGrid">
                 <div style="grid-column:1/-1; text-align:center; padding:40px; color:#99a2aa;">
                     ⏳ 正在加载视频数据...
@@ -416,6 +456,8 @@
                     <li>增加夜间模式切换按钮</li>
                     <li>增加回到顶部按钮</li>
                     <li>增加建站统计信息</li>
+                    <li>增加视频分类筛选功能（化学、物理、救人、官网、其他）</li>
+                    <li>视频分类直接从B站合集自动获取，分类名使用合集原始名称</li>
                 </ul>
                 <p style="margin-top:30px;">更多更新敬请期待～</p>
             </div>
@@ -434,234 +476,77 @@
         // ==========================================================
         const AUTHOR_NAME = 'NB实验室-作死';  
 
-        // 视频数据（手动维护，包含25个视频）
-        const VIDEOS = [
-            {
-                "bvid": "BV1WXZUBsEqi",
-                "title": "《 官 网 0 . 2 1 》",
-                "cover": "https://i1.hdslb.com/bfs/archive/8d071e1ca4ca804694fe7879660c438a509a44d5.jpg",
-                "play": "639",
-                "duration": "1:28",
-                "pubdate": 1771387286
-            },
-            {
-                "bvid": "BV1CfcqzhEkU",
-                "title": "⚡ N B 不 妙 曲 ⚡",
-                "cover": "https://i0.hdslb.com/bfs/archive/5e3124312a620a2ca534552b47f9c488ff09b423.jpg",
-                "play": "4765",
-                "duration": "02:48",
-                "pubdate": 1770900917
-            },
-            {
-                "bvid": "BV16gcbzAE5R",
-                "title": "《 假 如 N B 实 验 室 有 加 载 动 画 》",
-                "cover": "https://i2.hdslb.com/bfs/archive/0576171bbe8f4fd9e366d4d0b19a99a6cd2f979c.jpg",
-                "play": "5735",
-                "duration": "00:33",
-                "pubdate": 1770820996
-            },
-            {
-                "bvid": "BV1D5zXBcECp",
-                "title": "《 3 0 0 V 电 池 》",
-                "cover": "https://i0.hdslb.com/bfs/archive/2e0b55ba1f902deed1b1706f2ef7cd00490d6354.jpg",
-                "play": "11.1万",
-                "duration": "7:04",
-                "pubdate": 1769615902
-            },
-            {
-                "bvid": "BV1zZzKBLEFg",
-                "title": "《 彩 虹 》",
-                "cover": "https://i1.hdslb.com/bfs/archive/d81a1342db34510185542ad3a3ed74f8734fe186.jpg",
-                "play": "1.4万",
-                "duration": "3:17",
-                "pubdate": 1769174366
-            },
-            {
-                "bvid": "BV1z8WfzgEr2",
-                "title": "《 救 人 5 . 0 》",
-                "cover": "https://i0.hdslb.com/bfs/archive/376b34e5ec23597e6649d7ac4e22314d75322f5b.jpg",
-                "play": "6039",
-                "duration": "3:49",
-                "pubdate": 1760833254
-            },
-            {
-                "bvid": "BV1aQ44z2ELs",
-                "title": "《 实 验 室 制 取 二 氧 化 硅 碎 片 》",
-                "cover": "https://i0.hdslb.com/bfs/archive/ca315d294119abd5852e583fd639579ed68c27db.jpg",
-                "play": "3.1万",
-                "duration": "2:52",
-                "pubdate": 1760440774
-            },
-            {
-                "bvid": "BV1txxizaEZS",
-                "title": "《 唯 手 熟 尔 》",
-                "cover": "https://i1.hdslb.com/bfs/archive/5638a53894524df9b7d57fd1bf8426722278b315.jpg",
-                "play": "7.9万",
-                "duration": "4:16",
-                "pubdate": 1759921312
-            },
-            {
-                "bvid": "BV1WytCzJEZd",
-                "title": "你还没有过IDM这种变态的下载器？？？",
-                "cover": "https://i0.hdslb.com/bfs/archive/0dbcccb1de09135ccc3de14a19663869570dfcac.jpg",
-                "play": "5243",
-                "duration": "07:58",
-                "pubdate": 1754626865
-            },
-            {
-                "bvid": "BV17gTRzSEDL",
-                "title": "《 美 式 居 合 》",
-                "cover": "https://i0.hdslb.com/bfs/archive/19ac70b1dfb404a212fdef7f636cc9dda7b3f934.jpg",
-                "play": "3496",
-                "duration": "15:55",
-                "pubdate": 1749391294
-            },
-            {
-                "bvid": "BV1YXEuzCEPS",
-                "title": "《 高 温 预 警 》",
-                "cover": "https://i0.hdslb.com/bfs/archive/aa96fba1f8c678705a8081da33d2065c5f889401.jpg",
-                "play": "4.5万",
-                "duration": "4:17",
-                "pubdate": 1746974790
-            },
-            {
-                "bvid": "BV1fQLbzNELe",
-                "title": "《 救 人 4 . 0 》",
-                "cover": "https://i1.hdslb.com/bfs/archive/70c1013d3501599e17f58602e8ca10f7956855bb.jpg",
-                "play": "3.3万",
-                "duration": "7:50",
-                "pubdate": 1745414540
-            },
-            {
-                "bvid": "BV1e6XpYbEzm",
-                "title": "《 加 钠 小 逝 验 》",
-                "cover": "https://i1.hdslb.com/bfs/archive/f7e73d7e98698b82ad7d1e587371088275e02b42.jpg",
-                "play": "11.1万",
-                "duration": "3:34",
-                "pubdate": 1742621406
-            },
-            {
-                "bvid": "BV1BbRYYeEVG",
-                "title": "《 加 钠 · 魔 铜 降 世 》",
-                "cover": "https://i0.hdslb.com/bfs/archive/fed19300b4e6f86953319ec59cbd6365b8bba08e.jpg",
-                "play": "57.5万",
-                "duration": "2:26",
-                "pubdate": 1741528284
-            },
-            {
-                "bvid": "BV1E9AgetEYe",
-                "title": "《 救 人 3 . 0 》",
-                "cover": "https://i1.hdslb.com/bfs/archive/dc83cea0f23b847785bf0caa2306cd86be333bf2.jpg",
-                "play": "44.7万",
-                "duration": "3:46",
-                "pubdate": 1739686223
-            },
-            {
-                "bvid": "BV1gFANeFEab",
-                "title": "《 救 人 2 》",
-                "cover": "https://i2.hdslb.com/bfs/archive/d263e748ec539683ca2357602f52da9d33f6bf62.jpg",
-                "play": "9.8万",
-                "duration": "3:18",
-                "pubdate": 1739610077
-            },
-            {
-                "bvid": "BV1DvAAe4Eko",
-                "title": "《 爆 炸 》",
-                "cover": "https://i1.hdslb.com/bfs/archive/3ceae6ed18cc05f822a653b2ffe328d00454d8dd.jpg",
-                "play": "5.2万",
-                "duration": "1:40",
-                "pubdate": 1739596089
-            },
-            {
-                "bvid": "BV1k6KLepEx7",
-                "title": "《 艺 术 就 是 爆 炸 》",
-                "cover": "https://i2.hdslb.com/bfs/archive/a9ae7331ea76481329f057b47196fe9236eed3fc.jpg",
-                "play": "5.7万",
-                "duration": "2:11",
-                "pubdate": 1739370987
-            },
-            {
-                "bvid": "BV17fNoetELN",
-                "title": "《 救 人 》",
-                "cover": "https://i2.hdslb.com/bfs/archive/b80837f9fdb33f8210616ebe996ebb94bf5bc5de.jpg",
-                "play": "32.9万",
-                "duration": "3:18",
-                "pubdate": 1739183724
-            },
-            {
-                "bvid": "BV1cbNdeFECg",
-                "title": "《 正 经 》",
-                "cover": "https://i2.hdslb.com/bfs/archive/52813a16b82b3eb9b2048183e46f0c85f7ed7684.jpg",
-                "play": "3.6万",
-                "duration": "2:01",
-                "pubdate": 1739169603
-            },
-            {
-                "bvid": "BV1APN1eiESK",
-                "title": "《 钠 和 钾 》",
-                "cover": "https://i1.hdslb.com/bfs/archive/7bc08679d01084bf26649d3fef21c6430e4bf9d4.jpg",
-                "play": "2.6万",
-                "duration": "1:16",
-                "pubdate": 1739072100
-            },
-            {
-                "bvid": "BV1XxN1enEsj",
-                "title": "《 闻 一 闻 》",
-                "cover": "https://i2.hdslb.com/bfs/archive/f5a563ff10b091e18181298a095bf6fbc01762b6.jpg",
-                "play": "3.1万",
-                "duration": "1:07",
-                "pubdate": 1739069554
-            },
-            {
-                "bvid": "BV1ppNgeiEFs",
-                "title": "《 绝 对 火 力 》",
-                "cover": "https://i1.hdslb.com/bfs/archive/b4f3b406873bb9a701d2d64a0f8fa173099a429e.jpg",
-                "play": "4.7万",
-                "duration": "2:01",
-                "pubdate": 1738988640
-            },
-            {
-                "bvid": "BV1BkNNe7Etf",
-                "title": "《 逝 验 室 爆 炸 逝 件 》",
-                "cover": "https://i1.hdslb.com/bfs/archive/1deef49ba2057ec16c0f7a330c98159bc588e686.jpg",
-                "play": "2.6万",
-                "duration": "6:01",
-                "pubdate": 1738933013
-            },
-            {
-                "bvid": "BV11gNbe4ExW",
-                "title": "《 不 要 让 化 学 老 师 看 到 》",
-                "cover": "https://i2.hdslb.com/bfs/archive/7504c36d5c933726a7ecdcfbb0d6f98085a8dc2f.jpg",
-                "play": "51.4万",
-                "duration": "6:01",
-                "pubdate": 1738904567
-            }
-        ];
+        // 视频数据占位符，将由自动更新脚本替换
+        const VIDEOS = /*<VIDEOS>*/[]/*</VIDEOS>*/;
 
         // ==========================================================
-        // 渲染视频卡片（已添加视频数量显示）
+        // 全局变量
         // ==========================================================
-        function renderVideos() {
+        let currentCategoryKey = 'all';
+        let categoryMap = {};
+
+        // ==========================================================
+        // 分类筛选相关
+        // ==========================================================
+        function initCategoryFilter() {
+            const filterDiv = document.getElementById('categoryFilter');
+            if (!filterDiv) return;
+
+            // 构建分类映射
+            categoryMap = {};
+            VIDEOS.forEach(v => {
+                if (v.category_key) {
+                    categoryMap[v.category_key] = v.category_name;
+                }
+            });
+
+            // 预设分类顺序（键名需与脚本中的category_key一致）
+            const presetOrder = ['化学', '物理', '救人', '官网', '其他'];
+            let buttonsHtml = '<button class="cat-btn active" data-category="all">全部</button>';
+
+            presetOrder.forEach(key => {
+                if (categoryMap[key] || key === '其他') { // 其他即使没有视频也显示
+                    const displayName = categoryMap[key] || '《其他》';
+                    buttonsHtml += `<button class="cat-btn" data-category="${key}">${displayName}</button>`;
+                }
+            });
+
+            filterDiv.innerHTML = buttonsHtml;
+
+            // 绑定点击事件
+            filterDiv.addEventListener('click', (e) => {
+                if (e.target.classList.contains('cat-btn')) {
+                    document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentCategoryKey = e.target.dataset.category;
+                    renderVideosByCategory();
+                }
+            });
+        }
+
+        function renderVideosByCategory() {
             const grid = document.getElementById('videoGrid');
-            const sourceSpan = document.getElementById('dataSource');
             const countSpan = document.getElementById('videoCountDisplay');
+            
+            let filteredVideos = VIDEOS;
+            if (currentCategoryKey !== 'all') {
+                filteredVideos = VIDEOS.filter(v => v.category_key === currentCategoryKey);
+            }
+            
+            // 按发布时间排序
+            filteredVideos.sort((a, b) => (b.pubdate || 0) - (a.pubdate || 0));
 
-            if (!VIDEOS || VIDEOS.length === 0) {
-                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:60px;">暂无视频数据</div>';
-                sourceSpan.innerText = '无数据';
+            if (filteredVideos.length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:60px;">暂无该分类视频</div>';
                 if (countSpan) countSpan.innerText = '当前展示视频：0 个';
                 return;
             }
 
-            // 更新视频数量显示
             if (countSpan) {
-                countSpan.innerText = `当前展示视频：${VIDEOS.length} 个`;
+                countSpan.innerText = `当前展示视频：${filteredVideos.length} 个`;
             }
 
-            // 按发布时间倒序排序
-            const sortedVideos = [...VIDEOS].sort((a, b) => (b.pubdate || 0) - (a.pubdate || 0));
-
-            grid.innerHTML = sortedVideos.map(video => {
+            grid.innerHTML = filteredVideos.map(video => {
                 const b23Url = `https://www.bilibili.com/video/${video.bvid}`;
                 return `
                     <div class="video-card" onclick="window.open('${b23Url}', '_blank')">
@@ -684,8 +569,6 @@
                     </div>
                 `;
             }).join('');
-
-            sourceSpan.innerText = '利用B站API同步配置';
         }
 
         // ==========================================================
@@ -765,13 +648,13 @@
             if (!statsDiv) return;
 
             if (!VIDEOS || VIDEOS.length === 0) {
-                statsDiv.innerHTML = '📊 建站日期：2026-02-17 | 暂无视频数据';
+                statsDiv.innerHTML = '📊 建站日期：2025-02-17 | 暂无视频数据';
                 return;
             }
 
             const latest = VIDEOS.reduce((max, v) => Math.max(max, v.pubdate || 0), 0);
             if (latest === 0) {
-                statsDiv.innerHTML = '📊 建站日期：2026-02-17 | 暂无更新记录';
+                statsDiv.innerHTML = '📊 建站日期：2025-02-17 | 暂无更新记录';
                 return;
             }
 
@@ -782,7 +665,25 @@
             const hour = String(date.getHours()).padStart(2, '0');
             const minute = String(date.getMinutes()).padStart(2, '0');
 
-            statsDiv.innerHTML = `📊 建站日期：2026-02-17 | 最后更新：${year}-${month}-${day} ${hour}:${minute}（根据最新视频发布时间）`;
+            statsDiv.innerHTML = `📊 建站日期：2025-02-17 | 最后更新：${year}-${month}-${day} ${hour}:${minute}（根据最新视频发布时间）`;
+        }
+
+        // ==========================================================
+        // 初始化渲染函数（原renderVideos改名）
+        // ==========================================================
+        function initVideos() {
+            const sourceSpan = document.getElementById('dataSource');
+            
+            if (!VIDEOS || VIDEOS.length === 0) {
+                document.getElementById('videoGrid').innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:60px;">暂无视频数据</div>';
+                sourceSpan.innerText = '无数据';
+                return;
+            }
+            
+            initCategoryFilter();
+            currentCategoryKey = 'all';
+            renderVideosByCategory();
+            sourceSpan.innerText = '利用B站API同步配置';
         }
 
         // ==========================================================
@@ -792,7 +693,7 @@
             const authorSpan = document.getElementById('authorInfo');
             authorSpan.innerText = `UP主：${AUTHOR_NAME}`;
             
-            renderVideos();
+            initVideos();
             initTheme();
             updateSiteStats();
         }
