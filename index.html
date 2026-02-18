@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NB频道官网（版本号：0.23）</title>
+    <title>NB频道官网（版本号：0.22）</title>
     <style>
         /* 亮色模式变量（默认） */
         :root {
@@ -420,7 +420,7 @@
         <!-- 关于页 -->
         <div class="page" id="aboutPage">
             <div class="about-content">
-                <h2>关于 NB频道（版本号：0.23）</h2>
+                <h2>关于 NB频道（版本号：0.22）</h2>
                 <p><strong>UP主：</strong> NB实验室-作死</p>
                 <p><strong>B站UID：</strong> 3493259582114264</p>
                 <p><strong>频道简介：</strong> 一个热爱理科（和作死）的畜中生up主，虽然这个公司还没有上市，主要发布以下内容：</p>
@@ -448,7 +448,7 @@
                 <p><strong>版本 0.21（2025-02-17）</strong></p>
                 <ul>
                     <li>更改一些文字说明</li>
-                    <li>视频数据由手动配置改为每天早上8点自动同步</li>
+                    <li>视频数据（播放量、稿件数等）由手动配置改为每天早上8点自动同步，再也不用天天手动同步了 哈哈哈！（高兴のUP）</li>
                     <li>视频页顶部增加视频数量显示</li>
                 </ul>
                 <p><strong>版本 0.22（2025-02-18）</strong></p>
@@ -899,13 +899,13 @@
             if (!statsDiv) return;
 
             if (!VIDEOS || VIDEOS.length === 0) {
-                statsDiv.innerHTML = '📊 建站日期：2025-02-17 | 暂无视频数据';
+                statsDiv.innerHTML = '📊 建站日期：2026-02-17 | 暂无视频数据';
                 return;
             }
 
             const latest = VIDEOS.reduce((max, v) => Math.max(max, v.pubdate || 0), 0);
             if (latest === 0) {
-                statsDiv.innerHTML = '📊 建站日期：2025-02-17 | 暂无更新记录';
+                statsDiv.innerHTML = '📊 建站日期：2026-02-17 | 暂无更新记录';
                 return;
             }
 
@@ -916,7 +916,7 @@
             const hour = String(date.getHours()).padStart(2, '0');
             const minute = String(date.getMinutes()).padStart(2, '0');
 
-            statsDiv.innerHTML = `📊 建站日期：2025-02-17 | 最后更新：${year}-${month}-${day} ${hour}:${minute}（根据最新视频发布时间）`;
+            statsDiv.innerHTML = `📊 建站日期：2026-02-17 | 最后更新：${year}-${month}-${day} ${hour}:${minute}（根据最新视频发布时间）`;
         }
 
         // ==========================================================
