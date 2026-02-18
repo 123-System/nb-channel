@@ -1,13 +1,11 @@
 name: Auto Update Videos
 
 on:
-  repository_dispatch:
-    types: [trigger-update]   # 自定义事件类型，后面调用时要用到
+  #repository_dispatch:
+  #  types: [trigger-update]   # 自定义事件类型，后面调用时要用到
+  schedule:
+   - cron: '0 8 * * *'
   workflow_dispatch:           # 保留手动触发，方便调试
-  # 如果你还想保留 schedule，可以留着，但我们现在主要用外部触发
-  # schedule:
-  #   - cron: '0 0 * * *'
-
 jobs:
   update:
     runs-on: ubuntu-latest
