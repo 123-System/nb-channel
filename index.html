@@ -104,6 +104,17 @@
             margin-left: 40px;
             margin-bottom: 20px;
         }
+        /* 新增视频计数样式 */
+        .video-count {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            color: #666;
+            background: #e8f4fd;
+            padding: 8px;
+            border-radius: 8px;
+            border-left: 4px solid #00a1d6;
+        }
         .video-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -230,6 +241,8 @@
 
        
         <div class="page" id="videosPage">
+            <!-- 新增视频计数显示 -->
+            <div class="video-count" id="videoCountDisplay"></div>
             <div class="video-grid" id="videoGrid">
                 <div style="grid-column:1/-1; text-align:center; padding:40px; color:#99a2aa;">
                     ⏳ 正在加载视频数据...
@@ -273,6 +286,7 @@
                 <ul>
                     <li>更改一些文字说明</li>
                     <li>视频数据（播放量、稿件数等）由手动配置改为每天早上8点自动同步，再也不用天天手动同步了 哈哈哈！（高兴のUP）</li>
+                    <li>视频页顶部增加视频数量显示</li>
                 </ul>
                 <p style="margin-top:30px;">更多更新敬请期待～</p>
             </div>
@@ -492,31 +506,52 @@
         // 渲染视频卡片
         // ==========================================================
         function renderVideos() {
-    const grid = document.getElementById('videoGrid');
-    const sourceSpan = document.getElementById('dataSource');
-    const countSpan = document.getElementById('videoCountDisplay');
+            const grid = document.getElementById('videoGrid');
+            const sourceSpan = document.getElementById('dataSource');
+            const countSpan = document.getElementById('videoCountDisplay');
 
-    if (!VIDEOS || VIDEOS.length === 0) {
-        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:60px;">暂无视频数据</div>';
-        sourceSpan.innerText = '无数据';
-        if (countSpan) countSpan.innerText = '当前展示视频：0 个';
-        return;
-    }
+            if (!VIDEOS || VIDEOS.length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:60px;">暂无视频数据</div>';
+                sourceSpan.innerText = '无数据';
+                if (countSpan) countSpan.innerText = '当前展示视频：0 个';
+                return;
+            }
 
-    // 更新计数
-    if (countSpan) {
-        countSpan.innerText = `当前展示视频：${VIDEOS.length} 个`;
-    }
+            // 更新视频计数
+            if (countSpan) {
+                countSpan.innerText = `当前展示视频：${VIDEOS.length} 个`;
+            }
 
-    const sortedVideos = [...VIDEOS].sort((a, b) => (b.pubdate || 0) - (a.pubdate || 0));
-    grid.innerHTML = sortedVideos.map(video => {
-        const b23Url = `https://www.bilibili.com/video/${video.bvid}`;
-        return `...`; // 原有模板字符串不变
-    }).join('');
+            // 按发布时间倒序排序
+            const sortedVideos = [...VIDEOS].sort((a, b) => (b.pubdate || 0) - (a.pubdate || 0));
 
-    
+            // 生成视频卡片 HTML（恢复原来的模板）
+            grid.innerHTML = sortedVideos.map(video => {
+                const b23Url = `https://www.bilibili.com/video/${video.bvid}`;
+                return `
+                    <div class="video-card" onclick="window.open('${b23Url}', '_blank')">
+                        <div class="cover-wrapper">
+                            <img class="video-cover" 
+                                 src="${video.cover}" 
+                                 alt="${video.title}"
+                                 loading="lazy"
+                                 onerror="this.onerror=null; this.src='https://via.placeholder.com/640x360?text=封面加载失败';">
+                            <span class="duration-badge">${video.duration || '--:--'}</span>
+                        </div>
+                        <div class="video-info">
+                            <div class="video-title">${video.title}</div>
+                            <div class="video-meta">
+                                <span class="meta-item">▶️ ${video.play || '0'}</span>
+                                <span class="meta-item">📅 ${video.pubdate ? new Date(video.pubdate * 1000).toLocaleDateString() : '未知'}</span>
+                            </div>
+                            <div class="bv-text">${video.bvid}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
             sourceSpan.innerText = '利用B站API同步配置';
-     }
+        }
 
         // ==========================================================
         // 页面切换函数
@@ -566,8 +601,3 @@
 </body>
 
 </html>
-
-
-
-
-
