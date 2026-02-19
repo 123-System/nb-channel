@@ -435,6 +435,14 @@
             text-align: center;
             border: 1px solid var(--footer-border);
         }
+        .search-hint {
+            text-align: center;
+            margin: 5px 0 15px 0;       
+            font-size: 0.9rem;
+            color: var(--count-text);    
+            opacity: 0.8;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -487,6 +495,8 @@
                     <button id="sortHot" class="sort-btn" data-sort="hot">按播放量</button>
                 </div>
             </div>
+            <div class="search-hint">注：由于标题字与字之间有一个空格，所以输入关键词时记得把字与字之间的空格加上，以免搜不到</div>
+            
             <div class="video-grid" id="videoGrid">
                 <div style="grid-column:1/-1; text-align:center; padding:40px; color:#99a2aa;">
                     ⏳ 正在加载视频数据...
