@@ -1,9 +1,10 @@
 name: Auto Update Videos
 
 on:
+  push :
   schedule:
    - cron: '0 0 * * *'
-  workflow_dispatch:           # 保留手动触发，方便调试
+  workflow_dispatch:          
   
 jobs:
   update:
@@ -18,7 +19,7 @@ jobs:
           python-version: '3.10'
 
       - name: Install dependencies
-        run: pip install bilibili-api-python aiohttp   # 关键：加上了 aiohttp
+        run: pip install bilibili-api-python aiohttp   
 
       - name: Run update script
         run: python update_videos.py
