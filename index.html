@@ -448,7 +448,7 @@
             <button class="nav-btn" id="navVideos" onclick="switchPage('videos')">视频</button>
             <button class="nav-btn" id="navAbout" onclick="switchPage('about')">关于</button>
             <button class="nav-btn" id="navChangelog" onclick="switchPage('changelog')">更新日志</button>
-            <!-- 夜间模式切换按钮 -->
+            <button class="nav-btn" id="navProduct" onclick="switchPage('product')">我的产品</button>
             <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙 夜间模式</button>
         </div>
 
@@ -564,7 +564,15 @@
                 <p style="margin-top:30px;">更多更新敬请期待～</p>
             </div>
         </div>
-
+        <!-- 我的产品页 -->
+        <div class="page" id="productPage">
+        <div class="about-content">
+        <h2>我的产品</h2>
+        <p>镀铜水</p>
+        <p style="margin-top:20px;">🔗镀铜水体验链接：<a href="https://s.nobook.com/index.html?id=300033" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+        
+    </div>
+</div>
         <!-- 建站统计区域 -->
         <div class="site-stats" id="siteStats"></div>
     </div>
@@ -1004,11 +1012,13 @@
             document.getElementById('videosPage').classList.remove('active-page');
             document.getElementById('aboutPage').classList.remove('active-page');
             document.getElementById('changelogPage').classList.remove('active-page');
-
+            document.getElementById('productPage').classList.remove('active-page');
+            
             document.getElementById('navHome').classList.remove('active');
             document.getElementById('navVideos').classList.remove('active');
             document.getElementById('navAbout').classList.remove('active');
             document.getElementById('navChangelog').classList.remove('active');
+            document.getElementById('navProduct').classList.remove('active');
 
             if (pageName === 'home') {
                 document.getElementById('homePage').classList.add('active-page');
@@ -1022,6 +1032,9 @@
             } else if (pageName === 'changelog') {
                 document.getElementById('changelogPage').classList.add('active-page');
                 document.getElementById('navChangelog').classList.add('active');
+            } else if (pageName === 'product') { 
+                document.getElementById('productPage').classList.add('active-page');
+                document.getElementById('navProduct').classList.add('active');
             }
         }
 
