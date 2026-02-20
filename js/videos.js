@@ -1,4 +1,6 @@
 // js/videos.js
+console.log('VIDEOS loaded:', VIDEOS);
+console.log('Number of videos:', VIDEOS.length);
 
 let currentCategoryKey = 'all';
 let categoryMap = {};
@@ -145,4 +147,5 @@ function initVideos() {
 }
 
 // 页面加载完成后执行
+
 document.addEventListener('DOMContentLoaded', initVideos);
