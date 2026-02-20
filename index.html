@@ -11,7 +11,7 @@
     <style>
         /* 导航栏整体容器：上下两行 */
         .nav-container {
-            margin-bottom: 40px; /* 稍微增加底部间距，让按钮不显得那么高 */
+            margin-bottom: 30px;
         }
         /* 第一行：主要页面链接 */
         .nav-links {
@@ -19,7 +19,7 @@
             justify-content: center;
             flex-wrap: wrap;
             gap: 15px;
-            margin-bottom: 20px; /* 增加与第二行的间距 */
+            margin-bottom: 15px;
         }
         /* 第二行：功能按钮 */
         .nav-actions {
@@ -28,8 +28,7 @@
             gap: 15px;
             flex-wrap: wrap;
         }
-        }
-        /* 统一按钮样式 */
+        /* 统一按钮样式（复用你原有的 .nav-btn 样式即可） */
         .theme-toggle, .share-btn {
             background: var(--nav-btn-bg);
             color: var(--nav-btn-text);
@@ -67,19 +66,6 @@
                 min-width: auto;
             }
         }
-        /* 强制覆盖可能的外部样式 */
-    .nav-actions {
-    display: flex !important;
-    justify-content: center !important; /* 强制居中 */
-    gap: 15px !important;
-    flex-wrap: wrap !important;
-    margin-top: 10px !important; /* 增加一点上边距，让按钮下移 */
-}
-
-/* 如果整个导航栏离顶部太近，可以增加这个 */
-.nav-container {
-    padding-top: 20px; /* 或者 margin-top，根据需要调整 */
-}
     </style>
 </head>
 <body>
@@ -97,7 +83,7 @@
                 <a href="changelog.html" class="nav-btn">更新日志</a>
                 <a href="product.html" class="nav-btn">我的产品</a>
             </div>
-            <!-- 第二层：功能按钮（分享在左，夜间模式在右） -->
+            <!-- 第二层：功能按钮 -->
             <div class="nav-actions">
                 <button class="share-btn" id="shareButton">📤 分享</button>
                 <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙 夜间模式</button>
@@ -152,6 +138,3 @@
     </script>
 </body>
 </html>
-
-
-
