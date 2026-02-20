@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NB频道官网 - 更新日志</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📺 NB频道官网</h1>
+        <div class="author-info" id="authorInfo">UP主：NB实验室-作死</div>
+
+        <div class="nav-bar">
+            <a href="index.html" class="nav-btn">首页</a>
+            <a href="videos.html" class="nav-btn">视频</a>
+            <a href="about.html" class="nav-btn">关于</a>
+            <a href="changelog.html" class="nav-btn active">更新日志</a>
+            <a href="product.html" class="nav-btn">我的产品</a>
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙 夜间模式</button>
+        </div>
+
+        <!-- 更新日志内容 -->
+        <div class="changelog-content">
+            <h2>📋 更新日志</h2>
+            <p>NB频道 V 0.1（2026-02-17）</p>
+            <ul>
+                <li>NB频道官网上线</li>
+                <li>包含首页、视频页、关于页和更新日志</li>
+                <li>手动配置24个视频数据</li>
+            </ul>
+            <p>NB频道V 0.2.1（2026-02-17）</p>
+            <ul>
+                <li>更改一些文字说明</li>
+                <li>视频数据（播放量、稿件数等）由手动配置改为每天早上8点自动同步，再也不用天天手动同步了 哈哈哈！（高兴のUP）</li>
+                <li>视频页顶部增加视频数量显示</li>
+                <li>增加了友商AWM的官网</li>
+                <li>改BUG</li>
+            </ul>
+            <p>NB频道 V 0.2.2（2026-02-18）</p>
+            <ul>
+                <li>增加夜间模式切换按钮</li>
+                <li>增加回到顶部按钮（右下角）</li>
+                <li>增加建站统计信息（最后更新时间）</li>
+                <li>增加视频分类筛选功能（化学、物理、救人、官网、产品、其他）</li>
+                <li>视频分类直接从B站合集自动获取，分类名使用合集原始名称</li>
+                <li>依旧改BUG</li>
+            </ul>
+            <p>NB频道 V 0.2.3（2026-02-18）</p>
+            <ul>
+                <li>增加搜索框，可实时搜索视频标题</li>
+                <li>“视频”页面增加排序功能，可切换按时间/按播放量排序</li>
+                <li>为什么还有BUG？？？改！（工作のUP）</li>
+            </ul>
+            <p>NB频道 V 0.2.4（2026-02-19）</p>
+            <ul>
+                <li>更改了首页和关于页的文字说明</li>
+                <li>增加了友商Vial的网站</li>
+                <li>增加了“我的产品”模块</li>
+                <li>终于没BUG了（高兴のUP）</li>
+            </ul>
+            <p style="margin-top:30px;">更多更新敬请期待～</p>
+        </div>
+
+        <!-- 建站统计区域 -->
+        <div class="site-stats" id="siteStats"></div>
+    </div>
+
+    <!-- 回到顶部按钮 -->
+    <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
+
+    <script src="data/videos.js"></script>
+    <script src="js/common.js"></script>
+    <script>
+        AUTHOR_NAME = 'NB实验室-作死';
+        document.getElementById('authorInfo').innerText = `UP主：${AUTHOR_NAME}`;
+        initTheme();
+        updateSiteStats();
+    </script>
+</body>
+</html>

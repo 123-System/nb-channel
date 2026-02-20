@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NB频道官网 - 关于</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📺 NB频道官网</h1>
+        <div class="author-info" id="authorInfo">UP主：NB实验室-作死</div>
+
+        <div class="nav-bar">
+            <a href="index.html" class="nav-btn">首页</a>
+            <a href="videos.html" class="nav-btn">视频</a>
+            <a href="about.html" class="nav-btn active">关于</a>
+            <a href="changelog.html" class="nav-btn">更新日志</a>
+            <a href="product.html" class="nav-btn">我的产品</a>
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙 夜间模式</button>
+        </div>
+
+        <!-- 关于页内容 -->
+        <div class="about-content">
+            <h2>关于 NB频道（V0.2.4）</h2>
+            <p><strong>UP主：</strong> NB实验室-作死</p>
+            <p><strong>B站UID：</strong> 3493259582114264</p>
+            <p><strong>主要发布以下内容：</strong></p>
+            <ul>
+                <li>⚗️ 化学实验：钠、钾、各种爆炸物（请勿模仿）</li>
+                <li>🧪 物理实验：电路短路爆炸（依旧请勿模仿）</li>
+                <li>🎬 日常作死：各种奇怪尝试（绝对不要模仿）</li>
+                <li><strong>再说一遍不要模仿（UP是指现实中）</strong></li>
+            </ul>
+            <p>本NB频道的所有视频信息由UP维护，点击卡片即可跳转B站观看原视频</p>
+            <p>本NB频道部分UI设计和逻辑由AI完成</p>
+            <p style="margin-top:30px; text-align:right;">—— 感谢您的支持 ——</p>
+        </div>
+
+        <!-- 建站统计区域 -->
+        <div class="site-stats" id="siteStats"></div>
+    </div>
+
+    <!-- 回到顶部按钮 -->
+    <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
+
+    <script src="data/videos.js"></script>
+    <script src="js/common.js"></script>
+    <script>
+        AUTHOR_NAME = 'NB实验室-作死';
+        document.getElementById('authorInfo').innerText = `UP主：${AUTHOR_NAME}`;
+        initTheme();
+        updateSiteStats();
+    </script>
+</body>
+</html>

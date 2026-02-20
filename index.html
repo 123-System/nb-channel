@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NB频道官网 - 首页</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📺 NB频道官网</h1>
+        <div class="author-info" id="authorInfo">UP主：NB实验室-作死</div>
+
+        <div class="nav-bar">
+            <a href="index.html" class="nav-btn active">首页</a>
+            <a href="videos.html" class="nav-btn">视频</a>
+            <a href="about.html" class="nav-btn">关于</a>
+            <a href="changelog.html" class="nav-btn">更新日志</a>
+            <a href="product.html" class="nav-btn">我的产品</a>
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙 夜间模式</button>
+        </div>
+
+        <!-- 首页内容 -->
+        <div class="home-content">
+            <p>👋 欢迎来到 <strong>NB频道</strong> </p>
+            <p>NB频道，全名NoBook频道，是一个热爱理科（和作死）的畜中生up主建立的虚拟公司</p>
+            <p>这个在NB圈发展的公司，目前还没有上市</p>
+            <p>这个频道汇集了UP主<strong>“NB实验室-作死”</strong>的所有视频，点击卡片即可跳转至B站观看。</p>
+            <p>频道主要分享有趣的化学、物理实验和日常作死小技巧，以后还会有产品问世，欢迎关注！</p>
+            <p style="color:#00a1d6; margin-top:30px;">✨ 注：点击上方“视频”查看UP的全部作品 ✨</p>
+            <p>UP在冲10万粉，您可以点个关注吗</p>
+            <p>🔗去我的主页关注我 ：<a href="https://space.bilibili.com/3493259582114264?spm_id_from=333.1007.0.0" target="_blank" rel="noopener noreferrer">点击前往</a></p>
+            <p style="color:#00a1d6; margin-top:30px;">什么？你找不到NB实验室？</p>
+            <p>没关系,我这里有链接↓</p>
+            <p>🔗NB实验室（化学） ：<a href="https://hx.nobook.com/console/templates/resource?grade_id=3" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+            <p>🔗NB实验室（物理） ：<a href="https://wl.nobook.com/console/templates/resource?grade_id=3" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+            <p style="color:#00a1d6; margin-top:30px;">什么？你想了解其他虚拟公司的网站？↓</p>
+            <p>没关系,我这里也有链接↓</p>
+            <p style="margin-top:20px;">🔗 友商AWMの官网：<a href="https://45d.cn/AWM/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+            <p style="margin-top:20px;">🔗 友商Vialの官网：<a href="https://vial.orgent.top/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+        </div>
+
+        <!-- 建站统计区域 -->
+        <div class="site-stats" id="siteStats"></div>
+    </div>
+
+    <!-- 回到顶部按钮 -->
+    <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
+
+    <!-- 引入脚本 -->
+    <script src="data/videos.js"></script>
+    <script src="js/common.js"></script>
+    <script>
+        // 首页不需要视频数据，但需要定义 VIDEOS 为空数组以免报错
+        window.VIDEOS = window.VIDEOS || [];
+        AUTHOR_NAME = 'NB实验室-作死';
+        document.getElementById('authorInfo').innerText = `UP主：${AUTHOR_NAME}`;
+        initTheme();
+        updateSiteStats();
+    </script>
+</body>
+</html>

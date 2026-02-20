@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NB频道官网 - 我的产品</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📺 NB频道官网</h1>
+        <div class="author-info" id="authorInfo">UP主：NB实验室-作死</div>
+
+        <div class="nav-bar">
+            <a href="index.html" class="nav-btn">首页</a>
+            <a href="videos.html" class="nav-btn">视频</a>
+            <a href="about.html" class="nav-btn">关于</a>
+            <a href="changelog.html" class="nav-btn">更新日志</a>
+            <a href="product.html" class="nav-btn active">我的产品</a>
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙 夜间模式</button>
+        </div>
+
+        <!-- 产品页内容 -->
+        <div class="about-content">
+            <h2>我的产品</h2>
+            <p>注：产品图片加载不出来等一等或者刷新几次就行了</p>
+            <p>一、镀铜水</p>
+            <p>就是把铁钉镀上一层铜，4-5秒就能镀上</p>
+            <p>产品图片↓</p>
+            <img src="https://s41.ax1x.com/2026/02/20/pZXtHZn.png" 
+                 alt="产品体验图（出现这个就是图片没加载出来）" 
+                 style="max-width:100%; border-radius:8px; margin:20px 0; box-shadow:0 4px 8px rgba(0,0,0,0.1);">
+            <p style="margin-top:20px;">🔗镀铜水体验链接：<a href="https://s.nobook.com/index.html?id=300033" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+            <p style="margin-top:20px;">🔗镀铜水产品视频链接：<a href="https://www.bilibili.com/video/BV1HMZYBuEze/?spm_id_from=333.1387.homepage.video_card.click&vd_source=823c3a7289e959248289f1526a768af0" target="_blank" rel="noopener noreferrer">点击前往</a></p>
+        </div>
+
+        <!-- 建站统计区域 -->
+        <div class="site-stats" id="siteStats"></div>
+    </div>
+
+    <!-- 回到顶部按钮 -->
+    <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
+
+    <script src="data/videos.js"></script>
+    <script src="js/common.js"></script>
+    <script>
+        AUTHOR_NAME = 'NB实验室-作死';
+        document.getElementById('authorInfo').innerText = `UP主：${AUTHOR_NAME}`;
+        initTheme();
+        updateSiteStats();
+    </script>
+</body>
+</html>

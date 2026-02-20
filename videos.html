@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NB频道官网 - 视频</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📺 NB频道官网</h1>
+        <div class="author-info" id="authorInfo">UP主：NB实验室-作死</div>
+
+        <div class="nav-bar">
+            <a href="index.html" class="nav-btn">首页</a>
+            <a href="videos.html" class="nav-btn active">视频</a>
+            <a href="about.html" class="nav-btn">关于</a>
+            <a href="changelog.html" class="nav-btn">更新日志</a>
+            <a href="product.html" class="nav-btn">我的产品</a>
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙 夜间模式</button>
+        </div>
+
+        <!-- 视频页内容 -->
+        <div class="video-count" id="videoCountDisplay"></div>
+        <div class="category-filter" id="categoryFilter"></div>
+        <div class="video-controls">
+            <input type="text" id="searchInput" class="search-box" placeholder="搜索视频标题...">
+            <div class="sort-buttons">
+                <button id="sortTime" class="sort-btn active" data-sort="time">按时间</button>
+                <button id="sortHot" class="sort-btn" data-sort="hot">按播放量</button>
+            </div>
+        </div>
+        <div class="search-hint">注：由于标题字与字之间有一个空格，所以输入关键词时记得把字与字之间的空格加上，以免搜不到</div>
+        <div class="video-grid" id="videoGrid">
+            <div style="grid-column:1/-1; text-align:center; padding:40px; color:#99a2aa;">
+                ⏳ 正在加载视频数据...
+            </div>
+        </div>
+        <div class="status-note" id="statusNote">
+            <strong>📌 数据来源：</strong>
+            <span id="dataSource">利用B站API同步配置</span>
+        </div>
+
+        <!-- 建站统计区域 -->
+        <div class="site-stats" id="siteStats"></div>
+    </div>
+
+    <!-- 回到顶部按钮 -->
+    <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
+
+    <!-- 引入脚本 -->
+    <script src="data/videos.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/videos.js"></script>
+    <script>
+        AUTHOR_NAME = 'NB实验室-作死';
+        document.getElementById('authorInfo').innerText = `UP主：${AUTHOR_NAME}`;
+        initTheme();
+        // 视频页初始化在 videos.js 中完成
+    </script>
+</body>
+</html>
