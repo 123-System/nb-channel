@@ -78,3 +78,42 @@ function parsePlayCount(playStr) {
     return parseInt(playStr) || 0;
 
 }
+
+// ==========================================================
+// 分享按钮
+// ==========================================================
+function initShareButton() {
+    const shareBtn = document.getElementById('shareButton');
+    if (!shareBtn) return;
+
+    shareBtn.addEventListener('click', async () => {
+        const shareData = {
+            title: 'NB频道官网',
+            text: '一个有趣的化学物理实验站，自动同步B站合集！',
+            url: window.location.href
+        };
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+                console.log('分享成功');
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('分享失败', err);
+                    fallbackCopy();
+                }
+            }
+        } else {
+            fallbackCopy();
+        }
+    });
+}
+
+function fallbackCopy() {
+    const input = document.createElement('input');
+    input.value = window.location.href;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    alert('链接已复制到剪贴板！');
+}
