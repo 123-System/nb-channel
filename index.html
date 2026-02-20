@@ -67,6 +67,19 @@
                 min-width: auto;
             }
         }
+        /* 强制覆盖可能的外部样式 */
+    .nav-actions {
+    display: flex !important;
+    justify-content: center !important; /* 强制居中 */
+    gap: 15px !important;
+    flex-wrap: wrap !important;
+    margin-top: 10px !important; /* 增加一点上边距，让按钮下移 */
+}
+
+/* 如果整个导航栏离顶部太近，可以增加这个 */
+.nav-container {
+    padding-top: 20px; /* 或者 margin-top，根据需要调整 */
+}
     </style>
 </head>
 <body>
@@ -139,5 +152,6 @@
     </script>
 </body>
 </html>
+
 
 
