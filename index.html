@@ -9,57 +9,43 @@
     <!-- 不蒜子脚本 -->
     <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
     <style>
-        /* 导航栏新样式：flex 布局，左右分开 */
-        .nav-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
+        /* 导航栏整体容器：上下两行 */
+        .nav-container {
             margin-bottom: 30px;
         }
+        /* 第一行：主要页面链接 */
         .nav-links {
             display: flex;
+            justify-content: center;
             flex-wrap: wrap;
             gap: 15px;
+            margin-bottom: 15px;
         }
-        .nav-right {
+        /* 第二行：功能按钮 */
+        .nav-actions {
             display: flex;
-            gap: 10px;
-            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
         }
-        /* 夜间模式按钮取消绝对定位，改为普通按钮 */
-        .theme-toggle {
-            position: static;
+        /* 统一按钮样式（复用你原有的 .nav-btn 样式即可） */
+        .theme-toggle, .share-btn {
             background: var(--nav-btn-bg);
             color: var(--nav-btn-text);
             border: none;
             border-radius: 30px;
-            padding: 10px 20px;
-            font-size: 1rem;
+            padding: 10px 25px;
+            font-size: 1.1rem;
             cursor: pointer;
             transition: all 0.2s;
+            font-weight: 500;
+            min-width: 90px;
         }
-        .theme-toggle:hover {
+        .theme-toggle:hover, .share-btn:hover {
             background: var(--nav-btn-hover-bg);
             color: var(--nav-btn-hover-text);
         }
-        /* 分享按钮样式（与夜间模式类似） */
-        .share-btn {
-            background: var(--nav-btn-bg);
-            color: var(--nav-btn-text);
-            border: none;
-            border-radius: 30px;
-            padding: 10px 20px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .share-btn:hover {
-            background: var(--nav-btn-hover-bg);
-            color: var(--nav-btn-hover-text);
-        }
-        /* 底部统计容器调整（移除了分享按钮，只留统计） */
+        /* 底部统计容器 */
         .stats-container {
             display: flex;
             flex-wrap: wrap;
@@ -68,17 +54,16 @@
             gap: 15px;
             margin-top: 20px;
         }
-        /* 响应式：窄屏时导航右半部分换行 */
+        /* 响应式微调 */
         @media (max-width: 600px) {
-            .nav-bar {
-                flex-direction: column;
-                align-items: stretch;
+            .nav-links .nav-btn {
+                padding: 8px 16px;
+                font-size: 1rem;
             }
-            .nav-links {
-                justify-content: center;
-            }
-            .nav-right {
-                justify-content: center;
+            .theme-toggle, .share-btn {
+                padding: 8px 16px;
+                font-size: 1rem;
+                min-width: auto;
             }
         }
     </style>
@@ -88,8 +73,9 @@
         <h1>📺 NB频道官网</h1>
         <div class="author-info" id="authorInfo">UP主：NB实验室-作死</div>
 
-        <!-- 导航栏：左侧链接，右侧两个按钮 -->
-        <div class="nav-bar">
+        <!-- 导航栏分为两层 -->
+        <div class="nav-container">
+            <!-- 第一层：主要页面链接 -->
             <div class="nav-links">
                 <a href="index.html" class="nav-btn active">首页</a>
                 <a href="videos.html" class="nav-btn">视频</a>
@@ -97,7 +83,8 @@
                 <a href="changelog.html" class="nav-btn">更新日志</a>
                 <a href="product.html" class="nav-btn">我的产品</a>
             </div>
-            <div class="nav-right">
+            <!-- 第二层：功能按钮 -->
+            <div class="nav-actions">
                 <button class="share-btn" id="shareButton">📤 分享</button>
                 <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙 夜间模式</button>
             </div>
@@ -123,7 +110,7 @@
             <p style="margin-top:20px;">🔗 友商Vialの官网：<a href="https://vial.orgent.top/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
         </div>
 
-        <!-- 底部统计（已移除分享按钮） -->
+        <!-- 底部统计 -->
         <div class="stats-container">
             <div class="site-stats" id="siteStats">📊 建站日期：2026-02-17</div>
             <div class="site-stats" style="background: transparent; border: none; padding: 0;">
