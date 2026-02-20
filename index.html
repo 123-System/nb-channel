@@ -67,7 +67,7 @@
             }
         }
        /* 强制父容器为 flex 行排列，左对齐 */
-.nav-actions {
+    .nav-actions {
     display: flex !important;
     flex-direction: row !important;
     justify-content: flex-start !important;  /* 左对齐，分享在左，夜间模式在右自然成立 */
@@ -75,6 +75,9 @@
     gap: 15px !important;
     flex-wrap: wrap !important;
     margin-top: 20px !important;  /* 调整竖直位置 */
+    }
+        .nav-actions {
+    justify-content: center !important;  /* 强制水平居中 */
 }
 
 /* 清除按钮可能的浮动或定位干扰 */
@@ -160,6 +163,7 @@
     </script>
 </body>
 </html>
+
 
 
 
