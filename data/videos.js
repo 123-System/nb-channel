@@ -1,3 +1,4 @@
+console.log('【data.js】开始执行');
 // data/videos.js
 window.VIDEOS = /*<VIDEOS>*/[
     {
@@ -271,3 +272,4 @@ window.VIDEOS = /*<VIDEOS>*/[
         "category_name": "《逝验室·化学》"
     }
 ]/*</VIDEOS>*/;
+console.log('【data.js】赋值完成，长度：', window.VIDEOS.length);
