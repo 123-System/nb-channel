@@ -1,3 +1,5 @@
+console.log('VIDEOS loaded:', VIDEOS);
+console.log('Number of videos:', VIDEOS.length);
 // data/videos.js
 window.VIDEOS = /*<VIDEOS>*/[
     {
