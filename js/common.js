@@ -2,7 +2,6 @@
 
 // 全局变量（将被页面中的具体值覆盖）
 let AUTHOR_NAME = '';
-let VIDEOS = [];
 
 // 夜间模式切换
 function toggleTheme() {
@@ -77,4 +76,5 @@ function parsePlayCount(playStr) {
         return parseFloat(match[1]) * 10000;
     }
     return parseInt(playStr) || 0;
+
 }
