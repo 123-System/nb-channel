@@ -6,27 +6,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NB频道官网 - 首页</title>
     <link rel="stylesheet" href="css/style.css">
-    <!-- 不蒜子脚本（提前加载，统计会异步更新） -->
+    <!-- 不蒜子脚本 -->
     <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
     <style>
-        /* 分享按钮样式（如果还没有，可以加在 style.css 中，这里内联方便） */
-        .share-btn {
+        /* 导航栏新样式：flex 布局，左右分开 */
+        .nav-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .nav-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        /* 夜间模式按钮取消绝对定位，改为普通按钮 */
+        .theme-toggle {
+            position: static;
             background: var(--nav-btn-bg);
             color: var(--nav-btn-text);
-            border: 1px solid var(--card-border);
+            border: none;
             border-radius: 30px;
-            padding: 8px 20px;
+            padding: 10px 20px;
             font-size: 1rem;
             cursor: pointer;
             transition: all 0.2s;
-            margin-top: 15px;
-            display: inline-block;
+        }
+        .theme-toggle:hover {
+            background: var(--nav-btn-hover-bg);
+            color: var(--nav-btn-hover-text);
+        }
+        /* 分享按钮样式（与夜间模式类似） */
+        .share-btn {
+            background: var(--nav-btn-bg);
+            color: var(--nav-btn-text);
+            border: none;
+            border-radius: 30px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
         }
         .share-btn:hover {
             background: var(--nav-btn-hover-bg);
             color: var(--nav-btn-hover-text);
         }
-        /* 让统计和分享在一行美观 */
+        /* 底部统计容器调整（移除了分享按钮，只留统计） */
         .stats-container {
             display: flex;
             flex-wrap: wrap;
@@ -35,6 +68,19 @@
             gap: 15px;
             margin-top: 20px;
         }
+        /* 响应式：窄屏时导航右半部分换行 */
+        @media (max-width: 600px) {
+            .nav-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .nav-links {
+                justify-content: center;
+            }
+            .nav-right {
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -42,16 +88,22 @@
         <h1>📺 NB频道官网</h1>
         <div class="author-info" id="authorInfo">UP主：NB实验室-作死</div>
 
+        <!-- 导航栏：左侧链接，右侧两个按钮 -->
         <div class="nav-bar">
-            <a href="index.html" class="nav-btn active">首页</a>
-            <a href="videos.html" class="nav-btn">视频</a>
-            <a href="about.html" class="nav-btn">关于</a>
-            <a href="changelog.html" class="nav-btn">更新日志</a>
-            <a href="product.html" class="nav-btn">我的产品</a>
-            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙 夜间模式</button>
+            <div class="nav-links">
+                <a href="index.html" class="nav-btn active">首页</a>
+                <a href="videos.html" class="nav-btn">视频</a>
+                <a href="about.html" class="nav-btn">关于</a>
+                <a href="changelog.html" class="nav-btn">更新日志</a>
+                <a href="product.html" class="nav-btn">我的产品</a>
+            </div>
+            <div class="nav-right">
+                <button class="share-btn" id="shareButton">📤 分享</button>
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙 夜间模式</button>
+            </div>
         </div>
 
-        <!-- 首页内容 -->
+        <!-- 首页内容保持不变 -->
         <div class="home-content">
             <p>👋 欢迎来到 <strong>NB频道</strong> </p>
             <p>NB频道，全名NoBook频道，是一个热爱理科（和作死）的畜中生up主建立的虚拟公司</p>
@@ -71,36 +123,28 @@
             <p style="margin-top:20px;">🔗 友商Vialの官网：<a href="https://vial.orgent.top/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
         </div>
 
-        <!-- 建站统计 + 访问统计 + 分享按钮 容器 -->
+        <!-- 底部统计（已移除分享按钮） -->
         <div class="stats-container">
-            <!-- 建站统计区域（原siteStats，现在合并显示） -->
-            <div class="site-stats" id="siteStats">
-                📊 建站日期：2026-02-17
-            </div>
-            <!-- 不蒜子统计 -->
+            <div class="site-stats" id="siteStats">📊 建站日期：2026-02-17</div>
             <div class="site-stats" style="background: transparent; border: none; padding: 0;">
                 <span id="busuanzi_container_site_pv">总访问 <span id="busuanzi_value_site_pv"></span> 次</span>
                 <span style="margin:0 5px;">|</span>
                 <span id="busuanzi_container_site_uv">总访客 <span id="busuanzi_value_site_uv"></span> 人</span>
             </div>
-            <!-- 分享按钮 -->
-            <button class="share-btn" id="shareButton">📤 分享本站</button>
         </div>
     </div>
 
     <!-- 回到顶部按钮 -->
     <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
 
-    <!-- 引入脚本（顺序重要：data/videos.js 在前，common.js 在后） -->
+    <!-- 脚本 -->
     <script src="data/videos.js"></script>
     <script src="js/common.js"></script>
     <script>
-        // 首页单独初始化（不需要视频逻辑，但需要作者信息和主题）
         AUTHOR_NAME = 'NB实验室-作死';
         document.getElementById('authorInfo').innerText = `UP主：${AUTHOR_NAME}`;
         initTheme();
-        updateSiteStats(); // 更新建站统计（如果有）
-        // 分享按钮初始化（已在 common.js 中定义，这里确保调用）
+        updateSiteStats();
         if (typeof initShareButton === 'function') {
             initShareButton();
         }
