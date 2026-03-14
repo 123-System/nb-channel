@@ -89,7 +89,7 @@ function initShareButton() {
     shareBtn.addEventListener('click', async () => {
         const shareData = {
             title: 'NB频道官网',
-            text: '一个有趣的化学物理实验站，自动同步B站合集！',
+            text: '频道主要分享有趣的化学、物理实验和日常作死小技巧，以后还会有产品问世，欢迎关注！',
             url: window.location.href
         };
         if (navigator.share) {
