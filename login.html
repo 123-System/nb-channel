@@ -129,7 +129,7 @@
         if (!userId) throw new Error('用户名或密码错误');
         const { data: profile } = await supabaseClient.from('profiles').select('id, username, is_banned, banned_reason').eq('id', userId).single();
         if (!profile) throw new Error('用户资料异常');
-        if (profile.is_banned) throw new Error('账号已被封禁，请联系管理员');
+        if (profile.is_banned) throw new Error('账号已被封禁，有任何问题请联系管理员');
         return profile;
     }
 
