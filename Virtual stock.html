@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>NB虚拟股票行情（数据来自Orgent API）</title>
+    <title>NB虚拟股票行情（自建数据 + 注册公司）</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="js/common.js"></script>
     <style>
+        /* 原有样式保持不变，此处省略重复，实际最后会提供完整文件 */
         .chart-wrapper { padding: 20px 0 32px 0; }
         .canvas-container {
             position: relative; width: 100%; min-height: 550px; background: var(--card-bg);
@@ -83,12 +84,6 @@
             padding: 8px 20px; font-size: 0.85rem;
         }
         body.dark-mode .error-msg { background: #3b1e1a; color: #f87171; }
-        .orgent-link {
-            background: var(--nav-btn-bg); color: var(--nav-btn-text); padding: 6px 16px;
-            border-radius: 30px; text-decoration: none; font-size: 0.85rem; font-weight: 500;
-            transition: 0.2s; display: inline-block;
-        }
-        .orgent-link:hover { background: var(--nav-btn-hover-bg); color: var(--nav-btn-hover-text); }
         .toolbar {
             display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 20px;
         }
@@ -239,6 +234,25 @@
             margin-bottom: 10px;
             color: var(--status-border);
         }
+        /* 新增按钮样式 */
+        .company-actions {
+            display: flex;
+            gap: 12px;
+            margin-left: 20px;
+        }
+        .company-btn {
+            background: var(--count-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 30px;
+            padding: 6px 16px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+        .company-btn:hover {
+            background: var(--nav-btn-hover-bg);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -256,14 +270,17 @@
         </div>
         <div class="nav-actions">
             <a href="comments-beta.html" class="nav-btn">💬 评论区Beta0.1版本</a>
-            <a href="GpValues.html" class="nav-btn active">📈 虚拟股票（数据来自Orgent API）</a>
+            <a href="Virtual stock.html" class="nav-btn active">📈 虚拟股票（自建数据）</a>
         </div>
     </div>
 
     <div class="home-card">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 16px;">
-            <h2 style="margin: 0; color: var(--status-border);">📊 虚拟股票行情（数据来自Orgent API）</h2>
-            <a href="https://orgent.pythonanywhere.com/stocks/" target="_blank" rel="noopener noreferrer" class="orgent-link">🔗 访问 Orgent虚拟投资页面</a>
+            <h2 style="margin: 0; color: var(--status-border);">📊 虚拟股票行情（自建数据）</h2>
+            <div class="company-actions">
+                <button id="registerCompanyBtn" class="company-btn">🏢 注册新公司</button>
+                <button id="rechargeCompanyBtn" class="company-btn">💰 充值NB币</button>
+            </div>
         </div>
         <div class="sub" style="color: var(--count-text); margin-bottom: 16px;">
             <span>📈 股票/概念指数 动态追踪</span>
@@ -349,27 +366,27 @@
                     <tr><th>股票名称</th><th>市值</th><th>与旧数据相比涨跌百分比</th></tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr><td colspan="3">加载中...</td></tr>
+                    <tr><td colspan="3">加载中...<\/td><\/tr>
                 </tbody>
-            </table>
+            <\/table>
             <button id="toggleTableBtn" class="toggle-table-btn">📋 展开全部</button>
-        </div>
+        <\/div>
 
         <div class="stats" id="statsPanel">
-            <div>📡 正在从服务器获取股票估值……</div>
-        </div>
-    </div>
-</div>
+            <div>📡 正在从服务器获取股票估值……<\/div>
+        <\/div>
+    <\/div>
+<\/div>
 
 <div class="site-stats">
-    <div class="stats-container" id="siteStats"></div>
-    <p style="margin-top: 12px;">数据来源：<a href="https://orgent.pythonanywhere.com" target="_blank" style="color: var(--status-border);">Orgent网站</a> API | 通过 Deno Deploy 专属代理 | 自动刷新周期可调<br></p>
-</div>
+    <div class="stats-container" id="siteStats"><\/div>
+    <p style="margin-top: 12px;">数据来源：自建数据 | 支持注册公司、充值NB币 | 自动刷新周期可调<br><\/p>
+<\/div>
 
 <div class="fixed-buttons">
     <button class="theme-toggle-fixed" id="themeToggleFixed" onclick="toggleTheme()">🌙</button>
     <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
-</div>
+<\/div>
 
 <script>
     if (typeof supabase === 'undefined' && typeof window.supabase !== 'undefined') { var supabase = window.supabase; }
@@ -382,7 +399,63 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // 全局变量
+    // ========== 数据管理（localStorage） ==========
+    function loadCompaniesFromStorage() {
+        const stored = localStorage.getItem('virtual_companies');
+        if (stored) {
+            return JSON.parse(stored);
+        } else {
+            // 默认示例数据
+            const defaultCompanies = [
+                { name: "NB科技", value: 12500 },
+                { name: "搞事生物", value: 8300 },
+                { name: "虚拟能源", value: 25600 },
+                { name: "频道金控", value: 36700 },
+                { name: "实验室AI", value: 9500 },
+                { name: "作死传媒", value: 4300 },
+                { name: "会考教育", value: 17800 }
+            ];
+            localStorage.setItem('virtual_companies', JSON.stringify(defaultCompanies));
+            return defaultCompanies;
+        }
+    }
+
+    function saveCompaniesToStorage(companies) {
+        localStorage.setItem('virtual_companies', JSON.stringify(companies));
+    }
+
+    // 注册新公司
+    function registerCompany(name, initialValue = 1000) {
+        if (!name || name.trim() === '') return false;
+        let companies = loadCompaniesFromStorage();
+        if (companies.find(c => c.name === name)) return false; // 重名
+        companies.push({ name: name.trim(), value: initialValue });
+        saveCompaniesToStorage(companies);
+        return true;
+    }
+
+    // 充值（增加市值）
+    function rechargeCompany(name, amount) {
+        let companies = loadCompaniesFromStorage();
+        const idx = companies.findIndex(c => c.name === name);
+        if (idx === -1) return false;
+        companies[idx].value += amount;
+        saveCompaniesToStorage(companies);
+        return true;
+    }
+
+    // 随机波动（用于自动刷新）
+    function randomFluctuate(companies, maxChangePercent = 0.05) {
+        // 每只股票在 ±5% 范围内随机变化，并取整
+        for (let i = 0; i < companies.length; i++) {
+            let change = (Math.random() - 0.5) * 2 * maxChangePercent;
+            let newVal = companies[i].value * (1 + change);
+            companies[i].value = Math.max(100, Math.floor(newVal));
+        }
+        return companies;
+    }
+
+    // ========== 全局变量 ==========
     let currentChart = null;
     let miniPieChart = null;
     let stockHistoryChart = null;
@@ -407,9 +480,6 @@
     let fullHistoryData = [];
     let allStockNames = [];
     let currentTopN = 'all';
-
-    const PROXY_URL = 'https://tidy-goose-75.nb-channel.deno.net/?url=';
-    const API_URL = 'https://orgent.pythonanywhere.com/api/GpValues';
 
     // ---------- 辅助函数 ----------
     function formatValue(num) {
@@ -542,7 +612,7 @@
         setTimeout(() => container.classList.remove('fade-in'), 150);
     }
 
-    // ==================== 直方图（固定步长10000） ====================
+    // 直方图
     function computeHistogram(values, step = 10000) {
         if (!values || values.length === 0) return { labels: [], counts: [] };
         const maxVal = Math.max(...values);
@@ -561,7 +631,6 @@
         }
         return { labels, counts };
     }
-
     function updateHistogramChart() {
         if (!rawData.values.length) return;
         const { labels, counts } = computeHistogram(rawData.values, 10000);
@@ -599,7 +668,7 @@
         }
     }
 
-    // ---------- 历史图表逻辑（与之前一致） ----------
+    // 历史图表相关（基于Supabase）
     async function saveFullSnapshot(totalValue) {
         const snapshotData = { names: rawData.names, values: rawData.values };
         await supabaseClient.from('stock_history_full').insert({
@@ -741,7 +810,7 @@
     }
     function updateDataTable() {
         const tbody = document.getElementById('tableBody');
-        if (!sortedCombined.length) { tbody.innerHTML = '<td><td colspan="3">暂无数据</td></tr>'; return; }
+        if (!sortedCombined.length) { tbody.innerHTML = '<td><td colspan="3">暂无数据</td><\/tr>'; return; }
         let filtered = sortedCombined;
         if (searchKeyword.trim() !== '') {
             const kw = searchKeyword.trim().toLowerCase();
@@ -756,11 +825,7 @@
                 if (idx !== -1) prevVal = previousSnapshot.values[idx];
             }
             const changeHtml = getChangeHtml(item.value, prevVal);
-            html += `<tr>
-                        <td>${escapeHtml(item.name)}</td>
-                        <td>${formatValue(item.value)}</td>
-                        <td>${changeHtml}</td>
-                      </tr>`;
+            html += `<tr><td>${escapeHtml(item.name)}</td><td>${formatValue(item.value)}</td><td>${changeHtml}</td></tr>`;
         }
         tbody.innerHTML = html;
         const toggleBtn = document.getElementById('toggleTableBtn');
@@ -803,6 +868,8 @@
             previousSnapshot = { names: data[0].snapshot_data.names, values: data[0].snapshot_data.values, total: data[0].total_value };
         } else { previousSnapshot = null; }
     }
+
+    // 核心数据获取：从 localStorage 读取并随机波动（如果isAuto为true则随机波动，否则保持原值）
     async function fetchStockData(isAuto = false) {
         if (isLoading) return;
         isLoading = true;
@@ -811,31 +878,39 @@
         updateTimestamp('loading');
         const statsDiv = document.getElementById('statsPanel');
         try {
-            const url = PROXY_URL + encodeURIComponent(API_URL);
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const json = await res.json();
-            if (json.code !== 200 || !json.names || !json.values) throw new Error('数据格式异常');
-            const newNames = json.names;
-            const newValues = json.values.map(v => Number(v));
+            // 1. 从 localStorage 加载现有公司
+            let companies = loadCompaniesFromStorage();
+            // 2. 如果是自动刷新，进行随机波动（模拟实时变化）
+            if (isAuto) {
+                companies = randomFluctuate(companies, 0.05);
+                saveCompaniesToStorage(companies);
+            }
+            // 3. 转换为 rawData 格式
+            const newNames = companies.map(c => c.name);
+            const newValues = companies.map(c => c.value);
             const newTotal = newValues.reduce((a,b)=>a+b,0);
+            // 4. 检查名称是否变化（可能注册新公司导致）
             let namesChanged = false;
             if (rawData.names.length !== newNames.length) namesChanged = true;
             else for (let i = 0; i < rawData.names.length; i++) if (rawData.names[i] !== newNames[i]) { namesChanged = true; break; }
+            // 5. 获取上一次快照（用于涨跌对比）
             await loadPreviousSnapshot();
+            // 6. 更新 rawData
             rawData.names = newNames;
             rawData.values = newValues;
             totalStocks = rawData.names.length;
             const combined = rawData.names.map((name, idx) => ({ name, value: rawData.values[idx] }));
             combined.sort((a, b) => b.value - a.value);
             sortedCombined = combined;
+            // 7. 保存快照到 Supabase（历史趋势）
             await saveFullSnapshot(newTotal);
-            await loadFullHistory();
+            await loadFullHistory();   // 重新加载历史数据并刷新历史图表
+            // 8. 更新界面
             updateTimestamp('success');
             updateStatsPanel(newTotal);
             updateDataTable();
             updateMiniPieChart();
-            updateHistogramChart();   // 刷新直方图
+            updateHistogramChart();
             if (namesChanged) {
                 isFullViewMode = false;
                 currentStartIndex = 0;
@@ -865,6 +940,45 @@
             if (refreshBtn) refreshBtn.classList.remove('loading');
         }
     }
+
+    // ========== 公司注册和充值逻辑 ==========
+    function showRegisterDialog() {
+        const name = prompt("请输入新公司名称：");
+        if (name && name.trim() !== "") {
+            if (registerCompany(name, 1000)) {
+                alert(`公司“${name}”注册成功，初始市值 1000 NB币。`);
+                // 刷新数据（不会触发随机波动，因为是手动操作）
+                fetchStockData(false);
+            } else {
+                alert("注册失败：名称已存在或无效。");
+            }
+        }
+    }
+
+    function showRechargeDialog() {
+        const companies = loadCompaniesFromStorage();
+        if (companies.length === 0) {
+            alert("没有公司可充值，请先注册。");
+            return;
+        }
+        const companyNames = companies.map(c => c.name).join("，");
+        const name = prompt(`请输入要充值的公司名称（现有：${companyNames}）：`);
+        if (!name) return;
+        const amountStr = prompt("请输入充值金额（NB币）：");
+        const amount = parseInt(amountStr);
+        if (isNaN(amount) || amount <= 0) {
+            alert("金额无效，请输入正整数。");
+            return;
+        }
+        if (rechargeCompany(name, amount)) {
+            alert(`成功为“${name}”充值 ${amount} NB币。`);
+            fetchStockData(false);
+        } else {
+            alert(`充值失败：未找到公司“${name}”。`);
+        }
+    }
+
+    // ========== 图表切换等函数（与原版一致） ==========
     function setChartType(type) {
         if (!['bar','line','pie'].includes(type) || type === currentChartType) return;
         currentChartType = type;
@@ -914,6 +1028,8 @@
             currentChart.update({ duration: 300 });
         }
     }
+
+    // 自动刷新控制
     function startAutoRefresh() {
         if (autoRefreshTimer) clearInterval(autoRefreshTimer);
         if (!autoRefreshEnabled) return;
@@ -946,11 +1062,13 @@
         if (document.hidden) stopAutoRefresh();
         else if (autoRefreshEnabled) startAutoRefresh();
     }
+
     const observer = new MutationObserver(() => {
         if (rawData.values.length) buildChartWithFade(currentChartType);
     });
     observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-    
+
+    // 事件绑定
     document.getElementById('searchInput')?.addEventListener('input', (e) => {
         searchKeyword = e.target.value;
         updateDataTable();
@@ -978,7 +1096,9 @@
     document.getElementById('toggleTableBtn')?.addEventListener('click', toggleTable);
     document.getElementById('xAxisSlider')?.addEventListener('input', onSliderChange);
     document.getElementById('fullViewBtn')?.addEventListener('click', toggleFullView);
-    
+    document.getElementById('registerCompanyBtn')?.addEventListener('click', showRegisterDialog);
+    document.getElementById('rechargeCompanyBtn')?.addEventListener('click', showRechargeDialog);
+
     windowSize = 15;
     (async () => {
         await fetchStockData(false);
