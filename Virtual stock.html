@@ -551,46 +551,88 @@
     // 破产
    async function bankruptCompany() {
     if (!myCompany) { alert('您还没有公司'); return; }
+    const companyId = myCompany.id;
+    const companyName = myCompany.company_name;
     const currentValue = myCompany.market_value;
     let reward = 0;
     let confirmMsg = '';
     if (currentValue >= 1000) {
         reward = 1000;
-        confirmMsg = `确定破产吗？公司将注销，您获得 ${reward} NB币。`;
+        confirmMsg = `确定破产吗？公司将彻底删除（包括历史走势数据），您将获得 ${reward} NB币。`;
     } else {
         reward = 0;
-        confirmMsg = `公司市值不足1000，破产将无法获得NB币。确定要继续吗？`;
+        confirmMsg = `公司市值不足1000，破产无法获得NB币，但公司及历史数据会被彻底删除。确定吗？`;
     }
     if (!confirm(confirmMsg)) return;
 
-    // 删除公司
+    // 1. 删除公司记录
     const { error: delError } = await supabaseClient
         .from('user_companies')
         .delete()
-        .eq('id', myCompany.id);
+        .eq('id', companyId);
     if (delError) {
         alert('破产失败: ' + delError.message);
         return;
     }
 
-    // 发放奖励（如果 reward > 0）
+    // 2. 删除该公司的自动支持规则
+    await supabaseClient.from('support_rules').delete().eq('company_id', companyId);
+
+    // 3. 从所有历史快照中移除该公司数据（stock_history_full）
+    const { data: snapshots, error: fetchError } = await supabaseClient
+        .from('stock_history_full')
+        .select('id, snapshot');
+    if (!fetchError && snapshots) {
+        for (const snap of snapshots) {
+            const snapshot = snap.snapshot;
+            if (!snapshot.names || !snapshot.values) continue;
+            const idx = snapshot.names.indexOf(companyName);
+            if (idx !== -1) {
+                snapshot.names.splice(idx, 1);
+                snapshot.values.splice(idx, 1);
+                await supabaseClient
+                    .from('stock_history_full')
+                    .update({ snapshot: snapshot })
+                    .eq('id', snap.id);
+            }
+        }
+    }
+
+    // 4. 从最新快照中移除（stock_latest）
+    const { data: latestData } = await supabaseClient
+        .from('stock_latest')
+        .select('id, snapshot_data')
+        .order('created_at', { ascending: false })
+        .limit(1);
+    if (latestData && latestData.length > 0) {
+        const latest = latestData[0];
+        const snapshot = latest.snapshot_data;
+        const idx = snapshot.names?.indexOf(companyName);
+        if (idx !== -1) {
+            snapshot.names.splice(idx, 1);
+            snapshot.values.splice(idx, 1);
+            await supabaseClient
+                .from('stock_latest')
+                .update({ snapshot_data: snapshot })
+                .eq('id', latest.id);
+        }
+    }
+
+    // 5. 发放奖励
     if (reward > 0) {
         const balance = await fetchUserBalance();
         const newBalance = balance + reward;
         await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
         await fetchUserBalance();
-        alert(`破产成功！公司已注销，您获得 ${reward} NB币。当前余额: ${newBalance}`);
+        alert(`破产成功！公司及历史数据已清除，您获得 ${reward} NB币。当前余额: ${newBalance}`);
     } else {
-        alert('破产成功！公司已注销，您未获得NB币。');
+        alert('破产成功！公司及历史数据已清除，您未获得NB币。');
     }
 
-    // 清理关联数据（支持规则）
-    await supabaseClient.from('support_rules').delete().eq('company_id', myCompany.id);
     myCompany = null;
-    await refreshStockDataFromDB();
+    await refreshStockDataFromDB();   // 刷新当前股票列表（已无该公司）
     renderMyCompanySection();
 }
-
     // 轮询检查自动支持规则（每30秒）
     async function checkAutoSupportRules() {
         if (!currentUserId) return;
