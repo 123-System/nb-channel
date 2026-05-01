@@ -1152,9 +1152,9 @@
             startAutoRefreshTimer();
             startAutoSupportWatcher();
         } else {
-            document.getElementById('userStatusSpan').innerHTML = '未登录 <button id="toLoginBtn" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</button>';
-            document.getElementById('toLoginBtn')?.addEventListener('click', () => { window.location.href = 'comments-beta.html'; });
-        }
+    const redirectUrl = encodeURIComponent(window.location.href);
+    document.getElementById('userStatusSpan').innerHTML = `未登录 <a href="login.html?redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
+}
     }
 
     function startAutoSupportWatcher() {
