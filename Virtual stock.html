@@ -360,27 +360,27 @@
                     <tr><th>股票名称</th><th>市值</th><th>与旧数据相比涨跌百分比</th></tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr><td colspan="3">加载中...<\/td><\/tr>
+                    <tr><td colspan="3">加载中...</td></tr>
                 </tbody>
-            <\/table>
+            </table>
             <button id="toggleTableBtn" class="toggle-table-btn">📋 展开全部</button>
-        <\/div>
+        </div>
 
         <div class="stats" id="statsPanel">
-            <div>📡 正在从服务器获取股票估值……<\/div>
-        <\/div>
-    <\/div>
-<\/div>
+            <div>📡 正在从服务器获取股票估值……</div>
+        </div>
+    </div>
+</div>
 
 <div class="site-stats">
-    <div class="stats-container" id="siteStats"><\/div>
-    <p style="margin-top: 12px;">数据来源：自建数据 | 支持 NB 币体系、公司管理、自动支持 | 自动刷新周期可调<br><\/p>
-<\/div>
+    <div class="stats-container" id="siteStats"></div>
+    <p style="margin-top: 12px;">数据来源：自建数据 | 支持 NB 币体系、公司管理、自动支持 | 自动刷新周期可调<br></p>
+</div>
 
 <div class="fixed-buttons">
     <button class="theme-toggle-fixed" id="themeToggleFixed" onclick="toggleTheme()">🌙</button>
     <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
-<\/div>
+</div>
 
 <script>
     if (typeof supabase === 'undefined' && typeof window.supabase !== 'undefined') { var supabase = window.supabase; }
@@ -980,7 +980,7 @@
     }
     function updateDataTable() {
         const tbody = document.getElementById('tableBody');
-        if (!sortedCombined.length) { tbody.innerHTML = '<tr><td colspan="3">暂无数据<\/td><\/tr>'; return; }
+        if (!sortedCombined.length) { tbody.innerHTML = '<tr><td colspan="3">暂无数据</td></tr>'; return; }
         let filtered = sortedCombined;
         if (searchKeyword.trim() !== '') { const kw = searchKeyword.trim().toLowerCase(); filtered = sortedCombined.filter(item => item.name.toLowerCase().includes(kw)); }
         let displayData = fullTableVisible ? filtered : filtered.slice(0, 5);
