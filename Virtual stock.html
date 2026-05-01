@@ -548,25 +548,48 @@
         return !error;
     }
 
-    // 破产：公司市值减少1000，用户增加1000 NB币（不能低于0）
-    async function bankruptCompany() {
-        if (!myCompany) { alert('您还没有公司'); return; }
-        if (myCompany.market_value < 1000) {
-            alert('公司市值不足1000，无法破产');
-            return;
-        }
-        const newValue = myCompany.market_value - 1000;
+    // 破产
+   async function bankruptCompany() {
+    if (!myCompany) { alert('您还没有公司'); return; }
+    const currentValue = myCompany.market_value;
+    let reward = 0;
+    let confirmMsg = '';
+    if (currentValue >= 1000) {
+        reward = 1000;
+        confirmMsg = `确定破产吗？公司将注销，您获得 ${reward} NB币。`;
+    } else {
+        reward = 0;
+        confirmMsg = `公司市值不足1000，破产将无法获得NB币。确定要继续吗？`;
+    }
+    if (!confirm(confirmMsg)) return;
+
+    // 删除公司
+    const { error: delError } = await supabaseClient
+        .from('user_companies')
+        .delete()
+        .eq('id', myCompany.id);
+    if (delError) {
+        alert('破产失败: ' + delError.message);
+        return;
+    }
+
+    // 发放奖励（如果 reward > 0）
+    if (reward > 0) {
         const balance = await fetchUserBalance();
-        const newBalance = balance + 1000;
-        await supabaseClient.from('user_companies').update({ market_value: newValue }).eq('id', myCompany.id);
+        const newBalance = balance + reward;
         await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
         await fetchUserBalance();
-        await fetchMyCompany();
-        await refreshStockDataFromDB();
-        alert(`破产成功！公司市值减少1000，您获得1000 NB币。当前余额: ${newBalance}`);
-        // 刷新公司信息显示
-        renderMyCompanySection();
+        alert(`破产成功！公司已注销，您获得 ${reward} NB币。当前余额: ${newBalance}`);
+    } else {
+        alert('破产成功！公司已注销，您未获得NB币。');
     }
+
+    // 清理关联数据（支持规则）
+    await supabaseClient.from('support_rules').delete().eq('company_id', myCompany.id);
+    myCompany = null;
+    await refreshStockDataFromDB();
+    renderMyCompanySection();
+}
 
     // 轮询检查自动支持规则（每30秒）
     async function checkAutoSupportRules() {
