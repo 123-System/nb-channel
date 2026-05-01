@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>NB虚拟股票 - 自建数据 & NB币体系</title>
+    <title>NB虚拟股票</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="js/common.js"></script>
     <style>
-        /* 基础样式（完整保留原样式，只增加新类） */
+        /* 基础样式 */
         .chart-wrapper { padding: 20px 0 32px 0; }
         .canvas-container {
             position: relative; width: 100%; min-height: 550px; background: var(--card-bg);
@@ -267,7 +267,7 @@
         <!-- 用户信息栏 -->
         <div class="user-info">
             <span id="userStatusSpan">未登录</span>
-            <span id="balanceSpan" class="balance-card">💰 NB币: 0</span>
+            <span id="balanceSpan" class="balance-card">💰 NB币: -</span>
         </div>
 
         <!-- 我的公司区块 -->
@@ -312,10 +312,10 @@
         </div>
 
         <div class="slider-container" id="rangeSliderContainer">
-            <span class="slider-label">📌 滑动查看股票</span>
+            <span class="slider-label">📌 滑动查看虚拟股票</span>
             <input type="range" id="xAxisSlider" min="0" max="0" value="0" step="1">
             <span class="range-value" id="sliderRangeText">显示 1-0 / 0</span>
-            <button id="fullViewBtn" class="reset-btn">🏠 股票全貌</button>
+            <button id="fullViewBtn" class="reset-btn">🏠 虚拟股票全貌</button>
         </div>
 
         <div class="history-chart-container" id="stockHistoryContainer">
@@ -342,22 +342,22 @@
         </div>
 
         <div class="histogram-container">
-            <div class="histogram-title">📊 市值分布直方图</div>
+            <div class="histogram-title">📊 虚拟市值分布直方图</div>
             <canvas id="histogramChart" width="1100" height="250"></canvas>
         </div>
 
         <div class="mini-pie-container">
-            <div class="mini-pie-title">🥧 市值占比 Top5</div>
+            <div class="mini-pie-title">🥧 虚拟市值占比 Top5</div>
             <canvas id="miniPieChart" width="400" height="200" class="mini-canvas"></canvas>
         </div>
 
         <div class="data-table-wrapper">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="🔍 搜索股票名称" autocomplete="off">
+                <input type="text" id="searchInput" placeholder="🔍 搜索虚拟股票名称" autocomplete="off">
             </div>
             <table class="data-table">
                 <thead>
-                    <tr><th>股票名称</th><th>市值</th><th>与旧数据相比涨跌百分比</th></tr>
+                    <tr><th>虚拟股票名称</th><th>虚拟市值</th><th>与旧数据相比涨跌百分比</th></tr>
                 </thead>
                 <tbody id="tableBody">
                     <tr><td colspan="3">加载中...</td></tr>
@@ -367,7 +367,7 @@
         </div>
 
         <div class="stats" id="statsPanel">
-            <div>📡 正在从服务器获取股票估值……</div>
+            <div>📡 正在从服务器获取虚拟股票估值……</div>
         </div>
     </div>
 </div>
@@ -509,7 +509,7 @@
             .select('market_value')
             .eq('id', companyId)
             .single();
-        if (!company) { alert('公司不存在'); return false; }
+        if (!company) { alert('虚拟公司不存在'); return false; }
         const newValue = company.market_value + amount;
         // 事务：更新公司市值、扣减用户余额、插入记录
         const { error: updateErr } = await supabaseClient
@@ -550,7 +550,7 @@
 
     // 破产
    async function bankruptCompany() {
-    if (!myCompany) { alert('您还没有公司'); return; }
+    if (!myCompany) { alert('您还没有虚拟公司'); return; }
     const companyId = myCompany.id;
     const companyName = myCompany.company_name;
     const currentValue = myCompany.market_value;
@@ -558,10 +558,10 @@
     let confirmMsg = '';
     if (currentValue >= 1000) {
         reward = 1000;
-        confirmMsg = `确定破产吗？公司将彻底删除（包括历史走势数据），您将获得 ${reward} NB币。`;
+        confirmMsg = `确定破产吗？您的虚拟公司将被彻底删除（任何痕迹都将不复存在），您将获得 ${reward} NB币。`;
     } else {
         reward = 0;
-        confirmMsg = `公司市值不足1000，破产无法获得NB币，但公司及历史数据会被彻底删除。确定吗？`;
+        confirmMsg = `您的虚拟公司市值不足1000，破产将无法获得NB币，但虚拟公司及历史数据会被彻底删除。确定吗？`;
     }
     if (!confirm(confirmMsg)) return;
 
@@ -624,9 +624,9 @@
         const newBalance = balance + reward;
         await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
         await fetchUserBalance();
-        alert(`破产成功！公司及历史数据已清除，您获得 ${reward} NB币。当前余额: ${newBalance}`);
+        alert(`破产成功！您的虚拟公司及历史数据已清除，您获得 ${reward} NB币。当前余额: ${newBalance}`);
     } else {
-        alert('破产成功！公司及历史数据已清除，您未获得NB币。');
+        alert('破产成功！您的虚拟公司及历史数据已清除，您未获得NB币。');
     }
 
     myCompany = null;
@@ -716,9 +716,9 @@
         }
         if (!myCompany) {
             container.innerHTML = `
-                <div>尚未注册公司</div>
-                <input type="text" id="newCompanyName" placeholder="公司名称" style="border-radius:30px; padding:6px 12px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--text-color);">
-                <button id="createCompanyBtn" class="company-btn">🏢 注册公司</button>
+                <div>尚未注册虚拟公司</div>
+                <input type="text" id="newCompanyName" placeholder="虚拟公司名称" style="border-radius:30px; padding:6px 12px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--text-color);">
+                <button id="createCompanyBtn" class="company-btn">🏢 注册虚拟公司</button>
             `;
             document.getElementById('createCompanyBtn')?.addEventListener('click', async () => {
                 const name = document.getElementById('newCompanyName').value.trim();
@@ -727,13 +727,13 @@
                     await fetchMyCompany();
                     await refreshStockDataFromDB();
                     renderMyCompanySection();
-                } else alert('创建失败，可能已存在公司或网络问题');
+                } else alert('创建失败，可能已存在虚拟公司或网络问题');
             });
             return;
         }
         container.innerHTML = `
-            <div><strong>🏢 ${escapeHtml(myCompany.company_name)}</strong> 市值: ${formatValue(myCompany.market_value)}</div>
-            <div><button id="bankruptBtn" class="company-btn danger-btn">💥 破产兑换</button></div>
+            <div><strong>🏢 ${escapeHtml(myCompany.company_name)}</strong> 虚拟市值: ${formatValue(myCompany.market_value)}</div>
+            <div><button id="bankruptBtn" class="company-btn danger-btn">💥 破产</button></div>
         `;
         document.getElementById('bankruptBtn')?.addEventListener('click', bankruptCompany);
     }
@@ -894,9 +894,9 @@
         const barColors = dataValues.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`);
         let chartConfig = null;
         if (type === 'bar') {
-            chartConfig = { type: 'bar', data: { labels, datasets: [{ label: '虚拟市值', data: dataValues, backgroundColor: barColors, borderColor: 'rgba(44,90,110,0.4)', borderWidth: 1, borderRadius: 6, barPercentage: 0.7, categoryPercentage: 0.85 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatValue(ctx.raw)}` }, backgroundColor: colors.tooltipBg, titleColor: colors.tooltipTitle }, legend: { position: 'top', labels: { font: { size: 12 }, color: colors.legendColor } } }, scales: { y: { beginAtZero: true, grid: { color: colors.gridColor }, title: { display: true, text: '市值 (点)', color: colors.titleColor }, ticks: { color: colors.tickColor, callback: v => formatValue(v) } }, x: { ticks: { color: colors.tickColor, maxRotation: 45, minRotation: 35, autoSkip: false, font: { size: 9 } }, title: { display: true, text: '股票名称', color: colors.titleColor } } } } };
+            chartConfig = { type: 'bar', data: { labels, datasets: [{ label: '虚拟市值', data: dataValues, backgroundColor: barColors, borderColor: 'rgba(44,90,110,0.4)', borderWidth: 1, borderRadius: 6, barPercentage: 0.7, categoryPercentage: 0.85 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatValue(ctx.raw)}` }, backgroundColor: colors.tooltipBg, titleColor: colors.tooltipTitle }, legend: { position: 'top', labels: { font: { size: 12 }, color: colors.legendColor } } }, scales: { y: { beginAtZero: true, grid: { color: colors.gridColor }, title: { display: true, text: '虚拟市值', color: colors.titleColor }, ticks: { color: colors.tickColor, callback: v => formatValue(v) } }, x: { ticks: { color: colors.tickColor, maxRotation: 45, minRotation: 35, autoSkip: false, font: { size: 9 } }, title: { display: true, text: '虚拟股票名称', color: colors.titleColor } } } } };
         } else if (type === 'line') {
-            chartConfig = { type: 'line', data: { labels, datasets: [{ label: '虚拟股票价值曲线', data: dataValues, borderColor: colors.borderColor, backgroundColor: document.body.classList.contains('dark-mode') ? 'rgba(59,130,246,0.1)' : 'rgba(44,90,110,0.08)', borderWidth: 3, pointRadius: 3.5, pointBackgroundColor: colors.pointBackground, pointBorderColor: '#ffffff', tension: 0.2, fill: true }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatValue(ctx.raw)}` }, backgroundColor: colors.tooltipBg, titleColor: colors.tooltipTitle }, legend: { position: 'top', labels: { font: { size: 12 }, color: colors.legendColor } } }, scales: { y: { beginAtZero: true, grid: { color: colors.gridColor }, title: { display: true, text: '市值', color: colors.titleColor }, ticks: { color: colors.tickColor, callback: v => formatValue(v) } }, x: { ticks: { color: colors.tickColor, maxRotation: 45, minRotation: 35, autoSkip: false, font: { size: 9 } }, title: { display: true, text: '股票名称', color: colors.titleColor } } } } };
+            chartConfig = { type: 'line', data: { labels, datasets: [{ label: '虚拟股票价值曲线', data: dataValues, borderColor: colors.borderColor, backgroundColor: document.body.classList.contains('dark-mode') ? 'rgba(59,130,246,0.1)' : 'rgba(44,90,110,0.08)', borderWidth: 3, pointRadius: 3.5, pointBackgroundColor: colors.pointBackground, pointBorderColor: '#ffffff', tension: 0.2, fill: true }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatValue(ctx.raw)}` }, backgroundColor: colors.tooltipBg, titleColor: colors.tooltipTitle }, legend: { position: 'top', labels: { font: { size: 12 }, color: colors.legendColor } } }, scales: { y: { beginAtZero: true, grid: { color: colors.gridColor }, title: { display: true, text: '虚拟市值', color: colors.titleColor }, ticks: { color: colors.tickColor, callback: v => formatValue(v) } }, x: { ticks: { color: colors.tickColor, maxRotation: 45, minRotation: 35, autoSkip: false, font: { size: 9 } }, title: { display: true, text: '虚拟股票名称', color: colors.titleColor } } } } };
         } else if (type === 'pie') {
             const fullLabels = rawData.names;
             const fullValues = rawData.values;
@@ -942,8 +942,8 @@
         } else {
             histogramChart = new Chart(ctx, {
                 type: 'bar',
-                data: { labels, datasets: [{ label: '股票数量', data: counts, backgroundColor: 'rgba(0,161,214,0.6)', borderColor: '#00a1d6', borderWidth: 1 }] },
-                options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw} 只` } }, legend: { position: 'top' } }, scales: { y: { beginAtZero: true, title: { display: true, text: '股票数量 (只)' }, ticks: { stepSize: 1 } }, x: { title: { display: true, text: '市值区间 (点)' }, ticks: { maxRotation: 45, autoSkip: true } } } }
+                data: { labels, datasets: [{ label: '虚拟股票数量', data: counts, backgroundColor: 'rgba(0,161,214,0.6)', borderColor: '#00a1d6', borderWidth: 1 }] },
+                options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw} 只` } }, legend: { position: 'top' } }, scales: { y: { beginAtZero: true, title: { display: true, text: '虚拟股票数量' }, ticks: { stepSize: 1 } }, x: { title: { display: true, text: '虚拟市值区间' }, ticks: { maxRotation: 45, autoSkip: true } } } }
             });
         }
     }
@@ -1016,7 +1016,7 @@
             totalHistoryChart.update();
         } else {
             const ctx = document.getElementById('totalHistoryChart').getContext('2d');
-            totalHistoryChart = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: '总市值', data: totals, borderColor: '#00a1d6', backgroundColor: 'rgba(0,161,214,0.1)', fill: true, tension: 0.2 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `总市值: ${formatValue(ctx.raw)}` } } } } });
+            totalHistoryChart = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: '总虚拟市值', data: totals, borderColor: '#00a1d6', backgroundColor: 'rgba(0,161,214,0.1)', fill: true, tension: 0.2 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `总虚拟市值: ${formatValue(ctx.raw)}` } } } } });
         }
     }
     function toggleFullscreen(element) {
@@ -1083,8 +1083,8 @@
             totalChangeHtml = `<div class="stat-card"><span class="stat-label">📊 总市值变化</span><span class="stat-value ${totalDiff >= 0 ? 'change-up' : 'change-down'}">${totalDiff >= 0 ? '▲' : '▼'} ${Math.abs(totalPercent)}%</span></div>`;
         }
         document.getElementById('statsPanel').innerHTML = `
-            <div class="stat-card"><span class="stat-label">🏦 虚拟股票数</span><span class="stat-value">${vals.length}</span></div>
-            <div class="stat-card"><span class="stat-label">💰 总值</span><span class="stat-value">${formatValue(sum)}</span></div>
+            <div class="stat-card"><span class="stat-label">🏦 总虚拟股票数</span><span class="stat-value">${vals.length}</span></div>
+            <div class="stat-card"><span class="stat-label">💰 虚拟总值</span><span class="stat-value">${formatValue(sum)}</span></div>
             <div class="stat-card"><span class="stat-label">🏆 最高价股</span><span class="stat-value">${escapeHtml(names[maxIdx])} : ${formatValue(max)}</span></div>
             <div class="stat-card"><span class="stat-label">📉 最低价股</span><span class="stat-value">${escapeHtml(names[minIdx])} : ${formatValue(min)}</span></div>
             <div class="stat-card"><span class="stat-label">📊 平均估值</span><span class="stat-value">${formatValue(avg)}</span></div>
@@ -1141,7 +1141,7 @@
     async function initUserAndData() {
         const user = await fetchCurrentUser();
         if (user) {
-            document.getElementById('userStatusSpan').innerHTML = `欢迎，${escapeHtml(user.username)} <button id="logoutBtn" style="background:none; border:none; color:var(--status-border); cursor:pointer;">退出</button>`;
+            document.getElementById('userStatusSpan').innerHTML = `欢迎，${escapeHtml(user.username)} <button id="logoutBtn" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登出</button>`;
             document.getElementById('logoutBtn')?.addEventListener('click', () => { localStorage.removeItem('nb_user'); location.reload(); });
             await fetchUserBalance();
             await fetchMyCompany();
