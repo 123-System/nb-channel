@@ -527,6 +527,7 @@
         await fetchUserBalance();
         await fetchAllCompanies();
         await refreshStockDataFromDB();  // 刷新图表数据
+        await buildChartWithFade(currentChartType);
         alert(`成功支持 ${amount} NB币`);
         return true;
     }
@@ -1082,6 +1083,7 @@
             await fetchAllCompanies();
             renderMyCompanySection();
             await refreshStockDataFromDB();
+            await buildChartWithFade(currentChartType); 
             startAutoRefreshTimer();
             startAutoSupportWatcher();
         } else {
