@@ -10,6 +10,7 @@
     <style>
         body { background: var(--bg-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
         .login-card { max-width: 400px; width: 100%; background: var(--card-bg); border-radius: 24px; padding: 30px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .card-title { text-align: center; margin-bottom: 20px; font-size: 1.5rem; font-weight: 600; color: var(--status-border); }
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--card-border); }
         .tab { padding: 8px 20px; cursor: pointer; background: none; border: none; font-size: 1.1rem; color: var(--text-color); }
         .tab.active { color: var(--status-border); border-bottom: 2px solid var(--status-border); }
@@ -17,14 +18,13 @@
         input { width: 100%; padding: 10px; border-radius: 30px; border: 1px solid var(--card-border); background: var(--bg-color); color: var(--text-color); }
         button { width: 100%; padding: 10px; border-radius: 30px; background: var(--nav-btn-hover-bg); color: white; border: none; cursor: pointer; }
         .error { color: #ff6b6b; font-size: 0.85rem; margin-top: 8px; text-align: center; }
-        .success { color: #4caf50; }
         .back-link { text-align: center; margin-top: 20px; }
         .back-link a { color: var(--status-border); text-decoration: none; }
     </style>
 </head>
 <body>
 <div class="login-card">
-    <div class="card-title">📺 NB频道 · 登录/注册</div>
+    <div class="card-title">📺 NB频道 · 登录注册</div>
     <div class="tabs">
         <button id="loginTab" class="tab active">登录</button>
         <button id="registerTab" class="tab">注册</button>
@@ -73,10 +73,8 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // 获取重定向地址（如果有）
     const redirectUrl = new URLSearchParams(window.location.search).get('redirect');
 
-    // 切换标签
     const loginTab = document.getElementById('loginTab');
     const registerTab = document.getElementById('registerTab');
     const loginForm = document.getElementById('loginForm');
@@ -95,13 +93,11 @@
         loginForm.style.display = 'none';
     };
 
-    // 检查 URL 参数，如果带有 ?register=1 则默认显示注册
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('register') === '1') {
         registerTab.click();
     }
 
-    // 获取IP（注册用）
     async function getClientIP() {
         const services = ['https://icanhazip.com', 'https://api.ipify.org?format=text'];
         for (const url of services) {
@@ -113,7 +109,6 @@
         throw new Error('无法获取IP地址');
     }
 
-    // 注册
     async function register(username, password, password2) {
         if (password !== password2) throw new Error('两次输入的密码不一致');
         if (password.length < 4) throw new Error('密码长度至少4位');
@@ -128,7 +123,6 @@
         return userId;
     }
 
-    // 登录
     async function login(username, password) {
         const { data: userId, error } = await supabaseClient.rpc('login_user', { input_username: username, input_password: password });
         if (error) throw new Error(error.message);
@@ -139,17 +133,15 @@
         return profile;
     }
 
-    // 登录/注册成功后跳转
     function onLoginSuccess(user) {
         localStorage.setItem('nb_user', JSON.stringify({ id: user.id, username: user.username }));
         if (redirectUrl) {
             window.location.href = redirectUrl;
         } else {
-            window.location.href = 'Virtual stock.html'; // 默认跳转
+            window.location.href = 'Virtual stock.html';
         }
     }
 
-    // 登录按钮
     document.getElementById('doLogin').onclick = async () => {
         const username = document.getElementById('loginUsername').value.trim();
         const password = document.getElementById('loginPassword').value;
@@ -162,7 +154,6 @@
         }
     };
 
-    // 注册按钮
     document.getElementById('doRegister').onclick = async () => {
         const username = document.getElementById('regUsername').value.trim();
         const password = document.getElementById('regPassword').value;
@@ -170,7 +161,6 @@
         const errorDiv = document.getElementById('regError');
         try {
             await register(username, password, password2);
-            // 注册成功后自动登录
             const user = await login(username, password);
             onLoginSuccess(user);
         } catch (err) {
