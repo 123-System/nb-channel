@@ -115,13 +115,12 @@
         }
         .refresh-btn.loading .spinner { visibility: visible; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .pause-btn, .interval-btn {
+        .pause-btn {
             background: var(--nav-btn-hover-bg); color: white; border: none;
             padding: 8px 20px; border-radius: 40px; cursor: pointer; transition: 0.2s;
         }
-        .pause-btn:hover, .interval-btn:hover { filter: brightness(0.9); transform: scale(0.96); }
+        .pause-btn:hover { filter: brightness(0.9); transform: scale(0.96); }
         .pause-btn { background: #6c757d; }
-        .interval-btn { background: #17a2b8; }
         
         .data-table-wrapper { margin-top: 20px; overflow-x: auto; }
         .search-box { margin-bottom: 12px; display: flex; justify-content: flex-end; }
@@ -221,7 +220,7 @@
             .canvas-container { min-height: 400px; }
             canvas { max-height: 400px; }
             .chart-btn { padding: 6px 16px; font-size: 0.8rem; }
-            .refresh-btn, .pause-btn, .interval-btn, .toggle-table-btn {
+            .refresh-btn, .pause-btn, .toggle-table-btn {
                 padding: 4px 16px; font-size: 0.75rem;
             }
             .slider-container { flex-wrap: wrap; justify-content: center; }
@@ -302,12 +301,6 @@
                 <span>🔄 立即刷新</span>
             </button>
             <button class="pause-btn" id="pauseRefreshBtn">⏸️ 暂停刷新</button>
-            <select id="intervalSelect" class="interval-btn" style="background: #17a2b8; padding: 6px 12px;">
-                <option value="5">5秒</option>
-                <option value="10" selected>10秒</option>
-                <option value="30">30秒</option>
-                <option value="60">60秒</option>
-            </select>
         </div>
 
         <div class="chart-wrapper">
@@ -1299,13 +1292,6 @@
             updateCountdownDisplay();
         }
     }
-    function changeRefreshInterval() {
-        const select = document.getElementById('intervalSelect');
-        const newSeconds = parseInt(select.value);
-        refreshInterval = newSeconds * 1000;
-        if (autoRefreshEnabled) { startAutoRefreshTimer(); resetCountdown(); }
-        updateTimestamp('success');
-    }
     function handleVisibilityChange() {
         if (document.hidden) {
             if (autoRefreshTimer) clearInterval(autoRefreshTimer);
@@ -1321,7 +1307,6 @@
     document.getElementById('pieBtn')?.addEventListener('click', () => setChartType('pie'));
     document.getElementById('refreshDataBtn')?.addEventListener('click', manualRefresh);
     document.getElementById('pauseRefreshBtn')?.addEventListener('click', toggleAutoRefresh);
-    document.getElementById('intervalSelect')?.addEventListener('change', changeRefreshInterval);
     document.getElementById('toggleTableBtn')?.addEventListener('click', toggleTable);
     document.getElementById('xAxisSlider')?.addEventListener('input', onSliderChange);
     document.getElementById('fullViewBtn')?.addEventListener('click', toggleFullView);
