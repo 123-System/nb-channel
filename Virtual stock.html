@@ -1217,7 +1217,6 @@
     await loadFullHistory();
     // 未登录不需要启动定时器
 }
-
     function startAutoSupportWatcher() {
         if (autoSupportTimer) clearInterval(autoSupportTimer);
         autoSupportTimer = setInterval(() => { checkAutoSupportRules(); }, 30000);
