@@ -558,11 +558,10 @@
 
     async function supportCompany(companyId, amount) {
         if (!currentUserId) return false;
-        const balance = await fetchUserBalance();
-        if (balance < amount) {
-            await showMessage('提示', 'NB币不足，无法支持');
-            return false;
-        }
+    if (amount > 2000) {
+        await showMessage('提示', '单次手动支持金额不能超过2000 NB币');
+        return false;
+    }
         const { data: company } = await supabaseClient
             .from('user_companies')
             .select('market_value')
@@ -592,6 +591,10 @@
 
     async function setAutoSupportRule(companyId, threshold, amount) {
         if (!currentUserId) return false;
+    if (amount > 500) {
+        await showMessage('提示', '自动支持金额不能超过500 NB币');
+        return false;
+    }
         await supabaseClient.from('support_rules').delete().eq('user_id', currentUserId).eq('company_id', companyId);
         const { error } = await supabaseClient.from('support_rules').insert({
             user_id: currentUserId,
@@ -691,24 +694,32 @@
     }
 
     async function checkAutoSupportRules() {
-        if (!currentUserId) return;
-        const { data: rules, error } = await supabaseClient
-            .from('support_rules')
-            .select('id, company_id, threshold, amount')
-            .eq('user_id', currentUserId);
-        if (error || !rules.length) return;
-        for (const rule of rules) {
-            const { data: company } = await supabaseClient
-                .from('user_companies')
-                .select('market_value')
-                .eq('id', rule.company_id)
-                .single();
-            if (company && company.market_value < rule.threshold) {
-                await supportCompany(rule.company_id, rule.amount);
-                await new Promise(r => setTimeout(r, 3000));
+    if (!currentUserId) return;
+    const { data: rules, error } = await supabaseClient
+        .from('support_rules')
+        .select('id, company_id, threshold, amount')
+        .eq('user_id', currentUserId);
+    if (error || !rules.length) return;
+    for (const rule of rules) {
+        const { data: company } = await supabaseClient
+            .from('user_companies')
+            .select('market_value')
+            .eq('id', rule.company_id)
+            .single();
+        if (company && company.market_value < rule.threshold) {
+            const balance = await fetchUserBalance();
+            if (balance >= rule.amount && rule.amount <= 500) {
+                // 静默执行自动支持（不弹窗）
+                await supportCompany(rule.company_id, rule.amount, true);
+                await new Promise(r => setTimeout(r, 1000)); // 避免过于频繁
+            } else {
+                // 余额不足或金额超限，自动删除该规则
+                await supabaseClient.from('support_rules').delete().eq('id', rule.id);
+                console.log(`自动支持规则已删除：余额不足或金额超限 (rule ${rule.id})`);
             }
         }
     }
+}
 
     async function refreshStockDataFromDB() {
         const companies = await fetchAllCompanies();
@@ -776,51 +787,62 @@
     }
 
     function showSupportDialog() {
-        if (!currentUserId) { showMessage('提示', '请先登录'); return; }
-        const companyOptions = allCompanies.map(c => `<option value="${c.id}">${escapeHtml(c.company_name)} (市值: ${formatValue(c.market_value)})</option>`).join('');
-        const html = `
-            <div id="customDialog" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--card-bg); border-radius:24px; padding:24px; z-index:1001; width:90%; max-width:400px; box-shadow:0 10px 30px rgba(0,0,0,0.3); border:1px solid var(--card-border);">
-                <h3>支持虚拟公司</h3>
+    if (!currentUserId) { showMessage('提示', '请先登录'); return; }
+    const companyOptions = allCompanies.map(c => `<option value="${c.id}">${escapeHtml(c.company_name)} (市值: ${formatValue(c.market_value)})</option>`).join('');
+    const html = `
+        <div id="customDialog" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--card-bg); border-radius:24px; padding:24px; z-index:1001; width:90%; max-width:450px; box-shadow:0 10px 30px rgba(0,0,0,0.3); border:1px solid var(--card-border);">
+            <h3>支持虚拟公司</h3>
+            <!-- 手动支持区域 -->
+            <div style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--card-border);">
+                <h4>💰 手动支持</h4>
                 <select id="supportCompanySelect" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">${companyOptions}</select>
-                <input id="supportAmount" type="number" placeholder="支持金额 (NB币)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
-                <div style="margin:10px 0;">
-                    <label><input type="checkbox" id="enableAutoSupport"> 自动支持规则</label>
-                </div>
-                <div id="autoRuleOptions" style="display:none;">
-                    <input id="thresholdValue" type="number" placeholder="市值低于 (阈值)" style="width:100%; padding:8px; margin:5px 0; border-radius:30px;">
-                    <input id="autoAmount" type="number" placeholder="每次自动支持金额" style="width:100%; padding:8px; margin:5px 0; border-radius:30px;">
-                </div>
-                <div style="display:flex; gap:10px; margin-top:20px;">
-                    <button id="confirmSupportBtn" class="company-btn">确认支持</button>
-                    <button id="closeDialogBtn" class="company-btn">取消</button>
-                </div>
+                <input id="supportAmount" type="number" placeholder="支持金额 (NB币，不超过2000)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
+                <button id="confirmSupportBtn" class="company-btn" style="width:100%;">确认支持</button>
             </div>
-            <div id="dialogOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;"></div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', html);
-        const autoCheckbox = document.getElementById('enableAutoSupport');
-        const autoOptions = document.getElementById('autoRuleOptions');
-        autoCheckbox.addEventListener('change', (e) => { autoOptions.style.display = e.target.checked ? 'block' : 'none'; });
-        document.getElementById('confirmSupportBtn').onclick = async () => {
-            const companyId = parseInt(document.getElementById('supportCompanySelect').value);
-            const amount = parseInt(document.getElementById('supportAmount').value);
-            if (isNaN(amount) || amount <= 0) { await showMessage('提示', '请输入有效的支持金额'); return; }
-            const success = await supportCompany(companyId, amount);
-            if (success && autoCheckbox.checked) {
-                const threshold = parseInt(document.getElementById('thresholdValue').value);
-                const autoAmount = parseInt(document.getElementById('autoAmount').value);
-                if (!isNaN(threshold) && !isNaN(autoAmount) && autoAmount > 0) {
-                    await setAutoSupportRule(companyId, threshold, autoAmount);
-                }
-            }
-            document.getElementById('customDialog')?.remove();
-            document.getElementById('dialogOverlay')?.remove();
-        };
-        document.getElementById('closeDialogBtn').onclick = () => {
-            document.getElementById('customDialog')?.remove();
-            document.getElementById('dialogOverlay')?.remove();
-        };
+            <!-- 自动支持规则区域 -->
+            <div>
+                <h4>⚙️ 自动支持规则</h4>
+                <select id="autoCompanySelect" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">${companyOptions}</select>
+                <input id="thresholdValue" type="number" placeholder="市值低于 (阈值)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
+                <input id="autoAmount" type="number" placeholder="每次自动支持金额 (不超过500)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
+                <button id="setAutoRuleBtn" class="company-btn" style="width:100%;">设置自动支持规则</button>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button id="closeDialogBtn" class="company-btn" style="flex:1;">取消</button>
+            </div>
+        </div>
+        <div id="dialogOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;"></div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', html);
+    
+    // 手动支持按钮
+    document.getElementById('confirmSupportBtn').onclick = async () => {
+        const companyId = parseInt(document.getElementById('supportCompanySelect').value);
+        const amount = parseInt(document.getElementById('supportAmount').value);
+        if (isNaN(amount) || amount <= 0) { await showMessage('提示', '请输入有效的支持金额'); return; }
+        if (amount > 2000) { await showMessage('提示', '单次手动支持金额不能超过2000 NB币'); return; }
+        await supportCompany(companyId, amount);
+        closeDialog();
+    };
+    
+    // 设置自动规则按钮
+    document.getElementById('setAutoRuleBtn').onclick = async () => {
+        const companyId = parseInt(document.getElementById('autoCompanySelect').value);
+        const threshold = parseInt(document.getElementById('thresholdValue').value);
+        const autoAmount = parseInt(document.getElementById('autoAmount').value);
+        if (isNaN(threshold) || threshold <= 0) { await showMessage('提示', '请输入有效的阈值'); return; }
+        if (isNaN(autoAmount) || autoAmount <= 0) { await showMessage('提示', '请输入有效的自动支持金额'); return; }
+        if (autoAmount > 500) { await showMessage('提示', '自动支持金额不能超过500 NB币'); return; }
+        await setAutoSupportRule(companyId, threshold, autoAmount);
+        closeDialog();
+    };
+    
+    function closeDialog() {
+        document.getElementById('customDialog')?.remove();
+        document.getElementById('dialogOverlay')?.remove();
     }
+    document.getElementById('closeDialogBtn').onclick = closeDialog;
+}
 
     // ========== 原有图表辅助函数（保留） ==========
     function formatValue(num) {
