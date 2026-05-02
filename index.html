@@ -12,172 +12,94 @@
     <!-- 不蒜子脚本 -->
     <script async src="https://events.vercount.one/js"></script>
     <style>
-        /* 原有样式保持不变，仅增加新样式 */
-        .nav-container {
-            margin-bottom: 30px;
-        }
-        .nav-links {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        .nav-actions {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
+        /* 原有样式不变，仅修改用户区域 */
+        .nav-container { margin-bottom: 30px; }
+        .nav-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
+        .nav-actions { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
         .share-btn {
-            background: var(--nav-btn-bg);
-            color: var(--nav-btn-text);
-            border: none;
-            border-radius: 30px;
-            padding: 10px 25px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
-            min-width: 90px;
+            background: var(--nav-btn-bg); color: var(--nav-btn-text);
+            border: none; border-radius: 30px; padding: 10px 25px; font-size: 1.1rem;
+            cursor: pointer; transition: 0.2s; font-weight: 500; min-width: 90px;
         }
-        .share-btn:hover {
-            background: var(--nav-btn-hover-bg);
-            color: var(--nav-btn-hover-text);
-        }
-        .stats-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            gap: 15px;
-            margin-top: 20px;
-        }
+        .share-btn:hover { background: var(--nav-btn-hover-bg); color: var(--nav-btn-hover-text); }
+        .stats-container { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
         @media (max-width: 600px) {
-            .nav-links .nav-btn {
-                padding: 8px 16px;
-                font-size: 1rem;
-            }
-            .share-btn {
-                padding: 8px 16px;
-                font-size: 1rem;
-                min-width: auto;
-            }
+            .nav-links .nav-btn { padding: 8px 16px; font-size: 1rem; }
+            .share-btn { padding: 8px 16px; font-size: 1rem; min-width: auto; }
         }
         .home-card {
-            background: var(--about-bg);
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            text-align: center;
-            font-size: 1.2rem;
-            line-height: 1.8;
-            color: var(--about-text);
+            background: var(--about-bg); border-radius: 12px; padding: 40px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-align: center;
+            font-size: 1.2rem; line-height: 1.8; color: var(--about-text);
             margin-bottom: 30px;
         }
-        .home-card:last-child {
-            margin-bottom: 0;
-        }
-        .home-row {
-            display: flex;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-        .home-row .home-card {
-            flex: 1;
-            margin-bottom: 0;
-        }
-        @media (max-width: 600px) {
-            .home-row {
-                flex-direction: column;
-                gap: 30px;
-            }
-        }
-        .video-container {
-            margin-bottom: 30px;
-        }
-        .fixed-buttons {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            z-index: 100;
-        }
+        .home-card:last-child { margin-bottom: 0; }
+        .home-row { display: flex; gap: 30px; margin-bottom: 30px; }
+        .home-row .home-card { flex: 1; margin-bottom: 0; }
+        @media (max-width: 600px) { .home-row { flex-direction: column; gap: 30px; } }
+        .video-container { margin-bottom: 30px; }
+        .fixed-buttons { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 100; }
         .theme-toggle-fixed {
-            background: var(--nav-btn-bg);
-            color: var(--nav-btn-text);
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 24px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: var(--nav-btn-bg); color: var(--nav-btn-text);
+            border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
-        .theme-toggle-fixed:hover {
-            background: var(--nav-btn-hover-bg);
-            color: var(--nav-btn-hover-text);
-        }
+        .theme-toggle-fixed:hover { background: var(--nav-btn-hover-bg); color: var(--nav-btn-hover-text); }
         .back-to-top {
-            background: var(--nav-btn-bg);
-            color: var(--nav-btn-text);
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
-            border: 1px solid var(--card-border);
-            transition: all 0.2s;
-            opacity: 0;
-            visibility: hidden;
+            background: var(--nav-btn-bg); color: var(--nav-btn-text);
+            width: 50px; height: 50px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 24px;
+            cursor: pointer; border: 1px solid var(--card-border); transition: 0.2s;
+            opacity: 0; visibility: hidden;
         }
-        .back-to-top.show {
-            opacity: 1;
-            visibility: visible;
-        }
-        .back-to-top:hover {
-            background: var(--nav-btn-hover-bg);
-            color: var(--nav-btn-hover-text);
-        }
+        .back-to-top.show { opacity: 1; visibility: visible; }
+        .back-to-top:hover { background: var(--nav-btn-hover-bg); color: var(--nav-btn-hover-text); }
         @media (max-width: 600px) {
-            .fixed-buttons {
-                bottom: 20px;
-                right: 20px;
-                gap: 10px;
-            }
-            .theme-toggle-fixed, .back-to-top {
-                width: 40px;
-                height: 40px;
-                font-size: 20px;
-            }
+            .fixed-buttons { bottom: 20px; right: 20px; gap: 10px; }
+            .theme-toggle-fixed, .back-to-top { width: 40px; height: 40px; font-size: 20px; }
         }
-        /* NB币余额和登录按钮区域 */
+        /* 用户区域新样式：垂直排列 */
         .user-area {
             position: absolute;
             top: 20px;
             right: 20px;
-            display: flex;
-            gap: 12px;
-            align-items: center;
             background: var(--card-bg);
-            padding: 6px 16px;
             border-radius: 40px;
+            padding: 10px 20px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            min-width: 120px;
+            text-align: center;
         }
         .balance-display {
-            font-size: 0.9rem;
+            font-size: 1rem;
             font-weight: bold;
             color: var(--status-border);
+        }
+        .checkin-btn {
+            background: var(--nav-btn-hover-bg);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 6px 16px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+        }
+        .checkin-btn:disabled {
+            background: #aaa;
+            cursor: not-allowed;
+        }
+        .next-bonus {
+            font-size: 0.7rem;
+            color: var(--count-text);
+            margin-top: 4px;
         }
         .auth-btn {
             background: var(--nav-btn-bg);
@@ -188,6 +110,7 @@
             font-size: 0.85rem;
             cursor: pointer;
             transition: 0.2s;
+            width: 100%;
         }
         .auth-btn:hover {
             background: var(--nav-btn-hover-bg);
@@ -196,25 +119,25 @@
         @media (max-width: 600px) {
             .user-area {
                 position: static;
-                display: flex;
-                justify-content: center;
-                margin-bottom: 15px;
+                margin: 0 auto 15px auto;
                 width: fit-content;
-                margin-left: auto;
-                margin-right: auto;
             }
-            .container {
-                position: relative;
-            }
+            .container { position: relative; }
         }
     </style>
 </head>
 <body>
     <script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
     <div class="container">
-        <!-- 用户区域：余额 + 登录/退出按钮 -->
+        <!-- 用户区域 -->
         <div id="userArea" class="user-area">
-            <span id="balanceDisplay" class="balance-display">💰 NB币: --</span>
+            <div>
+                <span id="balanceDisplay" class="balance-display">💰 NB币: --</span>
+            </div>
+            <div id="checkinSection" style="display: none;">
+                <button id="checkinBtn" class="checkin-btn">📅 签到</button>
+                <div id="nextBonusText" class="next-bonus">明天签到: +? NB</div>
+            </div>
             <button id="authButton" class="auth-btn">登录/注册</button>
         </div>
 
@@ -350,19 +273,32 @@
             }
         });
 
-        // ---------- NB币余额与登录按钮 ----------
+        // ---------- NB币余额与登录、签到 ----------
         (async function initUserArea() {
             const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
             const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             const balanceSpan = document.getElementById('balanceDisplay');
             const authBtn = document.getElementById('authButton');
+            const checkinSection = document.getElementById('checkinSection');
+            const checkinBtn = document.getElementById('checkinBtn');
+            const nextBonusSpan = document.getElementById('nextBonusText');
             if (!balanceSpan || !authBtn) return;
 
             function getCurrentUser() {
                 const stored = localStorage.getItem('nb_user');
                 if (!stored) return null;
                 try { return JSON.parse(stored); } catch(e) { return null; }
+            }
+
+            // 获取签到状态（今日是否已签到，以及下次奖励）
+            async function fetchCheckinStatus(userId) {
+                const { data, error } = await supabaseClient.rpc('get_checkin_status', { p_user_id: userId });
+                if (error) {
+                    console.error('获取签到状态失败', error);
+                    return { canCheckin: true, nextBonus: 10 };
+                }
+                return data;
             }
 
             async function updateUI() {
@@ -374,23 +310,74 @@
                         const redirect = encodeURIComponent(window.location.href);
                         window.location.href = `login.html?redirect=${redirect}`;
                     };
+                    checkinSection.style.display = 'none';
                     return;
                 }
                 // 已登录，获取余额
-                const { data, error } = await supabaseClient
+                const { data: profile, error: profileError } = await supabaseClient
                     .from('profiles')
                     .select('nb_balance')
                     .eq('id', user.id)
                     .single();
-                if (error || data === null) {
+                if (profileError || !profile) {
                     balanceSpan.innerHTML = '💰 NB币: --';
                 } else {
-                    balanceSpan.innerHTML = `💰 NB币: ${data.nb_balance}`;
+                    balanceSpan.innerHTML = `💰 NB币: ${profile.nb_balance}`;
                 }
+                
+                // 获取签到状态
+                const { data: statusData, error: statusError } = await supabaseClient
+                    .rpc('get_checkin_status', { p_user_id: user.id });
+                let canCheckin = true;
+                let nextBonus = 10;
+                if (!statusError && statusData) {
+                    canCheckin = statusData.can_checkin;
+                    nextBonus = statusData.next_bonus;
+                }
+                
+                checkinSection.style.display = 'block';
+                if (canCheckin) {
+                    checkinBtn.disabled = false;
+                    checkinBtn.innerHTML = '📅 签到';
+                    nextBonusSpan.innerHTML = `✨ 明天签到: +${nextBonus} NB`;
+                } else {
+                    checkinBtn.disabled = true;
+                    checkinBtn.innerHTML = '✅ 今日已签到';
+                    nextBonusSpan.innerHTML = `✨ 明天签到: +${nextBonus} NB`;
+                }
+                
                 authBtn.innerHTML = '退出';
                 authBtn.onclick = () => {
                     localStorage.removeItem('nb_user');
                     location.reload();
+                };
+            }
+
+            // 签到操作
+            async function doCheckin(userId) {
+                const { data, error } = await supabaseClient.rpc('do_check_in', { p_user_id: userId });
+                if (error) {
+                    alert('签到失败: ' + error.message);
+                    return;
+                }
+                if (data && data.success === false) {
+                    alert(data.message);
+                    return;
+                }
+                alert(`签到成功！获得 ${data.reward} NB币，连续签到 ${data.consecutive} 天。`);
+                // 刷新页面以更新余额和签到状态
+                location.reload();
+            }
+
+            // 绑定签到按钮事件
+            if (checkinBtn) {
+                checkinBtn.onclick = async () => {
+                    const user = getCurrentUser();
+                    if (!user) {
+                        alert('请先登录');
+                        return;
+                    }
+                    await doCheckin(user.id);
                 };
             }
 
