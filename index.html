@@ -167,11 +167,43 @@
                 font-size: 20px;
             }
         }
+        /* 新增：NB币余额显示样式 */
+        .nb-balance-area {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--count-bg);
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: var(--status-border);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 200;
+        }
+        .nb-balance-area a {
+            color: var(--status-border);
+            text-decoration: none;
+        }
+        @media (max-width: 600px) {
+            .nb-balance-area {
+                position: static;
+                display: inline-block;
+                margin-bottom: 10px;
+                text-align: center;
+            }
+            .container {
+                position: relative;
+            }
+        }
     </style>
 </head>
 <body>
     <script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
     <div class="container">
+        <!-- NB币余额显示区域（固定在右上角） -->
+        <div id="nbBalanceDisplay" class="nb-balance-area">💰 NB币: --</div>
+
         <h1>📺 NB频道官网</h1>
         <div class="author-info" id="authorInfo">UP主：NB搞事局</div>
 
@@ -314,6 +346,49 @@
                 }
             }
         });
+
+        // ---------- NB币余额显示逻辑 ----------
+        (async function initNBBalance() {
+            const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
+            const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            const container = document.getElementById('nbBalanceDisplay');
+            if (!container) return;
+
+            function getCurrentUser() {
+                const stored = localStorage.getItem('nb_user');
+                if (!stored) return null;
+                try { return JSON.parse(stored); } catch(e) { return null; }
+            }
+
+            async function updateBalance() {
+                const user = getCurrentUser();
+                if (!user) {
+                    const redirect = encodeURIComponent(window.location.href);
+                    container.innerHTML = `<a href="login.html?redirect=${redirect}">登录</a> / <a href="login.html?register=1&redirect=${redirect}">注册</a>`;
+                    return;
+                }
+                // 已登录，从 Supabase 获取余额
+                const { data, error } = await supabaseClient
+                    .from('profiles')
+                    .select('nb_balance')
+                    .eq('id', user.id)
+                    .single();
+                if (error || data === null) {
+                    container.innerHTML = `💰 NB币: --`;
+                    return;
+                }
+                container.innerHTML = `💰 NB币: ${data.nb_balance}`;
+            }
+            await updateBalance();
+
+            // 监听 localStorage 变化（例如在其它页面登录后跳转过来）
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'nb_user') {
+                    updateBalance();
+                }
+            });
+        })();
     </script>
 </body>
 </html>
