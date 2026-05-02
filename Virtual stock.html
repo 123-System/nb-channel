@@ -1138,11 +1138,11 @@
     isLoading = true;
     updateTimestamp('loading');
     try {
-        // 1. 调用后端 RPC 随机波动市值（完全后端控制）
+        // 1. 调用后端 RPC 随机波动所有公司市值（完全后端控制）
         const { error: rpcError } = await supabaseClient.rpc('random_fluctuate_market_values');
         if (rpcError) throw rpcError;
         
-        // 2. 重新加载数据（从数据库读取最新值）
+        // 2. 重新从数据库加载最新公司数据并刷新界面
         await refreshStockDataFromDB();
         await loadPreviousSnapshot();
         
@@ -1190,28 +1190,29 @@
         startAutoRefreshTimer();
         startAutoSupportWatcher();
     } else {
-    const redirectUrl = encodeURIComponent(window.location.href);
-    document.getElementById('userStatusSpan').innerHTML = `未登录 <a href="login.html?redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
-    // 未登录也加载公司数据并显示图表（只读）
-    const companies = await fetchAllCompanies();
-    if (companies.length) {
-        rawData.names = companies.map(c => c.company_name);
-        rawData.values = companies.map(c => c.market_value);
-        totalStocks = rawData.names.length;
-        const combined = rawData.names.map((name, idx) => ({ name, value: rawData.values[idx] }));
-        combined.sort((a, b) => b.value - a.value);
-        sortedCombined = combined;
-        updateStatsPanel(rawData.values.reduce((a,b)=>a+b,0));
-        updateDataTable();
-        updateMiniPieChart();
-        updateHistogramChart();
-        await buildChartWithFade(currentChartType);
+        const redirectUrl = encodeURIComponent(window.location.href);
+        document.getElementById('userStatusSpan').innerHTML = `未登录 <a href="login.html?redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
+        // 未登录也加载公司数据并显示图表（只读）
+        const companies = await fetchAllCompanies();
+        if (companies.length) {
+            rawData.names = companies.map(c => c.company_name);
+            rawData.values = companies.map(c => c.market_value);
+            totalStocks = rawData.names.length;
+            const combined = rawData.names.map((name, idx) => ({ name, value: rawData.values[idx] }));
+            combined.sort((a, b) => b.value - a.value);
+            sortedCombined = combined;
+            updateStatsPanel(rawData.values.reduce((a,b)=>a+b,0));
+            updateDataTable();
+            updateMiniPieChart();
+            updateHistogramChart();
+            await buildChartWithFade(currentChartType);
+        }
+        // 加载历史数据（用于走势图）
+        await loadFullHistory();
+        // 未登录也启动自动刷新（只更新数据，不能操作）
+        startAutoRefreshTimer();
     }
-    // 加载历史数据（用于走势图）
-    await loadFullHistory();
-    // 未登录不需要启动定时器
-    }
- }
+}
     function startAutoSupportWatcher() {
         if (autoSupportTimer) clearInterval(autoSupportTimer);
         autoSupportTimer = setInterval(() => { checkAutoSupportRules(); }, 30000);
