@@ -13,7 +13,7 @@
             background: var(--bg-color);
         }
         .profile-container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
             background: var(--card-bg);
             border-radius: 32px;
@@ -24,6 +24,13 @@
             text-align: center;
             margin-bottom: 30px;
             color: var(--status-border);
+        }
+        h2 {
+            font-size: 1.2rem;
+            margin: 20px 0 15px 0;
+            color: var(--status-border);
+            border-left: 4px solid var(--status-border);
+            padding-left: 12px;
         }
         .info-card {
             background: var(--count-bg);
@@ -67,7 +74,6 @@
             cursor: pointer;
             font-size: 1rem;
             transition: 0.2s;
-            width: 100%;
         }
         button:hover {
             filter: brightness(0.9);
@@ -90,6 +96,41 @@
             margin: 20px 0;
             border-color: var(--card-border);
         }
+        /* 自动支持规则表格样式 */
+        .rules-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .rules-table th, .rules-table td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .rules-table th {
+            font-weight: 600;
+            color: var(--status-border);
+        }
+        .rule-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .rule-actions button {
+            padding: 4px 12px;
+            font-size: 0.8rem;
+        }
+        .edit-rule {
+            background: #17a2b8;
+        }
+        .delete-rule {
+            background: #dc3545;
+        }
+        .no-rules {
+            text-align: center;
+            padding: 20px;
+            color: var(--count-text);
+        }
     </style>
 </head>
 <body>
@@ -106,7 +147,7 @@
         </div>
     </div>
 
-    <h2 style="margin-bottom: 15px;">修改用户名</h2>
+    <h2>修改用户名</h2>
     <div class="form-group">
         <input type="text" id="newUsername" placeholder="新用户名">
         <input type="password" id="oldPasswordForUsername" placeholder="当前密码" style="margin-top: 10px;">
@@ -116,7 +157,7 @@
 
     <hr>
 
-    <h2 style="margin-bottom: 15px;">修改密码</h2>
+    <h2>修改密码</h2>
     <div class="form-group">
         <input type="password" id="oldPassword" placeholder="旧密码">
         <input type="password" id="newPassword" placeholder="新密码" style="margin-top: 10px;">
@@ -125,8 +166,28 @@
         <button id="updatePasswordBtn">修改密码</button>
     </div>
 
+    <hr>
+
+    <h2>🤖 我的自动支持规则</h2>
+    <div id="autoRulesContainer">
+        <div class="loading">加载中...</div>
+    </div>
+
     <div class="back-link">
         <a href="index.html">← 返回首页</a>
+    </div>
+</div>
+
+<!-- 修改规则的模态框 -->
+<div id="editRuleModal" class="custom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:10000;">
+    <div style="background:var(--card-bg); border-radius:24px; padding:24px; max-width:400px; width:90%;">
+        <h3>修改自动支持规则</h3>
+        <input type="number" id="editThreshold" placeholder="市值低于 (阈值)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
+        <input type="number" id="editAmount" placeholder="每次自动支持金额 (≤500)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button id="saveEditBtn" style="flex:1;">保存</button>
+            <button id="closeEditBtn" style="flex:1; background:#6c757d;">取消</button>
+        </div>
     </div>
 </div>
 
@@ -142,15 +203,14 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let currentUser = null;
+    let currentRules = [];
 
-    // 获取当前登录用户
     function getCurrentUser() {
         const stored = localStorage.getItem('nb_user');
         if (!stored) return null;
         try { return JSON.parse(stored); } catch(e) { return null; }
     }
 
-    // 显示信息
     async function loadUserInfo() {
         const user = getCurrentUser();
         if (!user) {
@@ -158,7 +218,6 @@
             return;
         }
         currentUser = user;
-        // 获取用户名和余额
         const { data, error } = await supabaseClient
             .from('profiles')
             .select('username, nb_balance')
@@ -171,9 +230,133 @@
             document.getElementById('usernameDisplay').innerText = data.username;
             document.getElementById('balanceDisplay').innerText = data.nb_balance;
         }
+        // 加载自动支持规则
+        await loadAutoRules();
     }
 
-    // 修改用户名
+    async function loadAutoRules() {
+        const container = document.getElementById('autoRulesContainer');
+        if (!currentUser) return;
+        const { data, error } = await supabaseClient
+            .from('support_rules')
+            .select(`
+                id,
+                threshold,
+                amount,
+                company_id,
+                companies:user_companies!inner(company_name)
+            `)
+            .eq('user_id', currentUser.id);
+        if (error) {
+            container.innerHTML = '<div class="error">加载失败: ' + error.message + '</div>';
+            return;
+        }
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="no-rules">暂无自动支持规则，<a href="Virtual stock.html" style="color:var(--status-border);">前往股票页面</a> 设置。</div>';
+            return;
+        }
+        currentRules = data;
+        let html = `<table class="rules-table">
+                        <thead><tr><th>公司名称</th><th>触发阈值(市值&lt;)</th><th>每次支持金额</th><th>操作</th></tr></thead>
+                        <tbody>`;
+        for (const rule of data) {
+            const companyName = rule.companies?.company_name || '未知公司';
+            html += `<tr data-rule-id="${rule.id}">
+                        <td>${escapeHtml(companyName)}</td>
+                        <td>${rule.threshold}</td>
+                        <td>${rule.amount}</td>
+                        <td class="rule-actions">
+                            <button class="edit-rule" data-id="${rule.id}" data-threshold="${rule.threshold}" data-amount="${rule.amount}" data-company-id="${rule.company_id}">✏️ 修改</button>
+                            <button class="delete-rule" data-id="${rule.id}">🗑️ 取消</button>
+                        </td>
+                    </tr>`;
+        }
+        html += '</tbody></table>';
+        container.innerHTML = html;
+        // 绑定事件
+        document.querySelectorAll('.delete-rule').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const ruleId = parseInt(btn.dataset.id);
+                if (confirm('确定取消此自动支持规则吗？')) {
+                    const { error } = await supabaseClient.from('support_rules').delete().eq('id', ruleId);
+                    if (error) alert('删除失败: ' + error.message);
+                    else {
+                        alert('已取消');
+                        await loadAutoRules();
+                    }
+                }
+            });
+        });
+        document.querySelectorAll('.edit-rule').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const ruleId = parseInt(btn.dataset.id);
+                const oldThreshold = parseInt(btn.dataset.threshold);
+                const oldAmount = parseInt(btn.dataset.amount);
+                const companyId = parseInt(btn.dataset.companyId);
+                showEditModal(ruleId, companyId, oldThreshold, oldAmount);
+            });
+        });
+    }
+
+    function showEditModal(ruleId, companyId, oldThreshold, oldAmount) {
+        const modal = document.getElementById('editRuleModal');
+        const thresholdInput = document.getElementById('editThreshold');
+        const amountInput = document.getElementById('editAmount');
+        thresholdInput.value = oldThreshold;
+        amountInput.value = oldAmount;
+        modal.style.display = 'flex';
+        
+        const saveBtn = document.getElementById('saveEditBtn');
+        const closeBtn = document.getElementById('closeEditBtn');
+        const saveHandler = async () => {
+            const newThreshold = parseInt(thresholdInput.value);
+            const newAmount = parseInt(amountInput.value);
+            if (isNaN(newThreshold) || isNaN(newAmount) || newAmount <= 0) {
+                alert('请输入有效的阈值和金额');
+                return;
+            }
+            if (newAmount > 500) {
+                alert('自动支持金额不能超过500 NB币');
+                return;
+            }
+            // 先删除旧规则
+            const { error: delError } = await supabaseClient.from('support_rules').delete().eq('id', ruleId);
+            if (delError) {
+                alert('修改失败: ' + delError.message);
+                return;
+            }
+            // 插入新规则
+            const { error: insError } = await supabaseClient.from('support_rules').insert({
+                user_id: currentUser.id,
+                company_id: companyId,
+                threshold: newThreshold,
+                amount: newAmount
+            });
+            if (insError) {
+                alert('修改失败: ' + insError.message);
+                // 尝试恢复旧规则（简单回滚）
+                await supabaseClient.from('support_rules').insert({
+                    user_id: currentUser.id,
+                    company_id: companyId,
+                    threshold: oldThreshold,
+                    amount: oldAmount
+                });
+            } else {
+                alert('修改成功');
+                modal.style.display = 'none';
+                await loadAutoRules();
+            }
+            cleanup();
+        };
+        const cleanup = () => {
+            modal.style.display = 'none';
+            saveBtn.removeEventListener('click', saveHandler);
+            closeBtn.removeEventListener('click', cleanup);
+        };
+        saveBtn.addEventListener('click', saveHandler, { once: true });
+        closeBtn.addEventListener('click', cleanup, { once: true });
+    }
+
     async function updateUsername() {
         const newUsername = document.getElementById('newUsername').value.trim();
         const oldPassword = document.getElementById('oldPasswordForUsername').value;
@@ -184,13 +367,11 @@
         }
         errorDiv.innerText = '';
         try {
-            // 先验证密码
             const { data: userId, error: loginError } = await supabaseClient.rpc('login_user', {
                 input_username: currentUser.username,
                 input_password: oldPassword
             });
             if (loginError || !userId) throw new Error('密码错误');
-            // 检查用户名是否已存在
             const { data: existing } = await supabaseClient
                 .from('profiles')
                 .select('id')
@@ -198,13 +379,11 @@
                 .neq('id', currentUser.id)
                 .maybeSingle();
             if (existing) throw new Error('用户名已被占用');
-            // 更新用户名
             const { error: updateError } = await supabaseClient
                 .from('profiles')
                 .update({ username: newUsername })
                 .eq('id', currentUser.id);
             if (updateError) throw updateError;
-            // 更新本地存储的用户名
             const storedUser = JSON.parse(localStorage.getItem('nb_user'));
             storedUser.username = newUsername;
             localStorage.setItem('nb_user', JSON.stringify(storedUser));
@@ -218,7 +397,6 @@
         }
     }
 
-    // 修改密码
     async function updatePassword() {
         const oldPassword = document.getElementById('oldPassword').value;
         const newPassword = document.getElementById('newPassword').value;
@@ -252,6 +430,11 @@
         } catch (err) {
             errorDiv.innerText = err.message;
         }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
     }
 
     document.getElementById('updateUsernameBtn').addEventListener('click', updateUsername);
