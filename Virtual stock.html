@@ -745,18 +745,6 @@
         }
     }
 
-    async function randomFluctuateAndSave() {
-        if (!allCompanies.length) return;
-        const newCompanies = allCompanies.map(c => ({
-            ...c,
-            market_value: Math.max(100, Math.floor(c.market_value * (1 + (Math.random() - 0.5) * 0.1)))
-        }));
-        for (const company of newCompanies) {
-            await supabaseClient.from('user_companies').update({ market_value: company.market_value }).eq('id', company.id);
-        }
-        await refreshStockDataFromDB();
-    }
-
     function renderMyCompanySection() {
         const container = document.getElementById('myCompanySection');
         if (!currentUserId) {
@@ -1150,7 +1138,6 @@
         isLoading = true;
         updateTimestamp('loading');
         try {
-            await randomFluctuateAndSave();
             await loadPreviousSnapshot();
             updateTimestamp('success');
             resetCountdown();
