@@ -131,6 +131,10 @@
             padding: 20px;
             color: var(--count-text);
         }
+        /* 自定义模态框 */
+        .custom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 10000; }
+        .custom-modal .modal-content { background: var(--card-bg); border-radius: 24px; padding: 24px; max-width: 350px; width: 90%; text-align: center; box-shadow: 0 20px 35px rgba(0,0,0,0.2); }
+        .custom-modal .modal-content button { margin-top: 16px; padding: 6px 20px; border-radius: 30px; border: none; cursor: pointer; background: var(--nav-btn-hover-bg); color: white; }
     </style>
 </head>
 <body>
@@ -180,7 +184,7 @@
 
 <!-- 修改规则的模态框 -->
 <div id="editRuleModal" class="custom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:10000;">
-    <div style="background:var(--card-bg); border-radius:24px; padding:24px; max-width:400px; width:90%;">
+    <div class="modal-content">
         <h3>修改自动支持规则</h3>
         <input type="number" id="editThreshold" placeholder="市值低于 (阈值)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
         <input type="number" id="editAmount" placeholder="每次自动支持金额 (≤500)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
@@ -188,6 +192,15 @@
             <button id="saveEditBtn" style="flex:1;">保存</button>
             <button id="closeEditBtn" style="flex:1; background:#6c757d;">取消</button>
         </div>
+    </div>
+</div>
+
+<!-- 自定义提示模态框 -->
+<div id="customMessageModal" class="custom-modal">
+    <div class="modal-content">
+        <h3 id="customMessageTitle">提示</h3>
+        <p id="customMessageText" style="margin: 15px 0;"></p>
+        <button id="customMessageClose">确定</button>
     </div>
 </div>
 
@@ -204,6 +217,25 @@
 
     let currentUser = null;
     let currentRules = [];
+
+    // 自定义提示框
+    function showMessage(title, msg) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('customMessageModal');
+            const titleElem = document.getElementById('customMessageTitle');
+            const textElem = document.getElementById('customMessageText');
+            const closeBtn = document.getElementById('customMessageClose');
+            titleElem.innerText = title;
+            textElem.innerText = msg;
+            modal.style.display = 'flex';
+            const onClose = () => {
+                modal.style.display = 'none';
+                closeBtn.removeEventListener('click', onClose);
+                resolve();
+            };
+            closeBtn.addEventListener('click', onClose, { once: true });
+        });
+    }
 
     function getCurrentUser() {
         const stored = localStorage.getItem('nb_user');
@@ -230,7 +262,6 @@
             document.getElementById('usernameDisplay').innerText = data.username;
             document.getElementById('balanceDisplay').innerText = data.nb_balance;
         }
-        // 加载自动支持规则
         await loadAutoRules();
     }
 
@@ -273,20 +304,24 @@
         }
         html += '</tbody></table>';
         container.innerHTML = html;
-        // 绑定事件
+        
+        // 绑定删除事件
         document.querySelectorAll('.delete-rule').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const ruleId = parseInt(btn.dataset.id);
-                if (confirm('确定取消此自动支持规则吗？')) {
+                const confirmMsg = await showConfirm('确认取消', '确定要取消此自动支持规则吗？');
+                if (confirmMsg) {
                     const { error } = await supabaseClient.from('support_rules').delete().eq('id', ruleId);
-                    if (error) alert('删除失败: ' + error.message);
+                    if (error) await showMessage('删除失败', error.message);
                     else {
-                        alert('已取消');
+                        await showMessage('成功', '已取消自动支持规则');
                         await loadAutoRules();
                     }
                 }
             });
         });
+        
+        // 绑定修改事件
         document.querySelectorAll('.edit-rule').forEach(btn => {
             btn.addEventListener('click', () => {
                 const ruleId = parseInt(btn.dataset.id);
@@ -298,6 +333,31 @@
         });
     }
 
+    // 自定义确认框
+    function showConfirm(title, msg) {
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.className = 'custom-modal';
+            modal.style.display = 'flex';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>${escapeHtml(title)}</h3>
+                    <p style="margin: 15px 0;">${escapeHtml(msg)}</p>
+                    <div style="display:flex; gap:10px; justify-content:center;">
+                        <button id="confirmOk" style="background:var(--nav-btn-hover-bg);">确定</button>
+                        <button id="confirmCancel" style="background:#6c757d;">取消</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            const okBtn = modal.querySelector('#confirmOk');
+            const cancelBtn = modal.querySelector('#confirmCancel');
+            const cleanup = () => { modal.remove(); };
+            okBtn.onclick = () => { cleanup(); resolve(true); };
+            cancelBtn.onclick = () => { cleanup(); resolve(false); };
+        });
+    }
+
     function showEditModal(ruleId, companyId, oldThreshold, oldAmount) {
         const modal = document.getElementById('editRuleModal');
         const thresholdInput = document.getElementById('editThreshold');
@@ -306,23 +366,21 @@
         amountInput.value = oldAmount;
         modal.style.display = 'flex';
         
-        const saveBtn = document.getElementById('saveEditBtn');
-        const closeBtn = document.getElementById('closeEditBtn');
         const saveHandler = async () => {
             const newThreshold = parseInt(thresholdInput.value);
             const newAmount = parseInt(amountInput.value);
             if (isNaN(newThreshold) || isNaN(newAmount) || newAmount <= 0) {
-                alert('请输入有效的阈值和金额');
+                await showMessage('提示', '请输入有效的阈值和金额');
                 return;
             }
             if (newAmount > 500) {
-                alert('自动支持金额不能超过500 NB币');
+                await showMessage('提示', '自动支持金额不能超过500 NB币');
                 return;
             }
             // 先删除旧规则
             const { error: delError } = await supabaseClient.from('support_rules').delete().eq('id', ruleId);
             if (delError) {
-                alert('修改失败: ' + delError.message);
+                await showMessage('修改失败', delError.message);
                 return;
             }
             // 插入新规则
@@ -333,8 +391,8 @@
                 amount: newAmount
             });
             if (insError) {
-                alert('修改失败: ' + insError.message);
-                // 尝试恢复旧规则（简单回滚）
+                await showMessage('修改失败', insError.message);
+                // 尝试恢复旧规则
                 await supabaseClient.from('support_rules').insert({
                     user_id: currentUser.id,
                     company_id: companyId,
@@ -342,7 +400,7 @@
                     amount: oldAmount
                 });
             } else {
-                alert('修改成功');
+                await showMessage('成功', '修改成功');
                 modal.style.display = 'none';
                 await loadAutoRules();
             }
@@ -350,11 +408,11 @@
         };
         const cleanup = () => {
             modal.style.display = 'none';
-            saveBtn.removeEventListener('click', saveHandler);
-            closeBtn.removeEventListener('click', cleanup);
+            document.getElementById('saveEditBtn')?.removeEventListener('click', saveHandler);
+            document.getElementById('closeEditBtn')?.removeEventListener('click', cleanup);
         };
-        saveBtn.addEventListener('click', saveHandler, { once: true });
-        closeBtn.addEventListener('click', cleanup, { once: true });
+        document.getElementById('saveEditBtn').addEventListener('click', saveHandler, { once: true });
+        document.getElementById('closeEditBtn').addEventListener('click', cleanup, { once: true });
     }
 
     async function updateUsername() {
@@ -389,7 +447,7 @@
             localStorage.setItem('nb_user', JSON.stringify(storedUser));
             currentUser.username = newUsername;
             document.getElementById('usernameDisplay').innerText = newUsername;
-            alert('用户名修改成功');
+            await showMessage('成功', '用户名修改成功');
             document.getElementById('newUsername').value = '';
             document.getElementById('oldPasswordForUsername').value = '';
         } catch (err) {
@@ -424,7 +482,7 @@
             });
             if (error) throw error;
             if (!data.success) throw new Error(data.message);
-            alert('密码修改成功，请重新登录');
+            await showMessage('成功', '密码修改成功，请重新登录');
             localStorage.removeItem('nb_user');
             window.location.href = 'login.html?redirect=' + encodeURIComponent('index.html');
         } catch (err) {
