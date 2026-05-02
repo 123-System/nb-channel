@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>个人中心 - NB频道</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/common.js"></script>
+    <style>
+        body {
+            padding: 40px 20px;
+            background: var(--bg-color);
+        }
+        .profile-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 32px;
+            padding: 30px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--status-border);
+        }
+        .info-card {
+            background: var(--count-bg);
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .info-label {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        .info-value {
+            font-weight: 700;
+            color: var(--status-border);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        input {
+            width: 100%;
+            padding: 10px 15px;
+            border-radius: 30px;
+            border: 1px solid var(--card-border);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+        button {
+            background: var(--nav-btn-hover-bg);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.2s;
+            width: 100%;
+        }
+        button:hover {
+            filter: brightness(0.9);
+            transform: scale(0.98);
+        }
+        .error {
+            color: #ff6b6b;
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .back-link a {
+            color: var(--status-border);
+            text-decoration: none;
+        }
+        hr {
+            margin: 20px 0;
+            border-color: var(--card-border);
+        }
+    </style>
+</head>
+<body>
+<div class="profile-container">
+    <h1>📋 个人中心</h1>
+    <div id="userInfo" class="info-card">
+        <div class="info-item">
+            <span class="info-label">用户名</span>
+            <span class="info-value" id="usernameDisplay">加载中...</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">NB币余额</span>
+            <span class="info-value" id="balanceDisplay">加载中...</span>
+        </div>
+    </div>
+
+    <h2 style="margin-bottom: 15px;">修改用户名</h2>
+    <div class="form-group">
+        <input type="text" id="newUsername" placeholder="新用户名">
+        <input type="password" id="oldPasswordForUsername" placeholder="当前密码" style="margin-top: 10px;">
+        <div id="usernameError" class="error"></div>
+        <button id="updateUsernameBtn">修改用户名</button>
+    </div>
+
+    <hr>
+
+    <h2 style="margin-bottom: 15px;">修改密码</h2>
+    <div class="form-group">
+        <input type="password" id="oldPassword" placeholder="旧密码">
+        <input type="password" id="newPassword" placeholder="新密码" style="margin-top: 10px;">
+        <input type="password" id="newPassword2" placeholder="确认新密码" style="margin-top: 10px;">
+        <div id="passwordError" class="error"></div>
+        <button id="updatePasswordBtn">修改密码</button>
+    </div>
+
+    <div class="back-link">
+        <a href="index.html">← 返回首页</a>
+    </div>
+</div>
+
+<script>
+    if (typeof supabase === 'undefined' && typeof window.supabase !== 'undefined') { var supabase = window.supabase; }
+    if (typeof supabase === 'undefined') {
+        document.body.innerHTML = '<div style="color:red; padding:20px; text-align:center;">❌ 无法加载 Supabase 客户端</div>';
+        throw new Error('Supabase not loaded');
+    }
+
+    const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser = null;
+
+    // 获取当前登录用户
+    function getCurrentUser() {
+        const stored = localStorage.getItem('nb_user');
+        if (!stored) return null;
+        try { return JSON.parse(stored); } catch(e) { return null; }
+    }
+
+    // 显示信息
+    async function loadUserInfo() {
+        const user = getCurrentUser();
+        if (!user) {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+            return;
+        }
+        currentUser = user;
+        // 获取用户名和余额
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('username, nb_balance')
+            .eq('id', user.id)
+            .single();
+        if (error) {
+            document.getElementById('usernameDisplay').innerText = '获取失败';
+            document.getElementById('balanceDisplay').innerText = '--';
+        } else {
+            document.getElementById('usernameDisplay').innerText = data.username;
+            document.getElementById('balanceDisplay').innerText = data.nb_balance;
+        }
+    }
+
+    // 修改用户名
+    async function updateUsername() {
+        const newUsername = document.getElementById('newUsername').value.trim();
+        const oldPassword = document.getElementById('oldPasswordForUsername').value;
+        const errorDiv = document.getElementById('usernameError');
+        if (!newUsername) {
+            errorDiv.innerText = '请输入新用户名';
+            return;
+        }
+        errorDiv.innerText = '';
+        try {
+            // 先验证密码
+            const { data: userId, error: loginError } = await supabaseClient.rpc('login_user', {
+                input_username: currentUser.username,
+                input_password: oldPassword
+            });
+            if (loginError || !userId) throw new Error('密码错误');
+            // 检查用户名是否已存在
+            const { data: existing } = await supabaseClient
+                .from('profiles')
+                .select('id')
+                .eq('username', newUsername)
+                .neq('id', currentUser.id)
+                .maybeSingle();
+            if (existing) throw new Error('用户名已被占用');
+            // 更新用户名
+            const { error: updateError } = await supabaseClient
+                .from('profiles')
+                .update({ username: newUsername })
+                .eq('id', currentUser.id);
+            if (updateError) throw updateError;
+            // 更新本地存储的用户名
+            const storedUser = JSON.parse(localStorage.getItem('nb_user'));
+            storedUser.username = newUsername;
+            localStorage.setItem('nb_user', JSON.stringify(storedUser));
+            currentUser.username = newUsername;
+            document.getElementById('usernameDisplay').innerText = newUsername;
+            alert('用户名修改成功');
+            document.getElementById('newUsername').value = '';
+            document.getElementById('oldPasswordForUsername').value = '';
+        } catch (err) {
+            errorDiv.innerText = err.message;
+        }
+    }
+
+    // 修改密码
+    async function updatePassword() {
+        const oldPassword = document.getElementById('oldPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const newPassword2 = document.getElementById('newPassword2').value;
+        const errorDiv = document.getElementById('passwordError');
+        if (newPassword !== newPassword2) {
+            errorDiv.innerText = '两次新密码输入不一致';
+            return;
+        }
+        if (newPassword.length < 4) {
+            errorDiv.innerText = '新密码长度至少4位';
+            return;
+        }
+        errorDiv.innerText = '';
+        try {
+            const { data: userId, error: loginError } = await supabaseClient.rpc('login_user', {
+                input_username: currentUser.username,
+                input_password: oldPassword
+            });
+            if (loginError || !userId) throw new Error('旧密码错误');
+            const { data, error } = await supabaseClient.rpc('update_password', {
+                user_id: currentUser.id,
+                old_password: oldPassword,
+                new_password: newPassword
+            });
+            if (error) throw error;
+            if (!data.success) throw new Error(data.message);
+            alert('密码修改成功，请重新登录');
+            localStorage.removeItem('nb_user');
+            window.location.href = 'login.html?redirect=' + encodeURIComponent('index.html');
+        } catch (err) {
+            errorDiv.innerText = err.message;
+        }
+    }
+
+    document.getElementById('updateUsernameBtn').addEventListener('click', updateUsername);
+    document.getElementById('updatePasswordBtn').addEventListener('click', updatePassword);
+    loadUserInfo();
+</script>
+</body>
+</html>
