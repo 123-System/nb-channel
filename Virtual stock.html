@@ -1196,25 +1196,26 @@
         startAutoRefreshTimer();
         startAutoSupportWatcher();
     } else {
-        const redirectUrl = encodeURIComponent(window.location.href);
-        document.getElementById('userStatusSpan').innerHTML = `未登录 <a href="login.html?redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
-        // 未登录也加载公司数据并显示图表（只读）
-        const companies = await fetchAllCompanies();
-        if (companies.length) {
-            rawData.names = companies.map(c => c.company_name);
-            rawData.values = companies.map(c => c.market_value);
-            totalStocks = rawData.names.length;
-            const combined = rawData.names.map((name, idx) => ({ name, value: rawData.values[idx] }));
-            combined.sort((a, b) => b.value - a.value);
-            sortedCombined = combined;
-            updateStatsPanel(rawData.values.reduce((a,b)=>a+b,0));
-            updateDataTable();
-            updateMiniPieChart();
-            updateHistogramChart();
-            await buildChartWithFade(currentChartType);
-        }
-        // 未登录不需要启动定时器
+    const redirectUrl = encodeURIComponent(window.location.href);
+    document.getElementById('userStatusSpan').innerHTML = `未登录 <a href="login.html?redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
+    // 未登录也加载公司数据并显示图表（只读）
+    const companies = await fetchAllCompanies();
+    if (companies.length) {
+        rawData.names = companies.map(c => c.company_name);
+        rawData.values = companies.map(c => c.market_value);
+        totalStocks = rawData.names.length;
+        const combined = rawData.names.map((name, idx) => ({ name, value: rawData.values[idx] }));
+        combined.sort((a, b) => b.value - a.value);
+        sortedCombined = combined;
+        updateStatsPanel(rawData.values.reduce((a,b)=>a+b,0));
+        updateDataTable();
+        updateMiniPieChart();
+        updateHistogramChart();
+        await buildChartWithFade(currentChartType);
     }
+    // 加载历史数据（用于走势图）
+    await loadFullHistory();
+    // 未登录不需要启动定时器
 }
 
     function startAutoSupportWatcher() {
