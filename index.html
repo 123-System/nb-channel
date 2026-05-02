@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="css/style.css">
     <script async src="https://events.vercount.one/js"></script>
     <style>
-        /* 原有样式保持不变，调整卡片内 NB币区域样式 */
+        /* 原有样式保持不变，调整右上角区域为水平排列 */
         .nav-container { margin-bottom: 30px; }
         .nav-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; }
         .nav-actions { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
@@ -57,18 +57,20 @@
             .fixed-buttons { bottom: 20px; right: 20px; gap: 10px; }
             .theme-toggle-fixed, .back-to-top { width: 40px; height: 40px; font-size: 20px; }
         }
-        /* 右上角只保留登录/退出按钮 */
+        /* 右上角按钮区域改为水平排列 */
         .auth-area {
             position: absolute;
             top: 20px;
             right: 20px;
+            display: flex;
+            gap: 12px;
             background: var(--card-bg);
             border-radius: 40px;
             padding: 6px 20px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             z-index: 200;
         }
-        .auth-btn {
+        .auth-btn, .profile-btn {
             background: var(--nav-btn-bg);
             color: var(--nav-btn-text);
             border: none;
@@ -78,14 +80,15 @@
             cursor: pointer;
             transition: 0.2s;
         }
-        .auth-btn:hover {
+        .auth-btn:hover, .profile-btn:hover {
             background: var(--nav-btn-hover-bg);
             color: white;
         }
         @media (max-width: 600px) {
             .auth-area {
                 position: static;
-                display: inline-block;
+                display: flex;
+                justify-content: center;
                 margin: 0 auto 15px;
                 width: fit-content;
             }
@@ -134,8 +137,9 @@
 <body>
 <script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
 <div class="container">
-    <!-- 右上角只保留登录/退出按钮 -->
+    <!-- 右上角按钮区域（增加个人中心） -->
     <div id="authArea" class="auth-area">
+        <button id="profileBtn" class="profile-btn">👤 个人中心</button>
         <button id="authButton" class="auth-btn">登录/注册</button>
     </div>
 
@@ -177,7 +181,7 @@
     </div>
     
     <div class="home-row">
-        <!-- 左侧卡片（不变） -->
+        <!-- 左侧卡片 -->
         <div class="home-card">
             <p>👋 欢迎来到 <strong>NB频道</strong> </p>
             <p>NB频道，全名NoBook频道，是一个热爱理科（和作死）的畜中生up主建立的虚拟公司</p>
@@ -190,7 +194,7 @@
             <p>🔗去我的主页关注我 ：<a href="https://space.bilibili.com/3493259582114264?spm_id_from=333.1007.0.0" target="_blank" rel="noopener noreferrer">点击前往</a></p>
         </div>
 
-        <!-- 右侧卡片：在此处插入 NB币和签到区域 -->
+        <!-- 右侧卡片：包含 NB币和签到 -->
         <div class="home-card">
             <p style="color:#00a1d6; margin-top:30px;">什么？你找不到NB实验室？</p>
             <p>没关系,我这里有链接↓（网页版）</p>
@@ -199,7 +203,7 @@
             <p>注：想下载软件安装包的话去上方的“软件/APP下载”里去下载或者看看自己手机的应用商店有没有</p>
             <p>🔗NB实验室（官网首页） ：<a href="https://www.nobook.com/index.html" target="_blank" rel="noopener noreferrer">点击访问</a></p>
             
-            <!-- NB币与签到区域（从右上角移到这里） -->
+            <!-- NB币与签到区域 -->
             <div class="in-card-stats">
                 <div>
                     <span id="balanceDisplay" class="balance-display">💰 NB币: --</span>
@@ -212,11 +216,11 @@
         </div>
     </div>
 
-    <!-- 第三张卡片（友商链接，不变） -->
+    <!-- 第三张卡片（友商链接） -->
     <div class="home-card">
         <p style="color:#00a1d6; margin-top:30px;">什么？你想了解其他虚拟公司的网站？</p>
         <p>没关系,我这里也有链接↓</p>
-        <p style="margin-top:20px;">🔗 友商Orgentの官网（已停运，B站账号也已注销，链接将永久保留，默哀）：<a href="https://orgent.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+        <p style="margin-top:20px;">🔗 友商Orgentの官网（已停运，B站账号也将注销，链接将永久保留，默哀）：<a href="https://orgent.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
         <p style="margin-top:20px;">🔗 友商AWMの官网：<a href="https://45d.cn/AWM/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
         <p style="margin-top:20px;">🔗 友商Fafatの官网：<a href="https://fafat.uuk.pp.ua/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
         <p style="margin-top:20px;">🔗 友商Lemon（齐喜）の官网：<a href="https://nb-qx.top/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
@@ -321,6 +325,7 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const balanceSpan = document.getElementById('balanceDisplay');
         const authBtn = document.getElementById('authButton');
+        const profileBtn = document.getElementById('profileBtn');
         const checkinSection = document.getElementById('checkinSection');
         const checkinBtn = document.getElementById('checkinBtn');
         const nextBonusSpan = document.getElementById('nextBonusText');
@@ -340,6 +345,9 @@
                 authBtn.onclick = () => {
                     const redirect = encodeURIComponent(window.location.href);
                     window.location.href = `login.html?redirect=${redirect}`;
+                };
+                profileBtn.onclick = () => {
+                    window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
                 };
                 if (checkinSection) checkinSection.style.display = 'none';
                 return;
@@ -383,6 +391,9 @@
             authBtn.onclick = () => {
                 localStorage.removeItem('nb_user');
                 location.reload();
+            };
+            profileBtn.onclick = () => {
+                window.location.href = 'profile.html';
             };
         }
 
