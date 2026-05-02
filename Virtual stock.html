@@ -9,7 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="js/common.js"></script>
     <style>
-        /* 基础样式 */
+        /* 基础样式（原有样式保持不变） */
         .chart-wrapper { padding: 20px 0 32px 0; }
         .canvas-container {
             position: relative; width: 100%; min-height: 550px; background: var(--card-bg);
@@ -241,6 +241,11 @@
         .company-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
         .danger-btn { background: #dc3545; color: white; }
         .danger-btn:hover { background: #c82333; }
+        /* 自定义模态框 */
+        .custom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 10000; }
+        .custom-modal .modal-content { background: var(--card-bg); border-radius: 24px; padding: 24px; max-width: 350px; width: 90%; text-align: center; box-shadow: 0 20px 35px rgba(0,0,0,0.2); }
+        .custom-modal .modal-content button { margin: 8px; padding: 6px 20px; border-radius: 30px; border: none; cursor: pointer; background: var(--nav-btn-hover-bg); color: white; }
+        .custom-modal .modal-content button.cancel { background: var(--nav-btn-bg); color: var(--nav-btn-text); }
     </style>
 </head>
 <body>
@@ -382,6 +387,27 @@
     <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
 </div>
 
+<!-- 自定义消息弹窗 -->
+<div id="customMessageModal" class="custom-modal">
+    <div class="modal-content">
+        <h3 id="customMessageTitle">提示</h3>
+        <p id="customMessageText" style="margin: 15px 0;"></p>
+        <button id="customMessageClose">确定</button>
+    </div>
+</div>
+
+<!-- 自定义确认弹窗 -->
+<div id="customConfirmModal" class="custom-modal">
+    <div class="modal-content">
+        <h3 id="customConfirmTitle">确认</h3>
+        <p id="customConfirmText" style="margin: 15px 0;"></p>
+        <div>
+            <button id="customConfirmOk">确定</button>
+            <button id="customConfirmCancel" class="cancel">取消</button>
+        </div>
+    </div>
+</div>
+
 <script>
     if (typeof supabase === 'undefined' && typeof window.supabase !== 'undefined') { var supabase = window.supabase; }
     if (typeof supabase === 'undefined') {
@@ -393,14 +419,60 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // ========== 自定义提示框 ==========
+    function showMessage(title, msg) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('customMessageModal');
+            const titleElem = document.getElementById('customMessageTitle');
+            const textElem = document.getElementById('customMessageText');
+            const closeBtn = document.getElementById('customMessageClose');
+            titleElem.innerText = title;
+            textElem.innerText = msg;
+            modal.style.display = 'flex';
+            const onClose = () => {
+                modal.style.display = 'none';
+                closeBtn.removeEventListener('click', onClose);
+                resolve();
+            };
+            closeBtn.addEventListener('click', onClose, { once: true });
+        });
+    }
+
+    function showConfirm(title, msg) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('customConfirmModal');
+            const titleElem = document.getElementById('customConfirmTitle');
+            const textElem = document.getElementById('customConfirmText');
+            const okBtn = document.getElementById('customConfirmOk');
+            const cancelBtn = document.getElementById('customConfirmCancel');
+            titleElem.innerText = title;
+            textElem.innerText = msg;
+            modal.style.display = 'flex';
+            const onOk = () => {
+                modal.style.display = 'none';
+                okBtn.removeEventListener('click', onOk);
+                cancelBtn.removeEventListener('click', onCancel);
+                resolve(true);
+            };
+            const onCancel = () => {
+                modal.style.display = 'none';
+                okBtn.removeEventListener('click', onOk);
+                cancelBtn.removeEventListener('click', onCancel);
+                resolve(false);
+            };
+            okBtn.addEventListener('click', onOk, { once: true });
+            cancelBtn.addEventListener('click', onCancel, { once: true });
+        });
+    }
+
     // ========== 全局变量 ==========
     let currentUser = null;
     let currentUserId = null;
-    let myCompany = null;         // 当前用户的公司信息
-    let allCompanies = [];        // 所有公司列表
-    let autoSupportTimer = null;  // 自动支持规则轮询
+    let myCompany = null;
+    let allCompanies = [];
+    let autoSupportTimer = null;
 
-    // 图表相关变量（与原来一致）
+    // 图表相关变量
     let currentChart = null;
     let miniPieChart = null;
     let stockHistoryChart = null;
@@ -485,38 +557,31 @@
             market_value: 1000
         });
         if (error) {
-            alert(error.message);
+            await showMessage('注册失败', error.message);
             return false;
         }
         return true;
     }
 
-    async function updateCompanyValue(companyId, newValue) {
-        await supabaseClient.from('user_companies').update({ market_value: newValue }).eq('id', companyId);
-    }
-
-    // 支持公司（手动）
     async function supportCompany(companyId, amount) {
         if (!currentUserId) return false;
         const balance = await fetchUserBalance();
         if (balance < amount) {
-            alert('NB币不足，无法支持');
+            await showMessage('提示', 'NB币不足，无法支持');
             return false;
         }
-        // 获取公司当前市值
         const { data: company } = await supabaseClient
             .from('user_companies')
             .select('market_value')
             .eq('id', companyId)
             .single();
-        if (!company) { alert('虚拟公司不存在'); return false; }
+        if (!company) { await showMessage('错误', '虚拟公司不存在'); return false; }
         const newValue = company.market_value + amount;
-        // 事务：更新公司市值、扣减用户余额、插入记录
         const { error: updateErr } = await supabaseClient
             .from('user_companies')
             .update({ market_value: newValue })
             .eq('id', companyId);
-        if (updateErr) { alert('支持失败'); return false; }
+        if (updateErr) { await showMessage('错误', '支持失败'); return false; }
         const newBalance = balance - amount;
         await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
         await supabaseClient.from('support_logs').insert({
@@ -526,16 +591,14 @@
         });
         await fetchUserBalance();
         await fetchAllCompanies();
-        await refreshStockDataFromDB();  // 刷新图表数据
+        await refreshStockDataFromDB();
         await buildChartWithFade(currentChartType);
-        alert(`成功支持 ${amount} NB币`);
+        await showMessage('成功', `成功支持 ${amount} NB币`);
         return true;
     }
 
-    // 设置自动支持规则
     async function setAutoSupportRule(companyId, threshold, amount) {
         if (!currentUserId) return false;
-        // 先删除旧规则
         await supabaseClient.from('support_rules').delete().eq('user_id', currentUserId).eq('company_id', companyId);
         const { error } = await supabaseClient.from('support_rules').insert({
             user_id: currentUserId,
@@ -543,97 +606,97 @@
             threshold: threshold,
             amount: amount
         });
-        if (error) alert('设置失败: ' + error.message);
-        else alert('自动支持规则已设置');
+        if (error) await showMessage('设置失败', error.message);
+        else await showMessage('成功', '自动支持规则已设置');
         return !error;
     }
 
-    // 破产
-   async function bankruptCompany() {
-    if (!myCompany) { alert('您还没有虚拟公司'); return; }
-    const companyId = myCompany.id;
-    const companyName = myCompany.company_name;
-    const currentValue = myCompany.market_value;
-    let reward = 0;
-    let confirmMsg = '';
-    if (currentValue >= 1000) {
-        reward = 1000;
-        confirmMsg = `确定破产吗？您的虚拟公司将被彻底删除（任何痕迹都将不复存在），您将获得 ${reward} NB币。`;
-    } else {
-        reward = 0;
-        confirmMsg = `您的虚拟公司市值不足1000，破产将无法获得NB币，但虚拟公司及历史数据会被彻底删除。确定吗？`;
-    }
-    if (!confirm(confirmMsg)) return;
+    async function bankruptCompany() {
+        if (!myCompany) { await showMessage('提示', '您还没有虚拟公司'); return; }
+        const companyId = myCompany.id;
+        const companyName = myCompany.company_name;
+        const currentValue = myCompany.market_value;
+        let reward = 0;
+        let confirmMsg = '';
+        if (currentValue >= 1000) {
+            reward = 1000;
+            confirmMsg = `确定破产吗？您的虚拟公司将被彻底删除（任何痕迹都将不复存在），您将获得 ${reward} NB币。`;
+        } else {
+            reward = 0;
+            confirmMsg = `您的虚拟公司市值不足1000，破产将无法获得NB币，但虚拟公司及历史数据会被彻底删除。确定吗？`;
+        }
+        const confirmed = await showConfirm('确认破产', confirmMsg);
+        if (!confirmed) return;
 
-    // 1. 删除公司记录
-    const { error: delError } = await supabaseClient
-        .from('user_companies')
-        .delete()
-        .eq('id', companyId);
-    if (delError) {
-        alert('破产失败: ' + delError.message);
-        return;
-    }
+        // 1. 删除公司记录
+        const { error: delError } = await supabaseClient
+            .from('user_companies')
+            .delete()
+            .eq('id', companyId);
+        if (delError) {
+            await showMessage('破产失败', delError.message);
+            return;
+        }
 
-    // 2. 删除该公司的自动支持规则
-    await supabaseClient.from('support_rules').delete().eq('company_id', companyId);
+        // 2. 删除该公司的自动支持规则
+        await supabaseClient.from('support_rules').delete().eq('company_id', companyId);
 
-    // 3. 从所有历史快照中移除该公司数据（stock_history_full）
-    const { data: snapshots, error: fetchError } = await supabaseClient
-        .from('stock_history_full')
-        .select('id, snapshot');
-    if (!fetchError && snapshots) {
-        for (const snap of snapshots) {
-            const snapshot = snap.snapshot;
-            if (!snapshot.names || !snapshot.values) continue;
-            const idx = snapshot.names.indexOf(companyName);
+        // 3. 从所有历史快照中移除该公司数据
+        const { data: snapshots, error: fetchError } = await supabaseClient
+            .from('stock_history_full')
+            .select('id, snapshot');
+        if (!fetchError && snapshots) {
+            for (const snap of snapshots) {
+                const snapshot = snap.snapshot;
+                if (!snapshot.names || !snapshot.values) continue;
+                const idx = snapshot.names.indexOf(companyName);
+                if (idx !== -1) {
+                    snapshot.names.splice(idx, 1);
+                    snapshot.values.splice(idx, 1);
+                    await supabaseClient
+                        .from('stock_history_full')
+                        .update({ snapshot: snapshot })
+                        .eq('id', snap.id);
+                }
+            }
+        }
+
+        // 4. 从最新快照中移除
+        const { data: latestData } = await supabaseClient
+            .from('stock_latest')
+            .select('id, snapshot_data')
+            .order('created_at', { ascending: false })
+            .limit(1);
+        if (latestData && latestData.length > 0) {
+            const latest = latestData[0];
+            const snapshot = latest.snapshot_data;
+            const idx = snapshot.names?.indexOf(companyName);
             if (idx !== -1) {
                 snapshot.names.splice(idx, 1);
                 snapshot.values.splice(idx, 1);
                 await supabaseClient
-                    .from('stock_history_full')
-                    .update({ snapshot: snapshot })
-                    .eq('id', snap.id);
+                    .from('stock_latest')
+                    .update({ snapshot_data: snapshot })
+                    .eq('id', latest.id);
             }
         }
-    }
 
-    // 4. 从最新快照中移除（stock_latest）
-    const { data: latestData } = await supabaseClient
-        .from('stock_latest')
-        .select('id, snapshot_data')
-        .order('created_at', { ascending: false })
-        .limit(1);
-    if (latestData && latestData.length > 0) {
-        const latest = latestData[0];
-        const snapshot = latest.snapshot_data;
-        const idx = snapshot.names?.indexOf(companyName);
-        if (idx !== -1) {
-            snapshot.names.splice(idx, 1);
-            snapshot.values.splice(idx, 1);
-            await supabaseClient
-                .from('stock_latest')
-                .update({ snapshot_data: snapshot })
-                .eq('id', latest.id);
+        // 5. 发放奖励
+        if (reward > 0) {
+            const balance = await fetchUserBalance();
+            const newBalance = balance + reward;
+            await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
+            await fetchUserBalance();
+            await showMessage('破产成功', `您的虚拟公司及历史数据已清除，您获得 ${reward} NB币。当前余额: ${newBalance}`);
+        } else {
+            await showMessage('破产成功', '您的虚拟公司及历史数据已清除，您未获得NB币。');
         }
+
+        myCompany = null;
+        await refreshStockDataFromDB();
+        renderMyCompanySection();
     }
 
-    // 5. 发放奖励
-    if (reward > 0) {
-        const balance = await fetchUserBalance();
-        const newBalance = balance + reward;
-        await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
-        await fetchUserBalance();
-        alert(`破产成功！您的虚拟公司及历史数据已清除，您获得 ${reward} NB币。当前余额: ${newBalance}`);
-    } else {
-        alert('破产成功！您的虚拟公司及历史数据已清除，您未获得NB币。');
-    }
-
-    myCompany = null;
-    await refreshStockDataFromDB();   // 刷新当前股票列表（已无该公司）
-    renderMyCompanySection();
-}
-    // 轮询检查自动支持规则（每30秒）
     async function checkAutoSupportRules() {
         if (!currentUserId) return;
         const { data: rules, error } = await supabaseClient
@@ -648,15 +711,12 @@
                 .eq('id', rule.company_id)
                 .single();
             if (company && company.market_value < rule.threshold) {
-                // 执行自动支持
                 await supportCompany(rule.company_id, rule.amount);
-                // 为了避免短时间内重复触发，可以增加 last_support_at 字段，这里简单等待3秒
                 await new Promise(r => setTimeout(r, 3000));
             }
         }
     }
 
-    // 从数据库同步公司数据到 rawData
     async function refreshStockDataFromDB() {
         const companies = await fetchAllCompanies();
         if (!companies.length) {
@@ -674,10 +734,8 @@
         const combined = rawData.names.map((name, idx) => ({ name, value: rawData.values[idx] }));
         combined.sort((a, b) => b.value - a.value);
         sortedCombined = combined;
-        // 保存历史快照
         await saveFullSnapshot(newTotal);
         await loadFullHistory();
-        // 更新界面
         updateStatsPanel(newTotal);
         updateDataTable();
         updateMiniPieChart();
@@ -694,7 +752,6 @@
         }
     }
 
-    // 随机波动（用于自动刷新）
     async function randomFluctuateAndSave() {
         if (!allCompanies.length) return;
         const newCompanies = allCompanies.map(c => ({
@@ -707,7 +764,6 @@
         await refreshStockDataFromDB();
     }
 
-    // 渲染“我的公司”区域
     function renderMyCompanySection() {
         const container = document.getElementById('myCompanySection');
         if (!currentUserId) {
@@ -727,7 +783,7 @@
                     await fetchMyCompany();
                     await refreshStockDataFromDB();
                     renderMyCompanySection();
-                } else alert('创建失败，可能已存在虚拟公司或网络问题');
+                } else await showMessage('错误', '创建失败，可能已存在虚拟公司或网络问题');
             });
             return;
         }
@@ -738,9 +794,8 @@
         document.getElementById('bankruptBtn')?.addEventListener('click', bankruptCompany);
     }
 
-    // ========== 对话框：支持公司（手动+设置自动规则） ==========
     function showSupportDialog() {
-        if (!currentUserId) { alert('请先登录'); return; }
+        if (!currentUserId) { showMessage('提示', '请先登录'); return; }
         const companyOptions = allCompanies.map(c => `<option value="${c.id}">${escapeHtml(c.company_name)} (市值: ${formatValue(c.market_value)})</option>`).join('');
         const html = `
             <div id="customDialog" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--card-bg); border-radius:24px; padding:24px; z-index:1001; width:90%; max-width:400px; box-shadow:0 10px 30px rgba(0,0,0,0.3); border:1px solid var(--card-border);">
@@ -768,7 +823,7 @@
         document.getElementById('confirmSupportBtn').onclick = async () => {
             const companyId = parseInt(document.getElementById('supportCompanySelect').value);
             const amount = parseInt(document.getElementById('supportAmount').value);
-            if (isNaN(amount) || amount <= 0) { alert('请输入有效的支持金额'); return; }
+            if (isNaN(amount) || amount <= 0) { await showMessage('提示', '请输入有效的支持金额'); return; }
             const success = await supportCompany(companyId, amount);
             if (success && autoCheckbox.checked) {
                 const threshold = parseInt(document.getElementById('thresholdValue').value);
@@ -786,7 +841,7 @@
         };
     }
 
-    // ========== 原有图表辅助函数（完全保留） ==========
+    // ========== 原有图表辅助函数（保留） ==========
     function formatValue(num) {
         if (num === undefined || num === null) return '0';
         const n = Number(num);
@@ -947,7 +1002,6 @@
             });
         }
     }
-    // 历史图表相关（Supabase）
     async function saveFullSnapshot(totalValue) {
         const snapshotData = { names: rawData.names, values: rawData.values };
         await supabaseClient.from('stock_history_full').insert({ recorded_at: new Date(), total_value: totalValue, snapshot: snapshotData });
@@ -1059,7 +1113,7 @@
                         <td>${escapeHtml(item.name)}</td>
                         <td>${formatValue(item.value)}</td>
                         <td>${changeHtml}</td>
-                      <tr>`;
+                      </tr>`;
         }
         tbody.innerHTML = html;
         const toggleBtn = document.getElementById('toggleTableBtn');
@@ -1098,7 +1152,6 @@
         else previousSnapshot = null;
     }
 
-    // 自动刷新主函数（调用随机波动）
     async function autoRefreshData() {
         if (isLoading) return;
         isLoading = true;
@@ -1116,7 +1169,6 @@
         }
     }
 
-    // 手动刷新
     async function manualRefresh() {
         if (isLoading) return;
         isLoading = true;
@@ -1137,7 +1189,6 @@
         }
     }
 
-    // ========== 初始化登录状态和公司数据 ==========
     async function initUserAndData() {
         const user = await fetchCurrentUser();
         if (user) {
@@ -1148,13 +1199,13 @@
             await fetchAllCompanies();
             renderMyCompanySection();
             await refreshStockDataFromDB();
-            await buildChartWithFade(currentChartType); 
+            await buildChartWithFade(currentChartType);
             startAutoRefreshTimer();
             startAutoSupportWatcher();
         } else {
-    const redirectUrl = encodeURIComponent(window.location.href);
-    document.getElementById('userStatusSpan').innerHTML = `未登录 <a href="login.html?redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
-}
+            const redirectUrl = encodeURIComponent(window.location.href);
+            document.getElementById('userStatusSpan').innerHTML = `未登录 <a href="login.html?redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
+        }
     }
 
     function startAutoSupportWatcher() {
@@ -1168,7 +1219,6 @@
         autoRefreshTimer = setInterval(() => { if (autoRefreshEnabled) autoRefreshData(); }, refreshInterval);
     }
 
-    // 图表切换、滑动条等事件绑定（与原来一致）
     function setChartType(type) {
         if (!['bar','line','pie'].includes(type) || type === currentChartType) return;
         currentChartType = type;
@@ -1250,7 +1300,6 @@
         }
     }
 
-    // 绑定事件
     document.getElementById('barBtn')?.addEventListener('click', () => setChartType('bar'));
     document.getElementById('lineBtn')?.addEventListener('click', () => setChartType('line'));
     document.getElementById('pieBtn')?.addEventListener('click', () => setChartType('pie'));
