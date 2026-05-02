@@ -10,11 +10,10 @@
     <!-- 不蒜子脚本 -->
     <script async src="https://events.vercount.one/js"></script>
     <style>
-        /* 导航栏整体容器：上下两行 */
+        /* 原有样式保持不变，仅增加新样式 */
         .nav-container {
             margin-bottom: 30px;
         }
-        /* 第一行：主要页面链接 */
         .nav-links {
             display: flex;
             justify-content: center;
@@ -22,14 +21,12 @@
             gap: 15px;
             margin-bottom: 15px;
         }
-        /* 第二行：功能按钮 */
         .nav-actions {
             display: flex;
             justify-content: center;
             gap: 15px;
             flex-wrap: wrap;
         }
-        /* 统一按钮样式（复用你原有的 .nav-btn 样式即可） */
         .share-btn {
             background: var(--nav-btn-bg);
             color: var(--nav-btn-text);
@@ -46,7 +43,6 @@
             background: var(--nav-btn-hover-bg);
             color: var(--nav-btn-hover-text);
         }
-        /* 底部统计容器 */
         .stats-container {
             display: flex;
             flex-wrap: wrap;
@@ -55,7 +51,6 @@
             gap: 15px;
             margin-top: 20px;
         }
-        /* 响应式微调 */
         @media (max-width: 600px) {
             .nav-links .nav-btn {
                 padding: 8px 16px;
@@ -67,7 +62,6 @@
                 min-width: auto;
             }
         }
-        /* 新增卡片样式 */
         .home-card {
             background: var(--about-bg);
             border-radius: 12px;
@@ -82,7 +76,6 @@
         .home-card:last-child {
             margin-bottom: 0;
         }
-        /* 卡片行容器：让卡片1和2并排 */
         .home-row {
             display: flex;
             gap: 30px;
@@ -92,7 +85,6 @@
             flex: 1;
             margin-bottom: 0;
         }
-        /* 移动端适配：窄屏时改为上下排列 */
         @media (max-width: 600px) {
             .home-row {
                 flex-direction: column;
@@ -102,7 +94,6 @@
         .video-container {
             margin-bottom: 30px;
         }
-        /* 右下角固定按钮容器（夜间模式 + 回到顶部） */
         .fixed-buttons {
             position: fixed;
             bottom: 30px;
@@ -167,30 +158,48 @@
                 font-size: 20px;
             }
         }
-        /* 新增：NB币余额显示样式 */
-        .nb-balance-area {
+        /* NB币余额和登录按钮区域 */
+        .user-area {
             position: absolute;
             top: 20px;
             right: 20px;
-            background: var(--count-bg);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: var(--card-bg);
             padding: 6px 16px;
-            border-radius: 30px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            color: var(--status-border);
+            border-radius: 40px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             z-index: 200;
         }
-        .nb-balance-area a {
+        .balance-display {
+            font-size: 0.9rem;
+            font-weight: bold;
             color: var(--status-border);
-            text-decoration: none;
+        }
+        .auth-btn {
+            background: var(--nav-btn-bg);
+            color: var(--nav-btn-text);
+            border: none;
+            border-radius: 30px;
+            padding: 4px 14px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .auth-btn:hover {
+            background: var(--nav-btn-hover-bg);
+            color: white;
         }
         @media (max-width: 600px) {
-            .nb-balance-area {
+            .user-area {
                 position: static;
-                display: inline-block;
-                margin-bottom: 10px;
-                text-align: center;
+                display: flex;
+                justify-content: center;
+                margin-bottom: 15px;
+                width: fit-content;
+                margin-left: auto;
+                margin-right: auto;
             }
             .container {
                 position: relative;
@@ -201,15 +210,17 @@
 <body>
     <script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
     <div class="container">
-        <!-- NB币余额显示区域（固定在右上角） -->
-        <div id="nbBalanceDisplay" class="nb-balance-area">💰 NB币: --</div>
+        <!-- 用户区域：余额 + 登录/退出按钮 -->
+        <div id="userArea" class="user-area">
+            <span id="balanceDisplay" class="balance-display">💰 NB币: --</span>
+            <button id="authButton" class="auth-btn">登录/注册</button>
+        </div>
 
         <h1>📺 NB频道官网</h1>
         <div class="author-info" id="authorInfo">UP主：NB搞事局</div>
 
-        <!-- 导航栏分为两层 -->
+        <!-- 导航栏 -->
         <div class="nav-container">
-            <!-- 第一层：主要页面链接 -->
             <div class="nav-links">
                 <a href="index.html" class="nav-btn active">首页</a>
                 <a href="videos.html" class="nav-btn">视频</a>
@@ -218,7 +229,6 @@
                 <a href="product.html" class="nav-btn">我的产品</a>
                 <a href="APP.html" class="nav-btn">软件/APP下载</a>
             </div>
-            <!-- 第二层：功能按钮（只保留分享按钮） -->
             <div class="nav-actions">
                 <button class="share-btn" id="shareButton">📤 分享此频道</button>
                 <a href="comments.html" class="nav-btn">💬 评论</a>
@@ -245,6 +255,7 @@
         
         <div class="home-row">
             <div class="home-card">
+                <!-- 卡片内容不变，省略 -->
                 <p>👋 欢迎来到 <strong>NB频道</strong> </p>
                 <p>NB频道，全名NoBook频道，是一个热爱理科（和作死）的畜中生up主建立的虚拟公司</p>
                 <p>这个在NB圈发展的公司，目前还没有上市</p>
@@ -265,8 +276,8 @@
             </div>
         </div>
 
-        <!-- 第二行：卡片3单独 -->
         <div class="home-card">
+            <!-- 友商链接等，内容与原版相同，省略 -->
             <p style="color:#00a1d6; margin-top:30px;">什么？你想了解其他虚拟公司的网站？</p>
             <p>没关系,我这里也有链接↓</p>
             <p style="margin-top:20px;">🔗 友商Orgentの官网（已停运，B站账号也将注销，链接将永久保留，默哀）：<a href="https://orgent.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
@@ -281,35 +292,32 @@
             <p style="margin-top:20px;">🔗 友商SOTの官网：<a href="https://78439049.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
         </div>
 
-        <!-- 底部统计 -->
         <div class="stats-container">
             <span>总访问 <span id="vercount_value_site_pv">Loading</span> 次</span>
             <span>总访客 <span id="vercount_value_site_uv">Loading</span> 人</span>
         </div>
     </div>
 
-   <p align="center" style="margin-top:15px;">
-    <strong>
-        © 2026 NB频道 
-        <a href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">nb-channel.top（导航页）</a>，
-        <a href="https://github.nb-channel.top" target="_blank" rel="noopener noreferrer">github.nb-channel.top（github站）</a>，<br>
-        <a href="https://cloudflare.nb-channel.top" target="_blank" rel="noopener noreferrer">cloudflare.nb-channel.top（cloudflare站）</a>，
-        <a href="https://pythonanywhere.nb-channel.top" target="_blank" rel="noopener noreferrer">pythonanywhere.nb-channel.top（pythonanywhere站）</a>
-    </strong>
-</p>
+    <p align="center" style="margin-top:15px;">
+        <strong>
+            © 2026 NB频道 
+            <a href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">nb-channel.top（导航页）</a>，
+            <a href="https://github.nb-channel.top" target="_blank" rel="noopener noreferrer">github.nb-channel.top（github站）</a>，<br>
+            <a href="https://cloudflare.nb-channel.top" target="_blank" rel="noopener noreferrer">cloudflare.nb-channel.top（cloudflare站）</a>，
+            <a href="https://pythonanywhere.nb-channel.top" target="_blank" rel="noopener noreferrer">pythonanywhere.nb-channel.top（pythonanywhere站）</a>
+        </strong>
+    </p>
     <p align="center" style="margin-top:15px;">如果您对NB频道有任何问题或建议可以联系我：</p>
     <p align="center" style="margin-top:5px;">邮箱：<a href="mailto:nbchannel@163.com">nbchannel@163.com</a>或<a href="mailto:NBchannel@163.com">NBchannel@163.com</a></p>
     <p align="center" style="margin-top:15px;"><strong>制作：<a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">NB搞事局（原NB实验室-作死）</a></strong></p>
     <p align="center" style="margin-top:15px;"><a href="https://github.com/" target="_blank" rel="noopener noreferrer">Github</a>、<a href="https://www.cloudflare-cn.com/developer-platform/products/pages/" target="_blank" rel="noopener noreferrer">Cloudflare</a>和<a href="https://www.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">pythonanywhere</a>提供网站托管服务</p>
     <p align="center" style="margin-top:15px;"><a href="https://imgbed.cn/" target="_blank" rel="noopener noreferrer">图床小镇</a>提供视频托管服务</p>
 
-    <!-- 右下角固定按钮：夜间模式 + 回到顶部 -->
     <div class="fixed-buttons">
         <button class="theme-toggle-fixed" id="themeToggleFixed" onclick="toggleTheme()">🌙</button>
         <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
     </div>
 
-    <!-- 脚本 -->
     <script src="data/videos.js"></script>
     <script src="js/common.js"></script>
     <script>
@@ -321,7 +329,6 @@
             initShareButton();
         }
 
-        // Logo 视频防暂停
         const logoVideo = document.getElementById('logoVideo');
         if (logoVideo) {
             logoVideo.addEventListener('pause', () => {
@@ -335,25 +342,22 @@
             logoVideo.play().catch(e => console.log('初始播放失败', e));
         }
 
-        // 回到顶部滚动监听
         window.addEventListener('scroll', function() {
             const backBtn = document.getElementById('backToTop');
             if (backBtn) {
-                if (window.scrollY > 300) {
-                    backBtn.classList.add('show');
-                } else {
-                    backBtn.classList.remove('show');
-                }
+                if (window.scrollY > 300) backBtn.classList.add('show');
+                else backBtn.classList.remove('show');
             }
         });
 
-        // ---------- NB币余额显示逻辑 ----------
-        (async function initNBBalance() {
+        // ---------- NB币余额与登录按钮 ----------
+        (async function initUserArea() {
             const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
             const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            const container = document.getElementById('nbBalanceDisplay');
-            if (!container) return;
+            const balanceSpan = document.getElementById('balanceDisplay');
+            const authBtn = document.getElementById('authButton');
+            if (!balanceSpan || !authBtn) return;
 
             function getCurrentUser() {
                 const stored = localStorage.getItem('nb_user');
@@ -361,32 +365,38 @@
                 try { return JSON.parse(stored); } catch(e) { return null; }
             }
 
-            async function updateBalance() {
+            async function updateUI() {
                 const user = getCurrentUser();
                 if (!user) {
-                    const redirect = encodeURIComponent(window.location.href);
-                    container.innerHTML = `<a href="login.html?redirect=${redirect}">登录</a> / <a href="login.html?register=1&redirect=${redirect}">注册</a>`;
+                    balanceSpan.innerHTML = '💰 NB币: --';
+                    authBtn.innerHTML = '登录/注册';
+                    authBtn.onclick = () => {
+                        const redirect = encodeURIComponent(window.location.href);
+                        window.location.href = `login.html?redirect=${redirect}`;
+                    };
                     return;
                 }
-                // 已登录，从 Supabase 获取余额
+                // 已登录，获取余额
                 const { data, error } = await supabaseClient
                     .from('profiles')
                     .select('nb_balance')
                     .eq('id', user.id)
                     .single();
                 if (error || data === null) {
-                    container.innerHTML = `💰 NB币: --`;
-                    return;
+                    balanceSpan.innerHTML = '💰 NB币: --';
+                } else {
+                    balanceSpan.innerHTML = `💰 NB币: ${data.nb_balance}`;
                 }
-                container.innerHTML = `💰 NB币: ${data.nb_balance}`;
+                authBtn.innerHTML = '退出';
+                authBtn.onclick = () => {
+                    localStorage.removeItem('nb_user');
+                    location.reload();
+                };
             }
-            await updateBalance();
 
-            // 监听 localStorage 变化（例如在其它页面登录后跳转过来）
+            await updateUI();
             window.addEventListener('storage', (e) => {
-                if (e.key === 'nb_user') {
-                    updateBalance();
-                }
+                if (e.key === 'nb_user') updateUI();
             });
         })();
     </script>
