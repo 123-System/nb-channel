@@ -1134,20 +1134,27 @@
     }
 
     async function autoRefreshData() {
-        if (isLoading) return;
-        isLoading = true;
-        updateTimestamp('loading');
-        try {
-            await loadPreviousSnapshot();
-            updateTimestamp('success');
-            resetCountdown();
-        } catch (err) {
-            console.error(err);
-            updateTimestamp('error');
-        } finally {
-            isLoading = false;
-        }
+    if (isLoading) return;
+    isLoading = true;
+    updateTimestamp('loading');
+    try {
+        // 1. 调用后端 RPC 随机波动市值（完全后端控制）
+        const { error: rpcError } = await supabaseClient.rpc('random_fluctuate_market_values');
+        if (rpcError) throw rpcError;
+        
+        // 2. 重新加载数据（从数据库读取最新值）
+        await refreshStockDataFromDB();
+        await loadPreviousSnapshot();
+        
+        updateTimestamp('success');
+        resetCountdown();
+    } catch (err) {
+        console.error(err);
+        updateTimestamp('error');
+    } finally {
+        isLoading = false;
     }
+}
 
     async function manualRefresh() {
         if (isLoading) return;
