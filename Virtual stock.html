@@ -726,40 +726,46 @@
     }
 
     async function refreshStockDataFromDB() {
-        const companies = await fetchAllCompanies();
-        if (!companies.length) {
-            rawData = { names: [], values: [] };
-            sortedCombined = [];
-            totalStocks = 0;
-            return;
-        }
-        const newNames = companies.map(c => c.company_name);
-        const newValues = companies.map(c => c.market_value);
-        const newTotal = newValues.reduce((a,b)=>a+b,0);
-        rawData.names = newNames;
-        rawData.values = newValues;
-        totalStocks = rawData.names.length;
-        // 构建包含id的排序列表
-        const combined = companies.map(company => ({ id: company.id, name: company.company_name, value: company.market_value }));
-        combined.sort((a, b) => b.value - a.value);
-        sortedCombined = combined;
-        await saveFullSnapshot(newTotal);
-        await loadFullHistory();
-        updateStatsPanel(newTotal);
-        updateDataTable();
-        updateMiniPieChart();
-        updateHistogramChart();
-        if (currentChart && rawData.names.length) {
-            const windowData = getWindowData();
-            currentChart.data.labels = windowData.names;
-            currentChart.data.datasets[0].data = windowData.values;
-            if (currentChartType === 'bar' || currentChartType === 'pie') {
-                const barColors = windowData.values.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`);
-                currentChart.data.datasets[0].backgroundColor = barColors;
-            }
-            currentChart.update({ duration: 300 });
-        }
+    const companies = await fetchAllCompanies();
+    if (!companies.length) {
+        rawData = { names: [], values: [] };
+        sortedCombined = [];
+        totalStocks = 0;
+        return;
     }
+    const newNames = companies.map(c => c.company_name);
+    const newValues = companies.map(c => c.market_value);
+    const newTotal = newValues.reduce((a,b)=>a+b,0);
+    rawData.names = newNames;
+    rawData.values = newValues;
+    totalStocks = rawData.names.length;
+
+    // ★★★ 关键修改：保证每个对象都有 id ★★★
+    const combined = companies.map(company => ({
+        id: company.id,
+        name: company.company_name,
+        value: company.market_value
+    }));
+    combined.sort((a, b) => b.value - a.value);
+    sortedCombined = combined;      // 现在 sortedCombined 包含 id
+
+    await saveFullSnapshot(newTotal);
+    await loadFullHistory();
+    updateStatsPanel(newTotal);
+    updateDataTable();               // 刷新表格
+    updateMiniPieChart();
+    updateHistogramChart();
+    if (currentChart && rawData.names.length) {
+        const windowData = getWindowData();
+        currentChart.data.labels = windowData.names;
+        currentChart.data.datasets[0].data = windowData.values;
+        if (currentChartType === 'bar' || currentChartType === 'pie') {
+            const barColors = windowData.values.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`);
+            currentChart.data.datasets[0].backgroundColor = barColors;
+        }
+        currentChart.update({ duration: 300 });
+    }
+}
 
     function renderMyCompanySection() {
         const container = document.getElementById('myCompanySection');
@@ -1102,14 +1108,7 @@
             miniPieChart = new Chart(ctx, { type: 'pie', data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'right', labels: { font: { size: 10 } } }, tooltip: { callbacks: { label: ctx => `${ctx.label}: ${formatValue(ctx.raw)} (${((ctx.raw / data.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)` } } } } });
         }
     }
-    function updateDataTable() {
-        const tbody = document.getElementById('tableBody');
-        if (!sortedCombined.length) { tbody.innerHTML = '<tr><td colspan="3">暂无数据</td></tr>'; return; }
-        let filtered = sortedCombined;
-        if (searchKeyword.trim() !== '') { const kw = searchKeyword.trim().toLowerCase(); filtered = sortedCombined.filter(item => item.name.toLowerCase().includes(kw)); }
-        let displayData = fullTableVisible ? filtered : filtered.slice(0, 5);
-        let html = '';
-        // 在 updateDataTable 函数内，构建每一行时
+    let html = '';
 for (const item of displayData) {
     let prevVal = null;
     if (previousSnapshot) { 
@@ -1117,9 +1116,9 @@ for (const item of displayData) {
         if (idx !== -1) prevVal = previousSnapshot.values[idx]; 
     }
     const changeHtml = getChangeHtml(item.value, prevVal);
-    // 仅当 item.id 存在且为数字时显示举报按钮
-    const reportBtn = (item.id && !isNaN(item.id)) 
-        ? `<button class="report-company-btn" data-company-id="${item.id}" data-company-name="${escapeHtml(item.name)}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.7rem;">🚨 举报公司</button>` 
+    // ★★★ 只在 id 有效时显示举报按钮 ★★★
+    const reportBtn = (item.id && item.id !== 'undefined' && !isNaN(item.id))
+        ? `<button class="report-company-btn" data-company-id="${item.id}" data-company-name="${escapeHtml(item.name)}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.7rem;">🚨 举报公司</button>`
         : '';
     html += `<tr>
         <td>${escapeHtml(item.name)}<br>${reportBtn}</td>
@@ -1127,19 +1126,7 @@ for (const item of displayData) {
         <td>${changeHtml}</td>
     </tr>`;
 }
-        tbody.innerHTML = html;
-        const toggleBtn = document.getElementById('toggleTableBtn');
-        if (toggleBtn) toggleBtn.innerHTML = fullTableVisible ? '📋 收起 (显示前5条)' : `📋 展开全部 (共${filtered.length}条)`;
-        
-        // 绑定举报按钮事件（每次表格刷新后重新绑定）
-        document.querySelectorAll('.report-company-btn').forEach(btn => {
-            btn.onclick = () => {
-                const companyId = parseInt(btn.dataset.companyId);
-                const companyName = btn.dataset.companyName;
-                reportCompany(companyId, companyName);
-            };
-        });
-    }
+tbody.innerHTML = html;
     
     // 举报公司函数
     async function reportCompany(companyId, companyName) {
