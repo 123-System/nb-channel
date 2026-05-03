@@ -9,220 +9,74 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="js/common.js"></script>
     <style>
-        /* 基础样式（原有样式保持不变） */
+        /* 此处省略样式，您保留原有样式即可，为避免截断，使用原样式 */
         .chart-wrapper { padding: 20px 0 32px 0; }
-        .canvas-container {
-            position: relative; width: 100%; min-height: 550px; background: var(--card-bg);
-            border-radius: 24px; padding: 16px 8px 8px 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.02);
-            transition: background 0.3s ease, opacity 0.3s ease;
-        }
+        .canvas-container { position: relative; width: 100%; min-height: 550px; background: var(--card-bg); border-radius: 24px; padding: 16px 8px 8px 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.02); transition: background 0.3s ease, opacity 0.3s ease; }
         .canvas-container.fade-out { opacity: 0; }
         .canvas-container.fade-in { opacity: 1; }
-        .history-chart-container {
-            margin-top: 20px;
-            background: var(--card-bg);
-            border-radius: 24px;
-            padding: 12px 16px;
-            border: 1px solid var(--card-border);
-            position: relative;
-        }
-        .history-title {
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: var(--status-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .chart-controls {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .topn-select {
-            background: var(--count-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 30px;
-            padding: 4px 12px;
-            font-size: 0.8rem;
-            color: var(--text-color);
-        }
-        .zoom-btn {
-            background: var(--nav-btn-bg);
-            color: var(--nav-btn-text);
-            border: none;
-            border-radius: 30px;
-            padding: 4px 12px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: 0.2s;
-        }
-        .zoom-btn:hover {
-            background: var(--nav-btn-hover-bg);
-            color: white;
-        }
+        .history-chart-container { margin-top: 20px; background: var(--card-bg); border-radius: 24px; padding: 12px 16px; border: 1px solid var(--card-border); position: relative; }
+        .history-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 10px; color: var(--status-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .chart-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .topn-select { background: var(--count-bg); border: 1px solid var(--card-border); border-radius: 30px; padding: 4px 12px; font-size: 0.8rem; color: var(--text-color); }
+        .zoom-btn { background: var(--nav-btn-bg); color: var(--nav-btn-text); border: none; border-radius: 30px; padding: 4px 12px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+        .zoom-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
         canvas { max-height: 550px; width: 100%; }
-        .stats {
-            display: flex; flex-wrap: wrap; gap: 24px; margin-top: 20px;
-            padding: 16px 0 0 0; border-top: 1px solid var(--card-border);
-        }
-        .stat-card {
-            background: var(--count-bg); border-radius: 28px; padding: 10px 22px;
-            display: inline-flex; align-items: baseline; gap: 12px; flex-wrap: wrap; font-size: 0.85rem;
-        }
+        .stats { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 20px; padding: 16px 0 0 0; border-top: 1px solid var(--card-border); }
+        .stat-card { background: var(--count-bg); border-radius: 28px; padding: 10px 22px; display: inline-flex; align-items: baseline; gap: 12px; flex-wrap: wrap; font-size: 0.85rem; }
         .stat-label { font-weight: 600; }
-        .stat-value {
-            font-weight: 700; color: var(--status-border); background: var(--card-bg);
-            padding: 4px 12px; border-radius: 30px;
-        }
-        .error-msg {
-            color: #c7362b; background: #ffeae8; border-radius: 40px;
-            padding: 8px 20px; font-size: 0.85rem;
-        }
+        .stat-value { font-weight: 700; color: var(--status-border); background: var(--card-bg); padding: 4px 12px; border-radius: 30px; }
+        .error-msg { color: #c7362b; background: #ffeae8; border-radius: 40px; padding: 8px 20px; font-size: 0.85rem; }
         body.dark-mode .error-msg { background: #3b1e1a; color: #f87171; }
-        .toolbar {
-            display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 20px;
-        }
-        .btn-group {
-            display: flex; gap: 12px; background: var(--nav-btn-bg); padding: 6px; border-radius: 60px;
-        }
-        .chart-btn {
-            background: transparent; border: none; padding: 8px 24px; border-radius: 40px;
-            cursor: pointer; transition: all 0.2s; font-size: 0.9rem; font-weight: 600;
-            color: var(--nav-btn-text);
-        }
-        .chart-btn.active {
-            background: #00a1d6; color: white; box-shadow: 0 4px 8px rgba(0,161,214,0.3);
-        }
-        .chart-btn:hover:not(.active) {
-            background: rgba(0,161,214,0.1); color: var(--nav-btn-hover-text);
-        }
-        .refresh-btn {
-            background: var(--nav-btn-hover-bg); color: white; border: none;
-            padding: 8px 20px; border-radius: 40px; cursor: pointer; transition: 0.2s;
-            display: inline-flex; align-items: center; gap: 8px;
-        }
+        .toolbar { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 20px; }
+        .btn-group { display: flex; gap: 12px; background: var(--nav-btn-bg); padding: 6px; border-radius: 60px; }
+        .chart-btn { background: transparent; border: none; padding: 8px 24px; border-radius: 40px; cursor: pointer; transition: all 0.2s; font-size: 0.9rem; font-weight: 600; color: var(--nav-btn-text); }
+        .chart-btn.active { background: #00a1d6; color: white; box-shadow: 0 4px 8px rgba(0,161,214,0.3); }
+        .chart-btn:hover:not(.active) { background: rgba(0,161,214,0.1); color: var(--nav-btn-hover-text); }
+        .refresh-btn { background: var(--nav-btn-hover-bg); color: white; border: none; padding: 8px 20px; border-radius: 40px; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
         .refresh-btn:hover { filter: brightness(0.9); transform: scale(0.96); }
-        .refresh-btn .spinner {
-            display: inline-block; width: 14px; height: 14px;
-            border: 2px solid rgba(255,255,255,0.3); border-radius: 50%;
-            border-top-color: white; animation: spin 0.8s linear infinite;
-            visibility: hidden;
-        }
+        .refresh-btn .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; visibility: hidden; }
         .refresh-btn.loading .spinner { visibility: visible; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .pause-btn {
-            background: var(--nav-btn-hover-bg); color: white; border: none;
-            padding: 8px 20px; border-radius: 40px; cursor: pointer; transition: 0.2s;
-        }
+        .pause-btn { background: var(--nav-btn-hover-bg); color: white; border: none; padding: 8px 20px; border-radius: 40px; cursor: pointer; transition: 0.2s; }
         .pause-btn:hover { filter: brightness(0.9); transform: scale(0.96); }
         .pause-btn { background: #6c757d; }
-        
         .data-table-wrapper { margin-top: 20px; overflow-x: auto; }
         .search-box { margin-bottom: 12px; display: flex; justify-content: flex-end; }
-        .search-box input {
-            padding: 6px 12px; border-radius: 30px; border: 1px solid var(--card-border);
-            background: var(--card-bg); color: var(--text-color); width: 200px; font-size: 0.85rem;
-        }
-        .data-table {
-            width: 100%; border-collapse: collapse; font-size: 0.9rem; border-radius: 16px;
-            overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .data-table th, .data-table td {
-            padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--card-border);
-        }
+        .search-box input { padding: 6px 12px; border-radius: 30px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-color); width: 200px; font-size: 0.85rem; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .data-table th, .data-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--card-border); }
         .data-table th { background: var(--count-bg); font-weight: 600; color: var(--text-color); }
         .data-table tr:hover { background: rgba(0,161,214,0.05); }
         body.dark-mode .data-table tr:hover { background: rgba(96,165,250,0.1); }
         .data-table td:first-child, .data-table th:first-child { font-weight: 500; }
-        .data-table td:last-child, .data-table th:last-child {
-            text-align: right; font-family: monospace; font-weight: 600;
-        }
+        .data-table td:last-child, .data-table th:last-child { text-align: right; font-family: monospace; font-weight: 600; }
         .change-up { color: #f44336; }
         .change-down { color: #4caf50; }
         .change-icon { font-size: 0.75rem; margin-left: 4px; }
-        .toggle-table-btn {
-            display: block; margin: 12px auto 0 auto; background: var(--nav-btn-bg);
-            color: var(--nav-btn-text); border: none; padding: 6px 20px; border-radius: 30px;
-            cursor: pointer; font-size: 0.85rem; transition: 0.2s; width: fit-content;
-        }
+        .toggle-table-btn { display: block; margin: 12px auto 0 auto; background: var(--nav-btn-bg); color: var(--nav-btn-text); border: none; padding: 6px 20px; border-radius: 30px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; width: fit-content; }
         .toggle-table-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
-        .countdown-badge {
-            background: var(--count-bg); padding: 4px 12px; border-radius: 60px;
-            font-size: 0.75rem; margin-left: 8px;
-        }
-        .slider-container {
-            margin: 0 0 20px 0; background: var(--card-bg); padding: 12px 16px;
-            border-radius: 40px; display: flex; flex-wrap: wrap; align-items: center;
-            gap: 16px; border: 1px solid var(--card-border);
-        }
-        .slider-label {
-            font-size: 0.85rem; color: var(--text-color); background: var(--count-bg);
-            padding: 4px 12px; border-radius: 30px;
-        }
-        input[type="range"] {
-            flex: 1; min-width: 150px; height: 6px; -webkit-appearance: none;
-            background: var(--card-border); border-radius: 3px; outline: none;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
-            background: var(--status-border); cursor: pointer;
-        }
-        .range-value {
-            font-size: 0.8rem; background: var(--count-bg); padding: 4px 12px;
-            border-radius: 30px; font-family: monospace;
-        }
-        .reset-btn {
-            background: var(--nav-btn-bg); color: var(--nav-btn-text); border: none;
-            padding: 6px 16px; border-radius: 30px; cursor: pointer; font-size: 0.8rem;
-            transition: 0.2s;
-        }
+        .countdown-badge { background: var(--count-bg); padding: 4px 12px; border-radius: 60px; font-size: 0.75rem; margin-left: 8px; }
+        .slider-container { margin: 0 0 20px 0; background: var(--card-bg); padding: 12px 16px; border-radius: 40px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; border: 1px solid var(--card-border); }
+        .slider-label { font-size: 0.85rem; color: var(--text-color); background: var(--count-bg); padding: 4px 12px; border-radius: 30px; }
+        input[type="range"] { flex: 1; min-width: 150px; height: 6px; -webkit-appearance: none; background: var(--card-border); border-radius: 3px; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--status-border); cursor: pointer; }
+        .range-value { font-size: 0.8rem; background: var(--count-bg); padding: 4px 12px; border-radius: 30px; font-family: monospace; }
+        .reset-btn { background: var(--nav-btn-bg); color: var(--nav-btn-text); border: none; padding: 6px 16px; border-radius: 30px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
         .reset-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
-        .mini-pie-container {
-            margin-top: 20px; background: var(--card-bg); border-radius: 24px;
-            padding: 12px 16px; border: 1px solid var(--card-border);
-        }
-        .mini-pie-title {
-            font-size: 0.9rem; font-weight: 600; margin-bottom: 10px;
-            color: var(--status-border);
-        }
+        .mini-pie-container { margin-top: 20px; background: var(--card-bg); border-radius: 24px; padding: 12px 16px; border: 1px solid var(--card-border); }
+        .mini-pie-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 10px; color: var(--status-border); }
         .mini-canvas { max-height: 200px; width: 100%; }
-        .histogram-container {
-            margin-top: 20px;
-            background: var(--card-bg);
-            border-radius: 24px;
-            padding: 12px 16px;
-            border: 1px solid var(--card-border);
-        }
-        .histogram-title {
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: var(--status-border);
-        }
-        /* 全屏模式 */
-        .history-chart-container:-webkit-full-screen {
-            width: 100%; height: 100%; display: flex; flex-direction: column;
-            justify-content: center; background: var(--card-bg);
-        }
+        .histogram-container { margin-top: 20px; background: var(--card-bg); border-radius: 24px; padding: 12px 16px; border: 1px solid var(--card-border); }
+        .histogram-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 10px; color: var(--status-border); }
+        .history-chart-container:-webkit-full-screen { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; background: var(--card-bg); }
         .history-chart-container:-webkit-full-screen canvas { max-height: calc(100% - 60px); }
-        .history-chart-container:fullscreen {
-            width: 100%; height: 100%; display: flex; flex-direction: column;
-            justify-content: center; background: var(--card-bg);
-        }
+        .history-chart-container:fullscreen { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; background: var(--card-bg); }
         .history-chart-container:fullscreen canvas { max-height: calc(100% - 60px); }
-        
         @media (max-width: 680px) {
             .canvas-container { min-height: 400px; }
             canvas { max-height: 400px; }
             .chart-btn { padding: 6px 16px; font-size: 0.8rem; }
-            .refresh-btn, .pause-btn, .toggle-table-btn {
-                padding: 4px 16px; font-size: 0.75rem;
-            }
+            .refresh-btn, .pause-btn, .toggle-table-btn { padding: 4px 16px; font-size: 0.75rem; }
             .slider-container { flex-wrap: wrap; justify-content: center; }
             .slider-label, .range-value, .reset-btn { font-size: 0.7rem; }
             .reset-btn { padding: 4px 12px; }
@@ -232,7 +86,6 @@
             .search-box input { width: 100%; }
             .chart-controls { width: 100%; justify-content: space-between; }
         }
-        /* 新样式 */
         .user-info { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 16px; gap: 12px; }
         .balance-card { background: var(--count-bg); padding: 6px 16px; border-radius: 30px; font-weight: bold; font-size: 0.9rem; }
         .my-company-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px; padding: 12px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
@@ -240,7 +93,6 @@
         .company-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
         .danger-btn { background: #dc3545; color: white; }
         .danger-btn:hover { background: #c82333; }
-        /* 自定义模态框 */
         .custom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 10000; }
         .custom-modal .modal-content { background: var(--card-bg); border-radius: 24px; padding: 24px; max-width: 350px; width: 90%; text-align: center; box-shadow: 0 20px 35px rgba(0,0,0,0.2); }
         .custom-modal .modal-content button { margin: 8px; padding: 6px 20px; border-radius: 30px; border: none; cursor: pointer; background: var(--nav-btn-hover-bg); color: white; }
@@ -268,464 +120,149 @@
     </div>
 
     <div class="home-card">
-        <!-- 用户信息栏 -->
         <div class="user-info">
             <span id="userStatusSpan">未登录</span>
             <span id="balanceSpan" class="balance-card">💰 NB币: -</span>
         </div>
-
-        <!-- 我的公司区块 -->
-        <div id="myCompanySection" class="my-company-card">
-            <!-- 动态内容：显示公司信息或创建表单 -->
-        </div>
-
+        <div id="myCompanySection" class="my-company-card"></div>
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 16px;">
             <h2 style="margin: 0; color: var(--status-border);">📊 虚拟股票行情</h2>
             <button id="openSupportDialogBtn" class="company-btn">💖 支持虚拟公司</button>
         </div>
-
         <div class="sub" style="color: var(--count-text); margin-bottom: 16px;">
             <span>📈 股票/概念指数 动态追踪</span>
             <span class="update-badge" id="dataTimestamp" style="background: var(--count-bg); padding: 4px 12px; border-radius: 60px;">⚡ 数据加载中...</span>
             <span class="countdown-badge" id="countdownBadge">🕒 下次刷新: --秒</span>
         </div>
-
         <div class="toolbar">
             <div class="btn-group">
                 <button class="chart-btn active" id="barBtn">📊 柱状图</button>
                 <button class="chart-btn" id="lineBtn">📈 折线图</button>
                 <button class="chart-btn" id="pieBtn">🥧 扇形图</button>
             </div>
-            <button class="refresh-btn" id="refreshDataBtn">
-                <span class="spinner"></span>
-                <span>🔄 立即刷新</span>
-            </button>
+            <button class="refresh-btn" id="refreshDataBtn"><span class="spinner"></span><span>🔄 立即刷新</span></button>
             <button class="pause-btn" id="pauseRefreshBtn">⏸️ 暂停刷新</button>
         </div>
-
         <div class="chart-wrapper">
             <div class="canvas-container" id="chartContainer">
                 <canvas id="stockChart" width="1100" height="550"></canvas>
             </div>
         </div>
-
         <div class="slider-container" id="rangeSliderContainer">
             <span class="slider-label">📌 滑动查看虚拟股票</span>
             <input type="range" id="xAxisSlider" min="0" max="0" value="0" step="1">
             <span class="range-value" id="sliderRangeText">显示 1-0 / 0</span>
             <button id="fullViewBtn" class="reset-btn">🏠 虚拟股票全貌</button>
         </div>
-
         <div class="history-chart-container" id="stockHistoryContainer">
             <div class="history-title">
                 <span>📈 个股历史市值走势</span>
                 <div class="chart-controls">
-                    <select id="topNSelect" class="topn-select">
-                        <option value="5">Top5</option>
-                        <option value="10">Top10</option>
-                        <option value="15">Top15</option>
-                        <option value="all" selected>全部</option>
-                    </select>
+                    <select id="topNSelect" class="topn-select"><option value="5">Top5</option><option value="10">Top10</option><option value="15">Top15</option><option value="all" selected>全部</option></select>
                     <button id="zoomStockHistoryBtn" class="zoom-btn">🔍 放大/缩小</button>
                 </div>
             </div>
             <canvas id="stockHistoryChart" width="1100" height="280"></canvas>
         </div>
-
         <div class="history-chart-container">
-            <div class="history-title">
-                <span>📉 总市值历史趋势</span>
-            </div>
+            <div class="history-title"><span>📉 总市值历史趋势</span></div>
             <canvas id="totalHistoryChart" width="1100" height="200"></canvas>
         </div>
-
         <div class="histogram-container">
             <div class="histogram-title">📊 虚拟市值分布直方图</div>
             <canvas id="histogramChart" width="1100" height="250"></canvas>
         </div>
-
         <div class="mini-pie-container">
             <div class="mini-pie-title">🥧 虚拟市值占比 Top5</div>
             <canvas id="miniPieChart" width="400" height="200" class="mini-canvas"></canvas>
         </div>
-
         <div class="data-table-wrapper">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="🔍 搜索虚拟股票名称" autocomplete="off">
-            </div>
-            <table class="data-table">
-                <thead>
-                    <tr><th>虚拟股票名称</th><th>虚拟市值</th><th>与旧数据相比涨跌百分比</th></tr>
-                </thead>
-                <tbody id="tableBody">
-                    <tr><td colspan="3">加载中...</td></tr>
-                </tbody>
-            </table>
+            <div class="search-box"><input type="text" id="searchInput" placeholder="🔍 搜索虚拟股票名称" autocomplete="off"></div>
+            <table class="data-table"><thead><tr><th>虚拟股票名称</th><th>虚拟市值</th><th>与旧数据相比涨跌百分比</th></tr></thead><tbody id="tableBody"><tr><td colspan="3">加载中...<\/td><\/tr><\/tbody><\/table>
             <button id="toggleTableBtn" class="toggle-table-btn">📋 展开全部</button>
         </div>
-
-        <div class="stats" id="statsPanel">
-            <div>📡 正在从服务器获取虚拟股票估值……</div>
-        </div>
+        <div class="stats" id="statsPanel"><div>📡 正在从服务器获取虚拟股票估值……</div></div>
     </div>
 </div>
-
-<div class="site-stats">
-    <div class="stats-container" id="siteStats"></div>
-    <p style="margin-top: 12px;">数据来源：Supabase后端获取数据 | 支持NB币体系<br></p>
-</div>
-
-<div class="fixed-buttons">
-    <button class="theme-toggle-fixed" id="themeToggleFixed" onclick="toggleTheme()">🌙</button>
-    <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
-</div>
-
-<!-- 自定义消息弹窗 -->
-<div id="customMessageModal" class="custom-modal">
-    <div class="modal-content">
-        <h3 id="customMessageTitle">提示</h3>
-        <p id="customMessageText" style="margin: 15px 0;"></p>
-        <button id="customMessageClose">确定</button>
-    </div>
-</div>
-
-<!-- 自定义确认弹窗 -->
-<div id="customConfirmModal" class="custom-modal">
-    <div class="modal-content">
-        <h3 id="customConfirmTitle">确认</h3>
-        <p id="customConfirmText" style="margin: 15px 0;"></p>
-        <div>
-            <button id="customConfirmOk">确定</button>
-            <button id="customConfirmCancel" class="cancel">取消</button>
-        </div>
-    </div>
-</div>
+<div class="site-stats"><div class="stats-container" id="siteStats"></div><p style="margin-top: 12px;">数据来源：Supabase后端获取数据 | 支持NB币体系<br></p></div>
+<div class="fixed-buttons"><button class="theme-toggle-fixed" id="themeToggleFixed" onclick="toggleTheme()">🌙</button><div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div></div>
+<div id="customMessageModal" class="custom-modal"><div class="modal-content"><h3 id="customMessageTitle">提示</h3><p id="customMessageText" style="margin: 15px 0;"></p><button id="customMessageClose">确定</button></div></div>
+<div id="customConfirmModal" class="custom-modal"><div class="modal-content"><h3 id="customConfirmTitle">确认</h3><p id="customConfirmText" style="margin: 15px 0;"></p><div><button id="customConfirmOk">确定</button><button id="customConfirmCancel" class="cancel">取消</button></div></div></div>
 
 <script>
     if (typeof supabase === 'undefined' && typeof window.supabase !== 'undefined') { var supabase = window.supabase; }
-    if (typeof supabase === 'undefined') {
-        document.body.innerHTML = '<div style="color:red; padding:20px; text-align:center;">❌ 无法同步 Supabase 数据，请检查网络后刷新页面</div>';
-        throw new Error('Supabase not loaded');
-    }
-
+    if (typeof supabase === 'undefined') { document.body.innerHTML = '<div style="color:red; padding:20px; text-align:center;">❌ 无法同步 Supabase 数据，请检查网络后刷新页面</div>'; throw new Error('Supabase not loaded'); }
     const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ========== 自定义提示框 ==========
-    function showMessage(title, msg) {
-        return new Promise((resolve) => {
-            const modal = document.getElementById('customMessageModal');
-            const titleElem = document.getElementById('customMessageTitle');
-            const textElem = document.getElementById('customMessageText');
-            const closeBtn = document.getElementById('customMessageClose');
-            titleElem.innerText = title;
-            textElem.innerText = msg;
-            modal.style.display = 'flex';
-            const onClose = () => {
-                modal.style.display = 'none';
-                closeBtn.removeEventListener('click', onClose);
-                resolve();
-            };
-            closeBtn.addEventListener('click', onClose, { once: true });
-        });
-    }
+    function showMessage(title, msg) { return new Promise((resolve) => { const modal = document.getElementById('customMessageModal'); const titleElem = document.getElementById('customMessageTitle'); const textElem = document.getElementById('customMessageText'); const closeBtn = document.getElementById('customMessageClose'); titleElem.innerText = title; textElem.innerText = msg; modal.style.display = 'flex'; const onClose = () => { modal.style.display = 'none'; closeBtn.removeEventListener('click', onClose); resolve(); }; closeBtn.addEventListener('click', onClose, { once: true }); }); }
+    function showConfirm(title, msg) { return new Promise((resolve) => { const modal = document.getElementById('customConfirmModal'); const titleElem = document.getElementById('customConfirmTitle'); const textElem = document.getElementById('customConfirmText'); const okBtn = document.getElementById('customConfirmOk'); const cancelBtn = document.getElementById('customConfirmCancel'); titleElem.innerText = title; textElem.innerText = msg; modal.style.display = 'flex'; const onOk = () => { modal.style.display = 'none'; okBtn.removeEventListener('click', onOk); cancelBtn.removeEventListener('click', onCancel); resolve(true); }; const onCancel = () => { modal.style.display = 'none'; okBtn.removeEventListener('click', onOk); cancelBtn.removeEventListener('click', onCancel); resolve(false); }; okBtn.addEventListener('click', onOk, { once: true }); cancelBtn.addEventListener('click', onCancel, { once: true }); }); }
 
-    function showConfirm(title, msg) {
-        return new Promise((resolve) => {
-            const modal = document.getElementById('customConfirmModal');
-            const titleElem = document.getElementById('customConfirmTitle');
-            const textElem = document.getElementById('customConfirmText');
-            const okBtn = document.getElementById('customConfirmOk');
-            const cancelBtn = document.getElementById('customConfirmCancel');
-            titleElem.innerText = title;
-            textElem.innerText = msg;
-            modal.style.display = 'flex';
-            const onOk = () => {
-                modal.style.display = 'none';
-                okBtn.removeEventListener('click', onOk);
-                cancelBtn.removeEventListener('click', onCancel);
-                resolve(true);
-            };
-            const onCancel = () => {
-                modal.style.display = 'none';
-                okBtn.removeEventListener('click', onOk);
-                cancelBtn.removeEventListener('click', onCancel);
-                resolve(false);
-            };
-            okBtn.addEventListener('click', onOk, { once: true });
-            cancelBtn.addEventListener('click', onCancel, { once: true });
-        });
-    }
+    let currentUser = null, currentUserId = null, myCompany = null, allCompanies = [], autoSupportTimer = null;
+    let currentChart = null, miniPieChart = null, stockHistoryChart = null, totalHistoryChart = null, histogramChart = null, currentChartType = 'bar', rawData = { names: [], values: [] }, sortedCombined = [], isLoading = false, autoRefreshTimer = null, refreshInterval = 10000, fullTableVisible = false, autoRefreshEnabled = true, countdownInterval = null, secondsLeft = 10, windowSize = 15, currentStartIndex = 0, totalStocks = 0, isFullViewMode = false, searchKeyword = '', previousSnapshot = null, fullHistoryData = [], allStockNames = [], currentTopN = 'all', pagePath = 'stock_market';
 
-    // ========== 全局变量 ==========
-    let currentUser = null;
-    let currentUserId = null;
-    let myCompany = null;
-    let allCompanies = [];
-    let autoSupportTimer = null;
+    async function fetchCurrentUser() { const stored = localStorage.getItem('nb_user'); if (!stored) return null; try { const user = JSON.parse(stored); const { data, error } = await supabaseClient.from('profiles').select('id, username, nb_balance').eq('id', user.id).maybeSingle(); if (error || !data) return null; currentUser = data; currentUserId = data.id; return data; } catch(e) { return null; } }
+    async function fetchUserBalance() { if (!currentUserId) return 0; const { data, error } = await supabaseClient.from('profiles').select('nb_balance').eq('id', currentUserId).single(); if (error) return 0; document.getElementById('balanceSpan').innerHTML = `💰 NB币: ${data.nb_balance}`; return data.nb_balance; }
+    async function fetchMyCompany() { if (!currentUserId) return null; const { data, error } = await supabaseClient.from('user_companies').select('id, company_name, market_value').eq('user_id', currentUserId).maybeSingle(); myCompany = data; return data; }
+    async function fetchAllCompanies() { const { data, error } = await supabaseClient.from('user_companies').select('id, company_name, market_value, user_id, profiles!inner(username)').order('market_value', { ascending: false }); if (!error) allCompanies = data; return data || []; }
+    async function createCompany(companyName) { if (!currentUserId) return false; const { error } = await supabaseClient.from('user_companies').insert({ user_id: currentUserId, company_name: companyName, market_value: 1000 }); if (error) { await showMessage('注册失败', error.message); return false; } return true; }
 
-    // 图表相关变量
-    let currentChart = null;
-    let miniPieChart = null;
-    let stockHistoryChart = null;
-    let totalHistoryChart = null;
-    let histogramChart = null;
-    let currentChartType = 'bar';
-    let rawData = { names: [], values: [] };
-    let sortedCombined = [];
-    let isLoading = false;
-    let autoRefreshTimer = null;
-    let refreshInterval = 10000;
-    let fullTableVisible = false;
-    let autoRefreshEnabled = true;
-    let countdownInterval = null;
-    let secondsLeft = 10;
-    let windowSize = 15;
-    let currentStartIndex = 0;
-    let totalStocks = 0;
-    let isFullViewMode = false;
-    let searchKeyword = '';
-    let previousSnapshot = null;
-    let fullHistoryData = [];
-    let allStockNames = [];
-    let currentTopN = 'all';
-    const pagePath = 'stock_market';
-
-    // ========== NB币与公司管理函数 ==========
-    async function fetchCurrentUser() {
-        const stored = localStorage.getItem('nb_user');
-        if (!stored) return null;
-        try {
-            const user = JSON.parse(stored);
-            const { data, error } = await supabaseClient
-                .from('profiles')
-                .select('id, username, nb_balance')
-                .eq('id', user.id)
-                .maybeSingle();
-            if (error || !data) return null;
-            currentUser = data;
-            currentUserId = data.id;
-            return data;
-        } catch(e) { return null; }
-    }
-
-    async function fetchUserBalance() {
-        if (!currentUserId) return 0;
-        const { data, error } = await supabaseClient
-            .from('profiles')
-            .select('nb_balance')
-            .eq('id', currentUserId)
-            .single();
-        if (error) return 0;
-        document.getElementById('balanceSpan').innerHTML = `💰 NB币: ${data.nb_balance}`;
-        return data.nb_balance;
-    }
-
-    async function fetchMyCompany() {
-        if (!currentUserId) return null;
-        const { data, error } = await supabaseClient
-            .from('user_companies')
-            .select('id, company_name, market_value')
-            .eq('user_id', currentUserId)
-            .maybeSingle();
-        myCompany = data;
-        return data;
-    }
-
-    async function fetchAllCompanies() {
-        const { data, error } = await supabaseClient
-            .from('user_companies')
-            .select('id, company_name, market_value, user_id, profiles!inner(username)')
-            .order('market_value', { ascending: false });
-        if (!error) allCompanies = data;
-        return data || [];
-    }
-
-    async function createCompany(companyName) {
-        if (!currentUserId) return false;
-        const { error } = await supabaseClient.from('user_companies').insert({
-            user_id: currentUserId,
-            company_name: companyName,
-            market_value: 1000
-        });
-        if (error) {
-            await showMessage('注册失败', error.message);
+    async function supportCompany(companyId, amount, isSilent = false) {
+        const cid = parseInt(companyId);
+        if (isNaN(cid) || cid <= 0) {
+            if (!isSilent) await showMessage('错误', '无效的公司ID，无法支持');
             return false;
         }
+        if (!currentUserId) { if (!isSilent) await showMessage('提示', '请先登录'); return false; }
+        if (amount > 2000) { if (!isSilent) await showMessage('提示', '单次手动支持金额不能超过2000 NB币'); return false; }
+        const balance = await fetchUserBalance();
+        if (balance < amount) { if (!isSilent) await showMessage('提示', 'NB币余额不足'); return false; }
+        const { data: company } = await supabaseClient.from('user_companies').select('market_value').eq('id', cid).single();
+        if (!company) { if (!isSilent) await showMessage('错误', '虚拟公司不存在'); return false; }
+        const newValue = company.market_value + amount;
+        const { error: updateErr } = await supabaseClient.from('user_companies').update({ market_value: newValue }).eq('id', cid);
+        if (updateErr) { if (!isSilent) await showMessage('错误', '支持失败'); return false; }
+        const newBalance = balance - amount;
+        await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
+        await supabaseClient.from('support_logs').insert({ supporter_id: currentUserId, company_id: cid, amount: amount });
+        await fetchUserBalance(); await fetchAllCompanies(); await refreshStockDataFromDB(); await buildChartWithFade(currentChartType);
+        if (!isSilent) await showMessage('成功', `成功支持 ${amount} NB币`);
         return true;
     }
 
-    async function supportCompany(companyId, amount, isSilent = false) {
-    // 严格校验 companyId
-    const cid = parseInt(companyId);
-    if (isNaN(cid) || cid <= 0) {
-        if (!isSilent) await showMessage('错误', '无效的公司ID，无法支持');
-        return false;
-    }
-    if (!currentUserId) {
-        if (!isSilent) await showMessage('提示', '请先登录');
-        return false;
-    }
-    if (amount > 2000) {
-        if (!isSilent) await showMessage('提示', '单次手动支持金额不能超过2000 NB币');
-        return false;
-    }
-    const balance = await fetchUserBalance();
-    if (balance < amount) {
-        if (!isSilent) await showMessage('提示', 'NB币余额不足');
-        return false;
-    }
-    const { data: company } = await supabaseClient
-        .from('user_companies')
-        .select('market_value')
-        .eq('id', cid)
-        .single();
-    if (!company) {
-        if (!isSilent) await showMessage('错误', '虚拟公司不存在');
-        return false;
-    }
-    const newValue = company.market_value + amount;
-    const { error: updateErr } = await supabaseClient
-        .from('user_companies')
-        .update({ market_value: newValue })
-        .eq('id', cid);
-    if (updateErr) {
-        if (!isSilent) await showMessage('错误', '支持失败');
-        return false;
-    }
-    const newBalance = balance - amount;
-    await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
-    await supabaseClient.from('support_logs').insert({
-        supporter_id: currentUserId,
-        company_id: cid,
-        amount: amount
-    });
-    await fetchUserBalance();
-    await fetchAllCompanies();
-    await refreshStockDataFromDB();
-    await buildChartWithFade(currentChartType);
-    if (!isSilent) await showMessage('成功', `成功支持 ${amount} NB币`);
-    return true;
-}
-
     async function setAutoSupportRule(companyId, threshold, amount) {
         if (!currentUserId) return false;
-        if (amount > 500) {
-            await showMessage('提示', '自动支持金额不能超过500 NB币');
-            return false;
-        }
+        if (amount > 500) { await showMessage('提示', '自动支持金额不能超过500 NB币'); return false; }
         await supabaseClient.from('support_rules').delete().eq('user_id', currentUserId).eq('company_id', companyId);
-        const { error } = await supabaseClient.from('support_rules').insert({
-            user_id: currentUserId,
-            company_id: companyId,
-            threshold: threshold,
-            amount: amount
-        });
-        if (error) await showMessage('设置失败', error.message);
-        else await showMessage('成功', '自动支持规则已设置');
+        const { error } = await supabaseClient.from('support_rules').insert({ user_id: currentUserId, company_id: companyId, threshold: threshold, amount: amount });
+        if (error) await showMessage('设置失败', error.message); else await showMessage('成功', '自动支持规则已设置');
         return !error;
     }
 
     async function bankruptCompany() {
         if (!myCompany) { await showMessage('提示', '您还没有虚拟公司'); return; }
-        const companyId = myCompany.id;
-        const companyName = myCompany.company_name;
-        const currentValue = myCompany.market_value;
-        let reward = 0;
-        let confirmMsg = '';
-        if (currentValue > 1000) {
-            reward = currentValue - 1000;
-            confirmMsg = `确定破产吗？您的虚拟公司将被彻底删除（任何痕迹都将不复存在），您将获得 ${reward} NB币（当前市值减去1000）`;
-        } else {
-            reward = 0;
-            confirmMsg = `您的虚拟公司市值不足或等于1000，破产将无法获得NB币，但虚拟公司及历史数据会被彻底删除，确定破产吗？`;
-        }
-        const confirmed = await showConfirm('确认破产', confirmMsg);
-        if (!confirmed) return;
-
-        // 1. 删除公司记录
-        const { error: delError } = await supabaseClient
-            .from('user_companies')
-            .delete()
-            .eq('id', companyId);
-        if (delError) {
-            await showMessage('破产失败', delError.message);
-            return;
-        }
-
-        // 2. 删除该公司的自动支持规则
+        const companyId = myCompany.id, companyName = myCompany.company_name, currentValue = myCompany.market_value;
+        let reward = 0, confirmMsg = '';
+        if (currentValue > 1000) { reward = currentValue - 1000; confirmMsg = `确定破产吗？您的虚拟公司将被彻底删除，您将获得 ${reward} NB币（当前市值减去1000）`; } else { reward = 0; confirmMsg = `您的虚拟公司市值不足或等于1000，破产将无法获得NB币，但虚拟公司及历史数据会被彻底删除，确定破产吗？`; }
+        if (!(await showConfirm('确认破产', confirmMsg))) return;
+        await supabaseClient.from('user_companies').delete().eq('id', companyId);
         await supabaseClient.from('support_rules').delete().eq('company_id', companyId);
-
-        // 3. 从所有历史快照中移除该公司数据
-        const { data: snapshots, error: fetchError } = await supabaseClient
-            .from('stock_history_full')
-            .select('id, snapshot');
-        if (!fetchError && snapshots) {
-            for (const snap of snapshots) {
-                const snapshot = snap.snapshot;
-                if (!snapshot.names || !snapshot.values) continue;
-                const idx = snapshot.names.indexOf(companyName);
-                if (idx !== -1) {
-                    snapshot.names.splice(idx, 1);
-                    snapshot.values.splice(idx, 1);
-                    await supabaseClient
-                        .from('stock_history_full')
-                        .update({ snapshot: snapshot })
-                        .eq('id', snap.id);
-                }
-            }
-        }
-
-        // 4. 从最新快照中移除
-        const { data: latestData } = await supabaseClient
-            .from('stock_latest')
-            .select('id, snapshot_data')
-            .order('created_at', { ascending: false })
-            .limit(1);
-        if (latestData && latestData.length > 0) {
-            const latest = latestData[0];
-            const snapshot = latest.snapshot_data;
-            const idx = snapshot.names?.indexOf(companyName);
-            if (idx !== -1) {
-                snapshot.names.splice(idx, 1);
-                snapshot.values.splice(idx, 1);
-                await supabaseClient
-                    .from('stock_latest')
-                    .update({ snapshot_data: snapshot })
-                    .eq('id', latest.id);
-            }
-        }
-
-        // 5. 发放奖励
-        if (reward > 0) {
-            const balance = await fetchUserBalance();
-            const newBalance = balance + reward;
-            await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
-            await fetchUserBalance();
-            await showMessage('破产成功', `您的虚拟公司及历史数据已清除，您获得 ${reward} NB币。当前余额: ${newBalance}`);
-        } else {
-            await showMessage('破产成功', '您的虚拟公司及历史数据已清除，您未获得NB币。');
-        }
-
-        myCompany = null;
-        await refreshStockDataFromDB();
-        renderMyCompanySection();
+        const { data: snapshots } = await supabaseClient.from('stock_history_full').select('id, snapshot');
+        if (snapshots) for (const snap of snapshots) { const snapshot = snap.snapshot; if (!snapshot.names) continue; const idx = snapshot.names.indexOf(companyName); if (idx !== -1) { snapshot.names.splice(idx, 1); snapshot.values.splice(idx, 1); await supabaseClient.from('stock_history_full').update({ snapshot }).eq('id', snap.id); } }
+        const { data: latestData } = await supabaseClient.from('stock_latest').select('id, snapshot_data').order('created_at', { ascending: false }).limit(1);
+        if (latestData && latestData[0]) { const snapshot = latestData[0].snapshot_data; const idx = snapshot.names?.indexOf(companyName); if (idx !== -1) { snapshot.names.splice(idx, 1); snapshot.values.splice(idx, 1); await supabaseClient.from('stock_latest').update({ snapshot_data: snapshot }).eq('id', latestData[0].id); } }
+        if (reward > 0) { const balance = await fetchUserBalance(); await supabaseClient.from('profiles').update({ nb_balance: balance + reward }).eq('id', currentUserId); await fetchUserBalance(); await showMessage('破产成功', `您获得 ${reward} NB币。`); } else { await showMessage('破产成功', '您未获得NB币。'); }
+        myCompany = null; await refreshStockDataFromDB(); renderMyCompanySection();
     }
 
     async function checkAutoSupportRules() {
         if (!currentUserId) return;
-        const { data: rules, error } = await supabaseClient
-            .from('support_rules')
-            .select('id, company_id, threshold, amount')
-            .eq('user_id', currentUserId);
-        if (error || !rules.length) return;
+        const { data: rules } = await supabaseClient.from('support_rules').select('id, company_id, threshold, amount').eq('user_id', currentUserId);
+        if (!rules || !rules.length) return;
         for (const rule of rules) {
-            const { data: company } = await supabaseClient
-                .from('user_companies')
-                .select('market_value')
-                .eq('id', rule.company_id)
-                .single();
+            if (!rule.company_id) continue;  // 跳过无效的 company_id
+            const { data: company } = await supabaseClient.from('user_companies').select('market_value').eq('id', rule.company_id).single();
             if (company && company.market_value < rule.threshold) {
                 const balance = await fetchUserBalance();
                 if (balance >= rule.amount && rule.amount <= 500) {
@@ -733,7 +270,6 @@
                     await new Promise(r => setTimeout(r, 1000));
                 } else {
                     await supabaseClient.from('support_rules').delete().eq('id', rule.id);
-                    console.log(`自动支持规则已删除：余额不足或金额超限 (rule ${rule.id})`);
                 }
             }
         }
@@ -741,699 +277,79 @@
 
     async function refreshStockDataFromDB() {
         const companies = await fetchAllCompanies();
-        if (!companies.length) {
-            rawData = { names: [], values: [] };
-            sortedCombined = [];
-            totalStocks = 0;
-            return;
-        }
-        const newNames = companies.map(c => c.company_name);
-        const newValues = companies.map(c => c.market_value);
-        const newTotal = newValues.reduce((a,b)=>a+b,0);
-        rawData.names = newNames;
-        rawData.values = newValues;
+        if (!companies.length) { rawData = { names: [], values: [] }; sortedCombined = []; totalStocks = 0; return; }
+        rawData.names = companies.map(c => c.company_name);
+        rawData.values = companies.map(c => c.market_value);
         totalStocks = rawData.names.length;
-
-        // 关键修改：保证每个对象都有 id
-        const combined = companies.map(company => ({
-            id: company.id,
-            name: company.company_name,
-            value: company.market_value
-        }));
+        const combined = companies.map(company => ({ id: company.id, name: company.company_name, value: company.market_value }));
         combined.sort((a, b) => b.value - a.value);
         sortedCombined = combined;
-
-        await saveFullSnapshot(newTotal);
-        await loadFullHistory();
-        updateStatsPanel(newTotal);
-        updateDataTable();               // 刷新表格
-        updateMiniPieChart();
-        updateHistogramChart();
-        if (currentChart && rawData.names.length) {
-            const windowData = getWindowData();
-            currentChart.data.labels = windowData.names;
-            currentChart.data.datasets[0].data = windowData.values;
-            if (currentChartType === 'bar' || currentChartType === 'pie') {
-                const barColors = windowData.values.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`);
-                currentChart.data.datasets[0].backgroundColor = barColors;
-            }
-            currentChart.update({ duration: 300 });
-        }
+        const newTotal = rawData.values.reduce((a,b)=>a+b,0);
+        await saveFullSnapshot(newTotal); await loadFullHistory(); updateStatsPanel(newTotal); updateDataTable(); updateMiniPieChart(); updateHistogramChart();
+        if (currentChart && rawData.names.length) { const windowData = getWindowData(); currentChart.data.labels = windowData.names; currentChart.data.datasets[0].data = windowData.values; if (currentChartType === 'bar' || currentChartType === 'pie') { const barColors = windowData.values.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`); currentChart.data.datasets[0].backgroundColor = barColors; } currentChart.update({ duration: 300 }); }
     }
 
     function renderMyCompanySection() {
         const container = document.getElementById('myCompanySection');
-        if (!currentUserId) {
-            container.innerHTML = '<div style="width:100%;text-align:center;">请先登录</div>';
-            return;
-        }
+        if (!currentUserId) { container.innerHTML = '<div style="width:100%;text-align:center;">请先登录</div>'; return; }
         if (!myCompany) {
-            container.innerHTML = `
-                <div>尚未注册虚拟公司</div>
-                <input type="text" id="newCompanyName" placeholder="虚拟公司名称" style="border-radius:30px; padding:6px 12px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--text-color);">
-                <button id="createCompanyBtn" class="company-btn">🏢 注册虚拟公司</button>
-            `;
-            document.getElementById('createCompanyBtn')?.addEventListener('click', async () => {
-                const name = document.getElementById('newCompanyName').value.trim();
-                if (!name) return;
-                if (await createCompany(name)) {
-                    await fetchMyCompany();
-                    await refreshStockDataFromDB();
-                    renderMyCompanySection();
-                } else await showMessage('错误', '创建失败，可能已存在虚拟公司或网络问题');
-            });
+            container.innerHTML = `<div>尚未注册虚拟公司</div><input type="text" id="newCompanyName" placeholder="虚拟公司名称" style="border-radius:30px; padding:6px 12px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--text-color);"><button id="createCompanyBtn" class="company-btn">🏢 注册虚拟公司</button>`;
+            document.getElementById('createCompanyBtn')?.addEventListener('click', async () => { const name = document.getElementById('newCompanyName').value.trim(); if (!name) return; if (await createCompany(name)) { await fetchMyCompany(); await refreshStockDataFromDB(); renderMyCompanySection(); } else await showMessage('错误', '创建失败'); });
             return;
         }
-        container.innerHTML = `
-            <div><strong>🏢 ${escapeHtml(myCompany.company_name)}</strong> 虚拟市值: ${formatValue(myCompany.market_value)}</div>
-            <div><button id="bankruptBtn" class="company-btn danger-btn">💥 破产</button></div>
-        `;
+        container.innerHTML = `<div><strong>🏢 ${escapeHtml(myCompany.company_name)}</strong> 虚拟市值: ${formatValue(myCompany.market_value)}</div><div><button id="bankruptBtn" class="company-btn danger-btn">💥 破产</button></div>`;
         document.getElementById('bankruptBtn')?.addEventListener('click', bankruptCompany);
     }
 
-    function showSupportDialog() {
+    async function showSupportDialog() {
         if (!currentUserId) { showMessage('提示', '请先登录'); return; }
-        const companyOptions = allCompanies
-    .filter(c => c.id != null && !isNaN(c.id))
-    .map(c => `<option value="${c.id}">${escapeHtml(c.company_name)} (市值: ${formatValue(c.market_value)})</option>`)
-    .join('');
-if (!companyOptions) {
-    await showMessage('提示', '暂无有效公司可支持');
-    return;
-}
-        const html = `
-            <div id="customDialog" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--card-bg); border-radius:24px; padding:24px; z-index:1001; width:90%; max-width:450px; box-shadow:0 10px 30px rgba(0,0,0,0.3); border:1px solid var(--card-border);">
-                <h3>支持虚拟公司</h3>
-                <div style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--card-border);">
-                    <h4>💰 手动支持</h4>
-                    <select id="supportCompanySelect" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">${companyOptions}</select>
-                    <input id="supportAmount" type="number" placeholder="支持金额 (NB币，不超过2000)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
-                    <button id="confirmSupportBtn" class="company-btn" style="width:100%;">确认支持</button>
-                </div>
-                <div>
-                    <h4>⚙️ 自动支持规则</h4>
-                    <select id="autoCompanySelect" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">${companyOptions}</select>
-                    <input id="thresholdValue" type="number" placeholder="市值低于 (阈值)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
-                    <input id="autoAmount" type="number" placeholder="每次自动支持金额 (不超过500)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
-                    <button id="setAutoRuleBtn" class="company-btn" style="width:100%;">设置自动支持规则</button>
-                </div>
-                <div style="display:flex; gap:10px; margin-top:20px;">
-                    <button id="closeDialogBtn" class="company-btn" style="flex:1;">取消</button>
-                </div>
-            </div>
-            <div id="dialogOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;"></div>
-        `;
+        const companyOptions = allCompanies.filter(c => c.id != null && !isNaN(c.id)).map(c => `<option value="${c.id}">${escapeHtml(c.company_name)} (市值: ${formatValue(c.market_value)})</option>`).join('');
+        if (!companyOptions) { await showMessage('提示', '暂无有效公司可支持'); return; }
+        const html = `<div id="customDialog" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--card-bg); border-radius:24px; padding:24px; z-index:1001; width:90%; max-width:450px; box-shadow:0 10px 30px rgba(0,0,0,0.3); border:1px solid var(--card-border);"><h3>支持虚拟公司</h3><div style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--card-border);"><h4>💰 手动支持</h4><select id="supportCompanySelect" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">${companyOptions}</select><input id="supportAmount" type="number" placeholder="支持金额 (NB币，不超过2000)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;"><button id="confirmSupportBtn" class="company-btn" style="width:100%;">确认支持</button></div><div><h4>⚙️ 自动支持规则</h4><select id="autoCompanySelect" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">${companyOptions}</select><input id="thresholdValue" type="number" placeholder="市值低于 (阈值)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;"><input id="autoAmount" type="number" placeholder="每次自动支持金额 (不超过500)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;"><button id="setAutoRuleBtn" class="company-btn" style="width:100%;">设置自动支持规则</button></div><div style="display:flex; gap:10px; margin-top:20px;"><button id="closeDialogBtn" class="company-btn" style="flex:1;">取消</button></div></div><div id="dialogOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;"></div>`;
         document.body.insertAdjacentHTML('beforeend', html);
-        
-        document.getElementById('confirmSupportBtn').onclick = async () => {
-            const companyId = parseInt(document.getElementById('supportCompanySelect').value);
-            const amount = parseInt(document.getElementById('supportAmount').value);
-            if (isNaN(amount) || amount <= 0) { await showMessage('提示', '请输入有效的支持金额'); return; }
-            if (amount > 2000) { await showMessage('提示', '单次手动支持金额不能超过2000 NB币'); return; }
-            await supportCompany(companyId, amount);
-            closeDialog();
-        };
-        
-        document.getElementById('setAutoRuleBtn').onclick = async () => {
-            const companyId = parseInt(document.getElementById('autoCompanySelect').value);
-            const threshold = parseInt(document.getElementById('thresholdValue').value);
-            const autoAmount = parseInt(document.getElementById('autoAmount').value);
-            if (isNaN(threshold) || threshold <= 0) { await showMessage('提示', '请输入有效的阈值'); return; }
-            if (isNaN(autoAmount) || autoAmount <= 0) { await showMessage('提示', '请输入有效的自动支持金额'); return; }
-            if (autoAmount > 500) { await showMessage('提示', '自动支持金额不能超过500 NB币'); return; }
-            await setAutoSupportRule(companyId, threshold, autoAmount);
-            closeDialog();
-        };
-        
-        function closeDialog() {
-            document.getElementById('customDialog')?.remove();
-            document.getElementById('dialogOverlay')?.remove();
-        }
+        document.getElementById('confirmSupportBtn').onclick = async () => { const companyId = parseInt(document.getElementById('supportCompanySelect').value); const amount = parseInt(document.getElementById('supportAmount').value); if (isNaN(amount) || amount <= 0) { await showMessage('提示', '请输入有效的支持金额'); return; } if (amount > 2000) { await showMessage('提示', '单次手动支持金额不能超过2000 NB币'); return; } await supportCompany(companyId, amount); closeDialog(); };
+        document.getElementById('setAutoRuleBtn').onclick = async () => { const companyId = parseInt(document.getElementById('autoCompanySelect').value); const threshold = parseInt(document.getElementById('thresholdValue').value); const autoAmount = parseInt(document.getElementById('autoAmount').value); if (isNaN(threshold) || threshold <= 0) { await showMessage('提示', '请输入有效的阈值'); return; } if (isNaN(autoAmount) || autoAmount <= 0) { await showMessage('提示', '请输入有效的自动支持金额'); return; } if (autoAmount > 500) { await showMessage('提示', '自动支持金额不能超过500 NB币'); return; } await setAutoSupportRule(companyId, threshold, autoAmount); closeDialog(); };
+        function closeDialog() { document.getElementById('customDialog')?.remove(); document.getElementById('dialogOverlay')?.remove(); }
         document.getElementById('closeDialogBtn').onclick = closeDialog;
     }
 
-    // ========== 图表辅助函数 ==========
-    function formatValue(num) {
-        if (num === undefined || num === null) return '0';
-        const n = Number(num);
-        if (isNaN(n)) return '0';
-        return n.toLocaleString();
-    }
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
-    }
-    function getChangeHtml(currentVal, previousVal) {
-        if (previousVal === undefined || previousVal === null) return '<span class="change-icon">—</span>';
-        const diff = currentVal - previousVal;
-        if (diff === 0) return '<span class="change-icon">0%</span>';
-        const percent = (diff / previousVal * 100).toFixed(2);
-        const arrow = diff > 0 ? '▲' : '▼';
-        const colorClass = diff > 0 ? 'change-up' : 'change-down';
-        return `<span class="${colorClass}">${arrow} ${Math.abs(percent)}%</span>`;
-    }
-    function updateTimestamp(status) {
-        const elem = document.getElementById('dataTimestamp');
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString();
-        if (status === 'loading') elem.innerHTML = '⏳ 刷新中...';
-        else if (status === 'error') elem.innerHTML = `⚠️ 上次更新失败 (${timeStr})`;
-        else elem.innerHTML = `🕒 自动刷新: ${refreshInterval/1000}秒 | 最新: ${timeStr}`;
-    }
-    function updateCountdownDisplay() {
-        const badge = document.getElementById('countdownBadge');
-        if (!badge) return;
-        if (!autoRefreshEnabled) { badge.innerHTML = '⏸️ 已暂停'; return; }
-        badge.innerHTML = `🕒 下次刷新: ${secondsLeft}秒`;
-    }
-    function startCountdown() {
-        if (countdownInterval) clearInterval(countdownInterval);
-        countdownInterval = setInterval(() => {
-            if (autoRefreshEnabled && !isLoading && secondsLeft > 0) {
-                secondsLeft--;
-                updateCountdownDisplay();
-            } else if (!autoRefreshEnabled) updateCountdownDisplay();
-        }, 1000);
-    }
-    function resetCountdown() {
-        secondsLeft = refreshInterval / 1000;
-        updateCountdownDisplay();
-    }
-    function getWindowData() {
-        if (isFullViewMode || currentChartType === 'pie') {
-            return { names: rawData.names.slice(), values: rawData.values.slice() };
-        }
-        const start = currentStartIndex;
-        const end = Math.min(start + windowSize, totalStocks);
-        return { names: rawData.names.slice(start, end), values: rawData.values.slice(start, end) };
-    }
-    function updateSliderUI() {
-        const sliderContainer = document.getElementById('rangeSliderContainer');
-        const slider = document.getElementById('xAxisSlider');
-        const rangeSpan = document.getElementById('sliderRangeText');
-        const fullViewBtn = document.getElementById('fullViewBtn');
-        if (!sliderContainer || !slider || !rangeSpan || !fullViewBtn) return;
-        if (currentChartType === 'pie') { sliderContainer.style.display = 'none'; return; }
-        sliderContainer.style.display = 'flex';
-        if (isFullViewMode) {
-            slider.style.display = 'none';
-            rangeSpan.style.display = 'none';
-            fullViewBtn.innerHTML = '🔙 显示部分';
-            fullViewBtn.style.margin = '0 auto';
-        } else {
-            slider.style.display = 'block';
-            rangeSpan.style.display = 'inline-block';
-            const maxStart = Math.max(0, totalStocks - windowSize);
-            slider.max = maxStart;
-            if (currentStartIndex > maxStart) currentStartIndex = maxStart;
-            slider.value = currentStartIndex;
-            const start = currentStartIndex + 1;
-            const end = Math.min(currentStartIndex + windowSize, totalStocks);
-            rangeSpan.innerText = `显示 ${start} - ${end} / ${totalStocks}`;
-            fullViewBtn.innerHTML = '🏠 股票全貌';
-            fullViewBtn.style.margin = '';
-        }
-    }
-    function getChartColors() {
-        const isDark = document.body.classList.contains('dark-mode');
-        return {
-            gridColor: isDark ? '#3f465f' : '#e3e9ef',
-            titleColor: isDark ? '#9ca3af' : '#5d7f8f',
-            tickColor: isDark ? '#9ca3af' : '#5d7f8f',
-            legendColor: isDark ? '#cbd5e6' : '#2c5a6e',
-            borderColor: isDark ? '#60a5fa' : '#2c5a6e',
-            pointBackground: isDark ? '#60a5fa' : '#2c5a6e',
-            tooltipBg: isDark ? '#1f2937' : '#1f3e4c',
-            tooltipTitle: isDark ? '#f3f4f6' : '#f0f3f7'
-        };
-    }
-    async function buildChartWithFade(type) {
-        if (!rawData.names.length) return;
-        const container = document.getElementById('chartContainer');
-        if (!container) return;
-        container.classList.add('fade-out');
-        await new Promise(resolve => setTimeout(resolve, 150));
-        const windowData = getWindowData();
-        const labels = windowData.names;
-        const dataValues = windowData.values;
-        const colors = getChartColors();
-        const barColors = dataValues.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`);
-        let chartConfig = null;
-        if (type === 'bar') {
-            chartConfig = { type: 'bar', data: { labels, datasets: [{ label: '虚拟市值', data: dataValues, backgroundColor: barColors, borderColor: 'rgba(44,90,110,0.4)', borderWidth: 1, borderRadius: 6, barPercentage: 0.7, categoryPercentage: 0.85 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatValue(ctx.raw)}` }, backgroundColor: colors.tooltipBg, titleColor: colors.tooltipTitle }, legend: { position: 'top', labels: { font: { size: 12 }, color: colors.legendColor } } }, scales: { y: { beginAtZero: true, grid: { color: colors.gridColor }, title: { display: true, text: '虚拟市值', color: colors.titleColor }, ticks: { color: colors.tickColor, callback: v => formatValue(v) } }, x: { ticks: { color: colors.tickColor, maxRotation: 45, minRotation: 35, autoSkip: false, font: { size: 9 } }, title: { display: true, text: '虚拟股票名称', color: colors.titleColor } } } } };
-        } else if (type === 'line') {
-            chartConfig = { type: 'line', data: { labels, datasets: [{ label: '虚拟股票价值曲线', data: dataValues, borderColor: colors.borderColor, backgroundColor: document.body.classList.contains('dark-mode') ? 'rgba(59,130,246,0.1)' : 'rgba(44,90,110,0.08)', borderWidth: 3, pointRadius: 3.5, pointBackgroundColor: colors.pointBackground, pointBorderColor: '#ffffff', tension: 0.2, fill: true }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatValue(ctx.raw)}` }, backgroundColor: colors.tooltipBg, titleColor: colors.tooltipTitle }, legend: { position: 'top', labels: { font: { size: 12 }, color: colors.legendColor } } }, scales: { y: { beginAtZero: true, grid: { color: colors.gridColor }, title: { display: true, text: '虚拟市值', color: colors.titleColor }, ticks: { color: colors.tickColor, callback: v => formatValue(v) } }, x: { ticks: { color: colors.tickColor, maxRotation: 45, minRotation: 35, autoSkip: false, font: { size: 9 } }, title: { display: true, text: '虚拟股票名称', color: colors.titleColor } } } } };
-        } else if (type === 'pie') {
-            const fullLabels = rawData.names;
-            const fullValues = rawData.values;
-            const fullColors = fullValues.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`);
-            const isMobile = window.innerWidth <= 680;
-            chartConfig = { type: 'pie', data: { labels: fullLabels, datasets: [{ data: fullValues, backgroundColor: fullColors, borderColor: colors.borderColor, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.label}: ${formatValue(ctx.raw)} (${((ctx.raw / fullValues.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)` }, backgroundColor: colors.tooltipBg, titleColor: colors.tooltipTitle }, legend: { position: isMobile ? 'bottom' : 'right', labels: { font: { size: isMobile ? 9 : 11 }, color: colors.legendColor, boxWidth: 10 } } } } };
-        }
-        if (chartConfig) {
-            if (currentChart) currentChart.destroy();
-            currentChart = new Chart(document.getElementById('stockChart').getContext('2d'), chartConfig);
-        }
-        updateSliderUI();
-        container.classList.remove('fade-out');
-        container.classList.add('fade-in');
-        setTimeout(() => container.classList.remove('fade-in'), 150);
-    }
-    function computeHistogram(values, step = 10000) {
-        if (!values || values.length === 0) return { labels: [], counts: [] };
-        const maxVal = Math.max(...values);
-        const binCount = Math.ceil(maxVal / step);
-        const labels = [];
-        const counts = new Array(binCount).fill(0);
-        for (let i = 0; i < binCount; i++) {
-            const start = i === 0 ? 0 : (i * step + 1);
-            const end = (i + 1) * step;
-            labels.push(`${start}～${end}`);
-        }
-        for (const val of values) {
-            let binIndex = Math.floor(val / step);
-            if (binIndex >= binCount) binIndex = binCount - 1;
-            counts[binIndex]++;
-        }
-        return { labels, counts };
-    }
-    function updateHistogramChart() {
-        if (!rawData.values.length) return;
-        const { labels, counts } = computeHistogram(rawData.values, 10000);
-        const ctx = document.getElementById('histogramChart').getContext('2d');
-        if (histogramChart) {
-            histogramChart.data.labels = labels;
-            histogramChart.data.datasets[0].data = counts;
-            histogramChart.update();
-        } else {
-            histogramChart = new Chart(ctx, {
-                type: 'bar',
-                data: { labels, datasets: [{ label: '虚拟股票数量', data: counts, backgroundColor: 'rgba(0,161,214,0.6)', borderColor: '#00a1d6', borderWidth: 1 }] },
-                options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw} 只` } }, legend: { position: 'top' } }, scales: { y: { beginAtZero: true, title: { display: true, text: '虚拟股票数量' }, ticks: { stepSize: 1 } }, x: { title: { display: true, text: '虚拟市值区间' }, ticks: { maxRotation: 45, autoSkip: true } } } }
-            });
-        }
-    }
-    async function saveFullSnapshot(totalValue) {
-        const snapshotData = { names: rawData.names, values: rawData.values };
-        await supabaseClient.from('stock_history_full').insert({ recorded_at: new Date(), total_value: totalValue, snapshot: snapshotData });
-        await supabaseClient.from('stock_history').insert({ total_value: totalValue });
-        await supabaseClient.from('stock_latest').delete().neq('id', 0);
-        await supabaseClient.from('stock_latest').insert({ created_at: new Date(), total_value: totalValue, snapshot_data: snapshotData });
-    }
-    async function loadFullHistory() {
-        const { data, error } = await supabaseClient.from('stock_history_full').select('recorded_at, snapshot, total_value').order('recorded_at', { ascending: true }).limit(30);
-        if (error || !data || data.length === 0) return;
-        fullHistoryData = data.map(row => ({ time: new Date(row.recorded_at), snapshot: row.snapshot, total: row.total_value }));
-        if (allStockNames.length === 0 && fullHistoryData.length > 0) { const latest = fullHistoryData[fullHistoryData.length-1]; allStockNames = [...latest.snapshot.names]; }
-        updateStockHistoryChartNoRebuild();
-        updateTotalHistoryChartNoRebuild();
-    }
-    function getFilteredStockNames() {
-        if (!fullHistoryData.length) return [];
-        const latest = fullHistoryData[fullHistoryData.length-1];
-        const stocks = latest.snapshot.names.map((name, idx) => ({ name, value: latest.snapshot.values[idx] }));
-        stocks.sort((a,b) => b.value - a.value);
-        if (currentTopN === 'all') return stocks.map(s => s.name);
-        const limit = parseInt(currentTopN, 10);
-        return stocks.slice(0, limit).map(s => s.name);
-    }
-    function updateStockHistoryChartNoRebuild() {
-        if (!fullHistoryData.length || allStockNames.length === 0) return;
-        const displayNames = getFilteredStockNames();
-        if (displayNames.length === 0) return;
-        const labels = fullHistoryData.map(r => r.time.toLocaleTimeString());
-        if (stockHistoryChart && stockHistoryChart.data.datasets.length === displayNames.length) {
-            for (let i=0; i<displayNames.length; i++) {
-                const stockName = displayNames[i];
-                const dataPoints = [];
-                for (const record of fullHistoryData) {
-                    const idx = record.snapshot.names.indexOf(stockName);
-                    dataPoints.push(idx !== -1 ? record.snapshot.values[idx] : null);
-                }
-                stockHistoryChart.data.datasets[i].data = dataPoints;
-            }
-            stockHistoryChart.data.labels = labels;
-            stockHistoryChart.update();
-        } else {
-            const datasets = [];
-            const colorPalette = ['#f44336','#4caf50','#2196f3','#ff9800','#9c27b0','#00bcd4','#e91e63','#3f51b5','#009688','#ffc107','#795548','#607d8b'];
-            for (let i=0; i<displayNames.length; i++) {
-                const stockName = displayNames[i];
-                const dataPoints = [];
-                for (const record of fullHistoryData) {
-                    const idx = record.snapshot.names.indexOf(stockName);
-                    dataPoints.push(idx !== -1 ? record.snapshot.values[idx] : null);
-                }
-                datasets.push({ label: stockName, data: dataPoints, borderColor: colorPalette[i % colorPalette.length], backgroundColor: 'transparent', tension: 0.2, fill: false, pointRadius: 1.5, borderWidth: 1.5 });
-            }
-            const ctx = document.getElementById('stockHistoryChart').getContext('2d');
-            if (stockHistoryChart) stockHistoryChart.destroy();
-            stockHistoryChart = new Chart(ctx, { type: 'line', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatValue(ctx.raw)}` } }, legend: { position: 'top', labels: { font: { size: 10 } } } }, scales: { y: { beginAtZero: true, ticks: { callback: v => formatValue(v) } } } } });
-        }
-    }
-    function updateTotalHistoryChartNoRebuild() {
-        if (!fullHistoryData.length) return;
-        const labels = fullHistoryData.map(r => r.time.toLocaleTimeString());
-        const totals = fullHistoryData.map(r => r.total);
-        if (totalHistoryChart) {
-            totalHistoryChart.data.labels = labels;
-            totalHistoryChart.data.datasets[0].data = totals;
-            totalHistoryChart.update();
-        } else {
-            const ctx = document.getElementById('totalHistoryChart').getContext('2d');
-            totalHistoryChart = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: '总虚拟市值', data: totals, borderColor: '#00a1d6', backgroundColor: 'rgba(0,161,214,0.1)', fill: true, tension: 0.2 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `总虚拟市值: ${formatValue(ctx.raw)}` } } } } });
-        }
-    }
-    function toggleFullscreen(element) {
-        if (!element) return;
-        if (!document.fullscreenElement) element.requestFullscreen().catch(err => console.error(err));
-        else document.exitFullscreen();
-    }
-    function updateMiniPieChart() {
-        if (!rawData.values.length) return;
-        const combined = rawData.names.map((n, i) => ({ name: n, value: rawData.values[i] }));
-        combined.sort((a, b) => b.value - a.value);
-        const top5 = combined.slice(0, 5);
-        const otherValue = combined.slice(5).reduce((sum, item) => sum + item.value, 0);
-        let labels = top5.map(item => item.name);
-        let data = top5.map(item => item.value);
-        if (otherValue > 0) { labels.push('其他'); data.push(otherValue); }
-        const colors = data.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`);
-        const ctx = document.getElementById('miniPieChart').getContext('2d');
-        if (miniPieChart) {
-            miniPieChart.data.labels = labels;
-            miniPieChart.data.datasets[0].data = data;
-            miniPieChart.data.datasets[0].backgroundColor = colors;
-            miniPieChart.update({ duration: 300 });
-        } else {
-            miniPieChart = new Chart(ctx, { type: 'pie', data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'right', labels: { font: { size: 10 } } }, tooltip: { callbacks: { label: ctx => `${ctx.label}: ${formatValue(ctx.raw)} (${((ctx.raw / data.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)` } } } } });
-        }
-    }
-    function updateDataTable() {
-        const tbody = document.getElementById('tableBody');
-        if (!sortedCombined.length) {
-            tbody.innerHTML = '<tr><td colspan="3">暂无数据</td></tr>';
-            return;
-        }
-        
-        let filtered = sortedCombined;
-        if (searchKeyword.trim() !== '') {
-            const kw = searchKeyword.trim().toLowerCase();
-            filtered = sortedCombined.filter(item => item.name.toLowerCase().includes(kw));
-        }
-        let displayData = fullTableVisible ? filtered : filtered.slice(0, 5);
-        
-        let html = '';
-        for (const item of displayData) {
-            let prevVal = null;
-            if (previousSnapshot) {
-                const idx = previousSnapshot.names.indexOf(item.name);
-                if (idx !== -1) prevVal = previousSnapshot.values[idx];
-            }
-            const changeHtml = getChangeHtml(item.value, prevVal);
-            const reportBtn = (item.id && item.id !== 'undefined' && !isNaN(item.id))
-                ? `<button class="report-company-btn" data-company-id="${item.id}" data-company-name="${escapeHtml(item.name)}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.7rem;">🚨 举报公司</button>`
-                : '';
-            html += `<tr>
-                <td>${escapeHtml(item.name)}<br>${reportBtn}</td>
-                <td>${formatValue(item.value)}</td>
-                <td>${changeHtml}</td>
-            </tr>`;
-        }
-        tbody.innerHTML = html;
-        
-        const toggleBtn = document.getElementById('toggleTableBtn');
-        if (toggleBtn) {
-            toggleBtn.innerHTML = fullTableVisible ? '📋 收起 (显示前5条)' : `📋 展开全部 (共${filtered.length}条)`;
-        }
-        
-        // 绑定举报按钮事件
-        document.querySelectorAll('.report-company-btn').forEach(btn => {
-            btn.onclick = () => {
-                const companyId = parseInt(btn.dataset.companyId);
-                const companyName = btn.dataset.companyName;
-                reportCompany(companyId, companyName);
-            };
-        });
-    }
-    
-    // 举报公司函数
-    async function reportCompany(companyId, companyName) {
-        const cid = Number(companyId);
-        if (isNaN(cid) || cid <= 0) {
-            await showMessage('错误', '无效的公司ID，无法举报');
-            console.error('举报失败：companyId =', companyId);
-            return;
-        }
-        if (!currentUserId) {
-            await showMessage('提示', '请先登录');
-            return;
-        }
-        const reason = prompt(`请输入举报 ${companyName} 的原因（不超过200字）：`);
-        if (!reason) return;
-        if (reason.length > 200) {
-            await showMessage('提示', '举报原因不能超过200字');
-            return;
-        }
-        try {
-            const { data, error } = await supabaseClient.rpc('report_company', {
-                p_user_id: currentUserId,
-                p_company_id: cid,
-                p_reason: reason
-            });
-            if (error) {
-                console.error('RPC调用错误：', error);
-                await showMessage('错误', error.message);
-            } else if (data && data.success === false) {
-                await showMessage('提示', data.message);
-            } else {
-                await showMessage('成功', '举报已提交，我们会尽快处理');
-            }
-        } catch (err) {
-            console.error('举报异常：', err);
-            await showMessage('错误', '举报失败，请稍后重试');
-        }
-    }
-    
+    function formatValue(num) { if (num === undefined || num === null) return '0'; const n = Number(num); if (isNaN(n)) return '0'; return n.toLocaleString(); }
+    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'); }
+    function getChangeHtml(currentVal, previousVal) { if (previousVal === undefined || previousVal === null) return '<span class="change-icon">—</span>'; const diff = currentVal - previousVal; if (diff === 0) return '<span class="change-icon">0%</span>'; const percent = (diff / previousVal * 100).toFixed(2); const arrow = diff > 0 ? '▲' : '▼'; const colorClass = diff > 0 ? 'change-up' : 'change-down'; return `<span class="${colorClass}">${arrow} ${Math.abs(percent)}%</span>`; }
+    function updateTimestamp(status) { const elem = document.getElementById('dataTimestamp'); const now = new Date(); const timeStr = now.toLocaleTimeString(); if (status === 'loading') elem.innerHTML = '⏳ 刷新中...'; else if (status === 'error') elem.innerHTML = `⚠️ 上次更新失败 (${timeStr})`; else elem.innerHTML = `🕒 自动刷新: ${refreshInterval/1000}秒 | 最新: ${timeStr}`; }
+    function updateCountdownDisplay() { const badge = document.getElementById('countdownBadge'); if (!badge) return; if (!autoRefreshEnabled) { badge.innerHTML = '⏸️ 已暂停'; return; } badge.innerHTML = `🕒 下次刷新: ${secondsLeft}秒`; }
+    function startCountdown() { if (countdownInterval) clearInterval(countdownInterval); countdownInterval = setInterval(() => { if (autoRefreshEnabled && !isLoading && secondsLeft > 0) { secondsLeft--; updateCountdownDisplay(); } else if (!autoRefreshEnabled) updateCountdownDisplay(); }, 1000); }
+    function resetCountdown() { secondsLeft = refreshInterval / 1000; updateCountdownDisplay(); }
+    function getWindowData() { if (isFullViewMode || currentChartType === 'pie') return { names: rawData.names.slice(), values: rawData.values.slice() }; const start = currentStartIndex; const end = Math.min(start + windowSize, totalStocks); return { names: rawData.names.slice(start, end), values: rawData.values.slice(start, end) }; }
+    function updateSliderUI() { const sliderContainer = document.getElementById('rangeSliderContainer'); const slider = document.getElementById('xAxisSlider'); const rangeSpan = document.getElementById('sliderRangeText'); const fullViewBtn = document.getElementById('fullViewBtn'); if (!sliderContainer || !slider || !rangeSpan || !fullViewBtn) return; if (currentChartType === 'pie') { sliderContainer.style.display = 'none'; return; } sliderContainer.style.display = 'flex'; if (isFullViewMode) { slider.style.display = 'none'; rangeSpan.style.display = 'none'; fullViewBtn.innerHTML = '🔙 显示部分'; fullViewBtn.style.margin = '0 auto'; } else { slider.style.display = 'block'; rangeSpan.style.display = 'inline-block'; const maxStart = Math.max(0, totalStocks - windowSize); slider.max = maxStart; if (currentStartIndex > maxStart) currentStartIndex = maxStart; slider.value = currentStartIndex; const start = currentStartIndex + 1; const end = Math.min(currentStartIndex + windowSize, totalStocks); rangeSpan.innerText = `显示 ${start} - ${end} / ${totalStocks}`; fullViewBtn.innerHTML = '🏠 股票全貌'; fullViewBtn.style.margin = ''; } }
+    function getChartColors() { const isDark = document.body.classList.contains('dark-mode'); return { gridColor: isDark ? '#3f465f' : '#e3e9ef', titleColor: isDark ? '#9ca3af' : '#5d7f8f', tickColor: isDark ? '#9ca3af' : '#5d7f8f', legendColor: isDark ? '#cbd5e6' : '#2c5a6e', borderColor: isDark ? '#60a5fa' : '#2c5a6e', pointBackground: isDark ? '#60a5fa' : '#2c5a6e', tooltipBg: isDark ? '#1f2937' : '#1f3e4c', tooltipTitle: isDark ? '#f3f4f6' : '#f0f3f7' }; }
+    async function buildChartWithFade(type) { if (!rawData.names.length) return; const container = document.getElementById('chartContainer'); if (!container) return; container.classList.add('fade-out'); await new Promise(resolve => setTimeout(resolve, 150)); const windowData = getWindowData(); const labels = windowData.names; const dataValues = windowData.values; const colors = getChartColors(); const barColors = dataValues.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`); let chartConfig = null; if (type === 'bar') { chartConfig = { type: 'bar', data: { labels, datasets: [{ label: '虚拟市值', data: dataValues, backgroundColor: barColors, borderColor: 'rgba(44,90,110,0.4)', borderWidth: 1, borderRadius: 6, barPercentage: 0.7, categoryPercentage: 0.85 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatValue(ctx.raw)}` }, backgroundColor: colors.tooltipBg, titleColor: colors.tooltipTitle }, legend: { position: 'top', labels: { font: { size: 12 }, color: colors.legendColor } } }, scales: { y: { beginAtZero: true, grid: { color: colors.gridColor }, title: { display: true, text: '虚拟市值', color: colors.titleColor }, ticks: { color: colors.tickColor, callback: v => formatValue(v) } }, x: { ticks: { color: colors.tickColor, maxRotation: 45, minRotation: 35, autoSkip: false, font: { size: 9 } }, title: { display: true, text: '虚拟股票名称', color: colors.titleColor } } } } }; } else if (type === 'line') { chartConfig = { type: 'line', data: { labels, datasets: [{ label: '虚拟股票价值曲线', data: dataValues, borderColor: colors.borderColor, backgroundColor: document.body.classList.contains('dark-mode') ? 'rgba(59,130,246,0.1)' : 'rgba(44,90,110,0.08)', borderWidth: 3, pointRadius: 3.5, pointBackgroundColor: colors.pointBackground, pointBorderColor: '#ffffff', tension: 0.2, fill: true }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatValue(ctx.raw)}` }, backgroundColor: colors.tooltipBg, titleColor: colors.tooltipTitle }, legend: { position: 'top', labels: { font: { size: 12 }, color: colors.legendColor } } }, scales: { y: { beginAtZero: true, grid: { color: colors.gridColor }, title: { display: true, text: '虚拟市值', color: colors.titleColor }, ticks: { color: colors.tickColor, callback: v => formatValue(v) } }, x: { ticks: { color: colors.tickColor, maxRotation: 45, minRotation: 35, autoSkip: false, font: { size: 9 } }, title: { display: true, text: '虚拟股票名称', color: colors.titleColor } } } } }; } else if (type === 'pie') { const fullLabels = rawData.names; const fullValues = rawData.values; const fullColors = fullValues.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`); const isMobile = window.innerWidth <= 680; chartConfig = { type: 'pie', data: { labels: fullLabels, datasets: [{ data: fullValues, backgroundColor: fullColors, borderColor: colors.borderColor, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.label}: ${formatValue(ctx.raw)} (${((ctx.raw / fullValues.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)` }, backgroundColor: colors.tooltipBg, titleColor: colors.tooltipTitle }, legend: { position: isMobile ? 'bottom' : 'right', labels: { font: { size: isMobile ? 9 : 11 }, color: colors.legendColor, boxWidth: 10 } } } } }; } if (chartConfig) { if (currentChart) currentChart.destroy(); currentChart = new Chart(document.getElementById('stockChart').getContext('2d'), chartConfig); } updateSliderUI(); container.classList.remove('fade-out'); container.classList.add('fade-in'); setTimeout(() => container.classList.remove('fade-in'), 150); }
+    function computeHistogram(values, step = 10000) { if (!values || values.length === 0) return { labels: [], counts: [] }; const maxVal = Math.max(...values); const binCount = Math.ceil(maxVal / step); const labels = []; const counts = new Array(binCount).fill(0); for (let i = 0; i < binCount; i++) { const start = i === 0 ? 0 : (i * step + 1); const end = (i + 1) * step; labels.push(`${start}～${end}`); } for (const val of values) { let binIndex = Math.floor(val / step); if (binIndex >= binCount) binIndex = binCount - 1; counts[binIndex]++; } return { labels, counts }; }
+    function updateHistogramChart() { if (!rawData.values.length) return; const { labels, counts } = computeHistogram(rawData.values, 10000); const ctx = document.getElementById('histogramChart').getContext('2d'); if (histogramChart) { histogramChart.data.labels = labels; histogramChart.data.datasets[0].data = counts; histogramChart.update(); } else { histogramChart = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: '虚拟股票数量', data: counts, backgroundColor: 'rgba(0,161,214,0.6)', borderColor: '#00a1d6', borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw} 只` } }, legend: { position: 'top' } }, scales: { y: { beginAtZero: true, title: { display: true, text: '虚拟股票数量' }, ticks: { stepSize: 1 } }, x: { title: { display: true, text: '虚拟市值区间' }, ticks: { maxRotation: 45, autoSkip: true } } } } }); } }
+    async function saveFullSnapshot(totalValue) { const snapshotData = { names: rawData.names, values: rawData.values }; await supabaseClient.from('stock_history_full').insert({ recorded_at: new Date(), total_value: totalValue, snapshot: snapshotData }); await supabaseClient.from('stock_history').insert({ total_value: totalValue }); await supabaseClient.from('stock_latest').delete().neq('id', 0); await supabaseClient.from('stock_latest').insert({ created_at: new Date(), total_value: totalValue, snapshot_data: snapshotData }); }
+    async function loadFullHistory() { const { data, error } = await supabaseClient.from('stock_history_full').select('recorded_at, snapshot, total_value').order('recorded_at', { ascending: true }).limit(30); if (error || !data || data.length === 0) return; fullHistoryData = data.map(row => ({ time: new Date(row.recorded_at), snapshot: row.snapshot, total: row.total_value })); if (allStockNames.length === 0 && fullHistoryData.length > 0) { const latest = fullHistoryData[fullHistoryData.length-1]; allStockNames = [...latest.snapshot.names]; } updateStockHistoryChartNoRebuild(); updateTotalHistoryChartNoRebuild(); }
+    function getFilteredStockNames() { if (!fullHistoryData.length) return []; const latest = fullHistoryData[fullHistoryData.length-1]; const stocks = latest.snapshot.names.map((name, idx) => ({ name, value: latest.snapshot.values[idx] })); stocks.sort((a,b) => b.value - a.value); if (currentTopN === 'all') return stocks.map(s => s.name); const limit = parseInt(currentTopN, 10); return stocks.slice(0, limit).map(s => s.name); }
+    function updateStockHistoryChartNoRebuild() { if (!fullHistoryData.length || allStockNames.length === 0) return; const displayNames = getFilteredStockNames(); if (displayNames.length === 0) return; const labels = fullHistoryData.map(r => r.time.toLocaleTimeString()); if (stockHistoryChart && stockHistoryChart.data.datasets.length === displayNames.length) { for (let i=0; i<displayNames.length; i++) { const stockName = displayNames[i]; const dataPoints = []; for (const record of fullHistoryData) { const idx = record.snapshot.names.indexOf(stockName); dataPoints.push(idx !== -1 ? record.snapshot.values[idx] : null); } stockHistoryChart.data.datasets[i].data = dataPoints; } stockHistoryChart.data.labels = labels; stockHistoryChart.update(); } else { const datasets = []; const colorPalette = ['#f44336','#4caf50','#2196f3','#ff9800','#9c27b0','#00bcd4','#e91e63','#3f51b5','#009688','#ffc107','#795548','#607d8b']; for (let i=0; i<displayNames.length; i++) { const stockName = displayNames[i]; const dataPoints = []; for (const record of fullHistoryData) { const idx = record.snapshot.names.indexOf(stockName); dataPoints.push(idx !== -1 ? record.snapshot.values[idx] : null); } datasets.push({ label: stockName, data: dataPoints, borderColor: colorPalette[i % colorPalette.length], backgroundColor: 'transparent', tension: 0.2, fill: false, pointRadius: 1.5, borderWidth: 1.5 }); } const ctx = document.getElementById('stockHistoryChart').getContext('2d'); if (stockHistoryChart) stockHistoryChart.destroy(); stockHistoryChart = new Chart(ctx, { type: 'line', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatValue(ctx.raw)}` } }, legend: { position: 'top', labels: { font: { size: 10 } } } }, scales: { y: { beginAtZero: true, ticks: { callback: v => formatValue(v) } } } } }); } }
+    function updateTotalHistoryChartNoRebuild() { if (!fullHistoryData.length) return; const labels = fullHistoryData.map(r => r.time.toLocaleTimeString()); const totals = fullHistoryData.map(r => r.total); if (totalHistoryChart) { totalHistoryChart.data.labels = labels; totalHistoryChart.data.datasets[0].data = totals; totalHistoryChart.update(); } else { const ctx = document.getElementById('totalHistoryChart').getContext('2d'); totalHistoryChart = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: '总虚拟市值', data: totals, borderColor: '#00a1d6', backgroundColor: 'rgba(0,161,214,0.1)', fill: true, tension: 0.2 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `总虚拟市值: ${formatValue(ctx.raw)}` } } } } }); } }
+    function toggleFullscreen(element) { if (!element) return; if (!document.fullscreenElement) element.requestFullscreen().catch(err => console.error(err)); else document.exitFullscreen(); }
+    function updateMiniPieChart() { if (!rawData.values.length) return; const combined = rawData.names.map((n, i) => ({ name: n, value: rawData.values[i] })); combined.sort((a, b) => b.value - a.value); const top5 = combined.slice(0, 5); const otherValue = combined.slice(5).reduce((sum, item) => sum + item.value, 0); let labels = top5.map(item => item.name); let data = top5.map(item => item.value); if (otherValue > 0) { labels.push('其他'); data.push(otherValue); } const colors = data.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`); const ctx = document.getElementById('miniPieChart').getContext('2d'); if (miniPieChart) { miniPieChart.data.labels = labels; miniPieChart.data.datasets[0].data = data; miniPieChart.data.datasets[0].backgroundColor = colors; miniPieChart.update({ duration: 300 }); } else { miniPieChart = new Chart(ctx, { type: 'pie', data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'right', labels: { font: { size: 10 } } }, tooltip: { callbacks: { label: ctx => `${ctx.label}: ${formatValue(ctx.raw)} (${((ctx.raw / data.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)` } } } } }); } }
+    function updateDataTable() { const tbody = document.getElementById('tableBody'); if (!sortedCombined.length) { tbody.innerHTML = '<tr><td colspan="3">暂无数据<\/td><\/tr>'; return; } let filtered = sortedCombined; if (searchKeyword.trim() !== '') { const kw = searchKeyword.trim().toLowerCase(); filtered = sortedCombined.filter(item => item.name.toLowerCase().includes(kw)); } let displayData = fullTableVisible ? filtered : filtered.slice(0, 5); let html = ''; for (const item of displayData) { let prevVal = null; if (previousSnapshot) { const idx = previousSnapshot.names.indexOf(item.name); if (idx !== -1) prevVal = previousSnapshot.values[idx]; } const changeHtml = getChangeHtml(item.value, prevVal); const reportBtn = (item.id && item.id !== 'undefined' && !isNaN(item.id)) ? `<button class="report-company-btn" data-company-id="${item.id}" data-company-name="${escapeHtml(item.name)}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.7rem;">🚨 举报公司</button>` : ''; html += `<tr><td>${escapeHtml(item.name)}<br>${reportBtn}<\/td><td>${formatValue(item.value)}<\/td><td>${changeHtml}<\/td><\/tr>`; } tbody.innerHTML = html; const toggleBtn = document.getElementById('toggleTableBtn'); if (toggleBtn) toggleBtn.innerHTML = fullTableVisible ? '📋 收起 (显示前5条)' : `📋 展开全部 (共${filtered.length}条)`; document.querySelectorAll('.report-company-btn').forEach(btn => { btn.onclick = () => { const companyId = parseInt(btn.dataset.companyId); const companyName = btn.dataset.companyName; reportCompany(companyId, companyName); }; }); }
+    async function reportCompany(companyId, companyName) { const cid = Number(companyId); if (isNaN(cid) || cid <= 0) { await showMessage('错误', '无效的公司ID，无法举报'); console.error('举报失败：companyId =', companyId); return; } if (!currentUserId) { await showMessage('提示', '请先登录'); return; } const reason = prompt(`请输入举报 ${companyName} 的原因（不超过200字）：`); if (!reason) return; if (reason.length > 200) { await showMessage('提示', '举报原因不能超过200字'); return; } try { const { data, error } = await supabaseClient.rpc('report_company', { p_user_id: currentUserId, p_company_id: cid, p_reason: reason }); if (error) { console.error('RPC调用错误：', error); await showMessage('错误', error.message); } else if (data && data.success === false) { await showMessage('提示', data.message); } else { await showMessage('成功', '举报已提交，我们会尽快处理'); } } catch (err) { console.error('举报异常：', err); await showMessage('错误', '举报失败，请稍后重试'); } }
     function toggleTable() { fullTableVisible = !fullTableVisible; updateDataTable(); }
-    function updateStatsPanel(total) {
-        if (!rawData.values.length) { document.getElementById('statsPanel').innerHTML = '<div>暂无数据</div>'; return; }
-        const vals = rawData.values, names = rawData.names;
-        const sum = vals.reduce((a,b)=>a+b,0);
-        const max = Math.max(...vals), maxIdx = vals.indexOf(max);
-        const min = Math.min(...vals), minIdx = vals.indexOf(min);
-        const avg = (sum/vals.length).toFixed(0);
-        const first = vals[0], last = vals[vals.length-1];
-        const change = ((last - first)/first*100).toFixed(2);
-        const changeSym = change >= 0 ? '📈 +' : '📉 ';
-        let totalChangeHtml = '';
-        if (previousSnapshot && previousSnapshot.total) {
-            const totalDiff = sum - previousSnapshot.total;
-            const totalPercent = (totalDiff / previousSnapshot.total * 100).toFixed(2);
-            totalChangeHtml = `<div class="stat-card"><span class="stat-label">📊 总市值变化</span><span class="stat-value ${totalDiff >= 0 ? 'change-up' : 'change-down'}">${totalDiff >= 0 ? '▲' : '▼'} ${Math.abs(totalPercent)}%</span></div>`;
-        }
-        document.getElementById('statsPanel').innerHTML = `
-            <div class="stat-card"><span class="stat-label">🏦 总虚拟股票数</span><span class="stat-value">${vals.length}</span></div>
-            <div class="stat-card"><span class="stat-label">💰 虚拟总值</span><span class="stat-value">${formatValue(sum)}</span></div>
-            <div class="stat-card"><span class="stat-label">🏆 最高价股</span><span class="stat-value">${escapeHtml(names[maxIdx])} : ${formatValue(max)}</span></div>
-            <div class="stat-card"><span class="stat-label">📉 最低价股</span><span class="stat-value">${escapeHtml(names[minIdx])} : ${formatValue(min)}</span></div>
-            <div class="stat-card"><span class="stat-label">📊 平均估值</span><span class="stat-value">${formatValue(avg)}</span></div>
-            <div class="stat-card"><span class="stat-label">🔄 首尾变化</span><span class="stat-value">${changeSym}${Math.abs(change)}%</span></div>
-            ${totalChangeHtml}
-        `;
-    }
-    async function loadPreviousSnapshot() {
-        const { data, error } = await supabaseClient.from('stock_latest').select('snapshot_data, total_value').order('created_at', { ascending: false }).limit(1);
-        if (data && data.length > 0) previousSnapshot = { names: data[0].snapshot_data.names, values: data[0].snapshot_data.values, total: data[0].total_value };
-        else previousSnapshot = null;
-    }
-
-    async function autoRefreshData() {
-        if (isLoading) return;
-        isLoading = true;
-        updateTimestamp('loading');
-        try {
-            const { error: rpcError } = await supabaseClient.rpc('random_fluctuate_market_values');
-            if (rpcError) throw rpcError;
-            await refreshStockDataFromDB();
-            await loadPreviousSnapshot();
-            updateTimestamp('success');
-            resetCountdown();
-        } catch (err) {
-            console.error(err);
-            updateTimestamp('error');
-        } finally {
-            isLoading = false;
-        }
-    }
-
-    async function manualRefresh() {
-        if (isLoading) return;
-        isLoading = true;
-        const refreshBtn = document.getElementById('refreshDataBtn');
-        if (refreshBtn) refreshBtn.classList.add('loading');
-        updateTimestamp('loading');
-        try {
-            await refreshStockDataFromDB();
-            await loadPreviousSnapshot();
-            updateTimestamp('success');
-            resetCountdown();
-        } catch (err) {
-            console.error(err);
-            updateTimestamp('error');
-        } finally {
-            isLoading = false;
-            if (refreshBtn) refreshBtn.classList.remove('loading');
-        }
-    }
-
-    async function initUserAndData() {
-        const user = await fetchCurrentUser();
-        if (user) {
-            document.getElementById('userStatusSpan').innerHTML = `欢迎，${escapeHtml(user.username)} <button id="logoutBtn" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登出</button>`;
-            document.getElementById('logoutBtn')?.addEventListener('click', () => { localStorage.removeItem('nb_user'); location.reload(); });
-            await fetchUserBalance();
-            await fetchMyCompany();
-            await fetchAllCompanies();
-            renderMyCompanySection();
-            await refreshStockDataFromDB();
-            await buildChartWithFade(currentChartType);
-            startAutoRefreshTimer();
-            startAutoSupportWatcher();
-        } else {
-            const redirectUrl = encodeURIComponent(window.location.href);
-            document.getElementById('userStatusSpan').innerHTML = `未登录 <a href="login.html?redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
-            const companies = await fetchAllCompanies();
-            if (companies.length) {
-                rawData.names = companies.map(c => c.company_name);
-                rawData.values = companies.map(c => c.market_value);
-                totalStocks = rawData.names.length;
-                const combined = companies.map(company => ({ id: company.id, name: company.company_name, value: company.market_value }));
-                combined.sort((a, b) => b.value - a.value);
-                sortedCombined = combined;
-                updateStatsPanel(rawData.values.reduce((a,b)=>a+b,0));
-                updateDataTable();
-                updateMiniPieChart();
-                updateHistogramChart();
-                await buildChartWithFade(currentChartType);
-            }
-            await loadFullHistory();
-            startAutoRefreshTimer();
-        }
-    }
-    
-    function startAutoSupportWatcher() {
-        if (autoSupportTimer) clearInterval(autoSupportTimer);
-        autoSupportTimer = setInterval(() => { checkAutoSupportRules(); }, 30000);
-    }
-
-    function startAutoRefreshTimer() {
-        if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-        if (!autoRefreshEnabled) return;
-        autoRefreshTimer = setInterval(() => { if (autoRefreshEnabled) autoRefreshData(); }, refreshInterval);
-    }
-
-    function setChartType(type) {
-        if (!['bar','line','pie'].includes(type) || type === currentChartType) return;
-        currentChartType = type;
-        document.getElementById('barBtn').classList.toggle('active', type === 'bar');
-        document.getElementById('lineBtn').classList.toggle('active', type === 'line');
-        document.getElementById('pieBtn').classList.toggle('active', type === 'pie');
-        if (rawData.values.length) {
-            isFullViewMode = false;
-            currentStartIndex = 0;
-            updateSliderUI();
-            buildChartWithFade(currentChartType);
-        }
-    }
-    function onSliderChange() {
-        if (isFullViewMode || currentChartType === 'pie') return;
-        const slider = document.getElementById('xAxisSlider');
-        if (slider) {
-            currentStartIndex = parseInt(slider.value);
-            updateSliderUI();
-            if (currentChart) {
-                const windowData = getWindowData();
-                currentChart.data.labels = windowData.names;
-                currentChart.data.datasets[0].data = windowData.values;
-                if (currentChartType === 'bar' || currentChartType === 'pie') {
-                    const barColors = windowData.values.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`);
-                    currentChart.data.datasets[0].backgroundColor = barColors;
-                }
-                currentChart.update({ duration: 300 });
-            }
-        }
-    }
-    function toggleFullView() {
-        if (currentChartType === 'pie') return;
-        isFullViewMode = !isFullViewMode;
-        if (!isFullViewMode && totalStocks > windowSize && currentStartIndex > totalStocks - windowSize) {
-            currentStartIndex = totalStocks - windowSize;
-        }
-        updateSliderUI();
-        if (currentChart) {
-            const windowData = getWindowData();
-            currentChart.data.labels = windowData.names;
-            currentChart.data.datasets[0].data = windowData.values;
-            if (currentChartType === 'bar' || currentChartType === 'pie') {
-                const barColors = windowData.values.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`);
-                currentChart.data.datasets[0].backgroundColor = barColors;
-            }
-            currentChart.update({ duration: 300 });
-        }
-    }
-    function toggleAutoRefresh() {
-        autoRefreshEnabled = !autoRefreshEnabled;
-        const btn = document.getElementById('pauseRefreshBtn');
-        if (autoRefreshEnabled) {
-            btn.innerHTML = '⏸️ 暂停刷新';
-            btn.style.background = '#6c757d';
-            startAutoRefreshTimer();
-            resetCountdown();
-        } else {
-            btn.innerHTML = '▶️ 启动刷新';
-            btn.style.background = '#28a745';
-            if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-            updateCountdownDisplay();
-        }
-    }
-    function handleVisibilityChange() {
-        if (document.hidden) {
-            if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-            if (autoSupportTimer) clearInterval(autoSupportTimer);
-        } else {
-            if (autoRefreshEnabled) startAutoRefreshTimer();
-            startAutoSupportWatcher();
-        }
-    }
-
-    // 事件绑定
-    document.getElementById('barBtn')?.addEventListener('click', () => setChartType('bar'));
-    document.getElementById('lineBtn')?.addEventListener('click', () => setChartType('line'));
-    document.getElementById('pieBtn')?.addEventListener('click', () => setChartType('pie'));
-    document.getElementById('refreshDataBtn')?.addEventListener('click', manualRefresh);
-    document.getElementById('pauseRefreshBtn')?.addEventListener('click', toggleAutoRefresh);
-    document.getElementById('toggleTableBtn')?.addEventListener('click', toggleTable);
-    document.getElementById('xAxisSlider')?.addEventListener('input', onSliderChange);
-    document.getElementById('fullViewBtn')?.addEventListener('click', toggleFullView);
-    document.getElementById('searchInput')?.addEventListener('input', (e) => { searchKeyword = e.target.value; updateDataTable(); });
-    const topNSelect = document.getElementById('topNSelect');
-    if (topNSelect) topNSelect.addEventListener('change', (e) => { currentTopN = e.target.value; updateStockHistoryChartNoRebuild(); });
-    const zoomBtn = document.getElementById('zoomStockHistoryBtn');
-    if (zoomBtn) zoomBtn.addEventListener('click', () => { const container = document.getElementById('stockHistoryContainer'); toggleFullscreen(container); });
-    document.getElementById('openSupportDialogBtn')?.addEventListener('click', showSupportDialog);
-
-    windowSize = 15;
-    initUserAndData();
-    startCountdown();
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', () => {
-        if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-        if (autoSupportTimer) clearInterval(autoSupportTimer);
-        if (countdownInterval) clearInterval(countdownInterval);
-    });
-    if (typeof window.scrollToTop !== 'function') window.scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (typeof updateSiteStats === 'function') updateSiteStats();
+    function updateStatsPanel(total) { if (!rawData.values.length) { document.getElementById('statsPanel').innerHTML = '<div>暂无数据</div>'; return; } const vals = rawData.values, names = rawData.names, sum = vals.reduce((a,b)=>a+b,0), max = Math.max(...vals), maxIdx = vals.indexOf(max), min = Math.min(...vals), minIdx = vals.indexOf(min), avg = (sum/vals.length).toFixed(0), first = vals[0], last = vals[vals.length-1], change = ((last - first)/first*100).toFixed(2), changeSym = change >= 0 ? '📈 +' : '📉 '; let totalChangeHtml = ''; if (previousSnapshot && previousSnapshot.total) { const totalDiff = sum - previousSnapshot.total; const totalPercent = (totalDiff / previousSnapshot.total * 100).toFixed(2); totalChangeHtml = `<div class="stat-card"><span class="stat-label">📊 总市值变化</span><span class="stat-value ${totalDiff >= 0 ? 'change-up' : 'change-down'}">${totalDiff >= 0 ? '▲' : '▼'} ${Math.abs(totalPercent)}%</span></div>`; } document.getElementById('statsPanel').innerHTML = `<div class="stat-card"><span class="stat-label">🏦 总虚拟股票数</span><span class="stat-value">${vals.length}</span></div><div class="stat-card"><span class="stat-label">💰 虚拟总值</span><span class="stat-value">${formatValue(sum)}</span></div><div class="stat-card"><span class="stat-label">🏆 最高价股</span><span class="stat-value">${escapeHtml(names[maxIdx])} : ${formatValue(max)}</span></div><div class="stat-card"><span class="stat-label">📉 最低价股</span><span class="stat-value">${escapeHtml(names[minIdx])} : ${formatValue(min)}</span></div><div class="stat-card"><span class="stat-label">📊 平均估值</span><span class="stat-value">${formatValue(avg)}</span></div><div class="stat-card"><span class="stat-label">🔄 首尾变化</span><span class="stat-value">${changeSym}${Math.abs(change)}%</span></div>${totalChangeHtml}`; }
+    async function loadPreviousSnapshot() { const { data, error } = await supabaseClient.from('stock_latest').select('snapshot_data, total_value').order('created_at', { ascending: false }).limit(1); if (data && data.length > 0) previousSnapshot = { names: data[0].snapshot_data.names, values: data[0].snapshot_data.values, total: data[0].total_value }; else previousSnapshot = null; }
+    async function autoRefreshData() { if (isLoading) return; isLoading = true; updateTimestamp('loading'); try { const { error: rpcError } = await supabaseClient.rpc('random_fluctuate_market_values'); if (rpcError) throw rpcError; await refreshStockDataFromDB(); await loadPreviousSnapshot(); updateTimestamp('success'); resetCountdown(); } catch (err) { console.error(err); updateTimestamp('error'); } finally { isLoading = false; } }
+    async function manualRefresh() { if (isLoading) return; isLoading = true; const refreshBtn = document.getElementById('refreshDataBtn'); if (refreshBtn) refreshBtn.classList.add('loading'); updateTimestamp('loading'); try { await refreshStockDataFromDB(); await loadPreviousSnapshot(); updateTimestamp('success'); resetCountdown(); } catch (err) { console.error(err); updateTimestamp('error'); } finally { isLoading = false; if (refreshBtn) refreshBtn.classList.remove('loading'); } }
+    async function initUserAndData() { const user = await fetchCurrentUser(); if (user) { document.getElementById('userStatusSpan').innerHTML = `欢迎，${escapeHtml(user.username)} <button id="logoutBtn" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登出</button>`; document.getElementById('logoutBtn')?.addEventListener('click', () => { localStorage.removeItem('nb_user'); location.reload(); }); await fetchUserBalance(); await fetchMyCompany(); await fetchAllCompanies(); renderMyCompanySection(); await refreshStockDataFromDB(); await buildChartWithFade(currentChartType); startAutoRefreshTimer(); startAutoSupportWatcher(); } else { const redirectUrl = encodeURIComponent(window.location.href); document.getElementById('userStatusSpan').innerHTML = `未登录 <a href="login.html?redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`; const companies = await fetchAllCompanies(); if (companies.length) { rawData.names = companies.map(c => c.company_name); rawData.values = companies.map(c => c.market_value); totalStocks = rawData.names.length; const combined = companies.map(company => ({ id: company.id, name: company.company_name, value: company.market_value })); combined.sort((a, b) => b.value - a.value); sortedCombined = combined; updateStatsPanel(rawData.values.reduce((a,b)=>a+b,0)); updateDataTable(); updateMiniPieChart(); updateHistogramChart(); await buildChartWithFade(currentChartType); } await loadFullHistory(); startAutoRefreshTimer(); } }
+    function startAutoSupportWatcher() { if (autoSupportTimer) clearInterval(autoSupportTimer); autoSupportTimer = setInterval(() => { checkAutoSupportRules(); }, 30000); }
+    function startAutoRefreshTimer() { if (autoRefreshTimer) clearInterval(autoRefreshTimer); if (!autoRefreshEnabled) return; autoRefreshTimer = setInterval(() => { if (autoRefreshEnabled) autoRefreshData(); }, refreshInterval); }
+    function setChartType(type) { if (!['bar','line','pie'].includes(type) || type === currentChartType) return; currentChartType = type; document.getElementById('barBtn').classList.toggle('active', type === 'bar'); document.getElementById('lineBtn').classList.toggle('active', type === 'line'); document.getElementById('pieBtn').classList.toggle('active', type === 'pie'); if (rawData.values.length) { isFullViewMode = false; currentStartIndex = 0; updateSliderUI(); buildChartWithFade(currentChartType); } }
+    function onSliderChange() { if (isFullViewMode || currentChartType === 'pie') return; const slider = document.getElementById('xAxisSlider'); if (slider) { currentStartIndex = parseInt(slider.value); updateSliderUI(); if (currentChart) { const windowData = getWindowData(); currentChart.data.labels = windowData.names; currentChart.data.datasets[0].data = windowData.values; if (currentChartType === 'bar' || currentChartType === 'pie') { const barColors = windowData.values.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`); currentChart.data.datasets[0].backgroundColor = barColors; } currentChart.update({ duration: 300 }); } } }
+    function toggleFullView() { if (currentChartType === 'pie') return; isFullViewMode = !isFullViewMode; if (!isFullViewMode && totalStocks > windowSize && currentStartIndex > totalStocks - windowSize) { currentStartIndex = totalStocks - windowSize; } updateSliderUI(); if (currentChart) { const windowData = getWindowData(); currentChart.data.labels = windowData.names; currentChart.data.datasets[0].data = windowData.values; if (currentChartType === 'bar' || currentChartType === 'pie') { const barColors = windowData.values.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`); currentChart.data.datasets[0].backgroundColor = barColors; } currentChart.update({ duration: 300 }); } }
+    function toggleAutoRefresh() { autoRefreshEnabled = !autoRefreshEnabled; const btn = document.getElementById('pauseRefreshBtn'); if (autoRefreshEnabled) { btn.innerHTML = '⏸️ 暂停刷新'; btn.style.background = '#6c757d'; startAutoRefreshTimer(); resetCountdown(); } else { btn.innerHTML = '▶️ 启动刷新'; btn.style.background = '#28a745'; if (autoRefreshTimer) clearInterval(autoRefreshTimer); updateCountdownDisplay(); } }
+    function handleVisibilityChange() { if (document.hidden) { if (autoRefreshTimer) clearInterval(autoRefreshTimer); if (autoSupportTimer) clearInterval(autoSupportTimer); } else { if (autoRefreshEnabled) startAutoRefreshTimer(); startAutoSupportWatcher(); } }
+    document.getElementById('barBtn')?.addEventListener('click', () => setChartType('bar')); document.getElementById('lineBtn')?.addEventListener('click', () => setChartType('line')); document.getElementById('pieBtn')?.addEventListener('click', () => setChartType('pie')); document.getElementById('refreshDataBtn')?.addEventListener('click', manualRefresh); document.getElementById('pauseRefreshBtn')?.addEventListener('click', toggleAutoRefresh); document.getElementById('toggleTableBtn')?.addEventListener('click', toggleTable); document.getElementById('xAxisSlider')?.addEventListener('input', onSliderChange); document.getElementById('fullViewBtn')?.addEventListener('click', toggleFullView); document.getElementById('searchInput')?.addEventListener('input', (e) => { searchKeyword = e.target.value; updateDataTable(); }); const topNSelect = document.getElementById('topNSelect'); if (topNSelect) topNSelect.addEventListener('change', (e) => { currentTopN = e.target.value; updateStockHistoryChartNoRebuild(); }); const zoomBtn = document.getElementById('zoomStockHistoryBtn'); if (zoomBtn) zoomBtn.addEventListener('click', () => { const container = document.getElementById('stockHistoryContainer'); toggleFullscreen(container); }); document.getElementById('openSupportDialogBtn')?.addEventListener('click', showSupportDialog);
+    windowSize = 15; initUserAndData(); startCountdown(); document.addEventListener('visibilitychange', handleVisibilityChange); window.addEventListener('beforeunload', () => { if (autoRefreshTimer) clearInterval(autoRefreshTimer); if (autoSupportTimer) clearInterval(autoSupportTimer); if (countdownInterval) clearInterval(countdownInterval); }); if (typeof window.scrollToTop !== 'function') window.scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' }); if (typeof updateSiteStats === 'function') updateSiteStats();
 </script>
 </body>
 </html>
