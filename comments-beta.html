@@ -876,50 +876,50 @@
     }
 
     async function loadUser() {
-        const stored = localStorage.getItem('nb_user');
-        if (stored) {
-            try {
-                const user = JSON.parse(stored);
-                const { data: profile, error } = await supabaseClient
-                    .from('profiles')
-                    .select('id, username, is_banned, banned_reason')
-                    .eq('id', user.id)
-                    .maybeSingle();
-                if (error) throw error;
-                if (!profile) {
-                    localStorage.removeItem('nb_user');
-                    showMessage('提示', '登录信息已失效，请重新登录');
-                    currentUser = null;
-                    userStatusSpan.innerHTML = '未登录';
-                    newCommentArea.style.display = 'none';
-                    fetchComments();
-                    return;
-                }
-                if (profile.is_banned) {
-                    userStatusSpan.innerHTML = `您的账号已被封禁，原因：${profile.banned_reason || '多次违规'} <button class="apology-btn" id="apologyBtn">找我解封</button>`;
-                    document.getElementById('apologyBtn').onclick = () => {
-                        window.location.href = 'https://message.bilibili.com/?spm_id_from=333.1387.0.0#/whisper/mid3493259582114264';
-                    };
-                    newCommentArea.style.display = 'none';
-                    fetchComments();
-                    return;
-                }
-                currentUser = { id: profile.id, username: profile.username };
-                userStatusSpan.innerHTML = `欢迎，${escapeHtml(currentUser.username)} <button id="logout-btn">退出</button>`;
-                document.getElementById('logout-btn').onclick = () => {
-                    localStorage.removeItem('nb_user');
-                    location.reload();
-                };
-                newCommentArea.style.display = 'block';
+    const stored = localStorage.getItem('nb_user');
+    if (stored) {
+        try {
+            const user = JSON.parse(stored);
+            const { data: profile, error } = await supabaseClient
+                .from('profiles')
+                .select('id, username, is_banned, banned_reason')
+                .eq('id', user.id)
+                .maybeSingle();
+            if (error) throw error;
+            if (!profile) {
+                localStorage.removeItem('nb_user');
+                showMessage('提示', '登录信息已失效，请重新登录');
+                currentUser = null;
+                userStatusSpan.innerHTML = `<a href="login.html?redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
+                newCommentArea.style.display = 'none';
                 fetchComments();
                 return;
-            } catch(e) { console.error(e); }
-        }
-        currentUser = null;
-        userStatusSpan.innerHTML = '未登录';
-        newCommentArea.style.display = 'none';
-        fetchComments();
+            }
+            if (profile.is_banned) {
+                userStatusSpan.innerHTML = `您的账号已被封禁，原因：${profile.banned_reason || '多次违规'} <button class="apology-btn" id="apologyBtn">找我解封</button>`;
+                document.getElementById('apologyBtn').onclick = () => {
+                    window.location.href = 'https://message.bilibili.com/?spm_id_from=333.1387.0.0#/whisper/mid3493259582114264';
+                };
+                newCommentArea.style.display = 'none';
+                fetchComments();
+                return;
+            }
+            currentUser = { id: profile.id, username: profile.username };
+            userStatusSpan.innerHTML = `欢迎，${escapeHtml(currentUser.username)} <button id="logout-btn">退出</button>`;
+            document.getElementById('logout-btn').onclick = () => {
+                localStorage.removeItem('nb_user');
+                location.reload();
+            };
+            newCommentArea.style.display = 'block';
+            fetchComments();
+            return;
+        } catch(e) { console.error(e); }
     }
+    currentUser = null;
+    userStatusSpan.innerHTML = `<a href="login.html?redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
+    newCommentArea.style.display = 'none';
+    fetchComments();
+}
 
     // 模态框事件绑定
     closeReportBtn.onclick = () => {
