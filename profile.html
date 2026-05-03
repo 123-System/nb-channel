@@ -96,7 +96,6 @@
             margin: 20px 0;
             border-color: var(--card-border);
         }
-        /* 表格样式 */
         .data-table {
             width: 100%;
             border-collapse: collapse;
@@ -122,25 +121,16 @@
             padding: 4px 12px;
             font-size: 0.8rem;
         }
-        .edit-rule {
-            background: #17a2b8;
-        }
-        .delete-rule {
-            background: #dc3545;
-        }
+        .edit-rule { background: #17a2b8; }
+        .delete-rule { background: #dc3545; }
         .no-data {
             text-align: center;
             padding: 20px;
             color: var(--count-text);
         }
-        /* 自定义模态框 */
         .custom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 10000; }
         .custom-modal .modal-content { background: var(--card-bg); border-radius: 24px; padding: 24px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 20px 35px rgba(0,0,0,0.2); }
         .custom-modal .modal-content button { margin-top: 16px; padding: 6px 20px; border-radius: 30px; border: none; cursor: pointer; background: var(--nav-btn-hover-bg); color: white; }
-        .support-log {
-            font-size: 0.85rem;
-            color: var(--count-text);
-        }
     </style>
 </head>
 <body>
@@ -189,8 +179,8 @@
 
     <hr>
 
-    <h2>💖 我的公司被支持记录</h2>
-    <div id="supportLogsContainer">
+    <h2>💖 谁在支持我的公司</h2>
+    <div id="supportersContainer">
         <div class="loading">加载中...</div>
     </div>
 
@@ -236,7 +226,6 @@
     let currentRules = [];
     let myCompany = null;
 
-    // 自定义提示框
     function showMessage(title, msg) {
         return new Promise((resolve) => {
             const modal = document.getElementById('customMessageModal');
@@ -278,43 +267,43 @@
         return myCompany;
     }
 
-    async function loadSupportLogs() {
-        const container = document.getElementById('supportLogsContainer');
+    // 谁在支持我的公司（主动设置了自动支持规则的用户）
+    async function loadSupporters() {
+        const container = document.getElementById('supportersContainer');
         if (!myCompany) {
             container.innerHTML = '<div class="no-data">您还没有注册虚拟公司，<a href="Virtual stock.html" style="color:var(--status-border);">前往注册</a></div>';
             return;
         }
         const { data, error } = await supabaseClient
-            .from('support_logs')
+            .from('support_rules')
             .select(`
                 id,
+                threshold,
                 amount,
-                supported_at,
-                supporter_id,
-                supporter:profiles!support_logs_supporter_id_fkey (username)
+                user_id,
+                supporter:profiles!support_rules_user_id_fkey (username)
             `)
-            .eq('company_id', myCompany.id)
-            .order('supported_at', { ascending: false });
+            .eq('company_id', myCompany.id);
         if (error) {
             container.innerHTML = '<div class="error">加载失败: ' + error.message + '</div>';
             return;
         }
         if (!data || data.length === 0) {
-            container.innerHTML = '<div class="no-data">暂无支持记录，快去邀请好友支持您的公司吧！</div>';
+            container.innerHTML = '<div class="no-data">暂无人支持您的公司，快去邀请好友设置自动支持吧！</div>';
             return;
         }
         let html = `<table class="data-table">
                         <thead>
-                            <tr><th>支持者</th><th>支持金额 (NB币)</th><th>支持时间</th></tr>
+                            <tr><th>支持者</th><th>触发阈值(市值&lt;)</th><th>每次支持金额</th><th>状态</th></tr>
                         </thead>
                         <tbody>`;
-        for (const log of data) {
-            const supporterName = log.supporter?.username || '匿名用户';
-            const time = new Date(log.supported_at).toLocaleString();
+        for (const rule of data) {
+            const supporterName = rule.supporter?.username || '匿名用户';
             html += `<tr>
                         <td>${escapeHtml(supporterName)}</td>
-                        <td>${log.amount}</td>
-                        <td>${time}</td>
+                        <td>${rule.threshold}</td>
+                        <td>${rule.amount}</td>
+                        <td><span style="color:#4caf50;">✓ 激活中</span></td>
                      </tr>`;
         }
         html += '</tbody></table>';
@@ -342,7 +331,7 @@
         }
         await loadMyCompany();
         await loadAutoRules();
-        await loadSupportLogs();
+        await loadSupporters();
     }
 
     async function loadAutoRules() {
@@ -380,7 +369,7 @@
                             <button class="edit-rule" data-id="${rule.id}" data-threshold="${rule.threshold}" data-amount="${rule.amount}" data-company-id="${rule.company_id}">✏️ 修改</button>
                             <button class="delete-rule" data-id="${rule.id}">🗑️ 取消</button>
                         </td>
-                     </tr>`;
+                     </table>`;
         }
         html += '</tbody></table>';
         container.innerHTML = html;
