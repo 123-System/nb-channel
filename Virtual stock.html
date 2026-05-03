@@ -1127,6 +1127,18 @@ for (const item of displayData) {
     </tr>`;
 }
 tbody.innerHTML = html;
+        const toggleBtn = document.getElementById('toggleTableBtn');
+        if (toggleBtn) toggleBtn.innerHTML = fullTableVisible ? '📋 收起 (显示前5条)' : `📋 展开全部 (共${filtered.length}条)`;
+        
+        // 绑定举报按钮事件（每次表格刷新后重新绑定）
+        document.querySelectorAll('.report-company-btn').forEach(btn => {
+            btn.onclick = () => {
+                const companyId = parseInt(btn.dataset.companyId);
+                const companyName = btn.dataset.companyName;
+                reportCompany(companyId, companyName);
+            };
+        });
+    }
     
     // 举报公司函数
     async function reportCompany(companyId, companyName) {
