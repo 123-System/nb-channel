@@ -615,11 +615,11 @@
         let reward = 0;
         let confirmMsg = '';
         if (currentValue >= 1000) {
-            reward = 1000;
-            confirmMsg = `确定破产吗？您的虚拟公司将被彻底删除（任何痕迹都将不复存在），您将获得 ${reward} NB币。`;
+            reward = currentValue - 1000;
+            confirmMsg = `确定破产吗？您的虚拟公司将被彻底删除（任何痕迹都将不复存在），您将获得 ${reward} NB币（当前市值减去1000）`;
         } else {
             reward = 0;
-            confirmMsg = `您的虚拟公司市值不足1000，破产将无法获得NB币，但虚拟公司及历史数据会被彻底删除。确定吗？`;
+            confirmMsg = `您的虚拟公司市值不足1000，破产将无法获得NB币，但虚拟公司及历史数据会被彻底删除，确定破产吗？`;
         }
         const confirmed = await showConfirm('确认破产', confirmMsg);
         if (!confirmed) return;
@@ -1113,10 +1113,12 @@
             if (previousSnapshot) { const idx = previousSnapshot.names.indexOf(item.name); if (idx !== -1) prevVal = previousSnapshot.values[idx]; }
             const changeHtml = getChangeHtml(item.value, prevVal);
             html += `<tr>
-                        <td>${escapeHtml(item.name)}</td>
-                        <td>${formatValue(item.value)}</td>
-                        <td>${changeHtml}</td>
-                      </tr>`;
+    <td>${escapeHtml(item.name)}<br>
+        <button class="report-company-btn" data-company-id="${item.id}" data-company-name="${escapeHtml(item.name)}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.7rem;">🚨 举报</button>
+    </td>
+    <td>${formatValue(item.value)}</td>
+    <td>${changeHtml}</td>
+</tr>`;
         }
         tbody.innerHTML = html;
         const toggleBtn = document.getElementById('toggleTableBtn');
@@ -1220,7 +1222,7 @@
             rawData.names = companies.map(c => c.company_name);
             rawData.values = companies.map(c => c.market_value);
             totalStocks = rawData.names.length;
-            const combined = rawData.names.map((name, idx) => ({ name, value: rawData.values[idx] }));
+            const combined = allCompanies.map(company => ({ id: company.id, name: company.company_name, value: company.market_value }));
             combined.sort((a, b) => b.value - a.value);
             sortedCombined = combined;
             updateStatsPanel(rawData.values.reduce((a,b)=>a+b,0));
@@ -1319,7 +1321,37 @@
             startAutoSupportWatcher();
         }
     }
-
+async function reportCompany(companyId, companyName) {
+    if (!currentUserId) {
+        await showMessage('提示', '请先登录');
+        return;
+    }
+    const reason = prompt(`请输入举报 ${companyName} 的原因（不超过200字）：`);
+    if (!reason) return;
+    if (reason.length > 200) {
+        await showMessage('提示', '举报原因不能超过200字');
+        return;
+    }
+    const { data, error } = await supabaseClient.rpc('report_company', {
+        p_user_id: currentUserId,
+        p_company_id: companyId,
+        p_reason: reason
+    });
+    if (error) {
+        await showMessage('错误', error.message);
+    } else if (data && data.success === false) {
+        await showMessage('提示', data.message);
+    } else {
+        await showMessage('成功', '举报已提交，我们会尽快处理');
+    }
+}
+    document.querySelectorAll('.report-company-btn').forEach(btn => {
+    btn.onclick = () => {
+        const companyId = parseInt(btn.dataset.companyId);
+        const companyName = btn.dataset.companyName;
+        reportCompany(companyId, companyName);
+    };
+});
     document.getElementById('barBtn')?.addEventListener('click', () => setChartType('bar'));
     document.getElementById('lineBtn')?.addEventListener('click', () => setChartType('line'));
     document.getElementById('pieBtn')?.addEventListener('click', () => setChartType('pie'));
