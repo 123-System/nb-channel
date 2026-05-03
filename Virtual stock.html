@@ -557,43 +557,57 @@
     }
 
     async function supportCompany(companyId, amount, isSilent = false) {
-        if (!currentUserId) return false;
-        if (amount > 2000) {
-            if (!isSilent) await showMessage('提示', '单次手动支持金额不能超过2000 NB币');
-            return false;
-        }
-        // 获取当前用户余额
-        const balance = await fetchUserBalance();
-        if (balance < amount) {
-            if (!isSilent) await showMessage('提示', 'NB币余额不足');
-            return false;
-        }
-        const { data: company } = await supabaseClient
-            .from('user_companies')
-            .select('market_value')
-            .eq('id', companyId)
-            .single();
-        if (!company) { if (!isSilent) await showMessage('错误', '虚拟公司不存在'); return false; }
-        const newValue = company.market_value + amount;
-        const { error: updateErr } = await supabaseClient
-            .from('user_companies')
-            .update({ market_value: newValue })
-            .eq('id', companyId);
-        if (updateErr) { if (!isSilent) await showMessage('错误', '支持失败'); return false; }
-        const newBalance = balance - amount;
-        await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
-        await supabaseClient.from('support_logs').insert({
-            supporter_id: currentUserId,
-            company_id: companyId,
-            amount: amount
-        });
-        await fetchUserBalance();
-        await fetchAllCompanies();
-        await refreshStockDataFromDB();
-        await buildChartWithFade(currentChartType);
-        if (!isSilent) await showMessage('成功', `成功支持 ${amount} NB币`);
-        return true;
+    // 严格校验 companyId
+    const cid = parseInt(companyId);
+    if (isNaN(cid) || cid <= 0) {
+        if (!isSilent) await showMessage('错误', '无效的公司ID，无法支持');
+        return false;
     }
+    if (!currentUserId) {
+        if (!isSilent) await showMessage('提示', '请先登录');
+        return false;
+    }
+    if (amount > 2000) {
+        if (!isSilent) await showMessage('提示', '单次手动支持金额不能超过2000 NB币');
+        return false;
+    }
+    const balance = await fetchUserBalance();
+    if (balance < amount) {
+        if (!isSilent) await showMessage('提示', 'NB币余额不足');
+        return false;
+    }
+    const { data: company } = await supabaseClient
+        .from('user_companies')
+        .select('market_value')
+        .eq('id', cid)
+        .single();
+    if (!company) {
+        if (!isSilent) await showMessage('错误', '虚拟公司不存在');
+        return false;
+    }
+    const newValue = company.market_value + amount;
+    const { error: updateErr } = await supabaseClient
+        .from('user_companies')
+        .update({ market_value: newValue })
+        .eq('id', cid);
+    if (updateErr) {
+        if (!isSilent) await showMessage('错误', '支持失败');
+        return false;
+    }
+    const newBalance = balance - amount;
+    await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
+    await supabaseClient.from('support_logs').insert({
+        supporter_id: currentUserId,
+        company_id: cid,
+        amount: amount
+    });
+    await fetchUserBalance();
+    await fetchAllCompanies();
+    await refreshStockDataFromDB();
+    await buildChartWithFade(currentChartType);
+    if (!isSilent) await showMessage('成功', `成功支持 ${amount} NB币`);
+    return true;
+}
 
     async function setAutoSupportRule(companyId, threshold, amount) {
         if (!currentUserId) return false;
@@ -799,7 +813,14 @@
 
     function showSupportDialog() {
         if (!currentUserId) { showMessage('提示', '请先登录'); return; }
-        const companyOptions = allCompanies.map(c => `<option value="${c.id}">${escapeHtml(c.company_name)} (市值: ${formatValue(c.market_value)})</option>`).join('');
+        const companyOptions = allCompanies
+    .filter(c => c.id != null && !isNaN(c.id))
+    .map(c => `<option value="${c.id}">${escapeHtml(c.company_name)} (市值: ${formatValue(c.market_value)})</option>`)
+    .join('');
+if (!companyOptions) {
+    await showMessage('提示', '暂无有效公司可支持');
+    return;
+}
         const html = `
             <div id="customDialog" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--card-bg); border-radius:24px; padding:24px; z-index:1001; width:90%; max-width:450px; box-shadow:0 10px 30px rgba(0,0,0,0.3); border:1px solid var(--card-border);">
                 <h3>支持虚拟公司</h3>
