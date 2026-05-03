@@ -934,10 +934,12 @@
     const accountModal = document.getElementById('account-modal');
     const closeAccount = document.getElementById('close-account');
 
-    document.getElementById('show-login').onclick = () => loginModal.style.display = 'flex';
-    document.getElementById('close-login').onclick = () => loginModal.style.display = 'none';
-    document.getElementById('show-register').onclick = () => registerModal.style.display = 'flex';
-    document.getElementById('close-register').onclick = () => registerModal.style.display = 'none';
+    document.getElementById('show-login').onclick = () => {
+    window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+};
+document.getElementById('show-register').onclick = () => {
+    window.location.href = 'login.html?register=1&redirect=' + encodeURIComponent(window.location.href);
+};
     document.getElementById('accountBtn').onclick = () => {
         if (!currentUser) { showMessage('提示', '请先登录'); return; }
         accountModal.style.display = 'flex';
