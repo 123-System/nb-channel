@@ -620,12 +620,12 @@
         const currentValue = myCompany.market_value;
         let reward = 0;
         let confirmMsg = '';
-        if (currentValue >= 1000) {
+        if (currentValue > 1000) {
             reward = currentValue - 1000;
             confirmMsg = `确定破产吗？您的虚拟公司将被彻底删除（任何痕迹都将不复存在），您将获得 ${reward} NB币（当前市值减去1000）`;
         } else {
             reward = 0;
-            confirmMsg = `您的虚拟公司市值不足1000，破产将无法获得NB币，但虚拟公司及历史数据会被彻底删除，确定破产吗？`;
+            confirmMsg = `您的虚拟公司市值不足或等于1000，破产将无法获得NB币，但虚拟公司及历史数据会被彻底删除，确定破产吗？`;
         }
         const confirmed = await showConfirm('确认破产', confirmMsg);
         if (!confirmed) return;
@@ -726,46 +726,46 @@
     }
 
     async function refreshStockDataFromDB() {
-    const companies = await fetchAllCompanies();
-    if (!companies.length) {
-        rawData = { names: [], values: [] };
-        sortedCombined = [];
-        totalStocks = 0;
-        return;
-    }
-    const newNames = companies.map(c => c.company_name);
-    const newValues = companies.map(c => c.market_value);
-    const newTotal = newValues.reduce((a,b)=>a+b,0);
-    rawData.names = newNames;
-    rawData.values = newValues;
-    totalStocks = rawData.names.length;
-
-    // ★★★ 关键修改：保证每个对象都有 id ★★★
-    const combined = companies.map(company => ({
-        id: company.id,
-        name: company.company_name,
-        value: company.market_value
-    }));
-    combined.sort((a, b) => b.value - a.value);
-    sortedCombined = combined;      // 现在 sortedCombined 包含 id
-
-    await saveFullSnapshot(newTotal);
-    await loadFullHistory();
-    updateStatsPanel(newTotal);
-    updateDataTable();               // 刷新表格
-    updateMiniPieChart();
-    updateHistogramChart();
-    if (currentChart && rawData.names.length) {
-        const windowData = getWindowData();
-        currentChart.data.labels = windowData.names;
-        currentChart.data.datasets[0].data = windowData.values;
-        if (currentChartType === 'bar' || currentChartType === 'pie') {
-            const barColors = windowData.values.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`);
-            currentChart.data.datasets[0].backgroundColor = barColors;
+        const companies = await fetchAllCompanies();
+        if (!companies.length) {
+            rawData = { names: [], values: [] };
+            sortedCombined = [];
+            totalStocks = 0;
+            return;
         }
-        currentChart.update({ duration: 300 });
+        const newNames = companies.map(c => c.company_name);
+        const newValues = companies.map(c => c.market_value);
+        const newTotal = newValues.reduce((a,b)=>a+b,0);
+        rawData.names = newNames;
+        rawData.values = newValues;
+        totalStocks = rawData.names.length;
+
+        // 关键修改：保证每个对象都有 id
+        const combined = companies.map(company => ({
+            id: company.id,
+            name: company.company_name,
+            value: company.market_value
+        }));
+        combined.sort((a, b) => b.value - a.value);
+        sortedCombined = combined;
+
+        await saveFullSnapshot(newTotal);
+        await loadFullHistory();
+        updateStatsPanel(newTotal);
+        updateDataTable();               // 刷新表格
+        updateMiniPieChart();
+        updateHistogramChart();
+        if (currentChart && rawData.names.length) {
+            const windowData = getWindowData();
+            currentChart.data.labels = windowData.names;
+            currentChart.data.datasets[0].data = windowData.values;
+            if (currentChartType === 'bar' || currentChartType === 'pie') {
+                const barColors = windowData.values.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`);
+                currentChart.data.datasets[0].backgroundColor = barColors;
+            }
+            currentChart.update({ duration: 300 });
+        }
     }
-}
 
     function renderMyCompanySection() {
         const container = document.getElementById('myCompanySection');
@@ -851,7 +851,7 @@
         document.getElementById('closeDialogBtn').onclick = closeDialog;
     }
 
-    // ========== 原有图表辅助函数 ==========
+    // ========== 图表辅助函数 ==========
     function formatValue(num) {
         if (num === undefined || num === null) return '0';
         const n = Number(num);
@@ -1108,29 +1108,45 @@
             miniPieChart = new Chart(ctx, { type: 'pie', data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'right', labels: { font: { size: 10 } } }, tooltip: { callbacks: { label: ctx => `${ctx.label}: ${formatValue(ctx.raw)} (${((ctx.raw / data.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)` } } } } });
         }
     }
-    let html = '';
-for (const item of displayData) {
-    let prevVal = null;
-    if (previousSnapshot) { 
-        const idx = previousSnapshot.names.indexOf(item.name); 
-        if (idx !== -1) prevVal = previousSnapshot.values[idx]; 
-    }
-    const changeHtml = getChangeHtml(item.value, prevVal);
-    // ★★★ 只在 id 有效时显示举报按钮 ★★★
-    const reportBtn = (item.id && item.id !== 'undefined' && !isNaN(item.id))
-        ? `<button class="report-company-btn" data-company-id="${item.id}" data-company-name="${escapeHtml(item.name)}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.7rem;">🚨 举报公司</button>`
-        : '';
-    html += `<tr>
-        <td>${escapeHtml(item.name)}<br>${reportBtn}</td>
-        <td>${formatValue(item.value)}</td>
-        <td>${changeHtml}</td>
-    </tr>`;
-}
-tbody.innerHTML = html;
-        const toggleBtn = document.getElementById('toggleTableBtn');
-        if (toggleBtn) toggleBtn.innerHTML = fullTableVisible ? '📋 收起 (显示前5条)' : `📋 展开全部 (共${filtered.length}条)`;
+    function updateDataTable() {
+        const tbody = document.getElementById('tableBody');
+        if (!sortedCombined.length) {
+            tbody.innerHTML = '<tr><td colspan="3">暂无数据</td></tr>';
+            return;
+        }
         
-        // 绑定举报按钮事件（每次表格刷新后重新绑定）
+        let filtered = sortedCombined;
+        if (searchKeyword.trim() !== '') {
+            const kw = searchKeyword.trim().toLowerCase();
+            filtered = sortedCombined.filter(item => item.name.toLowerCase().includes(kw));
+        }
+        let displayData = fullTableVisible ? filtered : filtered.slice(0, 5);
+        
+        let html = '';
+        for (const item of displayData) {
+            let prevVal = null;
+            if (previousSnapshot) {
+                const idx = previousSnapshot.names.indexOf(item.name);
+                if (idx !== -1) prevVal = previousSnapshot.values[idx];
+            }
+            const changeHtml = getChangeHtml(item.value, prevVal);
+            const reportBtn = (item.id && item.id !== 'undefined' && !isNaN(item.id))
+                ? `<button class="report-company-btn" data-company-id="${item.id}" data-company-name="${escapeHtml(item.name)}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.7rem;">🚨 举报公司</button>`
+                : '';
+            html += `<tr>
+                <td>${escapeHtml(item.name)}<br>${reportBtn}</td>
+                <td>${formatValue(item.value)}</td>
+                <td>${changeHtml}</td>
+            </tr>`;
+        }
+        tbody.innerHTML = html;
+        
+        const toggleBtn = document.getElementById('toggleTableBtn');
+        if (toggleBtn) {
+            toggleBtn.innerHTML = fullTableVisible ? '📋 收起 (显示前5条)' : `📋 展开全部 (共${filtered.length}条)`;
+        }
+        
+        // 绑定举报按钮事件
         document.querySelectorAll('.report-company-btn').forEach(btn => {
             btn.onclick = () => {
                 const companyId = parseInt(btn.dataset.companyId);
@@ -1138,46 +1154,45 @@ tbody.innerHTML = html;
                 reportCompany(companyId, companyName);
             };
         });
-    
+    }
     
     // 举报公司函数
     async function reportCompany(companyId, companyName) {
-    // 转为数字，校验有效性
-    const cid = Number(companyId);
-    if (isNaN(cid) || cid <= 0) {
-        await showMessage('错误', '无效的公司ID，无法举报');
-        console.error('举报失败：companyId =', companyId);
-        return;
-    }
-    if (!currentUserId) {
-        await showMessage('提示', '请先登录');
-        return;
-    }
-    const reason = prompt(`请输入举报 ${companyName} 的原因（不超过200字）：`);
-    if (!reason) return;
-    if (reason.length > 200) {
-        await showMessage('提示', '举报原因不能超过200字');
-        return;
-    }
-    try {
-        const { data, error } = await supabaseClient.rpc('report_company', {
-            p_user_id: currentUserId,
-            p_company_id: cid,
-            p_reason: reason
-        });
-        if (error) {
-            console.error('RPC调用错误：', error);
-            await showMessage('错误', error.message);
-        } else if (data && data.success === false) {
-            await showMessage('提示', data.message);
-        } else {
-            await showMessage('成功', '举报已提交，我们会尽快处理');
+        const cid = Number(companyId);
+        if (isNaN(cid) || cid <= 0) {
+            await showMessage('错误', '无效的公司ID，无法举报');
+            console.error('举报失败：companyId =', companyId);
+            return;
         }
-    } catch (err) {
-        console.error('举报异常：', err);
-        await showMessage('错误', '举报失败，请稍后重试');
+        if (!currentUserId) {
+            await showMessage('提示', '请先登录');
+            return;
+        }
+        const reason = prompt(`请输入举报 ${companyName} 的原因（不超过200字）：`);
+        if (!reason) return;
+        if (reason.length > 200) {
+            await showMessage('提示', '举报原因不能超过200字');
+            return;
+        }
+        try {
+            const { data, error } = await supabaseClient.rpc('report_company', {
+                p_user_id: currentUserId,
+                p_company_id: cid,
+                p_reason: reason
+            });
+            if (error) {
+                console.error('RPC调用错误：', error);
+                await showMessage('错误', error.message);
+            } else if (data && data.success === false) {
+                await showMessage('提示', data.message);
+            } else {
+                await showMessage('成功', '举报已提交，我们会尽快处理');
+            }
+        } catch (err) {
+            console.error('举报异常：', err);
+            await showMessage('错误', '举报失败，请稍后重试');
+        }
     }
-}
     
     function toggleTable() { fullTableVisible = !fullTableVisible; updateDataTable(); }
     function updateStatsPanel(total) {
@@ -1267,13 +1282,11 @@ tbody.innerHTML = html;
         } else {
             const redirectUrl = encodeURIComponent(window.location.href);
             document.getElementById('userStatusSpan').innerHTML = `未登录 <a href="login.html?redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
-            // 未登录也加载公司数据并显示图表（只读）
             const companies = await fetchAllCompanies();
             if (companies.length) {
                 rawData.names = companies.map(c => c.company_name);
                 rawData.values = companies.map(c => c.market_value);
                 totalStocks = rawData.names.length;
-                // 修复：使用局部变量 companies 而不是全局 allCompanies
                 const combined = companies.map(company => ({ id: company.id, name: company.company_name, value: company.market_value }));
                 combined.sort((a, b) => b.value - a.value);
                 sortedCombined = combined;
@@ -1287,6 +1300,7 @@ tbody.innerHTML = html;
             startAutoRefreshTimer();
         }
     }
+    
     function startAutoSupportWatcher() {
         if (autoSupportTimer) clearInterval(autoSupportTimer);
         autoSupportTimer = setInterval(() => { checkAutoSupportRules(); }, 30000);
