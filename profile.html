@@ -13,7 +13,7 @@
             background: var(--bg-color);
         }
         .profile-container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             background: var(--card-bg);
             border-radius: 32px;
@@ -96,20 +96,22 @@
             margin: 20px 0;
             border-color: var(--card-border);
         }
-        /* 自动支持规则表格样式 */
-        .rules-table {
+        /* 表格样式 */
+        .data-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
+            font-size: 0.9rem;
         }
-        .rules-table th, .rules-table td {
-            padding: 12px 8px;
+        .data-table th, .data-table td {
+            padding: 10px 8px;
             text-align: left;
             border-bottom: 1px solid var(--card-border);
         }
-        .rules-table th {
+        .data-table th {
             font-weight: 600;
             color: var(--status-border);
+            background: var(--count-bg);
         }
         .rule-actions {
             display: flex;
@@ -126,15 +128,19 @@
         .delete-rule {
             background: #dc3545;
         }
-        .no-rules {
+        .no-data {
             text-align: center;
             padding: 20px;
             color: var(--count-text);
         }
         /* 自定义模态框 */
         .custom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 10000; }
-        .custom-modal .modal-content { background: var(--card-bg); border-radius: 24px; padding: 24px; max-width: 350px; width: 90%; text-align: center; box-shadow: 0 20px 35px rgba(0,0,0,0.2); }
+        .custom-modal .modal-content { background: var(--card-bg); border-radius: 24px; padding: 24px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 20px 35px rgba(0,0,0,0.2); }
         .custom-modal .modal-content button { margin-top: 16px; padding: 6px 20px; border-radius: 30px; border: none; cursor: pointer; background: var(--nav-btn-hover-bg); color: white; }
+        .support-log {
+            font-size: 0.85rem;
+            color: var(--count-text);
+        }
     </style>
 </head>
 <body>
@@ -148,6 +154,10 @@
         <div class="info-item">
             <span class="info-label">NB币余额</span>
             <span class="info-value" id="balanceDisplay">加载中...</span>
+        </div>
+        <div class="info-item" id="myCompanyDisplay" style="display:none;">
+            <span class="info-label">我的虚拟公司</span>
+            <span class="info-value" id="myCompanyName"></span>
         </div>
     </div>
 
@@ -177,13 +187,20 @@
         <div class="loading">加载中...</div>
     </div>
 
+    <hr>
+
+    <h2>💖 我的公司被支持记录</h2>
+    <div id="supportLogsContainer">
+        <div class="loading">加载中...</div>
+    </div>
+
     <div class="back-link">
         <a href="index.html">← 返回首页</a>
     </div>
 </div>
 
 <!-- 修改规则的模态框 -->
-<div id="editRuleModal" class="custom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:10000;">
+<div id="editRuleModal" class="custom-modal" style="display:none;">
     <div class="modal-content">
         <h3>修改自动支持规则</h3>
         <input type="number" id="editThreshold" placeholder="市值低于 (阈值)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
@@ -217,6 +234,7 @@
 
     let currentUser = null;
     let currentRules = [];
+    let myCompany = null;
 
     // 自定义提示框
     function showMessage(title, msg) {
@@ -243,6 +261,66 @@
         try { return JSON.parse(stored); } catch(e) { return null; }
     }
 
+    async function loadMyCompany() {
+        if (!currentUser) return null;
+        const { data, error } = await supabaseClient
+            .from('user_companies')
+            .select('id, company_name')
+            .eq('user_id', currentUser.id)
+            .maybeSingle();
+        if (error || !data) return null;
+        myCompany = data;
+        const displayDiv = document.getElementById('myCompanyDisplay');
+        if (displayDiv && myCompany) {
+            displayDiv.style.display = 'flex';
+            document.getElementById('myCompanyName').innerText = myCompany.company_name;
+        }
+        return myCompany;
+    }
+
+    async function loadSupportLogs() {
+        const container = document.getElementById('supportLogsContainer');
+        if (!myCompany) {
+            container.innerHTML = '<div class="no-data">您还没有注册虚拟公司，<a href="Virtual stock.html" style="color:var(--status-border);">前往注册</a></div>';
+            return;
+        }
+        const { data, error } = await supabaseClient
+            .from('support_logs')
+            .select(`
+                id,
+                amount,
+                supported_at,
+                supporter_id,
+                supporter:profiles!support_logs_supporter_id_fkey (username)
+            `)
+            .eq('company_id', myCompany.id)
+            .order('supported_at', { ascending: false });
+        if (error) {
+            container.innerHTML = '<div class="error">加载失败: ' + error.message + '</div>';
+            return;
+        }
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="no-data">暂无支持记录，快去邀请好友支持您的公司吧！</div>';
+            return;
+        }
+        let html = `<table class="data-table">
+                        <thead>
+                            <tr><th>支持者</th><th>支持金额 (NB币)</th><th>支持时间</th></tr>
+                        </thead>
+                        <tbody>`;
+        for (const log of data) {
+            const supporterName = log.supporter?.username || '匿名用户';
+            const time = new Date(log.supported_at).toLocaleString();
+            html += `<tr>
+                        <td>${escapeHtml(supporterName)}</td>
+                        <td>${log.amount}</td>
+                        <td>${time}</td>
+                     </tr>`;
+        }
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
     async function loadUserInfo() {
         const user = getCurrentUser();
         if (!user) {
@@ -262,7 +340,9 @@
             document.getElementById('usernameDisplay').innerText = data.username;
             document.getElementById('balanceDisplay').innerText = data.nb_balance;
         }
+        await loadMyCompany();
         await loadAutoRules();
+        await loadSupportLogs();
     }
 
     async function loadAutoRules() {
@@ -283,16 +363,16 @@
             return;
         }
         if (!data || data.length === 0) {
-            container.innerHTML = '<div class="no-rules">暂无自动支持规则，<a href="Virtual stock.html" style="color:var(--status-border);">前往股票页面</a> 设置。</div>';
+            container.innerHTML = '<div class="no-data">暂无自动支持规则，<a href="Virtual stock.html" style="color:var(--status-border);">前往股票页面</a> 设置。</div>';
             return;
         }
         currentRules = data;
-        let html = `<table class="rules-table">
+        let html = `<table class="data-table">
                         <thead><tr><th>公司名称</th><th>触发阈值(市值&lt;)</th><th>每次支持金额</th><th>操作</th></tr></thead>
                         <tbody>`;
         for (const rule of data) {
             const companyName = rule.companies?.company_name || '未知公司';
-            html += `<tr data-rule-id="${rule.id}">
+            html += `<tr>
                         <td>${escapeHtml(companyName)}</td>
                         <td>${rule.threshold}</td>
                         <td>${rule.amount}</td>
@@ -300,12 +380,11 @@
                             <button class="edit-rule" data-id="${rule.id}" data-threshold="${rule.threshold}" data-amount="${rule.amount}" data-company-id="${rule.company_id}">✏️ 修改</button>
                             <button class="delete-rule" data-id="${rule.id}">🗑️ 取消</button>
                         </td>
-                    </tr>`;
+                     </tr>`;
         }
         html += '</tbody></table>';
         container.innerHTML = html;
         
-        // 绑定删除事件
         document.querySelectorAll('.delete-rule').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const ruleId = parseInt(btn.dataset.id);
@@ -321,7 +400,6 @@
             });
         });
         
-        // 绑定修改事件
         document.querySelectorAll('.edit-rule').forEach(btn => {
             btn.addEventListener('click', () => {
                 const ruleId = parseInt(btn.dataset.id);
@@ -333,7 +411,6 @@
         });
     }
 
-    // 自定义确认框
     function showConfirm(title, msg) {
         return new Promise((resolve) => {
             const modal = document.createElement('div');
@@ -377,13 +454,11 @@
                 await showMessage('提示', '自动支持金额不能超过500 NB币');
                 return;
             }
-            // 先删除旧规则
             const { error: delError } = await supabaseClient.from('support_rules').delete().eq('id', ruleId);
             if (delError) {
                 await showMessage('修改失败', delError.message);
                 return;
             }
-            // 插入新规则
             const { error: insError } = await supabaseClient.from('support_rules').insert({
                 user_id: currentUser.id,
                 company_id: companyId,
@@ -392,7 +467,6 @@
             });
             if (insError) {
                 await showMessage('修改失败', insError.message);
-                // 尝试恢复旧规则
                 await supabaseClient.from('support_rules').insert({
                     user_id: currentUser.id,
                     company_id: companyId,
