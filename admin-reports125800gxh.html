@@ -40,6 +40,27 @@
         }
         .card h3 { margin: 0 0 8px 0; font-size: 14px; color: #6c757d; }
         .card .number { font-size: 28px; font-weight: bold; margin: 0; color: #00a1d6; }
+        /* 标签页 */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 20px;
+            gap: 8px;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 24px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 30px 30px 0 0;
+            transition: all 0.2s;
+            color: #6c757d;
+        }
+        .tab-btn.active {
+            background: #00a1d6;
+            color: white;
+        }
         /* 筛选栏 */
         .filters {
             display: flex;
@@ -63,7 +84,7 @@
             border: none;
         }
         .filters button:hover { background: #008bb5; }
-        /* 批量操作栏 */
+        /* 批量操作栏 (仅评论举报) */
         .batch-actions {
             margin: 15px 0;
             display: flex;
@@ -117,11 +138,6 @@
             align-items: center;
             gap: 8px;
         }
-        .checkbox-wrapper input {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
         .comment-content {
             background: #f8f9fa;
             padding: 12px;
@@ -132,6 +148,13 @@
             font-size: 0.95rem;
             border-left: 3px solid #00a1d6;
         }
+        .company-info {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+            border-left: 3px solid #fd7e14;
+        }
         .report-meta {
             display: flex;
             flex-wrap: wrap;
@@ -139,9 +162,6 @@
             margin: 12px 0;
             font-size: 0.9rem;
             color: #495057;
-        }
-        .report-meta span strong {
-            color: #212529;
         }
         .report-actions {
             display: flex;
@@ -185,7 +205,6 @@
             border-top: 2px solid #e9ecef;
             padding-top: 20px;
         }
-        .unban-section h2 { font-size: 1.2rem; }
         .banned-user-item {
             display: flex;
             justify-content: space-between;
@@ -231,7 +250,14 @@
     <h1>📋 举报管理后台</h1>
     <div id="dashboard" class="dashboard"></div>
 
-    <div class="filters">
+    <!-- 标签页切换 -->
+    <div class="tabs">
+        <button id="tabComments" class="tab-btn active">📝 评论举报</button>
+        <button id="tabCompanies" class="tab-btn">🏢 公司举报</button>
+    </div>
+
+    <!-- 评论举报的筛选栏 (仅评论) -->
+    <div id="commentFilters" class="filters">
         <label>时间范围：</label>
         <select id="dateRange">
             <option value="all">全部</option>
@@ -243,7 +269,8 @@
         <button id="refreshBtn" class="refresh-btn">🔄 刷新</button>
     </div>
 
-    <div class="batch-actions" id="batchActions" style="display: none;">
+    <!-- 评论举报批量操作栏 -->
+    <div id="batchActions" class="batch-actions" style="display: none;">
         <span>批量操作已选中 <span id="selectedCount">0</span> 条举报</span>
         <button id="batchIgnore" class="success">🙈 批量忽略</button>
         <button id="batchDelete" class="warning">🗑️ 批量删除评论</button>
@@ -251,9 +278,14 @@
         <button id="clearSelection">清空选择</button>
     </div>
 
+    <!-- 评论举报列表 -->
     <div id="reportsContainer" class="reports-list">加载中...</div>
     <div id="pagination" class="pagination"></div>
 
+    <!-- 公司举报列表 (单独显示，无批量操作) -->
+    <div id="companyReportsContainer" style="display: none;">加载中...</div>
+
+    <!-- 封禁用户列表 -->
     <div class="unban-section">
         <h2>🔓 已封禁用户列表 & 手动解封</h2>
         <div id="bannedUsersList">加载中...</div>
@@ -276,23 +308,23 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let isLoggedIn = false;
+    let currentTab = 'comments'; // 'comments' or 'companies'
     let currentPage = 1;
-    const pageSize = 10;  // 卡片模式每页少一点，更易读
+    const pageSize = 10;
     let currentDateRange = 'all';
     let totalReports = 0;
     let currentReports = [];
     let selectedReportIds = new Set();
 
+    // 辅助函数
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
     }
-
     function formatDate(dateStr) {
         if (!dateStr) return '';
         return new Date(dateStr).toLocaleString();
     }
-
     function getDateRangeFilter(range) {
         const now = new Date();
         let startDate;
@@ -311,21 +343,22 @@
         return startDate.toISOString();
     }
 
+    // 加载仪表盘数据（总数）
     async function loadDashboard() {
         try {
             const { count: bannedCount } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('is_banned', true);
-            const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-            const { count: todayCount } = await supabaseClient.from('reports').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString());
-            const { count: pendingCount } = await supabaseClient.from('reports').select('*', { count: 'exact', head: true });
+            const { count: commentReports } = await supabaseClient.from('reports').select('*', { count: 'exact', head: true }).eq('target_type', 'comment');
+            const { count: companyReports } = await supabaseClient.from('reports').select('*', { count: 'exact', head: true }).eq('target_type', 'company');
             document.getElementById('dashboard').innerHTML = `
                 <div class="card"><h3>被封禁用户数</h3><div class="number">${bannedCount || 0}</div></div>
-                <div class="card"><h3>今日新增举报</h3><div class="number">${todayCount || 0}</div></div>
-                <div class="card"><h3>待处理举报总数</h3><div class="number">${pendingCount || 0}</div></div>
+                <div class="card"><h3>评论举报数</h3><div class="number">${commentReports || 0}</div></div>
+                <div class="card"><h3>公司举报数</h3><div class="number">${companyReports || 0}</div></div>
             `;
         } catch (err) { console.error(err); }
     }
 
-    async function loadReports() {
+    // ==================== 评论举报相关 ====================
+    async function loadCommentReports() {
         const container = document.getElementById('reportsContainer');
         container.innerHTML = '<div class="loading">加载中...</div>';
         try {
@@ -333,7 +366,7 @@
                 id, reason, created_at, comment_id,
                 comments!inner ( id, content, user_id, profiles!inner (username) ),
                 reporter_user_id, reporter:profiles!reports_reporter_user_id_fkey (username)
-            `, { count: 'exact' });
+            `, { count: 'exact' }).eq('target_type', 'comment');
             const dateFilter = getDateRangeFilter(currentDateRange);
             if (dateFilter) query = query.gte('created_at', dateFilter);
             const from = (currentPage - 1) * pageSize;
@@ -343,11 +376,10 @@
             totalReports = count || 0;
             currentReports = data || [];
             if (!currentReports.length) {
-                container.innerHTML = '<div class="loading">暂无举报记录</div>';
+                container.innerHTML = '<div class="loading">暂无评论举报记录</div>';
                 document.getElementById('pagination').innerHTML = '';
                 return;
             }
-            // 生成卡片 HTML
             let html = '';
             for (const report of currentReports) {
                 const comment = report.comments;
@@ -357,7 +389,7 @@
                 const commentId = comment?.id;
                 const isChecked = selectedReportIds.has(report.id) ? 'checked' : '';
                 html += `
-                    <div class="report-card" data-report-id="${report.id}" data-comment-id="${commentId || ''}" data-user-id="${comment?.user_id || ''}">
+                    <div class="report-card" data-report-id="${report.id}">
                         <div class="card-header">
                             <div class="checkbox-wrapper">
                                 <input type="checkbox" class="report-checkbox" data-id="${report.id}" ${isChecked}>
@@ -383,7 +415,7 @@
                 `;
             }
             container.innerHTML = html;
-            attachCardEvents();
+            attachCommentEvents();
             updateBatchBar();
             renderPagination();
         } catch (err) {
@@ -392,8 +424,8 @@
         }
     }
 
-    function attachCardEvents() {
-        // 单个删除
+    function attachCommentEvents() {
+        // 删除评论
         document.querySelectorAll('.delete').forEach(btn => {
             btn.onclick = async () => {
                 const commentId = btn.dataset.commentId;
@@ -403,10 +435,10 @@
                 await supabaseClient.from('reports').delete().eq('id', reportId);
                 alert('删除成功');
                 selectedReportIds.delete(parseInt(reportId));
-                loadReports(); loadDashboard(); loadBannedUsers();
+                loadCommentReports(); loadDashboard(); loadBannedUsers();
             };
         });
-        // 单个封禁
+        // 封禁用户
         document.querySelectorAll('.ban').forEach(btn => {
             btn.onclick = async () => {
                 const userId = btn.dataset.userId;
@@ -416,10 +448,10 @@
                 await supabaseClient.from('reports').delete().eq('id', reportId);
                 alert('用户已封禁');
                 selectedReportIds.delete(parseInt(reportId));
-                loadReports(); loadDashboard(); loadBannedUsers();
+                loadCommentReports(); loadDashboard(); loadBannedUsers();
             };
         });
-        // 单个忽略
+        // 忽略举报
         document.querySelectorAll('.ignore').forEach(btn => {
             btn.onclick = async () => {
                 const reportId = btn.dataset.reportId;
@@ -427,10 +459,10 @@
                 await supabaseClient.from('reports').delete().eq('id', reportId);
                 alert('已忽略');
                 selectedReportIds.delete(parseInt(reportId));
-                loadReports(); loadDashboard();
+                loadCommentReports(); loadDashboard();
             };
         });
-        // 复选框事件
+        // 复选框
         document.querySelectorAll('.report-checkbox').forEach(cb => {
             cb.addEventListener('change', (e) => {
                 const id = parseInt(e.target.dataset.id);
@@ -452,7 +484,7 @@
         for (let id of selectedReportIds) await supabaseClient.from('reports').delete().eq('id', id);
         alert('批量忽略完成');
         selectedReportIds.clear();
-        loadReports(); loadDashboard();
+        loadCommentReports(); loadDashboard();
     }
     async function batchDeleteComments() {
         const commentIds = new Set();
@@ -463,7 +495,7 @@
         for (let id of selectedReportIds) await supabaseClient.from('reports').delete().eq('id', id);
         alert('批量删除完成');
         selectedReportIds.clear();
-        loadReports(); loadDashboard(); loadBannedUsers();
+        loadCommentReports(); loadDashboard(); loadBannedUsers();
     }
     async function batchBanUsers() {
         const userIds = new Set();
@@ -474,7 +506,7 @@
         for (let id of selectedReportIds) await supabaseClient.from('reports').delete().eq('id', id);
         alert('批量封禁完成');
         selectedReportIds.clear();
-        loadReports(); loadDashboard(); loadBannedUsers();
+        loadCommentReports(); loadDashboard(); loadBannedUsers();
     }
 
     function renderPagination() {
@@ -487,10 +519,114 @@
         const paginationDiv = document.getElementById('pagination');
         paginationDiv.innerHTML = html;
         paginationDiv.querySelectorAll('button').forEach(btn => {
-            btn.addEventListener('click', () => { currentPage = parseInt(btn.dataset.page); loadReports(); });
+            btn.addEventListener('click', () => { currentPage = parseInt(btn.dataset.page); loadCommentReports(); });
         });
     }
 
+    // ==================== 公司举报相关 ====================
+    async function loadCompanyReports() {
+        const container = document.getElementById('companyReportsContainer');
+        container.innerHTML = '<div class="loading">加载中...</div>';
+        try {
+            // 获取公司举报，关联公司信息及所有者
+            const { data, error } = await supabaseClient
+                .from('reports')
+                .select(`
+                    id, reason, created_at, company_id,
+                    reporter:profiles!reports_reporter_user_id_fkey(username),
+                    companies:user_companies!inner(company_name, user_id, profiles!inner(username))
+                `)
+                .eq('target_type', 'company')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="loading">暂无公司举报记录</div>';
+                return;
+            }
+            let html = '';
+            for (const report of data) {
+                const company = report.companies;
+                const ownerName = company.profiles.username;
+                const reporterName = report.reporter?.username || '未知';
+                html += `
+                    <div class="report-card" data-report-id="${report.id}">
+                        <div class="card-header">
+                            <strong>🏢 公司举报 #${report.id}</strong>
+                            <div class="report-time">📅 ${formatDate(report.created_at)}</div>
+                        </div>
+                        <div class="company-info">
+                            <strong>被举报公司：</strong> ${escapeHtml(company.company_name)}<br>
+                            <strong>所有者：</strong> ${escapeHtml(ownerName)} (ID: ${company.user_id})
+                        </div>
+                        <div class="report-meta">
+                            <span>📢 <strong>举报原因：</strong> ${escapeHtml(report.reason)}</span>
+                            <span>🔍 <strong>举报人：</strong> ${escapeHtml(reporterName)}</span>
+                        </div>
+                        <div class="report-actions">
+                            <button class="ignore-company" data-report-id="${report.id}">🙈 忽略举报</button>
+                            <button class="ban-owner" data-user-id="${company.user_id}" data-report-id="${report.id}">🚫 封禁所有者</button>
+                            <!-- 可选：强制修改公司名称按钮 -->
+                            <button class="rename-company" data-company-id="${company.id}" data-company-name="${escapeHtml(company.company_name)}" data-report-id="${report.id}">✏️ 强制修改公司名</button>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+            attachCompanyEvents();
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = `<div class="error">加载失败: ${err.message}</div>`;
+        }
+    }
+
+    function attachCompanyEvents() {
+        // 忽略举报 (删除记录)
+        document.querySelectorAll('.ignore-company').forEach(btn => {
+            btn.onclick = async () => {
+                const reportId = btn.dataset.reportId;
+                if (!confirm('确定忽略此公司举报吗？')) return;
+                await supabaseClient.from('reports').delete().eq('id', reportId);
+                alert('已忽略');
+                loadCompanyReports(); loadDashboard();
+            };
+        });
+        // 封禁公司所有者
+        document.querySelectorAll('.ban-owner').forEach(btn => {
+            btn.onclick = async () => {
+                const userId = btn.dataset.userId;
+                const reportId = btn.dataset.reportId;
+                if (!confirm('确定封禁该用户吗？封禁后用户无法登录，且其公司将被保留但所有者被封禁。')) return;
+                await supabaseClient.from('profiles').update({ is_banned: true, banned_reason: '公司名称违规或恶意行为' }).eq('id', userId);
+                await supabaseClient.from('reports').delete().eq('id', reportId);
+                alert('用户已封禁');
+                loadCompanyReports(); loadDashboard(); loadBannedUsers();
+            };
+        });
+        // 强制修改公司名称 (追加 [违规名称已修改] 后缀)
+        document.querySelectorAll('.rename-company').forEach(btn => {
+            btn.onclick = async () => {
+                const companyId = btn.dataset.companyId;
+                const oldName = btn.dataset.companyName;
+                const reportId = btn.dataset.reportId;
+                const newName = prompt(`请输入新的公司名称（原名称：${oldName}）`, oldName + '（已修改）');
+                if (!newName) return;
+                if (!confirm(`确定将公司名称修改为“${newName}”吗？举报将被忽略。`)) return;
+                const { error: updateError } = await supabaseClient
+                    .from('user_companies')
+                    .update({ company_name: newName })
+                    .eq('id', companyId);
+                if (updateError) {
+                    alert('修改失败：' + updateError.message);
+                    return;
+                }
+                await supabaseClient.from('reports').delete().eq('id', reportId);
+                alert('公司名称已修改，举报已忽略');
+                loadCompanyReports(); loadDashboard();
+            };
+        });
+    }
+
+    // ==================== 封禁用户列表 ====================
     async function loadBannedUsers() {
         const container = document.getElementById('bannedUsersList');
         container.innerHTML = '加载中...';
@@ -514,7 +650,9 @@
                     if (!confirm('确定解封该用户吗？')) return;
                     await supabaseClient.from('profiles').update({ is_banned: false, banned_reason: null }).eq('id', btn.dataset.userId);
                     alert('解封成功');
-                    loadDashboard(); loadBannedUsers(); loadReports();
+                    loadDashboard(); loadBannedUsers();
+                    if (currentTab === 'comments') loadCommentReports();
+                    else loadCompanyReports();
                 };
             });
         } catch (err) {
@@ -523,7 +661,7 @@
         }
     }
 
-    // 明文密码验证
+    // ==================== 登录和标签页切换 ====================
     async function checkPassword(pwd) {
         const { data, error } = await supabaseClient.rpc('check_admin_password_plain', { input_pwd: pwd });
         if (error) throw new Error(error.message);
@@ -552,23 +690,50 @@
         };
     }
 
+    function switchTab(tab) {
+        currentTab = tab;
+        if (tab === 'comments') {
+            document.getElementById('commentFilters').style.display = 'flex';
+            document.getElementById('batchActions').style.display = selectedReportIds.size > 0 ? 'flex' : 'none';
+            document.getElementById('reportsContainer').style.display = 'block';
+            document.getElementById('pagination').style.display = 'flex';
+            document.getElementById('companyReportsContainer').style.display = 'none';
+            document.getElementById('tabComments').classList.add('active');
+            document.getElementById('tabCompanies').classList.remove('active');
+            loadCommentReports();
+        } else {
+            document.getElementById('commentFilters').style.display = 'none';
+            document.getElementById('batchActions').style.display = 'none';
+            document.getElementById('reportsContainer').style.display = 'none';
+            document.getElementById('pagination').style.display = 'none';
+            document.getElementById('companyReportsContainer').style.display = 'block';
+            document.getElementById('tabCompanies').classList.add('active');
+            document.getElementById('tabComments').classList.remove('active');
+            loadCompanyReports();
+        }
+    }
+
     async function initAdminPage() {
         await loadDashboard();
-        await loadReports();
         await loadBannedUsers();
+        // 默认加载评论举报
+        switchTab('comments');
         document.getElementById('applyFilter').onclick = () => {
             currentDateRange = document.getElementById('dateRange').value;
             currentPage = 1;
             selectedReportIds.clear();
-            loadReports();
+            loadCommentReports();
         };
-        document.getElementById('refreshBtn').onclick = () => { loadReports(); loadDashboard(); loadBannedUsers(); };
+        document.getElementById('refreshBtn').onclick = () => { loadCommentReports(); loadDashboard(); loadBannedUsers(); };
         document.getElementById('batchIgnore').onclick = batchIgnore;
         document.getElementById('batchDelete').onclick = batchDeleteComments;
         document.getElementById('batchBan').onclick = batchBanUsers;
-        document.getElementById('clearSelection').onclick = () => { selectedReportIds.clear(); loadReports(); };
+        document.getElementById('clearSelection').onclick = () => { selectedReportIds.clear(); loadCommentReports(); };
+        document.getElementById('tabComments').onclick = () => switchTab('comments');
+        document.getElementById('tabCompanies').onclick = () => switchTab('companies');
     }
 
+    // 启动
     if (sessionStorage.getItem('admin_authenticated') === 'true') {
         isLoggedIn = true;
         initAdminPage();
