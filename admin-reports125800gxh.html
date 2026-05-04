@@ -22,7 +22,6 @@
             padding: 20px;
         }
         h1 { margin-top: 0; color: #00a1d6; }
-        /* 仪表盘卡片 */
         .dashboard {
             display: flex;
             gap: 20px;
@@ -40,7 +39,6 @@
         }
         .card h3 { margin: 0 0 8px 0; font-size: 14px; color: #6c757d; }
         .card .number { font-size: 28px; font-weight: bold; margin: 0; color: #00a1d6; }
-        /* 标签页 */
         .tabs {
             display: flex;
             border-bottom: 2px solid #e9ecef;
@@ -61,7 +59,6 @@
             background: #00a1d6;
             color: white;
         }
-        /* 筛选栏 */
         .filters {
             display: flex;
             gap: 12px;
@@ -84,7 +81,6 @@
             border: none;
         }
         .filters button:hover { background: #008bb5; }
-        /* 批量操作栏 (仅评论举报) */
         .batch-actions {
             margin: 15px 0;
             display: flex;
@@ -103,7 +99,6 @@
         .batch-actions button.danger { background: #dc3545; }
         .batch-actions button.warning { background: #fd7e14; }
         .batch-actions button.success { background: #28a745; }
-        /* 卡片列表布局 */
         .reports-list {
             display: flex;
             flex-direction: column;
@@ -250,13 +245,11 @@
     <h1>📋 举报管理后台</h1>
     <div id="dashboard" class="dashboard"></div>
 
-    <!-- 标签页切换 -->
     <div class="tabs">
         <button id="tabComments" class="tab-btn active">📝 评论举报</button>
         <button id="tabCompanies" class="tab-btn">🏢 公司举报</button>
     </div>
 
-    <!-- 评论举报的筛选栏 (仅评论) -->
     <div id="commentFilters" class="filters">
         <label>时间范围：</label>
         <select id="dateRange">
@@ -269,7 +262,6 @@
         <button id="refreshBtn" class="refresh-btn">🔄 刷新</button>
     </div>
 
-    <!-- 评论举报批量操作栏 -->
     <div id="batchActions" class="batch-actions" style="display: none;">
         <span>批量操作已选中 <span id="selectedCount">0</span> 条举报</span>
         <button id="batchIgnore" class="success">🙈 批量忽略</button>
@@ -278,21 +270,17 @@
         <button id="clearSelection">清空选择</button>
     </div>
 
-    <!-- 评论举报列表 -->
     <div id="reportsContainer" class="reports-list">加载中...</div>
     <div id="pagination" class="pagination"></div>
 
-    <!-- 公司举报列表 (单独显示，无批量操作) -->
     <div id="companyReportsContainer" style="display: none;">加载中...</div>
 
-    <!-- 封禁用户列表 -->
     <div class="unban-section">
         <h2>🔓 已封禁用户列表 & 手动解封</h2>
         <div id="bannedUsersList">加载中...</div>
     </div>
 </div>
 
-<!-- 登录模态框 -->
 <div id="loginModal" class="modal">
     <div class="modal-content">
         <h3>管理员登录</h3>
@@ -308,7 +296,7 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let isLoggedIn = false;
-    let currentTab = 'comments'; // 'comments' or 'companies'
+    let currentTab = 'comments';
     let currentPage = 1;
     const pageSize = 10;
     let currentDateRange = 'all';
@@ -316,7 +304,6 @@
     let currentReports = [];
     let selectedReportIds = new Set();
 
-    // 辅助函数
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
@@ -343,7 +330,6 @@
         return startDate.toISOString();
     }
 
-    // 加载仪表盘数据（总数）
     async function loadDashboard() {
         try {
             const { count: bannedCount } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('is_banned', true);
@@ -425,7 +411,6 @@
     }
 
     function attachCommentEvents() {
-        // 删除评论
         document.querySelectorAll('.delete').forEach(btn => {
             btn.onclick = async () => {
                 const commentId = btn.dataset.commentId;
@@ -438,7 +423,6 @@
                 loadCommentReports(); loadDashboard(); loadBannedUsers();
             };
         });
-        // 封禁用户
         document.querySelectorAll('.ban').forEach(btn => {
             btn.onclick = async () => {
                 const userId = btn.dataset.userId;
@@ -451,7 +435,6 @@
                 loadCommentReports(); loadDashboard(); loadBannedUsers();
             };
         });
-        // 忽略举报
         document.querySelectorAll('.ignore').forEach(btn => {
             btn.onclick = async () => {
                 const reportId = btn.dataset.reportId;
@@ -462,7 +445,6 @@
                 loadCommentReports(); loadDashboard();
             };
         });
-        // 复选框
         document.querySelectorAll('.report-checkbox').forEach(cb => {
             cb.addEventListener('change', (e) => {
                 const id = parseInt(e.target.dataset.id);
@@ -528,7 +510,6 @@
         const container = document.getElementById('companyReportsContainer');
         container.innerHTML = '<div class="loading">加载中...</div>';
         try {
-            // 获取公司举报，关联公司信息及所有者
             const { data, error } = await supabaseClient
                 .from('reports')
                 .select(`
@@ -565,7 +546,6 @@
                         <div class="report-actions">
                             <button class="ignore-company" data-report-id="${report.id}">🙈 忽略举报</button>
                             <button class="ban-owner" data-user-id="${company.user_id}" data-report-id="${report.id}">🚫 封禁所有者</button>
-                            <!-- 可选：强制修改公司名称按钮 -->
                             <button class="rename-company" data-company-id="${company.id}" data-company-name="${escapeHtml(company.company_name)}" data-report-id="${report.id}">✏️ 强制修改公司名</button>
                         </div>
                     </div>
@@ -580,7 +560,7 @@
     }
 
     function attachCompanyEvents() {
-        // 忽略举报 (删除记录)
+        // 忽略举报
         document.querySelectorAll('.ignore-company').forEach(btn => {
             btn.onclick = async () => {
                 const reportId = btn.dataset.reportId;
@@ -590,7 +570,7 @@
                 loadCompanyReports(); loadDashboard();
             };
         });
-        // 封禁公司所有者
+        // 封禁所有者
         document.querySelectorAll('.ban-owner').forEach(btn => {
             btn.onclick = async () => {
                 const userId = btn.dataset.userId;
@@ -602,23 +582,26 @@
                 loadCompanyReports(); loadDashboard(); loadBannedUsers();
             };
         });
-        // 强制修改公司名称 (追加 [违规名称已修改] 后缀)
+        // 强制修改公司名 - 使用 RPC 避免 RLS 权限问题
         document.querySelectorAll('.rename-company').forEach(btn => {
             btn.onclick = async () => {
-                const companyId = btn.dataset.companyId;
+                const companyId = parseInt(btn.dataset.companyId);
                 const oldName = btn.dataset.companyName;
-                const reportId = btn.dataset.reportId;
+                const reportId = parseInt(btn.dataset.reportId);
                 const newName = prompt(`请输入新的公司名称（原名称：${oldName}）`, oldName + '（已修改）');
                 if (!newName) return;
                 if (!confirm(`确定将公司名称修改为“${newName}”吗？举报将被忽略。`)) return;
-                const { error: updateError } = await supabaseClient
-                    .from('user_companies')
-                    .update({ company_name: newName })
-                    .eq('id', companyId);
-                if (updateError) {
-                    alert('修改失败：' + updateError.message);
+
+                // 调用 RPC 函数修改公司名（需要提前创建）
+                const { data, error } = await supabaseClient.rpc('admin_rename_company', {
+                    company_id: companyId,
+                    new_name: newName
+                });
+                if (error) {
+                    alert('修改失败：' + error.message);
                     return;
                 }
+                // 删除举报记录
                 await supabaseClient.from('reports').delete().eq('id', reportId);
                 alert('公司名称已修改，举报已忽略');
                 loadCompanyReports(); loadDashboard();
@@ -716,7 +699,6 @@
     async function initAdminPage() {
         await loadDashboard();
         await loadBannedUsers();
-        // 默认加载评论举报
         switchTab('comments');
         document.getElementById('applyFilter').onclick = () => {
             currentDateRange = document.getElementById('dateRange').value;
@@ -740,6 +722,7 @@
     } else {
         showLoginModal();
     }
+
 </script>
 </body>
 </html>
