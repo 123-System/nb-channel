@@ -1179,41 +1179,35 @@
     
     // 举报公司函数
     async function reportCompany(companyId, companyName) {
-        const cid = Number(companyId);
-        if (isNaN(cid) || cid <= 0) {
-            await showMessage('错误', '无效的公司ID，无法举报');
-            console.error('举报失败：companyId =', companyId);
-            return;
-        }
-        if (!currentUserId) {
-            await showMessage('提示', '请先登录');
-            return;
-        }
-        const reason = prompt(`请输入举报 ${companyName} 的原因（不超过200字）：`);
-        if (!reason) return;
-        if (reason.length > 200) {
-            await showMessage('提示', '举报原因不能超过200字');
-            return;
-        }
-        try {
-            const { data, error } = await supabaseClient.rpc('report_company', {
-                p_user_id: currentUserId,
-                p_company_id: cid,
-                p_reason: reason
-            });
-            if (error) {
-                console.error('RPC调用错误：', error);
-                await showMessage('错误', error.message);
-            } else if (data && data.success === false) {
-                await showMessage('提示', data.message);
-            } else {
-                await showMessage('成功', '举报已提交，我们会尽快处理');
-            }
-        } catch (err) {
-            console.error('举报异常：', err);
-            await showMessage('错误', '举报失败，请稍后重试');
-        }
+    const cid = Number(companyId);
+    if (isNaN(cid) || cid <= 0) {
+        await showMessage('错误', '无效的公司ID');
+        return;
     }
+    const user = JSON.parse(localStorage.getItem('nb_user') || '{}');
+    if (!user.id) {
+        await showMessage('提示', '请先登录');
+        return;
+    }
+    const reason = prompt(`举报“${companyName}”的原因（1-200字）：`);
+    if (!reason) return;
+    if (reason.length < 1 || reason.length > 200) {
+        await showMessage('提示', '原因长度需1-200字');
+        return;
+    }
+    const { data, error } = await supabaseClient.rpc('report_company', {
+        p_user_id: user.id,
+        p_company_id: cid,
+        p_reason: reason
+    });
+    if (error) {
+        await showMessage('错误', error.message);
+    } else if (!data.success) {
+        await showMessage('提示', data.message);
+    } else {
+        await showMessage('成功', '举报已提交');
+    }
+}
     
     function toggleTable() { fullTableVisible = !fullTableVisible; updateDataTable(); }
     function updateStatsPanel(total) {
