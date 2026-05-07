@@ -580,52 +580,46 @@
         });
         // 封禁所有者
         document.querySelectorAll('.ban-owner').forEach(btn => {
-            btn.onclick = async () => {
-                const userId = btn.dataset.userId;
-                const reportId = btn.dataset.reportId;
-                if (!confirm('确定封禁该用户吗？封禁后用户无法登录，且其公司将被保留但所有者被封禁。')) return;
-                // 使用 RPC 封禁用户（避免 RLS）
-                const { data, error } = await supabaseClient.rpc('admin_ban_user', {
-                    p_user_id: userId,
-                    p_reason: '公司名称违规或恶意行为'
-                });
-                if (error) {
-                    alert('封禁失败：' + error.message);
-                    return;
-                }
-                await supabaseClient.from('reports').delete().eq('id', reportId);
-                alert('用户已封禁');
-                loadCompanyReports(); loadDashboard(); loadBannedUsers();
-            };
+    btn.onclick = async () => {
+        const userId = btn.dataset.userId;
+        const reportId = btn.dataset.reportId;
+        if (!confirm('确定封禁该用户吗？封禁后用户无法登录，且其公司将被保留但所有者被封禁。')) return;
+        const { data, error } = await supabaseClient.rpc('admin_ban_user', {
+            p_user_id: userId,
+            p_reason: '公司名称违规或恶意行为'
         });
+        if (error) {
+            alert('封禁失败：' + error.message);
+            return;
+        }
+        await supabaseClient.from('reports').delete().eq('id', reportId);
+        alert('用户已封禁');
+        loadCompanyReports(); loadDashboard(); loadBannedUsers();
+    };
+});
         // 删除公司（使用 RPC 清理所有关联数据）
-        document.querySelectorAll('.delete-company').forEach(btn => {
-            btn.onclick = async () => {
-                const companyId = parseInt(btn.dataset.companyId);
-                const companyName = btn.dataset.companyName;
-                const reportId = parseInt(btn.dataset.reportId);
-                const ownerId = btn.dataset.ownerId;
-                if (!confirm(`确定彻底删除公司“${companyName}”吗？\n此操作将：\n- 删除该公司及其所有数据\n- 删除该公司相关的自动支持规则\n- 从历史快照中移除该公司\n- 删除本条举报\n- 所有者的账号不会被封禁`)) return;
-                
-                // 调用 RPC 删除公司
-                const { data, error } = await supabaseClient.rpc('admin_delete_company', {
-                    p_company_id: companyId
-                });
-                if (error) {
-                    alert('删除失败：' + error.message);
-                    return;
-                }
-                if (!data.success) {
-                    alert(data.message);
-                    return;
-                }
-                // 删除举报记录
-                await supabaseClient.from('reports').delete().eq('id', reportId);
-                alert('公司已删除，举报已处理');
-                loadCompanyReports(); loadDashboard(); 
-                // 如果股票页面打开，可能需要刷新，但后台不必主动刷新股票页
-            };
+       document.querySelectorAll('.delete-company').forEach(btn => {
+    btn.onclick = async () => {
+        const companyId = parseInt(btn.dataset.companyId);
+        const companyName = btn.dataset.companyName;
+        const reportId = parseInt(btn.dataset.reportId);
+        if (!confirm(`确定彻底删除公司“${companyName}”吗？\n此操作将删除该公司、自动支持规则及本条举报。`)) return;
+        const { data, error } = await supabaseClient.rpc('admin_delete_company', {
+            p_company_id: companyId
         });
+        if (error) {
+            alert('删除失败：' + error.message);
+            return;
+        }
+        if (!data.success) {
+            alert(data.message);
+            return;
+        }
+        await supabaseClient.from('reports').delete().eq('id', reportId);
+        alert('公司已删除，举报已处理');
+        loadCompanyReports(); loadDashboard();
+    };
+});
     }
 
     // ==================== 封禁用户列表 ====================
