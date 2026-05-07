@@ -335,70 +335,100 @@
     }
 
     async function loadAutoRules() {
-        const container = document.getElementById('autoRulesContainer');
-        if (!currentUser) return;
-        const { data, error } = await supabaseClient
-            .from('support_rules')
-            .select(`
-                id,
-                threshold,
-                amount,
-                company_id,
-                companies:user_companies!inner(company_name)
-            `)
-            .eq('user_id', currentUser.id);
-        if (error) {
-            container.innerHTML = '<div class="error">加载失败: ' + error.message + '</div>';
-            return;
-        }
-        if (!data || data.length === 0) {
-            container.innerHTML = '<div class="no-data">暂无自动支持规则，<a href="Virtual stock.html" style="color:var(--status-border);">前往股票页面</a> 设置。</div>';
-            return;
-        }
-        currentRules = data;
-        let html = `<table class="data-table">
-                        <thead><tr><th>公司名称</th><th>触发阈值(市值&lt;)</th><th>每次支持金额</th><th>操作</th></tr></thead>
-                        <tbody>`;
-        for (const rule of data) {
-            const companyName = rule.companies?.company_name || '未知公司';
-            html += `<tr>
-                        <td>${escapeHtml(companyName)}</td>
-                        <td>${rule.threshold}</td>
-                        <td>${rule.amount}</td>
-                        <td class="rule-actions">
-                            <button class="edit-rule" data-id="${rule.id}" data-threshold="${rule.threshold}" data-amount="${rule.amount}" data-company-id="${rule.company_id}">✏️ 修改</button>
-                            <button class="delete-rule" data-id="${rule.id}">🗑️ 取消</button>
-                        </td>
-                     </table>`;
-        }
-        html += '</tbody></table>';
-        container.innerHTML = html;
-        
-        document.querySelectorAll('.delete-rule').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const ruleId = parseInt(btn.dataset.id);
-                const confirmMsg = await showConfirm('确认取消', '确定要取消此自动支持规则吗？');
-                if (confirmMsg) {
-                    const { error } = await supabaseClient.from('support_rules').delete().eq('id', ruleId);
-                    if (error) await showMessage('删除失败', error.message);
-                    else {
-                        await showMessage('成功', '已取消自动支持规则');
-                        await loadAutoRules();
-                    }
-                }
-            });
-        });
-        
-        document.querySelectorAll('.edit-rule').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const ruleId = parseInt(btn.dataset.id);
-                const oldThreshold = parseInt(btn.dataset.threshold);
-                const oldAmount = parseInt(btn.dataset.amount);
-                const companyId = parseInt(btn.dataset.companyId);
-                showEditModal(ruleId, companyId, oldThreshold, oldAmount);
-            });
-        });
+    const container = document.getElementById('autoRulesContainer');
+    if (!currentUser) {
+        container.innerHTML = '<div class="no-data">请先登录</div>';
+        return;
     }
+    
+    // 第一步：查询用户的自动支持规则
+    const { data: rules, error: rulesError } = await supabaseClient
+        .from('support_rules')
+        .select('id, threshold, amount, company_id')
+        .eq('user_id', currentUser.id);
+        
+    if (rulesError) {
+        container.innerHTML = `<div class="error">加载规则失败: ${rulesError.message}</div>`;
+        return;
+    }
+    
+    if (!rules || rules.length === 0) {
+        container.innerHTML = '<div class="no-data">暂无自动支持规则，<a href="Virtual stock.html" style="color:var(--status-border);">前往股票页面</a> 设置。</div>';
+        return;
+    }
+    
+    // 第二步：获取所有相关公司的名称（去重）
+    const companyIds = [...new Set(rules.map(r => r.company_id).filter(id => id != null))];
+    if (companyIds.length === 0) {
+        container.innerHTML = '<div class="error">规则中的公司ID无效</div>';
+        return;
+    }
+    
+    const { data: companies, error: compError } = await supabaseClient
+        .from('user_companies')
+        .select('id, company_name')
+        .in('id', companyIds);
+        
+    if (compError) {
+        container.innerHTML = `<div class="error">加载公司信息失败: ${compError.message}</div>`;
+        return;
+    }
+    
+    // 构建公司名称映射
+    const companyMap = new Map();
+    companies.forEach(c => companyMap.set(c.id, c.company_name));
+    
+    // 生成表格 HTML
+    let html = `<table class="data-table">
+                    <thead>
+                        <tr><th>公司名称</th><th>触发阈值(市值&lt;)</th><th>每次支持金额</th><th>操作</th></tr>
+                    </thead>
+                    <tbody>`;
+    
+    for (const rule of rules) {
+        const companyName = companyMap.get(rule.company_id) || '未知公司';
+        html += `<tr data-rule-id="${rule.id}">
+                    <td>${escapeHtml(companyName)}</td>
+                    <td>${rule.threshold}</td>
+                    <td>${rule.amount}</td>
+                    <td class="rule-actions">
+                        <button class="edit-rule" data-id="${rule.id}" data-threshold="${rule.threshold}" data-amount="${rule.amount}" data-company-id="${rule.company_id}">✏️ 修改</button>
+                        <button class="delete-rule" data-id="${rule.id}">🗑️ 取消</button>
+                    </td>
+                 </tr>`;
+    }
+    
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+    
+    // 绑定删除按钮事件
+    document.querySelectorAll('.delete-rule').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const ruleId = parseInt(btn.dataset.id);
+            const confirmed = await showConfirm('确认取消', '确定要取消此自动支持规则吗？');
+            if (confirmed) {
+                const { error } = await supabaseClient.from('support_rules').delete().eq('id', ruleId);
+                if (error) {
+                    await showMessage('删除失败', error.message);
+                } else {
+                    await showMessage('成功', '已取消自动支持规则');
+                    await loadAutoRules();  // 重新加载
+                }
+            }
+        });
+    });
+    
+    // 绑定修改按钮事件
+    document.querySelectorAll('.edit-rule').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const ruleId = parseInt(btn.dataset.id);
+            const oldThreshold = parseInt(btn.dataset.threshold);
+            const oldAmount = parseInt(btn.dataset.amount);
+            const companyId = parseInt(btn.dataset.companyId);
+            showEditModal(ruleId, companyId, oldThreshold, oldAmount);
+        });
+    });
+}
 
     function showConfirm(title, msg) {
         return new Promise((resolve) => {
@@ -425,58 +455,62 @@
     }
 
     function showEditModal(ruleId, companyId, oldThreshold, oldAmount) {
-        const modal = document.getElementById('editRuleModal');
-        const thresholdInput = document.getElementById('editThreshold');
-        const amountInput = document.getElementById('editAmount');
-        thresholdInput.value = oldThreshold;
-        amountInput.value = oldAmount;
-        modal.style.display = 'flex';
-        
-        const saveHandler = async () => {
-            const newThreshold = parseInt(thresholdInput.value);
-            const newAmount = parseInt(amountInput.value);
-            if (isNaN(newThreshold) || isNaN(newAmount) || newAmount <= 0) {
-                await showMessage('提示', '请输入有效的阈值和金额');
-                return;
-            }
-            if (newAmount > 500) {
-                await showMessage('提示', '自动支持金额不能超过500 NB币');
-                return;
-            }
-            const { error: delError } = await supabaseClient.from('support_rules').delete().eq('id', ruleId);
-            if (delError) {
-                await showMessage('修改失败', delError.message);
-                return;
-            }
-            const { error: insError } = await supabaseClient.from('support_rules').insert({
+    const modal = document.getElementById('editRuleModal');
+    const thresholdInput = document.getElementById('editThreshold');
+    const amountInput = document.getElementById('editAmount');
+    thresholdInput.value = oldThreshold;
+    amountInput.value = oldAmount;
+    modal.style.display = 'flex';
+    
+    const saveHandler = async () => {
+        const newThreshold = parseInt(thresholdInput.value);
+        const newAmount = parseInt(amountInput.value);
+        if (isNaN(newThreshold) || isNaN(newAmount) || newAmount <= 0) {
+            await showMessage('提示', '请输入有效的阈值和金额');
+            return;
+        }
+        if (newAmount > 500) {
+            await showMessage('提示', '自动支持金额不能超过500 NB币');
+            return;
+        }
+        // 先删除旧规则，再插入新规则（原子性较差，但简单）
+        const { error: delError } = await supabaseClient.from('support_rules').delete().eq('id', ruleId);
+        if (delError) {
+            await showMessage('修改失败', delError.message);
+            return;
+        }
+        const { error: insError } = await supabaseClient.from('support_rules').insert({
+            user_id: currentUser.id,
+            company_id: companyId,
+            threshold: newThreshold,
+            amount: newAmount
+        });
+        if (insError) {
+            await showMessage('修改失败', insError.message);
+            // 尝试恢复旧规则
+            await supabaseClient.from('support_rules').insert({
                 user_id: currentUser.id,
                 company_id: companyId,
-                threshold: newThreshold,
-                amount: newAmount
+                threshold: oldThreshold,
+                amount: oldAmount
             });
-            if (insError) {
-                await showMessage('修改失败', insError.message);
-                await supabaseClient.from('support_rules').insert({
-                    user_id: currentUser.id,
-                    company_id: companyId,
-                    threshold: oldThreshold,
-                    amount: oldAmount
-                });
-            } else {
-                await showMessage('成功', '修改成功');
-                modal.style.display = 'none';
-                await loadAutoRules();
-            }
-            cleanup();
-        };
-        const cleanup = () => {
+        } else {
+            await showMessage('成功', '修改成功');
             modal.style.display = 'none';
-            document.getElementById('saveEditBtn')?.removeEventListener('click', saveHandler);
-            document.getElementById('closeEditBtn')?.removeEventListener('click', cleanup);
-        };
-        document.getElementById('saveEditBtn').addEventListener('click', saveHandler, { once: true });
-        document.getElementById('closeEditBtn').addEventListener('click', cleanup, { once: true });
-    }
+            await loadAutoRules();
+        }
+        cleanup();
+    };
+    
+    const cleanup = () => {
+        modal.style.display = 'none';
+        document.getElementById('saveEditBtn')?.removeEventListener('click', saveHandler);
+        document.getElementById('closeEditBtn')?.removeEventListener('click', cleanup);
+    };
+    
+    document.getElementById('saveEditBtn').addEventListener('click', saveHandler, { once: true });
+    document.getElementById('closeEditBtn').addEventListener('click', cleanup, { once: true });
+}
 
     async function updateUsername() {
         const newUsername = document.getElementById('newUsername').value.trim();
