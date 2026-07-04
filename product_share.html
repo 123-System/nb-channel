@@ -176,7 +176,7 @@
     // 初始化 Supabase
     const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);  // 改名
 
     // 获取当前登录用户
     function getCurrentUser() {
@@ -188,7 +188,7 @@
     async function fetchUserBalance() {
         const user = getCurrentUser();
         if (!user) return 0;
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('profiles')
             .select('nb_balance')
             .eq('id', user.id)
@@ -225,7 +225,7 @@
         const container = document.getElementById('productList');
         container.innerHTML = '<div class="loading-spinner">⏳ 加载中...</div>';
 
-        const { data, error } = await supabase.rpc('get_products');
+        const { data, error } = await supabaseClient.rpc('get_products');
         if (error) {
             console.error('加载失败:', error);
             container.innerHTML = '<div class="no-data">加载失败，请刷新重试</div>';
@@ -271,14 +271,13 @@
                     alert('请先登录');
                     return;
                 }
-                // 如果是免费，直接下载；否则确认
                 if (price > 0) {
                     if (!confirm(`下载此作品需要支付 ${price} NB币，确认吗？`)) return;
                 }
                 btn.disabled = true;
                 btn.innerText = '处理中...';
 
-                const { data, error } = await supabase.rpc('download_product', {
+                const { data, error } = await supabaseClient.rpc('download_product', {
                     p_product_id: productId,
                     p_user_id: user.id
                 });
@@ -288,10 +287,8 @@
                     alert('下载失败：' + (data?.message || error?.message || '未知错误'));
                     return;
                 }
-                // 下载成功，打开文件URL
                 const fileUrl = data.file_url;
                 window.open(fileUrl, '_blank');
-                // 刷新列表更新下载数、余额
                 await loadProducts();
                 await updateUserUI();
             });
@@ -319,13 +316,12 @@
         if (file.size > 50 * 1024 * 1024) { alert('文件不能超过 50 MB'); return; }
 
         statusDiv.innerText = '⏳ 上传中...';
-        // 上传文件到 Supabase Storage
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 6)}.${fileExt}`;
         const filePath = `products/${user.id}/${fileName}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('product_files')  // 需先在 Storage 中创建 bucket 并设置为公开
+        const { data: uploadData, error: uploadError } = await supabaseClient.storage
+            .from('product_files')
             .upload(filePath, file, {
                 cacheControl: '3600',
                 upsert: false
@@ -335,12 +331,10 @@
             statusDiv.innerText = '❌ 上传失败: ' + uploadError.message;
             return;
         }
-        // 获取公开 URL
-        const { data: urlData } = supabase.storage.from('product_files').getPublicUrl(filePath);
+        const { data: urlData } = supabaseClient.storage.from('product_files').getPublicUrl(filePath);
         const fileUrl = urlData.publicUrl;
 
-        // 插入产品记录
-        const { data: insertData, error: insertError } = await supabase
+        const { data: insertData, error: insertError } = await supabaseClient
             .from('products')
             .insert({
                 title: title,
@@ -358,8 +352,7 @@
         if (insertError) {
             console.error(insertError);
             statusDiv.innerText = '❌ 保存失败: ' + insertError.message;
-            // 删除已上传的文件（可选）
-            await supabase.storage.from('product_files').remove([filePath]);
+            await supabaseClient.storage.from('product_files').remove([filePath]);
             return;
         }
 
@@ -368,29 +361,22 @@
         document.getElementById('productDesc').value = '';
         document.getElementById('productPrice').value = '0';
         fileInput.value = '';
-        // 刷新列表
         await loadProducts();
         await updateUserUI();
     }
 
-    // 工具函数
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;');
     }
 
-    // 初始化
     async function init() {
         await updateUserUI();
         await loadProducts();
-        // 绑定上传按钮
         document.getElementById('uploadBtn').addEventListener('click', uploadProduct);
     }
 
-    // 夜间模式、回到顶部等已由 common.js 处理
     init();
-
-    // 处理登出后的清理（页面刷新由按钮触发）
 </script>
 </body>
 </html>
