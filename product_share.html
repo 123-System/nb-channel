@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作品分享 - NB频道</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/common.js"></script>
+    <style>
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 30px;
+        }
+        .product-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 18px;
+            border: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            transition: 0.2s;
+        }
+        .product-card:hover {
+            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+        }
+        .product-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .product-meta {
+            font-size: 0.85rem;
+            color: var(--count-text);
+            margin-bottom: 8px;
+        }
+        .product-desc {
+            flex: 1;
+            margin: 10px 0;
+            word-break: break-word;
+        }
+        .product-price {
+            font-weight: bold;
+            color: var(--status-border);
+            margin-right: 12px;
+        }
+        .product-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+        }
+        .upload-section {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            border: 1px solid var(--card-border);
+        }
+        .upload-section input, .upload-section textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 30px;
+            border: 1px solid var(--card-border);
+            background: var(--bg-color);
+            color: var(--text-color);
+            margin-bottom: 12px;
+        }
+        .upload-section textarea {
+            border-radius: 16px;
+            resize: vertical;
+        }
+        .upload-section button {
+            background: var(--nav-btn-hover-bg);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+        .upload-section button:hover {
+            filter: brightness(0.9);
+        }
+        .file-input-wrapper {
+            margin-bottom: 12px;
+        }
+        .download-btn {
+            background: var(--nav-btn-bg);
+            color: var(--nav-btn-text);
+            border: none;
+            padding: 6px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+        }
+        .download-btn:hover {
+            background: var(--nav-btn-hover-bg);
+            color: white;
+        }
+        .free-badge {
+            color: #4caf50;
+            font-weight: bold;
+        }
+        .price-tag {
+            font-weight: bold;
+            color: var(--status-border);
+        }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: var(--count-text);
+        }
+        .loading-spinner {
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+<script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
+<div class="container">
+    <h1>📺 NB频道官网</h1>
+    <div class="author-info" id="authorInfo">UP主：NB搞事局</div>
+    <div class="nav-container">
+        <div class="nav-links">
+            <a href="index.html" class="nav-btn">首页</a>
+            <a href="videos.html" class="nav-btn">视频</a>
+            <a href="about.html" class="nav-btn">关于</a>
+            <a href="changelog.html" class="nav-btn">更新日志</a>
+            <a href="product.html" class="nav-btn">我的产品</a>
+            <a href="APP.html" class="nav-btn">软件/APP下载</a>
+        </div>
+        <div class="nav-actions">
+            <a href="comments-beta.html" class="nav-btn">💬 评论区</a>
+            <a href="Virtual stock.html" class="nav-btn">📈 NB虚拟股票</a>
+            <a href="product_share.html" class="nav-btn active">📦 作品分享</a>
+        </div>
+    </div>
+
+    <div class="home-card">
+        <div class="user-info" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <span id="userStatusSpan">未登录</span>
+            <span id="balanceDisplay" style="font-weight:bold;">💰 NB币: --</span>
+        </div>
+        <hr style="margin: 20px 0; border-color: var(--card-border);">
+
+        <!-- 上传区域（仅登录可见） -->
+        <div id="uploadSection" class="upload-section" style="display:none;">
+            <h3>📤 上传你的作品</h3>
+            <input type="text" id="productTitle" placeholder="作品标题" maxlength="100">
+            <textarea id="productDesc" rows="3" placeholder="作品简介（内容、用途、版本等）" maxlength="1000"></textarea>
+            <input type="number" id="productPrice" placeholder="定价（NB币，0为免费）" min="0" max="999999999" value="0">
+            <div class="file-input-wrapper">
+                <input type="file" id="productFile" accept="*/*">
+                <span style="font-size:0.8rem; color:var(--count-text);">支持的格式：任意文件（单个文件不超过 50 MB）</span>
+            </div>
+            <button id="uploadBtn">📤 发布作品</button>
+            <div id="uploadStatus" style="margin-top:10px; color:var(--status-border);"></div>
+        </div>
+
+        <!-- 作品列表 -->
+        <h3>📚 所有作品</h3>
+        <div id="productList" class="product-grid">
+            <div class="loading-spinner">⏳ 加载中...</div>
+        </div>
+    </div>
+</div>
+
+<div class="fixed-buttons">
+    <button class="theme-toggle-fixed" id="themeToggleFixed" onclick="toggleTheme()">🌙</button>
+    <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
+</div>
+
+<script>
+    // 初始化 Supabase
+    const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // 获取当前登录用户
+    function getCurrentUser() {
+        const stored = localStorage.getItem('nb_user');
+        if (!stored) return null;
+        try { return JSON.parse(stored); } catch(e) { return null; }
+    }
+
+    async function fetchUserBalance() {
+        const user = getCurrentUser();
+        if (!user) return 0;
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('nb_balance')
+            .eq('id', user.id)
+            .single();
+        if (error) return 0;
+        return data.nb_balance || 0;
+    }
+
+    // 更新用户状态和余额显示
+    async function updateUserUI() {
+        const user = getCurrentUser();
+        const statusSpan = document.getElementById('userStatusSpan');
+        const balanceSpan = document.getElementById('balanceDisplay');
+        const uploadSection = document.getElementById('uploadSection');
+
+        if (user) {
+            statusSpan.innerHTML = `欢迎，${user.username} <button id="logoutBtn" style="background:none;border:none;color:var(--status-border);cursor:pointer;">登出</button>`;
+            document.getElementById('logoutBtn')?.addEventListener('click', () => {
+                localStorage.removeItem('nb_user');
+                window.location.reload();
+            });
+            uploadSection.style.display = 'block';
+            const balance = await fetchUserBalance();
+            balanceSpan.innerHTML = `💰 NB币: ${balance}`;
+        } else {
+            statusSpan.innerHTML = `<a href="login.html?redirect=${encodeURIComponent(window.location.href)}" style="color:var(--status-border);">登录</a> / <a href="login.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="color:var(--status-border);">注册</a>`;
+            balanceSpan.innerHTML = '💰 NB币: --';
+            uploadSection.style.display = 'none';
+        }
+    }
+
+    // 加载作品列表
+    async function loadProducts() {
+        const container = document.getElementById('productList');
+        container.innerHTML = '<div class="loading-spinner">⏳ 加载中...</div>';
+
+        const { data, error } = await supabase.rpc('get_products');
+        if (error) {
+            console.error('加载失败:', error);
+            container.innerHTML = '<div class="no-data">加载失败，请刷新重试</div>';
+            return;
+        }
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="no-data">暂无作品，快来上传你的第一个作品吧！</div>';
+            return;
+        }
+
+        const user = getCurrentUser();
+        let html = '';
+        for (const p of data) {
+            const isOwner = user && user.id === p.author_id;
+            const priceText = p.price === 0 ? '<span class="free-badge">免费</span>' : `<span class="price-tag">${p.price} NB币</span>`;
+            const downloadBtn = user
+                ? `<button class="download-btn" data-id="${p.id}" data-price="${p.price}">📥 下载</button>`
+                : `<span style="color:var(--count-text);">请登录后下载</span>`;
+            html += `
+                <div class="product-card">
+                    <div class="product-title">${escapeHtml(p.title)}</div>
+                    <div class="product-meta">👤 ${escapeHtml(p.author_username)} · 📅 ${new Date(p.created_at).toLocaleDateString()} · 📥 ${p.downloads || 0} 次下载</div>
+                    <div class="product-desc">${escapeHtml(p.description || '无简介')}</div>
+                    <div style="margin-top:auto;">
+                        <span>${priceText}</span>
+                        <div class="product-actions">
+                            ${downloadBtn}
+                            ${isOwner ? `<span style="font-size:0.8rem;color:var(--count-text);">[你的作品]</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+
+        // 为下载按钮绑定事件
+        document.querySelectorAll('.download-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const productId = parseInt(btn.dataset.id);
+                const price = parseInt(btn.dataset.price);
+                const user = getCurrentUser();
+                if (!user) {
+                    alert('请先登录');
+                    return;
+                }
+                // 如果是免费，直接下载；否则确认
+                if (price > 0) {
+                    if (!confirm(`下载此作品需要支付 ${price} NB币，确认吗？`)) return;
+                }
+                btn.disabled = true;
+                btn.innerText = '处理中...';
+
+                const { data, error } = await supabase.rpc('download_product', {
+                    p_product_id: productId,
+                    p_user_id: user.id
+                });
+                btn.disabled = false;
+                btn.innerText = '📥 下载';
+                if (error || !data.success) {
+                    alert('下载失败：' + (data?.message || error?.message || '未知错误'));
+                    return;
+                }
+                // 下载成功，打开文件URL
+                const fileUrl = data.file_url;
+                window.open(fileUrl, '_blank');
+                // 刷新列表更新下载数、余额
+                await loadProducts();
+                await updateUserUI();
+            });
+        });
+    }
+
+    // 上传作品
+    async function uploadProduct() {
+        const user = getCurrentUser();
+        if (!user) {
+            alert('请先登录');
+            return;
+        }
+
+        const title = document.getElementById('productTitle').value.trim();
+        const desc = document.getElementById('productDesc').value.trim();
+        const price = parseInt(document.getElementById('productPrice').value) || 0;
+        const fileInput = document.getElementById('productFile');
+        const file = fileInput.files[0];
+        const statusDiv = document.getElementById('uploadStatus');
+
+        if (!title) { alert('请输入作品标题'); return; }
+        if (!file) { alert('请选择要上传的文件'); return; }
+        if (price < 0 || price > 999999999) { alert('价格需在0~999999999之间'); return; }
+        if (file.size > 50 * 1024 * 1024) { alert('文件不能超过 50 MB'); return; }
+
+        statusDiv.innerText = '⏳ 上传中...';
+        // 上传文件到 Supabase Storage
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 6)}.${fileExt}`;
+        const filePath = `products/${user.id}/${fileName}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('product_files')  // 需先在 Storage 中创建 bucket 并设置为公开
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
+        if (uploadError) {
+            console.error(uploadError);
+            statusDiv.innerText = '❌ 上传失败: ' + uploadError.message;
+            return;
+        }
+        // 获取公开 URL
+        const { data: urlData } = supabase.storage.from('product_files').getPublicUrl(filePath);
+        const fileUrl = urlData.publicUrl;
+
+        // 插入产品记录
+        const { data: insertData, error: insertError } = await supabase
+            .from('products')
+            .insert({
+                title: title,
+                description: desc || '',
+                price: price,
+                file_url: fileUrl,
+                file_name: file.name,
+                file_size: file.size,
+                mime_type: file.type,
+                author_id: user.id
+            })
+            .select()
+            .single();
+
+        if (insertError) {
+            console.error(insertError);
+            statusDiv.innerText = '❌ 保存失败: ' + insertError.message;
+            // 删除已上传的文件（可选）
+            await supabase.storage.from('product_files').remove([filePath]);
+            return;
+        }
+
+        statusDiv.innerText = '✅ 发布成功！';
+        document.getElementById('productTitle').value = '';
+        document.getElementById('productDesc').value = '';
+        document.getElementById('productPrice').value = '0';
+        fileInput.value = '';
+        // 刷新列表
+        await loadProducts();
+        await updateUserUI();
+    }
+
+    // 工具函数
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;');
+    }
+
+    // 初始化
+    async function init() {
+        await updateUserUI();
+        await loadProducts();
+        // 绑定上传按钮
+        document.getElementById('uploadBtn').addEventListener('click', uploadProduct);
+    }
+
+    // 夜间模式、回到顶部等已由 common.js 处理
+    init();
+
+    // 处理登出后的清理（页面刷新由按钮触发）
+</script>
+</body>
+</html>
