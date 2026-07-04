@@ -1000,23 +1000,29 @@
         setTimeout(() => container.classList.remove('fade-in'), 150);
     }
     function computeHistogram(values, step = 10000) {
-        if (!values || values.length === 0) return { labels: [], counts: [] };
-        const maxVal = Math.max(...values);
-        const binCount = Math.ceil(maxVal / step);
-        const labels = [];
-        const counts = new Array(binCount).fill(0);
-        for (let i = 0; i < binCount; i++) {
-            const start = i === 0 ? 0 : (i * step + 1);
-            const end = (i + 1) * step;
-            labels.push(`${start}～${end}`);
-        }
-        for (const val of values) {
-            let binIndex = Math.floor(val / step);
-            if (binIndex >= binCount) binIndex = binCount - 1;
-            counts[binIndex]++;
-        }
-        return { labels, counts };
+    if (!values || values.length === 0) return { labels: [], counts: [] };
+    const maxVal = Math.max(...values);
+    const binCount = Math.ceil(maxVal / step);
+    const labels = [];
+    const counts = new Array(binCount).fill(0);
+    for (let i = 0; i < binCount; i++) {
+        const start = i === 0 ? 0 : (i * step + 1);
+        const end = (i + 1) * step;
+        labels.push(`${start}～${end}`);
     }
+    for (const val of values) {
+        let binIndex = Math.floor(val / step);
+        if (binIndex >= binCount) binIndex = binCount - 1;
+        counts[binIndex]++;
+    }
+    // 过滤掉 counts 为 0 的区间
+    const filtered = labels.map((label, idx) => ({ label, count: counts[idx] }))
+                           .filter(item => item.count > 0);
+    return {
+        labels: filtered.map(item => item.label),
+        counts: filtered.map(item => item.count)
+    };
+}
     function updateHistogramChart() {
         if (!rawData.values.length) return;
         const { labels, counts } = computeHistogram(rawData.values, 10000);
