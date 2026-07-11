@@ -176,13 +176,28 @@
     // 初始化 Supabase
     const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);  // 改名
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Cloudflare Worker 地址（替换为你的实际地址）
+    const WORKER_URL = 'https://product-storage.gxh123456790.workers.dev/';
 
     // 获取当前登录用户
     function getCurrentUser() {
         const stored = localStorage.getItem('nb_user');
         if (!stored) return null;
         try { return JSON.parse(stored); } catch(e) { return null; }
+    }
+
+    // 获取 Supabase JWT（用于 Worker 认证）
+    function getSupabaseJWT() {
+        const stored = localStorage.getItem('supabase.auth.token');
+        if (!stored) return null;
+        try {
+            const session = JSON.parse(stored);
+            return session.currentSession?.access_token || null;
+        } catch {
+            return null;
+        }
     }
 
     async function fetchUserBalance() {
@@ -261,7 +276,7 @@
         }
         container.innerHTML = html;
 
-        // 为下载按钮绑定事件
+        // 绑定下载按钮事件（通过 Worker 获取预签名下载 URL）
         document.querySelectorAll('.download-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const productId = parseInt(btn.dataset.id);
@@ -277,25 +292,45 @@
                 btn.disabled = true;
                 btn.innerText = '处理中...';
 
-                const { data, error } = await supabaseClient.rpc('download_product', {
-                    p_product_id: productId,
-                    p_user_id: user.id
-                });
-                btn.disabled = false;
-                btn.innerText = '📥 下载';
-                if (error || !data.success) {
-                    alert('下载失败：' + (data?.message || error?.message || '未知错误'));
-                    return;
+                try {
+                    const jwt = getSupabaseJWT();
+                    if (!jwt) {
+                        alert('登录凭证已过期，请重新登录');
+                        btn.disabled = false;
+                        btn.innerText = '📥 下载';
+                        return;
+                    }
+
+                    const response = await fetch(`${WORKER_URL}/download?id=${productId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${jwt}`,
+                        },
+                    });
+                    const result = await response.json();
+                    if (!response.ok || !result.success) {
+                        alert('下载失败：' + (result.error || '未知错误'));
+                        btn.disabled = false;
+                        btn.innerText = '📥 下载';
+                        return;
+                    }
+                    // 打开预签名下载链接（在新窗口/标签页）
+                    window.open(result.downloadUrl, '_blank');
+                    // 刷新列表更新下载次数和余额
+                    await loadProducts();
+                    await updateUserUI();
+                } catch (err) {
+                    console.error(err);
+                    alert('下载失败：' + err.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = '📥 下载';
                 }
-                const fileUrl = data.file_url;
-                window.open(fileUrl, '_blank');
-                await loadProducts();
-                await updateUserUI();
             });
         });
     }
 
-    // 上传作品
+    // 上传作品（通过 Worker 获取预签名上传 URL，然后直接 PUT 到数据胶囊）
     async function uploadProduct() {
         const user = getCurrentUser();
         if (!user) {
@@ -315,54 +350,81 @@
         if (price < 0 || price > 999999999) { alert('价格需在0~999999999之间'); return; }
         if (file.size > 50 * 1024 * 1024) { alert('文件不能超过 50 MB'); return; }
 
-        statusDiv.innerText = '⏳ 上传中...';
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 6)}.${fileExt}`;
-        const filePath = `products/${user.id}/${fileName}`;
+        statusDiv.innerText = '⏳ 准备上传...';
 
-        const { data: uploadData, error: uploadError } = await supabaseClient.storage
-            .from('product_files')
-            .upload(filePath, file, {
-                cacheControl: '3600',
-                upsert: false
+        try {
+            const jwt = getSupabaseJWT();
+            if (!jwt) {
+                alert('登录凭证已过期，请重新登录');
+                statusDiv.innerText = '❌ 请重新登录';
+                return;
+            }
+
+            // 1. 从 Worker 获取预签名上传 URL
+            const response = await fetch(`${WORKER_URL}/upload`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${jwt}`,
+                },
+                body: JSON.stringify({
+                    fileName: file.name,
+                    fileType: file.type || 'application/octet-stream',
+                }),
             });
-        if (uploadError) {
-            console.error(uploadError);
-            statusDiv.innerText = '❌ 上传失败: ' + uploadError.message;
-            return;
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                statusDiv.innerText = '❌ ' + (result.error || '获取上传链接失败');
+                return;
+            }
+
+            // 2. 使用预签名 URL 直接上传到数据胶囊
+            statusDiv.innerText = '⏳ 上传到云存储...';
+            const uploadResp = await fetch(result.uploadUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': result.file_type || 'application/octet-stream',
+                },
+                body: file,
+            });
+            if (!uploadResp.ok) {
+                statusDiv.innerText = '❌ 文件上传失败（状态码: ' + uploadResp.status + '）';
+                return;
+            }
+
+            // 3. 保存产品信息到 Supabase
+            statusDiv.innerText = '⏳ 保存作品信息...';
+            const { data: insertData, error: insertError } = await supabaseClient
+                .from('products')
+                .insert({
+                    title: title,
+                    description: desc || '',
+                    price: price,
+                    r2_path: result.r2_path,
+                    file_name: result.file_name,
+                    file_type: result.file_type,
+                    author_id: user.id
+                })
+                .select()
+                .single();
+
+            if (insertError) {
+                console.error(insertError);
+                statusDiv.innerText = '❌ 保存失败: ' + insertError.message;
+                return;
+            }
+
+            statusDiv.innerText = '✅ 发布成功！';
+            document.getElementById('productTitle').value = '';
+            document.getElementById('productDesc').value = '';
+            document.getElementById('productPrice').value = '0';
+            fileInput.value = '';
+            await loadProducts();
+            await updateUserUI();
+        } catch (err) {
+            console.error(err);
+            statusDiv.innerText = '❌ 上传失败: ' + err.message;
         }
-        const { data: urlData } = supabaseClient.storage.from('product_files').getPublicUrl(filePath);
-        const fileUrl = urlData.publicUrl;
-
-        const { data: insertData, error: insertError } = await supabaseClient
-            .from('products')
-            .insert({
-                title: title,
-                description: desc || '',
-                price: price,
-                file_url: fileUrl,
-                file_name: file.name,
-                file_size: file.size,
-                mime_type: file.type,
-                author_id: user.id
-            })
-            .select()
-            .single();
-
-        if (insertError) {
-            console.error(insertError);
-            statusDiv.innerText = '❌ 保存失败: ' + insertError.message;
-            await supabaseClient.storage.from('product_files').remove([filePath]);
-            return;
-        }
-
-        statusDiv.innerText = '✅ 发布成功！';
-        document.getElementById('productTitle').value = '';
-        document.getElementById('productDesc').value = '';
-        document.getElementById('productPrice').value = '0';
-        fileInput.value = '';
-        await loadProducts();
-        await updateUserUI();
     }
 
     function escapeHtml(str) {
