@@ -156,7 +156,7 @@
     // ========== 配置 ==========
     const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
-    
+    // ⚠️ 替换成你的 Worker 地址
     const WORKER_URL = 'https://product-storage.gxh123456790.workers.dev/';
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -166,18 +166,6 @@
         const stored = localStorage.getItem('nb_user');
         if (!stored) return null;
         try { return JSON.parse(stored); } catch { return null; }
-    }
-
-    // 从 localStorage 获取 Supabase JWT
-    function getSupabaseJWT() {
-        const sessionStr = localStorage.getItem('supabase.auth.token');
-        if (!sessionStr) return null;
-        try {
-            const session = JSON.parse(sessionStr);
-            return session.currentSession?.access_token || null;
-        } catch {
-            return null;
-        }
     }
 
     function escapeHtml(str) {
@@ -296,18 +284,12 @@
         statusDiv.innerText = '⏳ 准备上传...';
 
         try {
-            const jwt = getSupabaseJWT();
-            if (!jwt) {
-                alert('登录凭证已过期，请重新登录');
-                return;
-            }
-
-            // 1. 请求 Worker 获取预签名上传 URL
+            // 直接使用 user.id
             const resp = await fetch(`${WORKER_URL}/upload`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${jwt}`,
+                    'X-User-Id': user.id,
                 },
                 body: JSON.stringify({
                     fileName: file.name,
@@ -321,7 +303,6 @@
                 return;
             }
 
-            // 2. 使用预签名 URL 上传文件到数据胶囊
             statusDiv.innerText = '⏳ 上传文件到云存储...';
             const uploadResp = await fetch(result.uploadUrl, {
                 method: 'PUT',
@@ -336,7 +317,6 @@
                 return;
             }
 
-            // 3. 保存产品信息到 Supabase
             statusDiv.innerText = '⏳ 保存产品信息...';
             const { data: insertData, error: insertError } = await supabaseClient
                 .from('products')
@@ -344,7 +324,7 @@
                     title: title,
                     description: desc || '',
                     price: price,
-                    r2_path: result.r2_path,    // 存储路径
+                    r2_path: result.r2_path,
                     file_name: result.file_name,
                     file_type: result.file_type,
                     author_id: user.id,
@@ -373,51 +353,35 @@
 
     // ========== 下载作品（通过 Worker） ==========
     async function downloadProduct(productId) {
-    const user = getCurrentUser();
-    if (!user) {
-        alert('请先登录');
-        return;
-    }
-
-    const product = productsData.find(p => p.id === productId);
-    if (!product) {
-        alert('作品不存在');
-        return;
-    }
-    if (product.price > 0) {
-        if (!confirm(`下载此作品需要支付 ${product.price} NB币，确认吗？`)) return;
-    }
-
-    try {
-        const resp = await fetch(`${WORKER_URL}/download?id=${productId}`, {
-            method: 'GET',
-            headers: {
-                'X-User-Id': user.id,   // 传递用户 ID
-            },
-        });
-
-        const result = await resp.json();
-        if (!resp.ok || !result.success) {
-            alert('下载失败：' + (result.error || '未知错误'));
+        const user = getCurrentUser();
+        if (!user) {
+            alert('请先登录');
             return;
         }
 
-        const link = document.createElement('a');
-        link.href = result.downloadUrl;
-        link.download = product.file_name || 'download';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const product = productsData.find(p => p.id === productId);
+        if (!product) {
+            alert('作品不存在');
+            return;
+        }
+        if (product.price > 0) {
+            if (!confirm(`下载此作品需要支付 ${product.price} NB币，确认吗？`)) return;
+        }
 
-        await loadProducts();
-        await updateUserUI();
-    } catch (err) {
-        console.error(err);
-        alert('下载失败：' + err.message);
-    }
-}
+        try {
+            const resp = await fetch(`${WORKER_URL}/download?id=${productId}`, {
+                method: 'GET',
+                headers: {
+                    'X-User-Id': user.id,
+                },
+            });
 
-            // 使用预签名 URL 下载文件
+            const result = await resp.json();
+            if (!resp.ok || !result.success) {
+                alert('下载失败：' + (result.error || '未知错误'));
+                return;
+            }
+
             const link = document.createElement('a');
             link.href = result.downloadUrl;
             link.download = product.file_name || 'download';
@@ -425,7 +389,6 @@
             link.click();
             document.body.removeChild(link);
 
-            // 刷新列表更新下载数和余额
             await loadProducts();
             await updateUserUI();
         } catch (err) {
