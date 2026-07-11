@@ -26,95 +26,24 @@
         .product-card:hover {
             box-shadow: 0 6px 18px rgba(0,0,0,0.1);
         }
-        .product-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }
-        .product-meta {
-            font-size: 0.85rem;
-            color: var(--count-text);
-            margin-bottom: 8px;
-        }
-        .product-desc {
-            flex: 1;
-            margin: 10px 0;
-            word-break: break-word;
-        }
-        .product-price {
-            font-weight: bold;
-            color: var(--status-border);
-            margin-right: 12px;
-        }
-        .product-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 12px;
-        }
-        .upload-section {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 30px;
-            border: 1px solid var(--card-border);
-        }
+        .product-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 6px; }
+        .product-meta { font-size: 0.85rem; color: var(--count-text); margin-bottom: 8px; }
+        .product-desc { flex: 1; margin: 10px 0; word-break: break-word; }
+        .product-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+        .upload-section { background: var(--card-bg); border-radius: 16px; padding: 24px; margin-bottom: 30px; border: 1px solid var(--card-border); }
         .upload-section input, .upload-section textarea {
-            width: 100%;
-            padding: 8px 12px;
-            border-radius: 30px;
-            border: 1px solid var(--card-border);
-            background: var(--bg-color);
-            color: var(--text-color);
-            margin-bottom: 12px;
+            width: 100%; padding: 8px 12px; border-radius: 30px; border: 1px solid var(--card-border);
+            background: var(--bg-color); color: var(--text-color); margin-bottom: 12px;
         }
-        .upload-section textarea {
-            border-radius: 16px;
-            resize: vertical;
-        }
-        .upload-section button {
-            background: var(--nav-btn-hover-bg);
-            color: white;
-            border: none;
-            padding: 10px 24px;
-            border-radius: 40px;
-            cursor: pointer;
-        }
-        .upload-section button:hover {
-            filter: brightness(0.9);
-        }
-        .file-input-wrapper {
-            margin-bottom: 12px;
-        }
-        .download-btn {
-            background: var(--nav-btn-bg);
-            color: var(--nav-btn-text);
-            border: none;
-            padding: 6px 16px;
-            border-radius: 30px;
-            cursor: pointer;
-        }
-        .download-btn:hover {
-            background: var(--nav-btn-hover-bg);
-            color: white;
-        }
-        .free-badge {
-            color: #4caf50;
-            font-weight: bold;
-        }
-        .price-tag {
-            font-weight: bold;
-            color: var(--status-border);
-        }
-        .no-data {
-            text-align: center;
-            padding: 40px;
-            color: var(--count-text);
-        }
-        .loading-spinner {
-            text-align: center;
-            padding: 20px;
-        }
+        .upload-section textarea { border-radius: 16px; resize: vertical; }
+        .upload-section button { background: var(--nav-btn-hover-bg); color: white; border: none; padding: 10px 24px; border-radius: 40px; cursor: pointer; }
+        .upload-section button:hover { filter: brightness(0.9); }
+        .download-btn { background: var(--nav-btn-bg); color: var(--nav-btn-text); border: none; padding: 6px 16px; border-radius: 30px; cursor: pointer; }
+        .download-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
+        .free-badge { color: #4caf50; font-weight: bold; }
+        .price-tag { font-weight: bold; color: var(--status-border); }
+        .no-data { text-align: center; padding: 40px; color: var(--count-text); }
+        .loading-spinner { text-align: center; padding: 20px; }
     </style>
 </head>
 <body>
@@ -145,21 +74,19 @@
         </div>
         <hr style="margin: 20px 0; border-color: var(--card-border);">
 
-        <!-- 上传区域（仅登录可见） -->
         <div id="uploadSection" class="upload-section" style="display:none;">
             <h3>📤 上传你的作品</h3>
             <input type="text" id="productTitle" placeholder="作品标题" maxlength="100">
-            <textarea id="productDesc" rows="3" placeholder="作品简介（内容、用途、版本等）" maxlength="1000"></textarea>
+            <textarea id="productDesc" rows="3" placeholder="作品简介" maxlength="1000"></textarea>
             <input type="number" id="productPrice" placeholder="定价（NB币，0为免费）" min="0" max="999999999" value="0">
             <div class="file-input-wrapper">
                 <input type="file" id="productFile" accept="*/*">
-                <span style="font-size:0.8rem; color:var(--count-text);">支持的格式：任意文件（单个文件不超过 50 MB）</span>
+                <span style="font-size:0.8rem; color:var(--count-text);">单个文件不超过 50 MB</span>
             </div>
             <button id="uploadBtn">📤 发布作品</button>
             <div id="uploadStatus" style="margin-top:10px; color:var(--status-border);"></div>
         </div>
 
-        <!-- 作品列表 -->
         <h3>📚 所有作品</h3>
         <div id="productList" class="product-grid">
             <div class="loading-spinner">⏳ 加载中...</div>
@@ -173,31 +100,44 @@
 </div>
 
 <script>
-    // 初始化 Supabase
     const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Cloudflare Worker 地址（替换为你的实际地址）
-    const WORKER_URL = 'https://product-storage.gxh123456790.workers.dev/';
+    // Worker 地址（替换成你自己的）
+    const WORKER_URL = 'https://product-storage.gxh123456790.workers.dev/'; 
 
-    // 获取当前登录用户
     function getCurrentUser() {
         const stored = localStorage.getItem('nb_user');
         if (!stored) return null;
         try { return JSON.parse(stored); } catch(e) { return null; }
     }
 
-    // 获取 Supabase JWT（用于 Worker 认证）
+    // 获取 Supabase JWT（从 localStorage 中提取）
     function getSupabaseJWT() {
-        const stored = localStorage.getItem('supabase.auth.token');
-        if (!stored) return null;
-        try {
-            const session = JSON.parse(stored);
-            return session.currentSession?.access_token || null;
-        } catch {
-            return null;
+        // 尝试从 Supabase 客户端存储的键中获取
+        const keys = Object.keys(localStorage);
+        for (const key of keys) {
+            if (key.startsWith('sb-') && key.includes('-auth-token')) {
+                try {
+                    const session = JSON.parse(localStorage.getItem(key));
+                    if (session && session.access_token) {
+                        return session.access_token;
+                    }
+                } catch(e) {}
+            }
         }
+        // 备用：尝试从 'supabase.auth.token' 键获取（有些版本用这个）
+        const tokenKey = 'supabase.auth.token';
+        if (localStorage.getItem(tokenKey)) {
+            try {
+                const tokenData = JSON.parse(localStorage.getItem(tokenKey));
+                if (tokenData && tokenData.currentSession && tokenData.currentSession.access_token) {
+                    return tokenData.currentSession.access_token;
+                }
+            } catch(e) {}
+        }
+        return null;
     }
 
     async function fetchUserBalance() {
@@ -212,7 +152,6 @@
         return data.nb_balance || 0;
     }
 
-    // 更新用户状态和余额显示
     async function updateUserUI() {
         const user = getCurrentUser();
         const statusSpan = document.getElementById('userStatusSpan');
@@ -257,7 +196,7 @@
             const isOwner = user && user.id === p.author_id;
             const priceText = p.price === 0 ? '<span class="free-badge">免费</span>' : `<span class="price-tag">${p.price} NB币</span>`;
             const downloadBtn = user
-                ? `<button class="download-btn" data-id="${p.id}" data-price="${p.price}">📥 下载</button>`
+                ? `<button class="download-btn" data-id="${p.id}">📥 下载</button>`
                 : `<span style="color:var(--count-text);">请登录后下载</span>`;
             html += `
                 <div class="product-card">
@@ -276,31 +215,32 @@
         }
         container.innerHTML = html;
 
-        // 绑定下载按钮事件（通过 Worker 获取预签名下载 URL）
+        // 绑定下载事件（通过 Worker）
         document.querySelectorAll('.download-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const productId = parseInt(btn.dataset.id);
-                const price = parseInt(btn.dataset.price);
                 const user = getCurrentUser();
                 if (!user) {
                     alert('请先登录');
                     return;
                 }
-                if (price > 0) {
-                    if (!confirm(`下载此作品需要支付 ${price} NB币，确认吗？`)) return;
+                // 获取产品价格（从之前的数据中查找）
+                const product = data.find(p => p.id === productId);
+                if (product && product.price > 0) {
+                    if (!confirm(`下载此作品需要支付 ${product.price} NB币，确认吗？`)) return;
                 }
                 btn.disabled = true;
                 btn.innerText = '处理中...';
 
-                try {
-                    const jwt = getSupabaseJWT();
-                    if (!jwt) {
-                        alert('登录凭证已过期，请重新登录');
-                        btn.disabled = false;
-                        btn.innerText = '📥 下载';
-                        return;
-                    }
+                const jwt = getSupabaseJWT();
+                if (!jwt) {
+                    alert('登录凭证已过期，请重新登录');
+                    btn.disabled = false;
+                    btn.innerText = '📥 下载';
+                    return;
+                }
 
+                try {
                     const response = await fetch(`${WORKER_URL}/download?id=${productId}`, {
                         method: 'GET',
                         headers: {
@@ -314,23 +254,20 @@
                         btn.innerText = '📥 下载';
                         return;
                     }
-                    // 打开预签名下载链接（在新窗口/标签页）
+                    // 打开下载链接
                     window.open(result.downloadUrl, '_blank');
-                    // 刷新列表更新下载次数和余额
-                    await loadProducts();
-                    await updateUserUI();
+                    await loadProducts(); // 刷新列表更新下载数
+                    await updateUserUI(); // 刷新余额
                 } catch (err) {
-                    console.error(err);
                     alert('下载失败：' + err.message);
-                } finally {
-                    btn.disabled = false;
-                    btn.innerText = '📥 下载';
                 }
+                btn.disabled = false;
+                btn.innerText = '📥 下载';
             });
         });
     }
 
-    // 上传作品（通过 Worker 获取预签名上传 URL，然后直接 PUT 到数据胶囊）
+    // 上传作品（通过 Worker）
     async function uploadProduct() {
         const user = getCurrentUser();
         if (!user) {
@@ -352,15 +289,14 @@
 
         statusDiv.innerText = '⏳ 准备上传...';
 
-        try {
-            const jwt = getSupabaseJWT();
-            if (!jwt) {
-                alert('登录凭证已过期，请重新登录');
-                statusDiv.innerText = '❌ 请重新登录';
-                return;
-            }
+        const jwt = getSupabaseJWT();
+        if (!jwt) {
+            statusDiv.innerText = '❌ 登录凭证已过期，请重新登录';
+            return;
+        }
 
-            // 1. 从 Worker 获取预签名上传 URL
+        try {
+            // 1. 请求预签名上传 URL
             const response = await fetch(`${WORKER_URL}/upload`, {
                 method: 'POST',
                 headers: {
@@ -378,22 +314,22 @@
                 return;
             }
 
-            // 2. 使用预签名 URL 直接上传到数据胶囊
-            statusDiv.innerText = '⏳ 上传到云存储...';
-            const uploadResp = await fetch(result.uploadUrl, {
+            // 2. 使用预签名 URL 上传文件到数据胶囊
+            statusDiv.innerText = '⏳ 上传文件到云存储...';
+            const uploadResponse = await fetch(result.uploadUrl, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': result.file_type || 'application/octet-stream',
                 },
                 body: file,
             });
-            if (!uploadResp.ok) {
-                statusDiv.innerText = '❌ 文件上传失败（状态码: ' + uploadResp.status + '）';
+            if (!uploadResponse.ok) {
+                statusDiv.innerText = '❌ 文件上传失败';
                 return;
             }
 
             // 3. 保存产品信息到 Supabase
-            statusDiv.innerText = '⏳ 保存作品信息...';
+            statusDiv.innerText = '⏳ 保存产品信息...';
             const { data: insertData, error: insertError } = await supabaseClient
                 .from('products')
                 .insert({
