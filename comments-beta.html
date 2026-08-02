@@ -628,7 +628,7 @@ function renderCommentsForPage(page) {
 
     // 统计信息
     const info = document.createElement('span');
-    info.textContent = `共 ${allMainComments.length} 条主评论`;
+    info.textContent = `共 ${totalComments} 条评论`;
     info.style.cssText = 'font-size:0.85rem; color:var(--count-text); margin-left:12px;';
     paginationDiv.appendChild(info);
 
@@ -934,7 +934,7 @@ function renderCommentsForPage(page) {
     // 存储到全局
     allMainComments = mainComments;
     allRepliesMap = repliesMap;
-    totalComments = mainComments.length;
+    totalComments = data.length;
 
     renderCommentsForPage(1);
 }
