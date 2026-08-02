@@ -145,6 +145,25 @@
             resize: vertical;
             margin-bottom: 10px;
         }
+
+        .pagination-bar button {
+    background: var(--nav-btn-bg);
+    color: var(--nav-btn-text);
+    border: 1px solid var(--card-border);
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.pagination-bar button:hover {
+    background: var(--nav-btn-hover-bg);
+    color: white;
+}
+.pagination-bar .active {
+    background: #00a1d6;
+    color: white;
+}
+        
     </style>
 </head>
 <body>
@@ -282,6 +301,10 @@
 
     let currentUser = null;
     const pagePath = 'nb_comments';
+    const COMMENTS_PER_PAGE = 15;  // 每页显示15条主评论
+    let currentPage = 1;           // 当前页码
+    let totalComments = 0;         // 评论总数
+    let allComments = [];          // 存储所有评论数据（用于分页）
     let verifiedUsernames = [];
     let pendingReportCommentId = null; // 临时存储待举报的评论ID
 
@@ -493,6 +516,106 @@
     `;
 }
 
+function renderCommentsForPage(page) {
+    currentPage = page;
+    const start = (page - 1) * COMMENTS_PER_PAGE;
+    const end = Math.min(start + COMMENTS_PER_PAGE, allComments.length);
+    const pageComments = allComments.slice(start, end);
+    renderComments(pageComments);  // 用原来的 renderComments 渲染
+    renderPagination();
+}
+
+    function renderPagination() {
+    const totalPages = Math.ceil(allComments.length / COMMENTS_PER_PAGE);
+    if (totalPages <= 1) {
+        // 删除现有分页栏
+        const oldPagination = document.querySelector('.pagination-bar');
+        if (oldPagination) oldPagination.remove();
+        return;
+    }
+
+    // 删除旧分页栏
+    const oldPagination = document.querySelector('.pagination-bar');
+    if (oldPagination) oldPagination.remove();
+
+    // 创建新分页栏
+    const paginationDiv = document.createElement('div');
+    paginationDiv.className = 'pagination-bar';
+    paginationDiv.style.cssText = 'display:flex; justify-content:center; gap:8px; margin-top:20px; flex-wrap:wrap;';
+
+    // 上一页按钮
+    if (currentPage > 1) {
+        const prevBtn = document.createElement('button');
+        prevBtn.textContent = '‹ 上一页';
+        prevBtn.onclick = () => renderCommentsForPage(currentPage - 1);
+        paginationDiv.appendChild(prevBtn);
+    }
+
+    // 页码按钮（最多显示7个，含省略号）
+    let startPage = Math.max(1, currentPage - 3);
+    let endPage = Math.min(totalPages, currentPage + 3);
+    if (endPage - startPage < 6) {
+        if (startPage === 1) endPage = Math.min(totalPages, 7);
+        else if (endPage === totalPages) startPage = Math.max(1, totalPages - 6);
+    }
+
+    if (startPage > 1) {
+        const firstBtn = document.createElement('button');
+        firstBtn.textContent = '1';
+        firstBtn.onclick = () => renderCommentsForPage(1);
+        paginationDiv.appendChild(firstBtn);
+        if (startPage > 2) {
+            const dot = document.createElement('span');
+            dot.textContent = '…';
+            dot.style.cssText = 'padding:0 4px; color:var(--count-text);';
+            paginationDiv.appendChild(dot);
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        if (i === currentPage) {
+            btn.style.cssText = 'background:#00a1d6; color:white; padding:5px 12px; border-radius:6px; border:none; cursor:pointer;';
+        } else {
+            btn.style.cssText = 'background:#6c757d; color:white; padding:5px 12px; border-radius:6px; border:none; cursor:pointer;';
+            btn.onclick = () => renderCommentsForPage(i);
+        }
+        paginationDiv.appendChild(btn);
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            const dot = document.createElement('span');
+            dot.textContent = '…';
+            dot.style.cssText = 'padding:0 4px; color:var(--count-text);';
+            paginationDiv.appendChild(dot);
+        }
+        const lastBtn = document.createElement('button');
+        lastBtn.textContent = totalPages;
+        lastBtn.onclick = () => renderCommentsForPage(totalPages);
+        paginationDiv.appendChild(lastBtn);
+    }
+
+    // 下一页按钮
+    if (currentPage < totalPages) {
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = '下一页 ›';
+        nextBtn.onclick = () => renderCommentsForPage(currentPage + 1);
+        paginationDiv.appendChild(nextBtn);
+    }
+
+    // 显示总条数
+    const info = document.createElement('span');
+    info.textContent = `共 ${allComments.length} 条评论`;
+    info.style.cssText = 'font-size:0.85rem; color:var(--count-text); margin-left:12px;';
+    paginationDiv.appendChild(info);
+
+    // 插入到评论列表后面
+    const commentSection = document.querySelector('.comment-section');
+    commentSection.appendChild(paginationDiv);
+}
+    
     function renderComments(comments) {
         if (!comments || comments.length === 0) {
             commentListDiv.innerHTML = '<p>暂无评论，快来抢沙发！</p>';
@@ -739,8 +862,11 @@
         .select('*, profiles(username)')
         .eq('page_path', pagePath)
         .order('created_at', { ascending: true });
-    if (error) { console.error(error); return; }
-    
+    if (error) {
+        console.error(error);
+        return;
+    }
+
     // 获取公司信息
     const userIds = [...new Set(data.map(c => c.user_id).filter(id => id))];
     if (userIds.length > 0) {
@@ -756,7 +882,11 @@
     } else {
         window.companyMap = new Map();
     }
-    renderComments(data);
+
+    // 存储所有评论并渲染第一页
+    allComments = data;
+    totalComments = data.length;
+    renderCommentsForPage(1);
 }
 
     async function postComment() {
