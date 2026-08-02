@@ -411,85 +411,87 @@
         return roots;
     }
 
-    function renderCommentNode(node, isReply = false) {
-        const author = node.profiles?.username || '匿名';
-        const fullText = node.content;
-        const isLong = fullText.length > 50;
-        let displayText, toggleButton = '';
-        if (isLong) {
-            const shortText = fullText.substring(0, 50) + '...';
-            displayText = shortText;
-            toggleButton = `<button class="toggle-btn" data-id="${node.id}" data-state="collapsed">展开</button>`;
-        } else {
-            displayText = fullText;
-        }
-
-        const showReplyBtn = !isReply;
-        let repliesHtml = '';
-        let toggleRepliesBtn = '';
-
-        if (!isReply && node.replies.length > 0) {
-            const directRepliesCount = node.replies.length;
-            if (directRepliesCount > 3) {
-                const firstReply = node.replies[0];
-                const restReplies = node.replies.slice(1);
-                const firstReplyHtml = renderCommentNode(firstReply, true);
-                const restHtml = restReplies.map(child => renderCommentNode(child, true)).join('');
-                repliesHtml = firstReplyHtml;
-                repliesHtml += `<div class="hidden-replies" style="display:none;">${restHtml}</div>`;
-                toggleRepliesBtn = `<button class="toggle-replies-btn" data-id="${node.id}" data-state="collapsed">展开所有回复</button>`;
-            } else {
-                repliesHtml = node.replies.map(child => renderCommentNode(child, true)).join('');
-            }
-        }
-
-        let verifiedBadge = '';
-        if (verifiedUsernames.includes(author)) {
-            verifiedBadge = '<img src="https://s41.ax1x.com/2026/04/05/peNSL5t.png" style="width:24px;height:24px; margin-left:6px; margin-top: -3px; vertical-align: middle;">';
-        }
-
-        let reportButton = '';
-        if (currentUser) {
-            reportButton = `<button class="report-btn" data-id="${node.id}" data-author-id="${node.user_id}">举报</button>`;
-        }
-
-        return `
-            <div class="comment" data-id="${node.id}">
-                <div class="comment-meta">
-                    // 公司标签
-let companyTag = '';
-const companyInfo = window.companyMap?.get(node.user_id);
-if (companyInfo) {
-    const companyName = escapeHtml(companyInfo.company_name);
-    if (companyInfo.verified) {
-        companyTag = `<span style="color:#4caf50; margin-left:8px; font-size:0.8rem;">✅ 已认证虚拟公司：${companyName}</span>`;
+   function renderCommentNode(node, isReply = false) {
+    const author = node.profiles?.username || '匿名';
+    const fullText = node.content;
+    const isLong = fullText.length > 50;
+    let displayText, toggleButton = '';
+    if (isLong) {
+        const shortText = fullText.substring(0, 50) + '...';
+        displayText = shortText;
+        toggleButton = `<button class="toggle-btn" data-id="${node.id}" data-state="collapsed">展开</button>`;
     } else {
-        companyTag = `<span style="color:#f44336; margin-left:8px; font-size:0.8rem;">⚠️ 未认证虚拟公司：${companyName}</span>`;
+        displayText = fullText;
     }
-}
-<span class="comment-author">${escapeHtml(author)}${verifiedBadge}${companyTag}</span>
-                    <span class="comment-time">${new Date(node.created_at).toLocaleString()}</span>
-                </div>
-                <div class="comment-content" data-full="${escapeHtml(fullText)}" data-short="${escapeHtml(displayText)}">${escapeHtml(displayText)}</div>
-                ${toggleButton ? `<div class="toggle-btn-container">${toggleButton}</div>` : ''}
-                <div class="comment-actions">
-                    ${showReplyBtn ? `<button class="reply-btn" data-id="${node.id}">回复</button>` : ''}
-                    ${currentUser && currentUser.id === node.user_id ? `<button class="delete-btn" data-id="${node.id}">删除</button>` : ''}
-                    ${reportButton}
-                </div>
-                <div class="reply-form" id="reply-form-${node.id}" style="display:none;">
-                    <textarea rows="2" placeholder="写下你的回复... (最多200字)" maxlength="200"></textarea>
-                    <div class="char-counter"><span>0</span>/200</div>
-                    <button class="submit-reply" data-id="${node.id}">提交回复</button>
-                    <button class="cancel-reply" data-id="${node.id}">取消</button>
-                </div>
-                <div class="replies" id="replies-${node.id}">
-                    ${repliesHtml}
-                    ${toggleRepliesBtn ? `<div class="toggle-replies-btn-container">${toggleRepliesBtn}</div>` : ''}
-                </div>
+
+    const showReplyBtn = !isReply;
+    let repliesHtml = '';
+    let toggleRepliesBtn = '';
+
+    if (!isReply && node.replies.length > 0) {
+        const directRepliesCount = node.replies.length;
+        if (directRepliesCount > 3) {
+            const firstReply = node.replies[0];
+            const restReplies = node.replies.slice(1);
+            const firstReplyHtml = renderCommentNode(firstReply, true);
+            const restHtml = restReplies.map(child => renderCommentNode(child, true)).join('');
+            repliesHtml = firstReplyHtml;
+            repliesHtml += `<div class="hidden-replies" style="display:none;">${restHtml}</div>`;
+            toggleRepliesBtn = `<button class="toggle-replies-btn" data-id="${node.id}" data-state="collapsed">展开所有回复</button>`;
+        } else {
+            repliesHtml = node.replies.map(child => renderCommentNode(child, true)).join('');
+        }
+    }
+
+    let verifiedBadge = '';
+    if (verifiedUsernames.includes(author)) {
+        verifiedBadge = '<img src="https://s41.ax1x.com/2026/04/05/peNSL5t.png" style="width:24px;height:24px; margin-left:6px; margin-top: -3px; vertical-align: middle;">';
+    }
+
+    // ⭐ 在这里计算公司标签（在 return 之前）
+    let companyTag = '';
+    const companyInfo = window.companyMap?.get(node.user_id);
+    if (companyInfo) {
+        const companyName = escapeHtml(companyInfo.company_name);
+        if (companyInfo.verified) {
+            companyTag = `<span style="color:#4caf50; margin-left:8px; font-size:0.8rem;">✅ 已认证虚拟公司：${companyName}</span>`;
+        } else {
+            companyTag = `<span style="color:#f44336; margin-left:8px; font-size:0.8rem;">⚠️ 未认证虚拟公司：${companyName}</span>`;
+        }
+    }
+
+    let reportButton = '';
+    if (currentUser) {
+        reportButton = `<button class="report-btn" data-id="${node.id}" data-author-id="${node.user_id}">举报</button>`;
+    }
+
+    // ⭐ return 模板中只放 HTML，用 ${companyTag} 插入
+    return `
+        <div class="comment" data-id="${node.id}">
+            <div class="comment-meta">
+                <span class="comment-author">${escapeHtml(author)}${verifiedBadge}${companyTag}</span>
+                <span class="comment-time">${new Date(node.created_at).toLocaleString()}</span>
             </div>
-        `;
-    }
+            <div class="comment-content" data-full="${escapeHtml(fullText)}" data-short="${escapeHtml(displayText)}">${escapeHtml(displayText)}</div>
+            ${toggleButton ? `<div class="toggle-btn-container">${toggleButton}</div>` : ''}
+            <div class="comment-actions">
+                ${showReplyBtn ? `<button class="reply-btn" data-id="${node.id}">回复</button>` : ''}
+                ${currentUser && currentUser.id === node.user_id ? `<button class="delete-btn" data-id="${node.id}">删除</button>` : ''}
+                ${reportButton}
+            </div>
+            <div class="reply-form" id="reply-form-${node.id}" style="display:none;">
+                <textarea rows="2" placeholder="写下你的回复... (最多200字)" maxlength="200"></textarea>
+                <div class="char-counter"><span>0</span>/200</div>
+                <button class="submit-reply" data-id="${node.id}">提交回复</button>
+                <button class="cancel-reply" data-id="${node.id}">取消</button>
+            </div>
+            <div class="replies" id="replies-${node.id}">
+                ${repliesHtml}
+                ${toggleRepliesBtn ? `<div class="toggle-replies-btn-container">${toggleRepliesBtn}</div>` : ''}
+            </div>
+        </div>
+    `;
+}
 
     function renderComments(comments) {
         if (!comments || comments.length === 0) {
