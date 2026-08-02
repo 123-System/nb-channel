@@ -719,16 +719,32 @@
         else fetchComments();
     }
 
-    async function fetchComments() {
-        verifiedUsernames = await fetchVerifiedUsers();
-        const { data, error } = await supabaseClient
-            .from('comments')
-            .select('*, profiles(username)')
-            .eq('page_path', pagePath)
-            .order('created_at', { ascending: true });
-        if (error) { console.error(error); return; }
-        renderComments(data);
+   async function fetchComments() {
+    verifiedUsernames = await fetchVerifiedUsers();
+    const { data, error } = await supabaseClient
+        .from('comments')
+        .select('*, profiles(username)')
+        .eq('page_path', pagePath)
+        .order('created_at', { ascending: true });
+    if (error) { console.error(error); return; }
+    
+    // 获取公司信息
+    const userIds = [...new Set(data.map(c => c.user_id).filter(id => id))];
+    if (userIds.length > 0) {
+        const { data: companies, error: compError } = await supabaseClient
+            .from('user_companies')
+            .select('user_id, company_name, verified')
+            .in('user_id', userIds);
+        if (!compError && companies) {
+            window.companyMap = new Map(companies.map(c => [c.user_id, c]));
+        } else {
+            window.companyMap = new Map();
+        }
+    } else {
+        window.companyMap = new Map();
     }
+    renderComments(data);
+}
 
     async function postComment() {
         if (!currentUser) { showMessage('提示', '请先登录'); return; }
