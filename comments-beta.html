@@ -414,25 +414,46 @@
 
     // ---------- 评论树构建与渲染（两层嵌套）----------
     function buildCommentTree(comments) {
-        const map = new Map();
-        const roots = [];
-        comments.forEach(c => {
-            map.set(c.id, { ...c, replies: [] });
-        });
-        comments.forEach(c => {
-            const node = map.get(c.id);
-            if (c.parent_id && map.has(c.parent_id)) {
-                map.get(c.parent_id).replies.push(node);
-            } else {
-                roots.push(node);
+    const map = new Map();
+    const roots = [];
+
+    // 1. 构建映射
+    comments.forEach(c => {
+        map.set(c.id, { ...c, replies: [] });
+    });
+
+    // 2. 建立父子关系
+    comments.forEach(c => {
+        const node = map.get(c.id);
+        if (c.parent_id && map.has(c.parent_id)) {
+            map.get(c.parent_id).replies.push(node);
+        } else {
+            roots.push(node);
+        }
+    });
+
+    // 3. 为每个主评论计算最后活动时间（自身时间或最新回复时间）
+    roots.forEach(root => {
+        let lastActivity = new Date(root.created_at);
+        root.replies.forEach(reply => {
+            const replyTime = new Date(reply.created_at);
+            if (replyTime > lastActivity) {
+                lastActivity = replyTime;
             }
         });
-        roots.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        roots.forEach(node => {
-            node.replies.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        });
-        return roots;
-    }
+        root.lastActivity = lastActivity; // 附加属性，仅用于排序
+    });
+
+    // 4. 主评论按最后活动时间降序（最新活动的排最前）
+    roots.sort((a, b) => b.lastActivity - a.lastActivity);
+
+    // 5. 回复评论按时间降序（最新回复在前）
+    roots.forEach(root => {
+        root.replies.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    });
+
+    return roots;
+}
 
    function renderCommentNode(node, isReply = false) {
     const author = node.profiles?.username || '匿名';
