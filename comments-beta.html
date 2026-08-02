@@ -861,7 +861,7 @@ function renderCommentsForPage(page) {
         .from('comments')
         .select('*, profiles(username)')
         .eq('page_path', pagePath)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false })
     if (error) {
         console.error(error);
         return;
