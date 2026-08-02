@@ -304,7 +304,8 @@
     const COMMENTS_PER_PAGE = 15;  // 每页显示15条主评论
     let currentPage = 1;           // 当前页码
     let totalComments = 0;         // 评论总数
-    let allComments = [];          // 存储所有评论数据（用于分页）
+    let allMainComments = [];      // 所有主评论（不含回复）
+    let allRepliesMap = new Map(); // 所有回复，按 parent_id 分组          // 存储所有评论数据（用于分页）
     let verifiedUsernames = [];
     let pendingReportCommentId = null; // 临时存储待举报的评论ID
 
@@ -521,39 +522,46 @@
 function renderCommentsForPage(page) {
     currentPage = page;
     const start = (page - 1) * COMMENTS_PER_PAGE;
-    const end = Math.min(start + COMMENTS_PER_PAGE, allComments.length);
-    const pageComments = allComments.slice(start, end);
-    renderComments(pageComments);  // 用原来的 renderComments 渲染
+    const end = Math.min(start + COMMENTS_PER_PAGE, allMainComments.length);
+    const pageMainComments = allMainComments.slice(start, end);
+
+    // 构建树：为每个主评论附加对应的回复
+    const tree = pageMainComments.map(main => {
+        const replies = allRepliesMap.get(main.id) || [];
+        return { ...main, replies: replies };
+    });
+
+    renderComments(tree);
     renderPagination();
 }
 
-    function renderPagination() {
-    const totalPages = Math.ceil(allComments.length / COMMENTS_PER_PAGE);
+   function renderPagination() {
+    const totalPages = Math.ceil(allMainComments.length / COMMENTS_PER_PAGE);
     if (totalPages <= 1) {
-        // 删除现有分页栏
         const oldPagination = document.querySelector('.pagination-bar');
         if (oldPagination) oldPagination.remove();
         return;
     }
 
-    // 删除旧分页栏
     const oldPagination = document.querySelector('.pagination-bar');
     if (oldPagination) oldPagination.remove();
 
-    // 创建新分页栏
     const paginationDiv = document.createElement('div');
     paginationDiv.className = 'pagination-bar';
-    paginationDiv.style.cssText = 'display:flex; justify-content:center; gap:8px; margin-top:20px; flex-wrap:wrap;';
+    paginationDiv.style.cssText = 'display:flex; justify-content:center; align-items:center; gap:8px; margin-top:20px; flex-wrap:wrap;';
 
-    // 上一页按钮
+    // 上一页
     if (currentPage > 1) {
         const prevBtn = document.createElement('button');
         prevBtn.textContent = '‹ 上一页';
+        prevBtn.style.cssText = 'background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); padding:5px 12px; border-radius:6px; cursor:pointer;';
+        prevBtn.onmouseover = () => { prevBtn.style.background = 'var(--nav-btn-hover-bg)'; prevBtn.style.color = 'white'; };
+        prevBtn.onmouseout = () => { prevBtn.style.background = 'var(--nav-btn-bg)'; prevBtn.style.color = 'var(--nav-btn-text)'; };
         prevBtn.onclick = () => renderCommentsForPage(currentPage - 1);
         paginationDiv.appendChild(prevBtn);
     }
 
-    // 页码按钮（最多显示7个，含省略号）
+    // 页码按钮
     let startPage = Math.max(1, currentPage - 3);
     let endPage = Math.min(totalPages, currentPage + 3);
     if (endPage - startPage < 6) {
@@ -564,6 +572,9 @@ function renderCommentsForPage(page) {
     if (startPage > 1) {
         const firstBtn = document.createElement('button');
         firstBtn.textContent = '1';
+        firstBtn.style.cssText = 'background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); padding:5px 12px; border-radius:6px; cursor:pointer;';
+        firstBtn.onmouseover = () => { firstBtn.style.background = 'var(--nav-btn-hover-bg)'; firstBtn.style.color = 'white'; };
+        firstBtn.onmouseout = () => { firstBtn.style.background = 'var(--nav-btn-bg)'; firstBtn.style.color = 'var(--nav-btn-text)'; };
         firstBtn.onclick = () => renderCommentsForPage(1);
         paginationDiv.appendChild(firstBtn);
         if (startPage > 2) {
@@ -578,9 +589,11 @@ function renderCommentsForPage(page) {
         const btn = document.createElement('button');
         btn.textContent = i;
         if (i === currentPage) {
-            btn.style.cssText = 'background:#00a1d6; color:white; padding:5px 12px; border-radius:6px; border:none; cursor:pointer;';
+            btn.style.cssText = 'background:#00a1d6; color:white; border:1px solid #00a1d6; padding:5px 12px; border-radius:6px; cursor:pointer; font-weight:bold;';
         } else {
-            btn.style.cssText = 'background:#6c757d; color:white; padding:5px 12px; border-radius:6px; border:none; cursor:pointer;';
+            btn.style.cssText = 'background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); padding:5px 12px; border-radius:6px; cursor:pointer;';
+            btn.onmouseover = () => { btn.style.background = 'var(--nav-btn-hover-bg)'; btn.style.color = 'white'; };
+            btn.onmouseout = () => { btn.style.background = 'var(--nav-btn-bg)'; btn.style.color = 'var(--nav-btn-text)'; };
             btn.onclick = () => renderCommentsForPage(i);
         }
         paginationDiv.appendChild(btn);
@@ -595,25 +608,30 @@ function renderCommentsForPage(page) {
         }
         const lastBtn = document.createElement('button');
         lastBtn.textContent = totalPages;
+        lastBtn.style.cssText = 'background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); padding:5px 12px; border-radius:6px; cursor:pointer;';
+        lastBtn.onmouseover = () => { lastBtn.style.background = 'var(--nav-btn-hover-bg)'; lastBtn.style.color = 'white'; };
+        lastBtn.onmouseout = () => { lastBtn.style.background = 'var(--nav-btn-bg)'; lastBtn.style.color = 'var(--nav-btn-text)'; };
         lastBtn.onclick = () => renderCommentsForPage(totalPages);
         paginationDiv.appendChild(lastBtn);
     }
 
-    // 下一页按钮
+    // 下一页
     if (currentPage < totalPages) {
         const nextBtn = document.createElement('button');
         nextBtn.textContent = '下一页 ›';
+        nextBtn.style.cssText = 'background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); padding:5px 12px; border-radius:6px; cursor:pointer;';
+        nextBtn.onmouseover = () => { nextBtn.style.background = 'var(--nav-btn-hover-bg)'; nextBtn.style.color = 'white'; };
+        nextBtn.onmouseout = () => { nextBtn.style.background = 'var(--nav-btn-bg)'; nextBtn.style.color = 'var(--nav-btn-text)'; };
         nextBtn.onclick = () => renderCommentsForPage(currentPage + 1);
         paginationDiv.appendChild(nextBtn);
     }
 
-    // 显示总条数
+    // 统计信息
     const info = document.createElement('span');
-    info.textContent = `共 ${allComments.length} 条评论`;
+    info.textContent = `共 ${allMainComments.length} 条主评论`;
     info.style.cssText = 'font-size:0.85rem; color:var(--count-text); margin-left:12px;';
     paginationDiv.appendChild(info);
 
-    // 插入到评论列表后面
     const commentSection = document.querySelector('.comment-section');
     commentSection.appendChild(paginationDiv);
 }
@@ -863,11 +881,8 @@ function renderCommentsForPage(page) {
         .from('comments')
         .select('*, profiles(username)')
         .eq('page_path', pagePath)
-        .order('created_at', { ascending: false })
-    if (error) {
-        console.error(error);
-        return;
-    }
+        .order('created_at', { ascending: false });
+    if (error) { console.error(error); return; }
 
     // 获取公司信息
     const userIds = [...new Set(data.map(c => c.user_id).filter(id => id))];
@@ -885,9 +900,31 @@ function renderCommentsForPage(page) {
         window.companyMap = new Map();
     }
 
-    // 存储所有评论并渲染第一页
-    allComments = data;
-    totalComments = data.length;
+    // 分离主评论和回复
+    const mainComments = data.filter(c => !c.parent_id);
+    const replies = data.filter(c => c.parent_id);
+
+    // 主评论按时间降序排列
+    mainComments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    // 将回复按 parent_id 分组
+    const repliesMap = new Map();
+    replies.forEach(reply => {
+        if (!repliesMap.has(reply.parent_id)) {
+            repliesMap.set(reply.parent_id, []);
+        }
+        repliesMap.get(reply.parent_id).push(reply);
+    });
+    // 对每个组内的回复按时间降序排列
+    for (const [parentId, replyList] of repliesMap) {
+        replyList.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+
+    // 存储到全局
+    allMainComments = mainComments;
+    allRepliesMap = repliesMap;
+    totalComments = mainComments.length;
+
     renderCommentsForPage(1);
 }
 
