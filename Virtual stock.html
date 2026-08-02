@@ -1217,31 +1217,106 @@
     
     function toggleTable() { fullTableVisible = !fullTableVisible; updateDataTable(); }
     function updateStatsPanel(total) {
-        if (!rawData.values.length) { document.getElementById('statsPanel').innerHTML = '<div>暂无数据</div>'; return; }
-        const vals = rawData.values, names = rawData.names;
-        const sum = vals.reduce((a,b)=>a+b,0);
-        const max = Math.max(...vals), maxIdx = vals.indexOf(max);
-        const min = Math.min(...vals), minIdx = vals.indexOf(min);
-        const avg = (sum/vals.length).toFixed(0);
-        const first = vals[0], last = vals[vals.length-1];
-        const change = ((last - first)/first*100).toFixed(2);
-        const changeSym = change >= 0 ? '📈 +' : '📉 ';
-        let totalChangeHtml = '';
-        if (previousSnapshot && previousSnapshot.total) {
-            const totalDiff = sum - previousSnapshot.total;
-            const totalPercent = (totalDiff / previousSnapshot.total * 100).toFixed(2);
-            totalChangeHtml = `<div class="stat-card"><span class="stat-label">📊 总市值变化</span><span class="stat-value ${totalDiff >= 0 ? 'change-up' : 'change-down'}">${totalDiff >= 0 ? '▲' : '▼'} ${Math.abs(totalPercent)}%</span></div>`;
+    if (!rawData.values.length) {
+        document.getElementById('statsPanel').innerHTML = '<div>暂无数据</div>';
+        return;
+    }
+
+    const vals = rawData.values, names = rawData.names;
+    const sum = vals.reduce((a,b)=>a+b,0);
+    const max = Math.max(...vals);
+    const maxIdx = vals.indexOf(max);
+    const min = Math.min(...vals);
+    const minIdx = vals.indexOf(min);
+    const avg = (sum / vals.length).toFixed(0);
+    const first = vals[0], last = vals[vals.length-1];
+    const change = ((last - first) / first * 100).toFixed(2);
+    const changeSym = change >= 0 ? '📈 +' : '📉 ';
+
+    // ========== 新增：涨跌分布计算 ==========
+    let upCount = 0, downCount = 0, flatCount = 0;
+    let totalUpChange = 0, totalDownChange = 0;
+    if (previousSnapshot && previousSnapshot.names && previousSnapshot.values) {
+        // 遍历当前所有股票，与上次快照对比
+        for (let i = 0; i < names.length; i++) {
+            const name = names[i];
+            const currentVal = vals[i];
+            const prevIdx = previousSnapshot.names.indexOf(name);
+            if (prevIdx !== -1) {
+                const prevVal = previousSnapshot.values[prevIdx];
+                const diff = currentVal - prevVal;
+                if (diff > 0) {
+                    upCount++;
+                    totalUpChange += diff;
+                } else if (diff < 0) {
+                    downCount++;
+                    totalDownChange += diff; // 负值
+                } else {
+                    flatCount++;
+                }
+            } else {
+                // 新公司，没有历史数据，视为持平
+                flatCount++;
+            }
         }
-        document.getElementById('statsPanel').innerHTML = `
-            <div class="stat-card"><span class="stat-label">🏦 总虚拟股票数</span><span class="stat-value">${vals.length}</span></div>
-            <div class="stat-card"><span class="stat-label">💰 虚拟总值</span><span class="stat-value">${formatValue(sum)}</span></div>
-            <div class="stat-card"><span class="stat-label">🏆 最高价股</span><span class="stat-value">${escapeHtml(names[maxIdx])} : ${formatValue(max)}</span></div>
-            <div class="stat-card"><span class="stat-label">📉 最低价股</span><span class="stat-value">${escapeHtml(names[minIdx])} : ${formatValue(min)}</span></div>
-            <div class="stat-card"><span class="stat-label">📊 平均估值</span><span class="stat-value">${formatValue(avg)}</span></div>
-            <div class="stat-card"><span class="stat-label">🔄 首尾变化</span><span class="stat-value">${changeSym}${Math.abs(change)}%</span></div>
-            ${totalChangeHtml}
+    } else {
+        // 无历史快照，显示提示
+        // 不计算，保持所有计数为0
+    }
+
+    // 计算比例
+    const totalCount = upCount + downCount + flatCount;
+    const upPercent = totalCount ? (upCount / totalCount * 100).toFixed(1) : 0;
+    const downPercent = totalCount ? (downCount / totalCount * 100).toFixed(1) : 0;
+    const avgUp = upCount ? (totalUpChange / upCount).toFixed(0) : 0;
+    const avgDown = downCount ? (totalDownChange / downCount).toFixed(0) : 0;
+
+    let totalChangeHtml = '';
+    if (previousSnapshot && previousSnapshot.total) {
+        const totalDiff = sum - previousSnapshot.total;
+        const totalPercent = (totalDiff / previousSnapshot.total * 100).toFixed(2);
+        totalChangeHtml = `<div class="stat-card"><span class="stat-label">📊 总市值变化</span><span class="stat-value ${totalDiff >= 0 ? 'change-up' : 'change-down'}">${totalDiff >= 0 ? '▲' : '▼'} ${Math.abs(totalPercent)}%</span></div>`;
+    }
+
+    // 构建涨跌分布 HTML
+    let distributionHtml = '';
+    if (totalCount > 0) {
+        distributionHtml = `
+            <div class="stat-card distribution-card">
+                <span class="stat-label">📈 涨跌分布</span>
+                <span class="stat-value">
+                    <span style="color:#f44336;">▲ ${upCount}</span> 
+                    <span style="color:#4caf50;">▼ ${downCount}</span> 
+                    <span style="color:#999;">- ${flatCount}</span>
+                </span>
+                <span style="font-size:0.75rem; color:var(--count-text);">
+                    涨 ${upPercent}% / 跌 ${downPercent}%
+                </span>
+                <span style="font-size:0.75rem; color:var(--count-text); margin-left:8px;">
+                    平均涨 ${avgUp} / 平均跌 ${avgDown}
+                </span>
+            </div>
+        `;
+    } else {
+        distributionHtml = `
+            <div class="stat-card">
+                <span class="stat-label">📈 涨跌分布</span>
+                <span class="stat-value" style="font-size:0.85rem; color:var(--count-text);">暂无历史数据</span>
+            </div>
         `;
     }
+
+    document.getElementById('statsPanel').innerHTML = `
+        <div class="stat-card"><span class="stat-label">🏦 总虚拟股票数</span><span class="stat-value">${vals.length}</span></div>
+        <div class="stat-card"><span class="stat-label">💰 虚拟总值</span><span class="stat-value">${formatValue(sum)}</span></div>
+        <div class="stat-card"><span class="stat-label">🏆 最高价股</span><span class="stat-value">${escapeHtml(names[maxIdx])} : ${formatValue(max)}</span></div>
+        <div class="stat-card"><span class="stat-label">📉 最低价股</span><span class="stat-value">${escapeHtml(names[minIdx])} : ${formatValue(min)}</span></div>
+        <div class="stat-card"><span class="stat-label">📊 平均估值</span><span class="stat-value">${formatValue(avg)}</span></div>
+        <div class="stat-card"><span class="stat-label">🔄 首尾变化</span><span class="stat-value">${changeSym}${Math.abs(change)}%</span></div>
+        ${totalChangeHtml}
+        ${distributionHtml}
+    `;
+}
     async function loadPreviousSnapshot() {
         const { data, error } = await supabaseClient.from('stock_latest').select('snapshot_data, total_value').order('created_at', { ascending: false }).limit(1);
         if (data && data.length > 0) previousSnapshot = { names: data[0].snapshot_data.names, values: data[0].snapshot_data.values, total: data[0].total_value };
