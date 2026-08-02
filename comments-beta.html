@@ -427,9 +427,9 @@
             roots.push(node);
         }
     });
-    // 主评论按创建时间降序（最新发表的在前，固定不变）
+    // ⭐ 关键修改：主评论按自身的 created_at 降序排列（不受回复影响）
     roots.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    // 回复评论按创建时间降序（最新回复在顶部）
+    // 回复评论按 created_at 降序（最新回复在上）
     roots.forEach(node => {
         node.replies.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     });
