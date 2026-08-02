@@ -182,6 +182,8 @@
         button.refresh-btn { background: #28a745; margin-bottom: 15px; }
         button.delete-company { background: #dc3545; }
         button.delete-company:hover { background: #c82333; }
+        button.approve { background: #28a745; }
+        button.reject { background: #dc3545; }
         .pagination {
             display: flex;
             justify-content: center;
@@ -251,6 +253,7 @@
     <div class="tabs">
         <button id="tabComments" class="tab-btn active">📝 评论举报</button>
         <button id="tabCompanies" class="tab-btn">🏢 公司举报</button>
+        <button id="tabVerification" class="tab-btn">🏢 公司认证审核</button>
     </div>
 
     <div id="commentFilters" class="filters">
@@ -277,6 +280,9 @@
     <div id="pagination" class="pagination"></div>
 
     <div id="companyReportsContainer" style="display: none;">加载中...</div>
+
+    <!-- 新增：公司认证审核容器 -->
+    <div id="verificationContainer" style="display: none;">加载中...</div>
 
     <div class="unban-section">
         <h2>🔓 已封禁用户列表 & 手动解封</h2>
@@ -339,10 +345,12 @@
             const { count: bannedCount } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('is_banned', true);
             const { count: commentReports } = await supabaseClient.from('reports').select('*', { count: 'exact', head: true }).eq('target_type', 'comment');
             const { count: companyReports } = await supabaseClient.from('reports').select('*', { count: 'exact', head: true }).eq('target_type', 'company');
+            const { count: pendingVerification } = await supabaseClient.from('user_companies').select('*', { count: 'exact', head: true }).eq('verification_status', 'pending');
             document.getElementById('dashboard').innerHTML = `
                 <div class="card"><h3>被封禁用户数</h3><div class="number">${bannedCount || 0}</div></div>
                 <div class="card"><h3>评论举报数</h3><div class="number">${commentReports || 0}</div></div>
                 <div class="card"><h3>公司举报数</h3><div class="number">${companyReports || 0}</div></div>
+                <div class="card"><h3>待认证公司</h3><div class="number">${pendingVerification || 0}</div></div>
             `;
         } catch (err) { console.error(err); }
     }
@@ -580,46 +588,129 @@
         });
         // 封禁所有者
         document.querySelectorAll('.ban-owner').forEach(btn => {
-    btn.onclick = async () => {
-        const userId = btn.dataset.userId;
-        const reportId = btn.dataset.reportId;
-        if (!confirm('确定封禁该用户吗？封禁后用户无法登录，且其公司将被保留但所有者被封禁。')) return;
-        const { data, error } = await supabaseClient.rpc('admin_ban_user', {
-            p_user_id: userId,
-            p_reason: '公司名称违规或恶意行为'
+            btn.onclick = async () => {
+                const userId = btn.dataset.userId;
+                const reportId = btn.dataset.reportId;
+                if (!confirm('确定封禁该用户吗？封禁后用户无法登录，且其公司将被保留但所有者被封禁。')) return;
+                const { data, error } = await supabaseClient.rpc('admin_ban_user', {
+                    p_user_id: userId,
+                    p_reason: '公司名称违规或恶意行为'
+                });
+                if (error) {
+                    alert('封禁失败：' + error.message);
+                    return;
+                }
+                await supabaseClient.from('reports').delete().eq('id', reportId);
+                alert('用户已封禁');
+                loadCompanyReports(); loadDashboard(); loadBannedUsers();
+            };
         });
-        if (error) {
-            alert('封禁失败：' + error.message);
-            return;
-        }
-        await supabaseClient.from('reports').delete().eq('id', reportId);
-        alert('用户已封禁');
-        loadCompanyReports(); loadDashboard(); loadBannedUsers();
-    };
-});
-        // 删除公司（使用 RPC 清理所有关联数据）
-       document.querySelectorAll('.delete-company').forEach(btn => {
-    btn.onclick = async () => {
-        const companyId = parseInt(btn.dataset.companyId);
-        const companyName = btn.dataset.companyName;
-        const reportId = parseInt(btn.dataset.reportId);
-        if (!confirm(`确定彻底删除公司“${companyName}”吗？\n此操作将删除该公司、自动支持规则及本条举报。`)) return;
-        const { data, error } = await supabaseClient.rpc('admin_delete_company', {
-            p_company_id: companyId
+        // 删除公司
+        document.querySelectorAll('.delete-company').forEach(btn => {
+            btn.onclick = async () => {
+                const companyId = parseInt(btn.dataset.companyId);
+                const companyName = btn.dataset.companyName;
+                const reportId = parseInt(btn.dataset.reportId);
+                if (!confirm(`确定彻底删除公司“${companyName}”吗？\n此操作将删除该公司、自动支持规则及本条举报。`)) return;
+                const { data, error } = await supabaseClient.rpc('admin_delete_company', {
+                    p_company_id: companyId
+                });
+                if (error) {
+                    alert('删除失败：' + error.message);
+                    return;
+                }
+                if (!data.success) {
+                    alert(data.message);
+                    return;
+                }
+                await supabaseClient.from('reports').delete().eq('id', reportId);
+                alert('公司已删除，举报已处理');
+                loadCompanyReports(); loadDashboard();
+            };
         });
-        if (error) {
-            alert('删除失败：' + error.message);
-            return;
+    }
+
+    // ==================== 公司认证审核相关 ====================
+    async function loadVerificationRequests() {
+        const container = document.getElementById('verificationContainer');
+        container.innerHTML = '<div class="loading">加载中...</div>';
+        try {
+            const { data, error } = await supabaseClient
+                .from('user_companies')
+                .select(`
+                    id, company_name, created_at, user_id,
+                    profiles!inner(username)
+                `)
+                .eq('verification_status', 'pending')
+                .order('created_at', { ascending: true });
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="loading">暂无待认证的公司</div>';
+                return;
+            }
+            let html = '';
+            for (const company of data) {
+                html += `
+                    <div class="report-card" data-company-id="${company.id}">
+                        <div class="card-header">
+                            <strong>🏢 公司名称：${escapeHtml(company.company_name)}</strong>
+                            <div class="report-time">📅 申请时间：${formatDate(company.created_at)}</div>
+                        </div>
+                        <div class="company-info">
+                            <strong>所有者：</strong> ${escapeHtml(company.profiles.username)} (ID: ${company.user_id})
+                        </div>
+                        <div class="report-actions">
+                            <button class="approve-company" data-company-id="${company.id}" data-company-name="${escapeHtml(company.company_name)}">✅ 通过认证</button>
+                            <button class="reject-company" data-company-id="${company.id}" data-company-name="${escapeHtml(company.company_name)}">❌ 拒绝认证</button>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+            attachVerificationEvents();
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = `<div class="error">加载失败: ${err.message}</div>`;
         }
-        if (!data.success) {
-            alert(data.message);
-            return;
-        }
-        await supabaseClient.from('reports').delete().eq('id', reportId);
-        alert('公司已删除，举报已处理');
-        loadCompanyReports(); loadDashboard();
-    };
-});
+    }
+
+    function attachVerificationEvents() {
+        document.querySelectorAll('.approve-company').forEach(btn => {
+            btn.onclick = async () => {
+                const companyId = parseInt(btn.dataset.companyId);
+                const companyName = btn.dataset.companyName;
+                if (!confirm(`确定通过公司“${companyName}”的认证申请吗？`)) return;
+                const { data, error } = await supabaseClient.rpc('admin_verify_company', {
+                    p_company_id: companyId,
+                    p_approved: true
+                });
+                if (error) {
+                    alert('操作失败：' + error.message);
+                    return;
+                }
+                alert('已通过认证');
+                loadVerificationRequests();
+                loadDashboard();
+            };
+        });
+        document.querySelectorAll('.reject-company').forEach(btn => {
+            btn.onclick = async () => {
+                const companyId = parseInt(btn.dataset.companyId);
+                const companyName = btn.dataset.companyName;
+                if (!confirm(`确定拒绝公司“${companyName}”的认证申请吗？`)) return;
+                const { data, error } = await supabaseClient.rpc('admin_verify_company', {
+                    p_company_id: companyId,
+                    p_approved: false
+                });
+                if (error) {
+                    alert('操作失败：' + error.message);
+                    return;
+                }
+                alert('已拒绝认证');
+                loadVerificationRequests();
+                loadDashboard();
+            };
+        });
     }
 
     // ==================== 封禁用户列表 ====================
@@ -648,7 +739,8 @@
                     alert('解封成功');
                     loadDashboard(); loadBannedUsers();
                     if (currentTab === 'comments') loadCommentReports();
-                    else loadCompanyReports();
+                    else if (currentTab === 'companies') loadCompanyReports();
+                    else loadVerificationRequests();
                 };
             });
         } catch (err) {
@@ -694,18 +786,33 @@
             document.getElementById('reportsContainer').style.display = 'block';
             document.getElementById('pagination').style.display = 'flex';
             document.getElementById('companyReportsContainer').style.display = 'none';
+            document.getElementById('verificationContainer').style.display = 'none';
             document.getElementById('tabComments').classList.add('active');
             document.getElementById('tabCompanies').classList.remove('active');
+            document.getElementById('tabVerification').classList.remove('active');
             loadCommentReports();
-        } else {
+        } else if (tab === 'companies') {
             document.getElementById('commentFilters').style.display = 'none';
             document.getElementById('batchActions').style.display = 'none';
             document.getElementById('reportsContainer').style.display = 'none';
             document.getElementById('pagination').style.display = 'none';
             document.getElementById('companyReportsContainer').style.display = 'block';
+            document.getElementById('verificationContainer').style.display = 'none';
             document.getElementById('tabCompanies').classList.add('active');
             document.getElementById('tabComments').classList.remove('active');
+            document.getElementById('tabVerification').classList.remove('active');
             loadCompanyReports();
+        } else {
+            document.getElementById('commentFilters').style.display = 'none';
+            document.getElementById('batchActions').style.display = 'none';
+            document.getElementById('reportsContainer').style.display = 'none';
+            document.getElementById('pagination').style.display = 'none';
+            document.getElementById('companyReportsContainer').style.display = 'none';
+            document.getElementById('verificationContainer').style.display = 'block';
+            document.getElementById('tabVerification').classList.add('active');
+            document.getElementById('tabComments').classList.remove('active');
+            document.getElementById('tabCompanies').classList.remove('active');
+            loadVerificationRequests();
         }
     }
 
@@ -719,13 +826,20 @@
             selectedReportIds.clear();
             loadCommentReports();
         };
-        document.getElementById('refreshBtn').onclick = () => { loadCommentReports(); loadDashboard(); loadBannedUsers(); };
+        document.getElementById('refreshBtn').onclick = () => {
+            if (currentTab === 'comments') loadCommentReports();
+            else if (currentTab === 'companies') loadCompanyReports();
+            else loadVerificationRequests();
+            loadDashboard();
+            loadBannedUsers();
+        };
         document.getElementById('batchIgnore').onclick = batchIgnore;
         document.getElementById('batchDelete').onclick = batchDeleteComments;
         document.getElementById('batchBan').onclick = batchBanUsers;
         document.getElementById('clearSelection').onclick = () => { selectedReportIds.clear(); loadCommentReports(); };
         document.getElementById('tabComments').onclick = () => switchTab('comments');
         document.getElementById('tabCompanies').onclick = () => switchTab('companies');
+        document.getElementById('tabVerification').onclick = () => switchTab('verification');
     }
 
     // 启动
