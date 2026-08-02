@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册虚拟公司 - NB频道</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            background: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .register-card {
+            max-width: 450px;
+            width: 100%;
+            background: var(--card-bg);
+            border-radius: 32px;
+            padding: 30px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+        }
+        h2 {
+            text-align: center;
+            color: var(--status-border);
+            margin-bottom: 24px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        input, .readonly-field {
+            width: 100%;
+            padding: 10px 15px;
+            border-radius: 30px;
+            border: 1px solid var(--card-border);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+        .readonly-field {
+            background: var(--count-bg);
+            cursor: not-allowed;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .checkbox-group input {
+            width: 20px;
+            height: 20px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 40px;
+            background: var(--nav-btn-hover-bg);
+            color: white;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            filter: brightness(0.9);
+        }
+        .error {
+            color: #ff6b6b;
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .back-link a {
+            color: var(--status-border);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="register-card">
+    <h2>🏢 注册虚拟公司</h2>
+    <div id="formContainer">
+        <div class="form-group">
+            <label>公司名称</label>
+            <input type="text" id="companyName" placeholder="例如：NB科技" maxlength="50">
+        </div>
+        <div class="form-group">
+            <label>公司所有人</label>
+            <div class="readonly-field" id="ownerName">加载中...</div>
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="needVerify">
+            <label for="needVerify">去认证你的虚拟公司（需后台审核，仅限认证用户）</label>
+        </div>
+        <div class="error" id="errorMsg"></div>
+        <button id="submitBtn">提交注册</button>
+        <div class="back-link">
+            <a href="Virtual stock.html">← 返回股票页面</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser = null;
+
+    async function loadCurrentUser() {
+        const stored = localStorage.getItem('nb_user');
+        if (!stored) {
+            window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+            return;
+        }
+        try {
+            const user = JSON.parse(stored);
+            const { data, error } = await supabaseClient
+                .from('profiles')
+                .select('id, username')
+                .eq('id', user.id)
+                .maybeSingle();
+            if (error || !data) {
+                localStorage.removeItem('nb_user');
+                window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+                return;
+            }
+            currentUser = data;
+            document.getElementById('ownerName').innerText = currentUser.username;
+        } catch(e) {
+            console.error(e);
+            window.location.href = 'login.html';
+        }
+    }
+
+    async function registerCompany() {
+        const companyName = document.getElementById('companyName').value.trim();
+        const needVerify = document.getElementById('needVerify').checked;
+        const errorDiv = document.getElementById('errorMsg');
+        errorDiv.innerText = '';
+
+        if (!companyName) {
+            errorDiv.innerText = '请填写公司名称';
+            return;
+        }
+        if (companyName.length > 50) {
+            errorDiv.innerText = '公司名称不能超过50字';
+            return;
+        }
+
+        // 调用 RPC register_company
+        const { data, error } = await supabaseClient.rpc('register_company', {
+            p_user_id: currentUser.id,
+            p_company_name: companyName,
+            p_need_verify: needVerify
+        });
+        if (error) {
+            errorDiv.innerText = '注册失败：' + error.message;
+            return;
+        }
+        if (!data.success) {
+            errorDiv.innerText = data.message;
+            return;
+        }
+        if (data.need_verify) {
+            alert('公司注册申请已提交，请等待管理员审核。\n审核通过后您将获得虚拟公司并开始股票交易。');
+        } else {
+            alert('公司注册成功！');
+        }
+        window.location.href = 'Virtual stock.html';
+    }
+
+    loadCurrentUser();
+    document.getElementById('submitBtn').addEventListener('click', registerCompany);
+</script>
+</body>
+</html>
