@@ -637,149 +637,160 @@ function renderCommentsForPage(page) {
 }
     
     function renderComments(comments) {
-        if (!comments || comments.length === 0) {
-            commentListDiv.innerHTML = '<p>暂无评论，快来抢沙发！</p>';
-            return;
-        }
-        const tree = buildCommentTree(comments);
-        const html = tree.map(node => renderCommentNode(node, false)).join('');
-        commentListDiv.innerHTML = html;
+    if (!comments || comments.length === 0) {
+        commentListDiv.innerHTML = '<p>暂无评论，快来抢沙发！</p>';
+        return;
+    }
 
-        // 折叠/展开正文按钮
-        document.querySelectorAll('.toggle-btn').forEach(btn => {
-            btn.onclick = (e) => {
-                e.stopPropagation();
-                const commentDiv = btn.closest('.comment');
-                const contentDiv = commentDiv.querySelector('.comment-content');
-                const isCollapsed = btn.dataset.state === 'collapsed';
-                if (isCollapsed) {
-                    contentDiv.innerText = contentDiv.dataset.full;
-                    btn.innerText = '折叠';
-                    btn.dataset.state = 'expanded';
-                } else {
-                    contentDiv.innerText = contentDiv.dataset.short;
-                    btn.innerText = '展开';
-                    btn.dataset.state = 'collapsed';
-                }
-            };
-        });
+    // 判断是否已经是树结构（每个节点都有 replies 属性）
+    let tree;
+    if (comments[0] && comments[0].replies !== undefined) {
+        // 已经是树，直接使用
+        tree = comments;
+    } else {
+        // 扁平的评论列表，需要构建树
+        tree = buildCommentTree(comments);
+    }
 
-        document.querySelectorAll('.toggle-replies-btn').forEach(btn => {
-            btn.onclick = (e) => {
-                e.stopPropagation();
-                const commentId = btn.dataset.id;
-                const repliesDiv = document.getElementById(`replies-${commentId}`);
-                const hiddenDiv = repliesDiv.querySelector('.hidden-replies');
-                const isCollapsed = btn.dataset.state === 'collapsed';
-                if (isCollapsed) {
-                    if (hiddenDiv) hiddenDiv.style.display = 'block';
-                    btn.innerText = '折叠所有回复';
-                    btn.dataset.state = 'expanded';
-                } else {
-                    if (hiddenDiv) hiddenDiv.style.display = 'none';
-                    btn.innerText = '展开所有回复';
-                    btn.dataset.state = 'collapsed';
-                }
-            };
-        });
+    const html = tree.map(node => renderCommentNode(node, false)).join('');
+    commentListDiv.innerHTML = html;
 
-        document.querySelectorAll('.reply-btn').forEach(btn => {
-            btn.onclick = (e) => {
-                e.stopPropagation();
-                const commentId = btn.dataset.id;
-                const replyForm = document.getElementById(`reply-form-${commentId}`);
-                if (replyForm) {
-                    replyForm.style.display = replyForm.style.display === 'block' ? 'none' : 'block';
-                    const textarea = replyForm.querySelector('textarea');
-                    if (textarea) {
-                        textarea.value = '';
-                        const counter = replyForm.querySelector('.char-counter span');
-                        if (counter) counter.innerText = '0';
-                    }
-                }
-            };
-        });
+    // 以下所有事件绑定代码保持不变（原样）
+    // 折叠/展开正文按钮
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const commentDiv = btn.closest('.comment');
+            const contentDiv = commentDiv.querySelector('.comment-content');
+            const isCollapsed = btn.dataset.state === 'collapsed';
+            if (isCollapsed) {
+                contentDiv.innerText = contentDiv.dataset.full;
+                btn.innerText = '折叠';
+                btn.dataset.state = 'expanded';
+            } else {
+                contentDiv.innerText = contentDiv.dataset.short;
+                btn.innerText = '展开';
+                btn.dataset.state = 'collapsed';
+            }
+        };
+    });
 
-        document.querySelectorAll('.cancel-reply').forEach(btn => {
-            btn.onclick = (e) => {
-                e.stopPropagation();
-                const commentId = btn.dataset.id;
-                const replyForm = document.getElementById(`reply-form-${commentId}`);
-                if (replyForm) replyForm.style.display = 'none';
-            };
-        });
+    document.querySelectorAll('.toggle-replies-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const commentId = btn.dataset.id;
+            const repliesDiv = document.getElementById(`replies-${commentId}`);
+            const hiddenDiv = repliesDiv.querySelector('.hidden-replies');
+            const isCollapsed = btn.dataset.state === 'collapsed';
+            if (isCollapsed) {
+                if (hiddenDiv) hiddenDiv.style.display = 'block';
+                btn.innerText = '折叠所有回复';
+                btn.dataset.state = 'expanded';
+            } else {
+                if (hiddenDiv) hiddenDiv.style.display = 'none';
+                btn.innerText = '展开所有回复';
+                btn.dataset.state = 'collapsed';
+            }
+        };
+    });
 
-        document.querySelectorAll('.submit-reply').forEach(btn => {
-            btn.onclick = async (e) => {
-                e.stopPropagation();
-                const parentId = btn.dataset.id;
-                const parentDiv = document.querySelector(`.comment[data-id="${parentId}"]`);
-                if (!parentDiv) return;
-                const replyForm = document.getElementById(`reply-form-${parentId}`);
+    document.querySelectorAll('.reply-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const commentId = btn.dataset.id;
+            const replyForm = document.getElementById(`reply-form-${commentId}`);
+            if (replyForm) {
+                replyForm.style.display = replyForm.style.display === 'block' ? 'none' : 'block';
                 const textarea = replyForm.querySelector('textarea');
-                let content = textarea.value.trim();
-                if (!content) { showMessage('提示', '回复内容不能为空'); return; }
-                if (content.length > 200) { showMessage('提示', '回复内容不能超过200字'); return; }
-                if (!currentUser) { showMessage('提示', '请先登录'); return; }
+                if (textarea) {
+                    textarea.value = '';
+                    const counter = replyForm.querySelector('.char-counter span');
+                    if (counter) counter.innerText = '0';
+                }
+            }
+        };
+    });
 
-                const BAD_WORDS = ["操你妈", "傻逼", "垃圾", "废物", "脑残", "智障", "滚", "去死", "sb", "nmsl", "炸服务器",
+    document.querySelectorAll('.cancel-reply').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const commentId = btn.dataset.id;
+            const replyForm = document.getElementById(`reply-form-${commentId}`);
+            if (replyForm) replyForm.style.display = 'none';
+        };
+    });
+
+    document.querySelectorAll('.submit-reply').forEach(btn => {
+        btn.onclick = async (e) => {
+            e.stopPropagation();
+            const parentId = btn.dataset.id;
+            const parentDiv = document.querySelector(`.comment[data-id="${parentId}"]`);
+            if (!parentDiv) return;
+            const replyForm = document.getElementById(`reply-form-${parentId}`);
+            const textarea = replyForm.querySelector('textarea');
+            let content = textarea.value.trim();
+            if (!content) { showMessage('提示', '回复内容不能为空'); return; }
+            if (content.length > 200) { showMessage('提示', '回复内容不能超过200字'); return; }
+            if (!currentUser) { showMessage('提示', '请先登录'); return; }
+
+            const BAD_WORDS = ["操你妈", "傻逼", "垃圾", "废物", "脑残", "智障", "滚", "去死", "sb", "nmsl", "炸服务器",
                 "他妈", "特么", "尼玛", "妈逼", "操蛋", "王八蛋", "混蛋", "杂种", "狗日的", "法克", "fuck", "shit", "bitch",
                 "黑鬼", "白皮猪", "支那", "台巴子", "回子", "圣母婊", "娘炮", "人妖",
                 "五毛", "美分", "带节奏", "洗地", "脑残粉", "水军", "喷子", "网暴",
                 "卖淫", "嫖娼", "约炮", "裸聊", "毒品", "海洛因", "办证", "加微信", "兼职刷单", "返利",
-                  "垃圾频道", "SB频道", "脑残UP" ,"gay" ,"Gay" ,"GAY"];
-                let containsBadWord = false;
-                for (const word of BAD_WORDS) {
-                    if (content.includes(word)) {
-                        containsBadWord = true;
-                        break;
-                    }
+                "垃圾频道", "SB频道", "脑残UP" ,"gay" ,"Gay" ,"GAY"];
+            let containsBadWord = false;
+            for (const word of BAD_WORDS) {
+                if (content.includes(word)) {
+                    containsBadWord = true;
+                    break;
                 }
-                if (containsBadWord) {
-                    showMessage('提示', '您的回复包含违禁词，禁止发布');
-                    return;
-                }
+            }
+            if (containsBadWord) {
+                showMessage('提示', '您的回复包含违禁词，禁止发布');
+                return;
+            }
 
-                const { error } = await supabaseClient
-                    .from('comments')
-                    .insert({ page_path: pagePath, user_id: currentUser.id, content, parent_id: parseInt(parentId) });
-                if (error) {
-                    showMessage('错误', '回复失败');
-                } else {
-                    replyForm.style.display = 'none';
-                    fetchComments();
-                }
-            };
-        });
+            const { error } = await supabaseClient
+                .from('comments')
+                .insert({ page_path: pagePath, user_id: currentUser.id, content, parent_id: parseInt(parentId) });
+            if (error) {
+                showMessage('错误', '回复失败');
+            } else {
+                replyForm.style.display = 'none';
+                fetchComments();
+            }
+        };
+    });
 
-        // 举报按钮：显示自定义模态框
-        document.querySelectorAll('.report-btn').forEach(btn => {
-            btn.onclick = (e) => {
-                e.stopPropagation();
-                const commentId = btn.dataset.id;
-                pendingReportCommentId = parseInt(commentId);
-                reportReason.value = '';
-                reportCharCountSpan.innerText = '0';
-                reportModal.style.display = 'flex';
-            };
-        });
+    // 举报按钮
+    document.querySelectorAll('.report-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const commentId = btn.dataset.id;
+            pendingReportCommentId = parseInt(commentId);
+            reportReason.value = '';
+            reportCharCountSpan.innerText = '0';
+            reportModal.style.display = 'flex';
+        };
+    });
 
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.onclick = () => {
-                const commentId = btn.dataset.id;
-                showConfirm('确认删除', '确定要删除这条评论吗？', async () => {
-                    await deleteComment(commentId);
-                });
-            };
-        });
-
-        document.querySelectorAll('.reply-form textarea').forEach(textarea => {
-            const counterSpan = textarea.closest('.reply-form').querySelector('.char-counter span');
-            textarea.addEventListener('input', () => {
-                counterSpan.innerText = textarea.value.length;
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.onclick = () => {
+            const commentId = btn.dataset.id;
+            showConfirm('确认删除', '确定要删除这条评论吗？', async () => {
+                await deleteComment(commentId);
             });
+        };
+    });
+
+    document.querySelectorAll('.reply-form textarea').forEach(textarea => {
+        const counterSpan = textarea.closest('.reply-form').querySelector('.char-counter span');
+        textarea.addEventListener('input', () => {
+            counterSpan.innerText = textarea.value.length;
         });
-    }
+    });
+}
 
     // 提交举报（模态框确认）
     async function submitReport() {
