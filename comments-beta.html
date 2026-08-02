@@ -456,7 +456,18 @@
         return `
             <div class="comment" data-id="${node.id}">
                 <div class="comment-meta">
-                    <span class="comment-author">${escapeHtml(author)}${verifiedBadge}</span>
+                    // 公司标签
+let companyTag = '';
+const companyInfo = window.companyMap?.get(node.user_id);
+if (companyInfo) {
+    const companyName = escapeHtml(companyInfo.company_name);
+    if (companyInfo.verified) {
+        companyTag = `<span style="color:#4caf50; margin-left:8px; font-size:0.8rem;">✅ 已认证虚拟公司：${companyName}</span>`;
+    } else {
+        companyTag = `<span style="color:#f44336; margin-left:8px; font-size:0.8rem;">⚠️ 未认证虚拟公司：${companyName}</span>`;
+    }
+}
+<span class="comment-author">${escapeHtml(author)}${verifiedBadge}${companyTag}</span>
                     <span class="comment-time">${new Date(node.created_at).toLocaleString()}</span>
                 </div>
                 <div class="comment-content" data-full="${escapeHtml(fullText)}" data-short="${escapeHtml(displayText)}">${escapeHtml(displayText)}</div>
