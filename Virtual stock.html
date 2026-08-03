@@ -666,10 +666,16 @@
         return;
     }
 
-    // 2. 删除该公司的自动支持规则
+    // ✅ 2. 删除该用户的蓝标（如果存在）
+    await supabaseClient
+        .from('verified_users')
+        .delete()
+        .eq('user_id', currentUserId);
+
+    // 3. 删除该公司的自动支持规则
     await supabaseClient.from('support_rules').delete().eq('company_id', companyId);
 
-    // 3. 从所有历史快照中移除该公司数据
+    // 4. 从所有历史快照中移除该公司数据
     const { data: snapshots, error: fetchError } = await supabaseClient
         .from('stock_history_full')
         .select('id, snapshot');
@@ -689,7 +695,7 @@
         }
     }
 
-    // 4. 从最新快照中移除
+    // 5. 从最新快照中移除
     const { data: latestData } = await supabaseClient
         .from('stock_latest')
         .select('id, snapshot_data')
@@ -709,7 +715,7 @@
         }
     }
 
-    // 5. 发放奖励
+    // 6. 发放奖励
     if (reward > 0) {
         const balance = await fetchUserBalance();
         const newBalance = balance + reward;
@@ -724,7 +730,6 @@
     await refreshStockDataFromDB();
     renderMyCompanySection();
 }
-
     async function checkAutoSupportRules() {
     if (!currentUserId) return;
     const { data: rules, error } = await supabaseClient
