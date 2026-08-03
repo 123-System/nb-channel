@@ -403,15 +403,15 @@
 
     // 获取认证用户列表
     async function fetchVerifiedUsers() {
-        const { data, error } = await supabaseClient
-            .from('verified_users')
-            .select('username');
-        if (error) {
-            console.error('获取认证用户列表失败', error);
-            return [];
-        }
-        return data.map(item => item.username);
+    const { data, error } = await supabaseClient
+        .from('verified_users')
+        .select('profiles(username)');
+    if (error) {
+        console.error('获取认证用户列表失败', error);
+        return [];
     }
+    return data.map(item => item.profiles.username);
+}
 
     // ---------- 评论树构建与渲染（两层嵌套）----------
     function buildCommentTree(comments) {
