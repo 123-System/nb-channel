@@ -753,46 +753,51 @@
 }
 
     async function refreshStockDataFromDB() {
-        const companies = await fetchAllCompanies();
-        if (!companies.length) {
-            rawData = { names: [], values: [] };
-            sortedCombined = [];
-            totalStocks = 0;
-            return;
-        }
-        const newNames = companies.map(c => c.company_name);
-        const newValues = companies.map(c => c.market_value);
-        const newTotal = newValues.reduce((a,b)=>a+b,0);
-        rawData.names = newNames;
-        rawData.values = newValues;
-        totalStocks = rawData.names.length;
-
-        // 关键修改：保证每个对象都有 id
-        const combined = companies.map(company => ({
-            id: company.id,
-            name: company.company_name,
-            value: company.market_value
-        }));
-        combined.sort((a, b) => b.value - a.value);
-        sortedCombined = combined;
-
-        await saveFullSnapshot(newTotal);
-        await loadFullHistory();
-        updateStatsPanel(newTotal);
-        updateDataTable();               // 刷新表格
-        updateMiniPieChart();
-        updateHistogramChart();
-        if (currentChart && rawData.names.length) {
-            const windowData = getWindowData();
-            currentChart.data.labels = windowData.names;
-            currentChart.data.datasets[0].data = windowData.values;
-            if (currentChartType === 'bar' || currentChartType === 'pie') {
-                const barColors = windowData.values.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`);
-                currentChart.data.datasets[0].backgroundColor = barColors;
-            }
-            currentChart.update({ duration: 300 });
-        }
+    const companies = await fetchAllCompanies();
+    if (!companies.length) {
+        rawData = { names: [], values: [] };
+        sortedCombined = [];
+        totalStocks = 0;
+        return;
     }
+    const newNames = companies.map(c => c.company_name);
+    const newValues = companies.map(c => c.market_value);
+    const newTotal = newValues.reduce((a,b)=>a+b,0);
+    rawData.names = newNames;
+    rawData.values = newValues;
+    totalStocks = rawData.names.length;
+
+    const combined = companies.map(company => ({
+        id: company.id,
+        name: company.company_name,
+        value: company.market_value
+    }));
+    combined.sort((a, b) => b.value - a.value);
+    sortedCombined = combined;
+
+    await saveFullSnapshot(newTotal);
+    await loadFullHistory();
+    updateStatsPanel(newTotal);
+    updateDataTable();
+    updateMiniPieChart();
+    updateHistogramChart();
+    if (currentChart && rawData.names.length) {
+        const windowData = getWindowData();
+        currentChart.data.labels = windowData.names;
+        currentChart.data.datasets[0].data = windowData.values;
+        if (currentChartType === 'bar' || currentChartType === 'pie') {
+            const barColors = windowData.values.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`);
+            currentChart.data.datasets[0].backgroundColor = barColors;
+        }
+        currentChart.update({ duration: 300 });
+    }
+
+    // ✅ 新增：同步更新公司区块的市值显示
+    if (currentUserId) {
+        await fetchMyCompany();
+        renderMyCompanySection();
+    }
+}
 
     function renderMyCompanySection() {
     const container = document.getElementById('myCompanySection');
