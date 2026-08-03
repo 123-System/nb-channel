@@ -670,7 +670,7 @@
     await supabaseClient
         .from('verified_users')
         .delete()
-        .eq('user_id', currentUserId);
+        .eq('user_id', currentUserId);  // 确保 verified_users 表已改为 user_id 字段
 
     // 3. 删除该公司的自动支持规则
     await supabaseClient.from('support_rules').delete().eq('company_id', companyId);
