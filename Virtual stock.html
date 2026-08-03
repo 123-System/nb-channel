@@ -801,7 +801,6 @@
         return;
     }
     if (!myCompany) {
-        // 未注册公司：只显示按钮，无输入框
         container.innerHTML = `
             <div>尚未注册虚拟公司</div>
             <div><button id="registerCompanyBtn" class="company-btn">🏢 注册您的虚拟公司</button></div>
@@ -811,8 +810,11 @@
         });
         return;
     }
-    // 已注册公司：显示公司信息
+
+    // 公司已存在，显示信息
     let statusHtml = '';
+    let actionButtons = ''; // 操作按钮（认证按钮 + 破产按钮）
+
     if (myCompany.verified) {
         statusHtml = '<span style="color:#4caf50;">✅ 已认证</span>';
     } else {
@@ -820,10 +822,14 @@
             statusHtml = '<span style="color:#ff9800;">⏳ 认证审核中</span>';
         } else if (myCompany.verification_status === 'rejected') {
             statusHtml = '<span style="color:#f44336;">❌ 认证被拒绝</span>';
+            actionButtons += `<button id="applyVerifyBtn" class="company-btn">🔑 重新申请认证</button>`;
         } else {
             statusHtml = '<span style="color:#f44336;">⚠️ 未认证</span>';
+            // 未认证且非待审核，显示“去认证你的虚拟公司”按钮
+            actionButtons += `<button id="applyVerifyBtn" class="company-btn">🔑 去认证你的虚拟公司</button>`;
         }
     }
+
     container.innerHTML = `
         <div>
             <strong>🏢 ${escapeHtml(myCompany.company_name)}</strong> 
@@ -831,10 +837,33 @@
             ${statusHtml}
         </div>
         <div>
+            ${actionButtons}
             <button id="bankruptBtn" class="company-btn danger-btn">💥 破产</button>
         </div>
     `;
+
+    // 绑定破产事件
     document.getElementById('bankruptBtn')?.addEventListener('click', bankruptCompany);
+
+    // 绑定认证申请按钮（如果有）
+    const applyBtn = document.getElementById('applyVerifyBtn');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', async () => {
+            const { data, error } = await supabaseClient.rpc('apply_company_verification', {
+                p_user_id: currentUserId
+            });
+            if (error) {
+                await showMessage('错误', error.message);
+            } else if (!data.success) {
+                await showMessage('提示', data.message);
+            } else {
+                await showMessage('成功', data.message);
+                // 刷新公司信息
+                await fetchMyCompany();
+                renderMyCompanySection();
+            }
+        });
+    }
 }
 
     function showSupportDialog() {
