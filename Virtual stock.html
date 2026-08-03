@@ -665,21 +665,19 @@
         await showMessage('破产失败', delError.message);
         return;
     }
-console.log('尝试删除蓝标，用户ID:', currentUserId);
-const { data, error } = await supabaseClient
-    .from('verified_users')
-    .delete()
-    .eq('user_id', currentUserId);
-if (error) {
-    console.error('删除蓝标失败:', error);
-} else {
-    console.log('蓝标删除成功');
-}
-    // ✅ 2. 删除该用户的蓝标（如果存在）
-    await supabaseClient
-        .from('verified_users')
-        .delete()
-        .eq('user_id', currentUserId);  // 确保 verified_users 表已改为 user_id 字段
+
+    // 2. 删除该用户的蓝标（使用 RPC 绕过 RLS）
+    const { data: deleted, error: delBadgeError } = await supabaseClient.rpc(
+        'delete_verified_user',
+        { p_user_id: currentUserId }
+    );
+    if (delBadgeError) {
+        console.error('删除蓝标失败:', delBadgeError);
+    } else if (deleted) {
+        console.log('蓝标已删除');
+    } else {
+        console.warn('该用户没有蓝标记录');
+    }
 
     // 3. 删除该公司的自动支持规则
     await supabaseClient.from('support_rules').delete().eq('company_id', companyId);
