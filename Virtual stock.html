@@ -665,7 +665,16 @@
         await showMessage('破产失败', delError.message);
         return;
     }
-
+console.log('尝试删除蓝标，用户ID:', currentUserId);
+const { data, error } = await supabaseClient
+    .from('verified_users')
+    .delete()
+    .eq('user_id', currentUserId);
+if (error) {
+    console.error('删除蓝标失败:', error);
+} else {
+    console.log('蓝标删除成功');
+}
     // ✅ 2. 删除该用户的蓝标（如果存在）
     await supabaseClient
         .from('verified_users')
