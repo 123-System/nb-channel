@@ -640,90 +640,90 @@
     }
 
     async function bankruptCompany() {
-        if (!myCompany) { await showMessage('提示', '您还没有虚拟公司'); return; }
-        const companyId = myCompany.id;
-        const companyName = myCompany.company_name;
-        const currentValue = myCompany.market_value;
-        let reward = 0;
-        let confirmMsg = '';
-        if (currentValue > 1000) {
-            reward = currentValue - 1000;
-            confirmMsg = `确定破产吗？您的虚拟公司将被彻底删除（任何痕迹都将不复存在），您将获得 ${reward} NB币（当前市值减去1000）`;
-        } else {
-            reward = 0;
-            confirmMsg = `您的虚拟公司市值不足或等于1000，破产将无法获得NB币，但虚拟公司及历史数据会被彻底删除，确定破产吗？`;
-        }
-        const confirmed = await showConfirm('确认破产', confirmMsg);
-        if (!confirmed) return;
+    if (!myCompany) { await showMessage('提示', '您还没有虚拟公司'); return; }
+    const companyId = myCompany.id;
+    const companyName = myCompany.company_name;
+    const currentValue = myCompany.market_value;
+    let reward = 0;
+    let confirmMsg = '';
+    if (currentValue > 20000) {
+        reward = currentValue - 20000;
+        confirmMsg = `确定破产吗？您的虚拟公司将被彻底删除（任何痕迹都将不复存在），您将获得 ${reward} NB币（当前市值减去20000）`;
+    } else {
+        reward = 0;
+        confirmMsg = `您的虚拟公司市值不足或等于20000，破产将无法获得NB币，但虚拟公司及历史数据会被彻底删除，确定破产吗？`;
+    }
+    const confirmed = await showConfirm('确认破产', confirmMsg);
+    if (!confirmed) return;
 
-        // 1. 删除公司记录
-        const { error: delError } = await supabaseClient
-            .from('user_companies')
-            .delete()
-            .eq('id', companyId);
-        if (delError) {
-            await showMessage('破产失败', delError.message);
-            return;
-        }
+    // 1. 删除公司记录
+    const { error: delError } = await supabaseClient
+        .from('user_companies')
+        .delete()
+        .eq('id', companyId);
+    if (delError) {
+        await showMessage('破产失败', delError.message);
+        return;
+    }
 
-        // 2. 删除该公司的自动支持规则
-        await supabaseClient.from('support_rules').delete().eq('company_id', companyId);
+    // 2. 删除该公司的自动支持规则
+    await supabaseClient.from('support_rules').delete().eq('company_id', companyId);
 
-        // 3. 从所有历史快照中移除该公司数据
-        const { data: snapshots, error: fetchError } = await supabaseClient
-            .from('stock_history_full')
-            .select('id, snapshot');
-        if (!fetchError && snapshots) {
-            for (const snap of snapshots) {
-                const snapshot = snap.snapshot;
-                if (!snapshot.names || !snapshot.values) continue;
-                const idx = snapshot.names.indexOf(companyName);
-                if (idx !== -1) {
-                    snapshot.names.splice(idx, 1);
-                    snapshot.values.splice(idx, 1);
-                    await supabaseClient
-                        .from('stock_history_full')
-                        .update({ snapshot: snapshot })
-                        .eq('id', snap.id);
-                }
-            }
-        }
-
-        // 4. 从最新快照中移除
-        const { data: latestData } = await supabaseClient
-            .from('stock_latest')
-            .select('id, snapshot_data')
-            .order('created_at', { ascending: false })
-            .limit(1);
-        if (latestData && latestData.length > 0) {
-            const latest = latestData[0];
-            const snapshot = latest.snapshot_data;
-            const idx = snapshot.names?.indexOf(companyName);
+    // 3. 从所有历史快照中移除该公司数据
+    const { data: snapshots, error: fetchError } = await supabaseClient
+        .from('stock_history_full')
+        .select('id, snapshot');
+    if (!fetchError && snapshots) {
+        for (const snap of snapshots) {
+            const snapshot = snap.snapshot;
+            if (!snapshot.names || !snapshot.values) continue;
+            const idx = snapshot.names.indexOf(companyName);
             if (idx !== -1) {
                 snapshot.names.splice(idx, 1);
                 snapshot.values.splice(idx, 1);
                 await supabaseClient
-                    .from('stock_latest')
-                    .update({ snapshot_data: snapshot })
-                    .eq('id', latest.id);
+                    .from('stock_history_full')
+                    .update({ snapshot: snapshot })
+                    .eq('id', snap.id);
             }
         }
-
-        // 5. 发放奖励
-        if (reward > 0) {
-            const balance = await fetchUserBalance();
-            const newBalance = balance + reward;
-            await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
-            await fetchUserBalance();
-            await showMessage('破产成功', `您的虚拟公司及历史数据已清除，您获得 ${reward} NB币。当前余额: ${newBalance}`);
-        } else {
-            await showMessage('破产成功', '您的虚拟公司及历史数据已清除，您未获得NB币。');
-        }
-
-        myCompany = null;
-        await refreshStockDataFromDB();
-        renderMyCompanySection();
     }
+
+    // 4. 从最新快照中移除
+    const { data: latestData } = await supabaseClient
+        .from('stock_latest')
+        .select('id, snapshot_data')
+        .order('created_at', { ascending: false })
+        .limit(1);
+    if (latestData && latestData.length > 0) {
+        const latest = latestData[0];
+        const snapshot = latest.snapshot_data;
+        const idx = snapshot.names?.indexOf(companyName);
+        if (idx !== -1) {
+            snapshot.names.splice(idx, 1);
+            snapshot.values.splice(idx, 1);
+            await supabaseClient
+                .from('stock_latest')
+                .update({ snapshot_data: snapshot })
+                .eq('id', latest.id);
+        }
+    }
+
+    // 5. 发放奖励
+    if (reward > 0) {
+        const balance = await fetchUserBalance();
+        const newBalance = balance + reward;
+        await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
+        await fetchUserBalance();
+        await showMessage('破产成功', `您的虚拟公司及历史数据已清除，您获得 ${reward} NB币。当前余额: ${newBalance}`);
+    } else {
+        await showMessage('破产成功', '您的虚拟公司及历史数据已清除，您未获得NB币。');
+    }
+
+    myCompany = null;
+    await refreshStockDataFromDB();
+    renderMyCompanySection();
+}
 
     async function checkAutoSupportRules() {
     if (!currentUserId) return;
