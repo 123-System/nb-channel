@@ -57,8 +57,6 @@
         .btn-back:hover {
             text-decoration: underline;
         }
-
-        /* 选项卡 */
         .tabs {
             display: flex;
             border-bottom: 2px solid var(--card-border);
@@ -95,8 +93,6 @@
             min-width: 18px;
             text-align: center;
         }
-
-        /* 通知列表 */
         .notification-list {
             display: flex;
             flex-direction: column;
@@ -124,7 +120,6 @@
         .notification-item.unread:hover {
             background: var(--count-bg);
         }
-
         .notification-avatar {
             flex-shrink: 0;
             width: 42px;
@@ -140,12 +135,6 @@
             overflow: hidden;
             flex-shrink: 0;
         }
-        .notification-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
         .notification-body {
             flex: 1;
             min-width: 0;
@@ -184,8 +173,6 @@
             flex-shrink: 0;
             margin-top: 8px;
         }
-
-        /* 空状态 */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -195,8 +182,6 @@
             font-size: 3rem;
             margin-bottom: 16px;
         }
-
-        /* 加载更多 */
         .load-more {
             text-align: center;
             padding: 20px;
@@ -215,8 +200,6 @@
             background: var(--nav-btn-hover-bg);
             color: white;
         }
-
-        /* Toast 通知提醒 */
         .toast {
             position: fixed;
             top: 20px;
@@ -254,7 +237,6 @@
         .toast .close-toast:hover {
             color: var(--text-color);
         }
-
         @media (max-width: 600px) {
             .messages-header h1 { font-size: 1.2rem; }
             .tab-btn { padding: 10px 16px; font-size: 0.9rem; }
@@ -285,7 +267,6 @@
     </div>
 
     <div class="messages-container">
-        <!-- 头部 -->
         <div class="messages-header">
             <div>
                 <button class="btn-back" onclick="window.location.href='comments-beta.html'">←</button>
@@ -296,7 +277,6 @@
             </div>
         </div>
 
-        <!-- 选项卡 -->
         <div class="tabs">
             <button class="tab-btn active" data-type="reply" id="tabReply">
                 💬 回复我的 <span class="tab-badge" id="replyBadge" style="display:none;">0</span>
@@ -306,18 +286,15 @@
             </button>
         </div>
 
-        <!-- Toast 通知提醒 -->
         <div class="toast" id="toast">
             <span id="toastMessage">💬 你有一条新消息</span>
             <button class="close-toast" onclick="hideToast()">✕</button>
         </div>
 
-        <!-- 通知列表 -->
         <div id="notificationList" class="notification-list">
             <div class="loading-spinner" style="text-align:center; padding:40px; color:var(--count-text);">加载中...</div>
         </div>
 
-        <!-- 加载更多 -->
         <div class="load-more" id="loadMoreContainer" style="display:none;">
             <button id="loadMoreBtn">加载更多</button>
         </div>
@@ -330,11 +307,9 @@
 </div>
 
 <script>
-    // ==================== 配置 ====================
     const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
- 
 
     const PAGE_SIZE = 20;
     let currentType = 'reply';
@@ -344,311 +319,12 @@
     let currentUser = null;
     let unreadCounts = { reply: 0, mention: 0 };
 
-    // ==================== 获取当前用户 ====================
     function getCurrentUser() {
         const stored = localStorage.getItem('nb_user');
         if (!stored) return null;
         try { return JSON.parse(stored); } catch(e) { return null; }
     }
 
-    // ==================== 获取未读计数 ====================
-   async function fetchUnreadCounts() {
-    if (!currentUser) return;
-    const { data, error } = await supabaseClient.rpc('get_unread_counts', {
-        p_user_id: currentUser.id
-    });
-    if (error) {
-        console.error('获取未读数失败:', error);
-        return;
-    }
-    console.log('未读数数据:', data);
-    unreadCounts.reply = data.find(item => item.type === 'reply')?.count || 0;
-    unreadCounts.mention = data.find(item => item.type === 'mention')?.count || 0;
-    updateBadges();
-}
-
-    function updateBadges() {
-        const replyBadge = document.getElementById('replyBadge');
-        const mentionBadge = document.getElementById('mentionBadge');
-        if (unreadCounts.reply > 0) { replyBadge.style.display = 'inline-block'; replyBadge.textContent = unreadCounts.reply; }
-        else { replyBadge.style.display = 'none'; }
-        if (unreadCounts.mention > 0) { mentionBadge.style.display = 'inline-block'; mentionBadge.textContent = unreadCounts.mention; }
-        else { mentionBadge.style.display = 'none'; }
-        // 更新浏览器标题（可选）
-        const totalUnread = unreadCounts.reply + unreadCounts.mention;
-        document.title = totalUnread > 0 ? `(${totalUnread}) 消息中心 - NB频道` : '消息中心 - NB频道';
-    }
-
-    // ==================== 获取通知列表 ====================
-   async function fetchNotifications(append = false) {
-    if (!currentUser) {
-        document.getElementById('notificationList').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><p>请先登录查看消息</p></div>';
-        return;
-    }
-    if (isLoading) return;
-    if (!append) {
-        currentPage = 1;
-        hasMore = true;
-        document.getElementById('notificationList').innerHTML = '<div class="loading-spinner" style="text-align:center; padding:40px; color:var(--count-text);">加载中...</div>';
-    }
-    isLoading = true;
-
-    const from = (currentPage - 1) * PAGE_SIZE;
-    const { data, error } = await supabaseClient.rpc('get_my_notifications', {
-        p_user_id: currentUser.id,
-        p_type: currentType,
-        p_limit: PAGE_SIZE,
-        p_offset: from
-    });
-
-    isLoading = false;
-    document.getElementById('loadMoreContainer').style.display = 'none';
-
-    if (error) {
-        console.error('加载通知失败:', error);
-        document.getElementById('notificationList').innerHTML = `<div class="empty-state"><p>加载失败: ${error.message}</p></div>`;
-        return;
-    }
-
-    // 调试：打印数据
-    console.log('查询到的通知数据:', data);
-
-    if (!data || data.length === 0) {
-        if (!append) {
-            document.getElementById('notificationList').innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">📭</div>
-                    <p>暂无${currentType === 'reply' ? '回复' : '提及'}消息</p>
-                </div>
-            `;
-        } else {
-            document.getElementById('loadMoreContainer').style.display = 'none';
-            hasMore = false;
-        }
-        return;
-    }
-
-    // 生成 HTML
-    let html = '';
-    for (const item of data) {
-        const fromUsername = item.from_username || '已注销用户';
-        const commentPreview = item.comment_content || '评论已删除';
-        const timeAgo = timeSince(new Date(item.created_at));
-        const isUnread = !item.is_read;
-        const displayText = currentType === 'reply' ? '回复了你的评论' : '在评论中提到了你';
-
-        html += `
-            <div class="notification-item ${isUnread ? 'unread' : ''}" 
-                 data-id="${item.id}" 
-                 data-comment-id="${item.source_comment_id}"
-                 onclick="handleNotificationClick(${item.id}, ${item.source_comment_id})">
-                <div class="notification-avatar">${fromUsername.charAt(0).toUpperCase()}</div>
-                <div class="notification-body">
-                    <div>
-                        <span class="username">${escapeHtml(fromUsername)}</span>
-                        <span class="action-text"> ${displayText}</span>
-                    </div>
-                    <div class="comment-preview">${escapeHtml(commentPreview)}</div>
-                    <div class="time">${timeAgo}</div>
-                </div>
-                ${isUnread ? '<div class="notification-unread-dot"></div>' : ''}
-            </div>
-        `;
-    }
-
-    if (append) {
-        document.getElementById('notificationList').innerHTML += html;
-    } else {
-        document.getElementById('notificationList').innerHTML = html;
-    }
-
-    if (data.length < PAGE_SIZE) {
-        document.getElementById('loadMoreContainer').style.display = 'none';
-        hasMore = false;
-    } else {
-        document.getElementById('loadMoreContainer').style.display = 'block';
-        hasMore = true;
-    }
-
-    await fetchUnreadCounts();
-}
-
-    // 生成 HTML，注意字段名变为 from_username, comment_content
-    let html = '';
-    for (const item of data) {
-        const fromUsername = item.from_username || '已注销用户';
-        const commentPreview = item.comment_content || '评论已删除';
-        const timeAgo = timeSince(new Date(item.created_at));
-        const isUnread = !item.is_read;
-        const displayText = currentType === 'reply' ? '回复了你的评论' : '在评论中提到了你';
-
-        html += `
-            <div class="notification-item ${isUnread ? 'unread' : ''}" 
-                 data-id="${item.id}" 
-                 data-comment-id="${item.source_comment_id}"
-                 onclick="handleNotificationClick(${item.id}, ${item.source_comment_id})">
-                <div class="notification-avatar">${fromUsername.charAt(0).toUpperCase()}</div>
-                <div class="notification-body">
-                    <div>
-                        <span class="username">${escapeHtml(fromUsername)}</span>
-                        <span class="action-text"> ${displayText}</span>
-                    </div>
-                    <div class="comment-preview">${escapeHtml(commentPreview)}</div>
-                    <div class="time">${timeAgo}</div>
-                </div>
-                ${isUnread ? '<div class="notification-unread-dot"></div>' : ''}
-            </div>
-        `;
-    }
-
-    if (append) {
-        document.getElementById('notificationList').innerHTML += html;
-    } else {
-        document.getElementById('notificationList').innerHTML = html;
-    }
-
-    // 判断是否还有更多（如果返回数据少于 PAGE_SIZE，说明没有下一页）
-    if (data.length < PAGE_SIZE) {
-        document.getElementById('loadMoreContainer').style.display = 'none';
-        hasMore = false;
-    } else {
-        document.getElementById('loadMoreContainer').style.display = 'block';
-        hasMore = true;
-    }
-
-    // 更新未读计数
-    await fetchUnreadCounts();
-}
-        // 生成 HTML
-        let html = '';
-        for (const item of data) {
-            const fromUsername = item.from_user?.username || '已注销用户';
-            const commentPreview = item.source_comment?.content || '评论已删除';
-            const timeAgo = timeSince(new Date(item.created_at));
-            const isUnread = !item.is_read;
-            const displayText = currentType === 'reply' ? '回复了你的评论' : '在评论中提到了你';
-
-            html += `
-                <div class="notification-item ${isUnread ? 'unread' : ''}" 
-                     data-id="${item.id}" 
-                     data-comment-id="${item.source_comment_id}"
-                     onclick="handleNotificationClick(${item.id}, ${item.source_comment_id})">
-                    <div class="notification-avatar">${fromUsername.charAt(0).toUpperCase()}</div>
-                    <div class="notification-body">
-                        <div>
-                            <span class="username">${escapeHtml(fromUsername)}</span>
-                            <span class="action-text"> ${displayText}</span>
-                        </div>
-                        <div class="comment-preview">${escapeHtml(commentPreview)}</div>
-                        <div class="time">${timeAgo}</div>
-                    </div>
-                    ${isUnread ? '<div class="notification-unread-dot"></div>' : ''}
-                </div>
-            `;
-        }
-
-        if (append) {
-            document.getElementById('notificationList').innerHTML += html;
-        } else {
-            document.getElementById('notificationList').innerHTML = html;
-        }
-
-        // 判断是否还有更多
-        const totalCount = count || data.length;
-        if (currentPage * PAGE_SIZE < totalCount) {
-            const loadMore = document.getElementById('loadMoreContainer');
-            loadMore.style.display = 'block';
-            hasMore = true;
-        } else {
-            const loadMore = document.getElementById('loadMoreContainer');
-            loadMore.style.display = 'none';
-            hasMore = false;
-        }
-
-        // 更新未读计数（因为刚加载列表，可能有未读变化，重新获取）
-        await fetchUnreadCounts();
-    }
-
-    // ==================== 处理通知点击 ====================
-    async function handleNotificationClick(notificationId, commentId) {
-        // 标记已读
-        await supabaseClient
-            .from('notifications')
-            .update({ is_read: true })
-            .eq('id', notificationId);
-
-        // 跳转到评论区并定位到该评论
-        // 这里假设评论区是 comments-beta.html，并支持通过 URL 参数定位
-        window.location.href = `comments-beta.html?highlight=${commentId}`;
-    }
-
-    // ==================== 全部已读 ====================
-    async function markAllAsRead() {
-        if (!currentUser) return;
-        const { error } = await supabaseClient
-            .from('notifications')
-            .update({ is_read: true })
-            .eq('user_id', currentUser.id)
-            .eq('type', currentType)
-            .eq('is_read', false);
-        if (error) {
-            console.error('全部已读失败:', error);
-            alert('操作失败，请重试');
-            return;
-        }
-        // 刷新列表和未读数
-        await fetchNotifications(false);
-        await fetchUnreadCounts();
-        showToast('✅ 已全部标记为已读');
-    }
-
-    // ==================== 切换选项卡 ====================
-    function switchTab(type) {
-        currentType = type;
-        currentPage = 1;
-        // 更新样式
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.type === type);
-        });
-        // 重新加载
-        fetchNotifications(false);
-    }
-
-    // ==================== 实时订阅 ====================
-    function subscribeNotifications() {
-        if (!currentUser) return;
-        const channel = supabaseClient
-            .channel('notifications')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'notifications',
-                    filter: `user_id=eq.${currentUser.id}`,
-                },
-                (payload) => {
-                    const newNotif = payload.new;
-                    // 更新未读计数
-                    if (!newNotif.is_read) {
-                        if (newNotif.type === 'reply') unreadCounts.reply++;
-                        else unreadCounts.mention++;
-                        updateBadges();
-                        // 显示 Toast
-                        const typeName = newNotif.type === 'reply' ? '回复' : '提及';
-                        showToast(`💬 你有一条新的${typeName}消息`);
-                        // 如果当前在对应选项卡，刷新列表
-                        if (newNotif.type === currentType) {
-                            fetchNotifications(false);
-                        }
-                    }
-                }
-            )
-            .subscribe();
-        return channel;
-    }
-
-    // ==================== 工具函数 ====================
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;');
@@ -680,16 +356,204 @@
         clearTimeout(toastTimer);
     }
 
-    // ==================== 初始化 ====================
+    function updateBadges() {
+        const replyBadge = document.getElementById('replyBadge');
+        const mentionBadge = document.getElementById('mentionBadge');
+        if (unreadCounts.reply > 0) {
+            replyBadge.style.display = 'inline-block';
+            replyBadge.textContent = unreadCounts.reply;
+        } else {
+            replyBadge.style.display = 'none';
+        }
+        if (unreadCounts.mention > 0) {
+            mentionBadge.style.display = 'inline-block';
+            mentionBadge.textContent = unreadCounts.mention;
+        } else {
+            mentionBadge.style.display = 'none';
+        }
+        const totalUnread = unreadCounts.reply + unreadCounts.mention;
+        document.title = totalUnread > 0 ? `(${totalUnread}) 消息中心 - NB频道` : '消息中心 - NB频道';
+    }
+
+    async function fetchUnreadCounts() {
+        if (!currentUser) return;
+        const { data, error } = await supabaseClient.rpc('get_unread_counts', {
+            p_user_id: currentUser.id
+        });
+        if (error) {
+            console.error('获取未读数失败:', error);
+            return;
+        }
+        unreadCounts.reply = data?.find(item => item.type === 'reply')?.count || 0;
+        unreadCounts.mention = data?.find(item => item.type === 'mention')?.count || 0;
+        updateBadges();
+    }
+
+    async function fetchNotifications(append = false) {
+        if (!currentUser) {
+            document.getElementById('notificationList').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><p>请先登录查看消息</p></div>';
+            return;
+        }
+        if (isLoading) return;
+        if (!append) {
+            currentPage = 1;
+            hasMore = true;
+            document.getElementById('notificationList').innerHTML = '<div class="loading-spinner" style="text-align:center; padding:40px; color:var(--count-text);">加载中...</div>';
+        }
+        isLoading = true;
+
+        const from = (currentPage - 1) * PAGE_SIZE;
+        const { data, error } = await supabaseClient.rpc('get_my_notifications', {
+            p_user_id: currentUser.id,
+            p_type: currentType,
+            p_limit: PAGE_SIZE,
+            p_offset: from
+        });
+
+        isLoading = false;
+        document.getElementById('loadMoreContainer').style.display = 'none';
+
+        if (error) {
+            console.error('加载通知失败:', error);
+            document.getElementById('notificationList').innerHTML = `<div class="empty-state"><p>加载失败: ${error.message}</p></div>`;
+            return;
+        }
+
+        if (!data || data.length === 0) {
+            if (!append) {
+                document.getElementById('notificationList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <p>暂无${currentType === 'reply' ? '回复' : '提及'}消息</p>
+                    </div>
+                `;
+            } else {
+                document.getElementById('loadMoreContainer').style.display = 'none';
+                hasMore = false;
+            }
+            return;
+        }
+
+        let html = '';
+        for (const item of data) {
+            const fromUsername = item.from_username || '已注销用户';
+            const commentPreview = item.comment_content || '评论已删除';
+            const timeAgo = timeSince(new Date(item.created_at));
+            const isUnread = !item.is_read;
+            const displayText = currentType === 'reply' ? '回复了你的评论' : '在评论中提到了你';
+
+            html += `
+                <div class="notification-item ${isUnread ? 'unread' : ''}" 
+                     data-id="${item.id}" 
+                     data-comment-id="${item.source_comment_id}"
+                     onclick="handleNotificationClick(${item.id}, ${item.source_comment_id})">
+                    <div class="notification-avatar">${fromUsername.charAt(0).toUpperCase()}</div>
+                    <div class="notification-body">
+                        <div>
+                            <span class="username">${escapeHtml(fromUsername)}</span>
+                            <span class="action-text"> ${displayText}</span>
+                        </div>
+                        <div class="comment-preview">${escapeHtml(commentPreview)}</div>
+                        <div class="time">${timeAgo}</div>
+                    </div>
+                    ${isUnread ? '<div class="notification-unread-dot"></div>' : ''}
+                </div>
+            `;
+        }
+
+        if (append) {
+            document.getElementById('notificationList').innerHTML += html;
+        } else {
+            document.getElementById('notificationList').innerHTML = html;
+        }
+
+        if (data.length < PAGE_SIZE) {
+            document.getElementById('loadMoreContainer').style.display = 'none';
+            hasMore = false;
+        } else {
+            document.getElementById('loadMoreContainer').style.display = 'block';
+            hasMore = true;
+        }
+
+        await fetchUnreadCounts();
+    }
+
+    async function handleNotificationClick(notificationId, commentId) {
+        await supabaseClient
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('id', notificationId);
+        window.location.href = `comments-beta.html?highlight=${commentId}`;
+    }
+
+    async function markAllAsRead() {
+        if (!currentUser) return;
+        const { error } = await supabaseClient
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('user_id', currentUser.id)
+            .eq('type', currentType)
+            .eq('is_read', false);
+        if (error) {
+            console.error('全部已读失败:', error);
+            alert('操作失败，请重试');
+            return;
+        }
+        await fetchNotifications(false);
+        await fetchUnreadCounts();
+        showToast('✅ 已全部标记为已读');
+    }
+
+    function switchTab(type) {
+        currentType = type;
+        currentPage = 1;
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.type === type);
+        });
+        fetchNotifications(false);
+    }
+
+    function subscribeNotifications() {
+        if (!currentUser) return;
+        const channel = supabaseClient
+            .channel('notifications')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'notifications',
+                    filter: `user_id=eq.${currentUser.id}`,
+                },
+                (payload) => {
+                    const newNotif = payload.new;
+                    if (!newNotif.is_read) {
+                        if (newNotif.type === 'reply') unreadCounts.reply++;
+                        else unreadCounts.mention++;
+                        updateBadges();
+                        const typeName = newNotif.type === 'reply' ? '回复' : '提及';
+                        showToast(`💬 你有一条新的${typeName}消息`);
+                        if (newNotif.type === currentType) {
+                            fetchNotifications(false);
+                        }
+                    }
+                }
+            )
+            .subscribe();
+        return channel;
+    }
+
+    // ========== 初始化 ==========
     async function init() {
-         AUTHOR_NAME = 'NB搞事局';
-    const authorInfo = document.getElementById('authorInfo');
-    if (authorInfo) {
-        authorInfo.innerText = `UP主：${AUTHOR_NAME}`;
-    }
-    if (typeof initTheme === 'function') {
-        initTheme();
-    }
+        AUTHOR_NAME = 'NB搞事局';
+        const authorInfo = document.getElementById('authorInfo');
+        if (authorInfo) {
+            authorInfo.innerText = `UP主：${AUTHOR_NAME}`;
+        }
+        if (typeof initTheme === 'function') {
+            initTheme();
+        }
+
         currentUser = getCurrentUser();
         if (!currentUser) {
             document.getElementById('notificationList').innerHTML = `
@@ -701,7 +565,6 @@
             return;
         }
 
-        // 绑定事件
         document.getElementById('tabReply').addEventListener('click', () => switchTab('reply'));
         document.getElementById('tabMention').addEventListener('click', () => switchTab('mention'));
         document.getElementById('readAllBtn').addEventListener('click', markAllAsRead);
@@ -710,17 +573,13 @@
             fetchNotifications(true);
         });
 
-        // 加载数据
         await fetchUnreadCounts();
         await fetchNotifications(false);
-        // 订阅实时
         subscribeNotifications();
     }
 
-    // 初始化
     init();
 
-    // 滚动到顶部
     window.addEventListener('scroll', function() {
         const backBtn = document.getElementById('backToTop');
         if (backBtn) {
