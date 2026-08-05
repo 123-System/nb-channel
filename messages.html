@@ -267,6 +267,8 @@
 <script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
 
 <div class="container">
+    <h1>📺 NB频道官网</h1>
+    <div class="author-info" id="authorInfo">UP主：NB搞事局</div>
     <div class="nav-container">
         <div class="nav-links">
             <a href="index.html" class="nav-btn">首页</a>
@@ -332,6 +334,7 @@
     const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+ 
 
     const PAGE_SIZE = 20;
     let currentType = 'reply';
@@ -594,6 +597,14 @@
 
     // ==================== 初始化 ====================
     async function init() {
+         AUTHOR_NAME = 'NB搞事局';
+    const authorInfo = document.getElementById('authorInfo');
+    if (authorInfo) {
+        authorInfo.innerText = `UP主：${AUTHOR_NAME}`;
+    }
+    if (typeof initTheme === 'function') {
+        initTheme();
+    }
         currentUser = getCurrentUser();
         if (!currentUser) {
             document.getElementById('notificationList').innerHTML = `
