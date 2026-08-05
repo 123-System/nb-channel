@@ -479,12 +479,17 @@
     }
 
     async function handleNotificationClick(notificationId, commentId) {
-        await supabaseClient
-            .from('notifications')
-            .update({ is_read: true })
-            .eq('id', notificationId);
-        window.location.href = `comments-beta.html?highlight=${commentId}`;
+    const { error } = await supabaseClient
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId)
+        .eq('user_id', currentUser.id);  // 增加用户验证
+    if (error) {
+        console.error('标记已读失败:', error);
     }
+    // 使用 replace 替换当前历史记录，避免用户后退时看到旧状态
+    window.location.replace(`comments-beta.html?highlight=${commentId}`);
+}
 
     async function markAllAsRead() {
         if (!currentUser) return;
