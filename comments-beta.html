@@ -413,6 +413,121 @@
     return data.map(item => item.profiles.username);
 }
 
+// ==================== @提及自动补全 ====================
+let cachedUsernames = null;
+let mentionDropdown = null;
+
+async function fetchUsernames() {
+    if (cachedUsernames) return cachedUsernames;
+    const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('username')
+        .order('username');
+    if (error) {
+        console.error('获取用户名列表失败', error);
+        return [];
+    }
+    cachedUsernames = data.map(item => item.username);
+    return cachedUsernames;
+}
+
+function createDropdown() {
+    if (mentionDropdown) return mentionDropdown;
+    const div = document.createElement('div');
+    div.style.cssText = `
+        position: absolute;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        max-height: 150px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        min-width: 150px;
+        display: none;
+    `;
+    document.body.appendChild(div);
+    mentionDropdown = div;
+    return div;
+}
+
+function showDropdown(textarea, filterText) {
+    const dropdown = createDropdown();
+    dropdown.innerHTML = '';
+    const filtered = cachedUsernames.filter(u => u.toLowerCase().includes(filterText.toLowerCase()));
+    if (filtered.length === 0) {
+        dropdown.style.display = 'none';
+        return;
+    }
+    filtered.forEach(username => {
+        const item = document.createElement('div');
+        item.textContent = username;
+        item.style.cssText = `
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-color);
+        `;
+        item.onmouseover = () => item.style.backgroundColor = 'var(--count-bg)';
+        item.onmouseout = () => item.style.backgroundColor = '';
+        item.onclick = () => {
+            const cursorPos = textarea.selectionStart;
+            const textBefore = textarea.value.substring(0, cursorPos);
+            const lastAtIndex = textBefore.lastIndexOf('@');
+            if (lastAtIndex !== -1) {
+                const beforeAt = textarea.value.substring(0, lastAtIndex);
+                const afterCursor = textarea.value.substring(cursorPos);
+                const newText = beforeAt + '@' + username + ' ' + afterCursor;
+                textarea.value = newText;
+                textarea.selectionStart = textarea.selectionEnd = beforeAt.length + username.length + 2;
+                textarea.focus();
+                hideDropdown();
+                textarea.dispatchEvent(new Event('input'));
+            }
+        };
+        dropdown.appendChild(item);
+    });
+    dropdown.style.display = 'block';
+    const rect = textarea.getBoundingClientRect();
+    dropdown.style.left = rect.left + 'px';
+    dropdown.style.top = (rect.bottom + 2) + 'px';
+    dropdown.style.width = Math.min(rect.width, 300) + 'px';
+}
+
+function hideDropdown() {
+    if (mentionDropdown) {
+        mentionDropdown.style.display = 'none';
+        mentionDropdown.innerHTML = '';
+    }
+}
+
+function initMentionAutocomplete(textarea) {
+    if (!textarea) return;
+    textarea.removeEventListener('input', mentionInputHandler);
+    textarea.addEventListener('input', mentionInputHandler);
+    document.addEventListener('click', function(e) {
+        if (mentionDropdown && mentionDropdown.style.display !== 'none' && !mentionDropdown.contains(e.target) && e.target !== textarea) {
+            hideDropdown();
+        }
+    });
+}
+
+function mentionInputHandler(e) {
+    const textarea = e.target;
+    const cursorPos = textarea.selectionStart;
+    const text = textarea.value;
+    const before = text.substring(0, cursorPos);
+    const lastAtIndex = before.lastIndexOf('@');
+    if (lastAtIndex !== -1 && (cursorPos === lastAtIndex + 1 || !before.substring(lastAtIndex + 1).includes(' '))) {
+        const keyword = before.substring(lastAtIndex + 1);
+        fetchUsernames().then(() => {
+            showDropdown(textarea, keyword);
+        });
+    } else {
+        hideDropdown();
+    }
+}
+    
     // ---------- 评论树构建与渲染（两层嵌套）----------
     function buildCommentTree(comments) {
     const map = new Map();
@@ -1144,8 +1259,19 @@ function renderCommentsForPage(page) {
             };
             newCommentArea.style.display = 'block';
             fetchComments();
+
+            // ========== 新增：主评论框 @提及功能 ==========
+            const mainTextarea = document.getElementById('comment-text');
+            if (mainTextarea) {
+                // 延迟初始化确保 DOM 完全加载
+                setTimeout(() => {
+                    initMentionAutocomplete(mainTextarea);
+                }, 100);
+            }
             return;
-        } catch(e) { console.error(e); }
+        } catch(e) {
+            console.error(e);
+        }
     }
     currentUser = null;
     userStatusSpan.innerHTML = `<a href="login.html?redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
