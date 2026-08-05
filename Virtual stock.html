@@ -1471,7 +1471,7 @@
     
     function startAutoSupportWatcher() {
         if (autoSupportTimer) clearInterval(autoSupportTimer);
-        autoSupportTimer = setInterval(() => { checkAutoSupportRules(); }, 300000);
+        autoSupportTimer = setInterval(() => { checkAutoSupportRules(); }, 10000);
     }
 
     function startAutoRefreshTimer() {
