@@ -915,11 +915,17 @@ function renderCommentsForPage(page) {
         initMentionAutocomplete(textarea);
     });
 
-   // ========== 新增：高亮定位功能（从消息页面跳转过来） ==========
+// ========== 新增：高亮定位功能（从消息页面跳转过来） ==========
 const params = new URLSearchParams(window.location.search);
 const highlightId = params.get('highlight');
 if (highlightId && !highlightApplied) {
     highlightApplied = true;
+    
+    // 立即从 URL 中移除 highlight 参数，防止刷新或重复触发
+    params.delete('highlight');
+    const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+    window.history.replaceState({}, '', newUrl);
+    
     setTimeout(() => {
         const target = document.querySelector(`.comment[data-id="${highlightId}"]`);
         if (target) {
@@ -933,7 +939,6 @@ if (highlightId && !highlightApplied) {
             }, 3000);
         }
     }, 500);
-}
 }
 
     // 提交举报（模态框确认）
