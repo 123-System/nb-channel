@@ -309,6 +309,7 @@
     let verifiedUsernames = [];
     let pendingReportCommentId = null; // 临时存储待举报的评论ID
     let highlightApplied = false; // 防止重复高亮
+    let pendingHighlightId = null; // 存储待高亮的评论ID
 
     // DOM 元素
     const userStatusSpan = document.getElementById('user-status');
@@ -758,20 +759,18 @@ function renderCommentsForPage(page) {
         return;
     }
 
-    // 判断是否已经是树结构（每个节点都有 replies 属性）
+    // 判断是否已经是树结构
     let tree;
     if (comments[0] && comments[0].replies !== undefined) {
-        // 已经是树，直接使用
         tree = comments;
     } else {
-        // 扁平的评论列表，需要构建树
         tree = buildCommentTree(comments);
     }
 
     const html = tree.map(node => renderCommentNode(node, false)).join('');
     commentListDiv.innerHTML = html;
 
-    // 以下所有事件绑定代码保持不变（原样）
+    // ---- 事件绑定（保持原样） ----
     // 折叠/展开正文按钮
     document.querySelectorAll('.toggle-btn').forEach(btn => {
         btn.onclick = (e) => {
@@ -838,54 +837,53 @@ function renderCommentsForPage(page) {
     });
 
     document.querySelectorAll('.submit-reply').forEach(btn => {
-    btn.onclick = async (e) => {
-        e.stopPropagation();
-        const parentId = btn.dataset.id;
-        const parentDiv = document.querySelector(`.comment[data-id="${parentId}"]`);
-        if (!parentDiv) return;
-        const replyForm = document.getElementById(`reply-form-${parentId}`);
-        const textarea = replyForm.querySelector('textarea');
-        let content = textarea.value.trim();
-        if (!content) { showMessage('提示', '回复内容不能为空'); return; }
-        if (content.length > 200) { showMessage('提示', '回复内容不能超过200字'); return; }
-        if (!currentUser) { showMessage('提示', '请先登录'); return; }
+        btn.onclick = async (e) => {
+            e.stopPropagation();
+            const parentId = btn.dataset.id;
+            const parentDiv = document.querySelector(`.comment[data-id="${parentId}"]`);
+            if (!parentDiv) return;
+            const replyForm = document.getElementById(`reply-form-${parentId}`);
+            const textarea = replyForm.querySelector('textarea');
+            let content = textarea.value.trim();
+            if (!content) { showMessage('提示', '回复内容不能为空'); return; }
+            if (content.length > 200) { showMessage('提示', '回复内容不能超过200字'); return; }
+            if (!currentUser) { showMessage('提示', '请先登录'); return; }
 
-        const BAD_WORDS = ["操你妈", "傻逼", "垃圾", "废物", "脑残", "智障", "滚", "去死", "sb", "nmsl", "炸服务器",
+            const BAD_WORDS = ["操你妈", "傻逼", "垃圾", "废物", "脑残", "智障", "滚", "去死", "sb", "nmsl", "炸服务器",
                 "他妈", "特么", "尼玛", "妈逼", "操蛋", "王八蛋", "混蛋", "杂种", "狗日的", "法克", "fuck", "shit", "bitch",
                 "黑鬼", "白皮猪", "支那", "台巴子", "回子", "圣母婊", "娘炮", "人妖",
                 "五毛", "美分", "带节奏", "洗地", "脑残粉", "水军", "喷子", "网暴",
                 "卖淫", "嫖娼", "约炮", "裸聊", "毒品", "海洛因", "办证", "加微信", "兼职刷单", "返利",
                 "垃圾频道", "SB频道", "脑残UP" ,"gay" ,"Gay" ,"GAY"];
-        let containsBadWord = false;
-        for (const word of BAD_WORDS) {
-            if (content.includes(word)) {
-                containsBadWord = true;
-                break;
+            let containsBadWord = false;
+            for (const word of BAD_WORDS) {
+                if (content.includes(word)) {
+                    containsBadWord = true;
+                    break;
+                }
             }
-        }
-        if (containsBadWord) {
-            showMessage('提示', '您的回复包含违禁词，禁止发布');
-            return;
-        }
+            if (containsBadWord) {
+                showMessage('提示', '您的回复包含违禁词，禁止发布');
+                return;
+            }
 
-        // 调用 RPC 插入回复
-        const { data, error } = await supabaseClient.rpc('insert_comment', {
-            p_page_path: pagePath,
-            p_user_id: currentUser.id,
-            p_content: content,
-            p_parent_id: parseInt(parentId)
-        });
+            const { data, error } = await supabaseClient.rpc('insert_comment', {
+                p_page_path: pagePath,
+                p_user_id: currentUser.id,
+                p_content: content,
+                p_parent_id: parseInt(parentId)
+            });
+            if (error) {
+                showMessage('错误', '回复失败: ' + error.message);
+            } else if (!data.success) {
+                showMessage('错误', data.message);
+            } else {
+                replyForm.style.display = 'none';
+                fetchComments();
+            }
+        };
+    });
 
-        if (error) {
-            showMessage('错误', '回复失败: ' + error.message);
-        } else if (!data.success) {
-            showMessage('错误', data.message);
-        } else {
-            replyForm.style.display = 'none';
-            fetchComments();
-        }
-    };
-});
     // 举报按钮
     document.querySelectorAll('.report-btn').forEach(btn => {
         btn.onclick = (e) => {
@@ -915,32 +913,26 @@ function renderCommentsForPage(page) {
         initMentionAutocomplete(textarea);
     });
 
-// ========== 新增：高亮定位功能（从消息页面跳转过来） ==========
-const params = new URLSearchParams(window.location.search);
-const highlightId = params.get('highlight');
-if (highlightId && !highlightApplied) {
-    highlightApplied = true;
-    
-    // 立即从 URL 中移除 highlight 参数，防止刷新或重复触发
-    params.delete('highlight');
-    const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
-    window.history.replaceState({}, '', newUrl);
-    
-    setTimeout(() => {
-        const target = document.querySelector(`.comment[data-id="${highlightId}"]`);
-        if (target) {
-            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            target.style.backgroundColor = 'var(--status-bg)';
-            target.style.transition = 'background 0.3s ease';
-            target.style.borderRadius = '8px';
-            setTimeout(() => {
-                target.style.backgroundColor = '';
-                target.style.borderRadius = '';
-            }, 3000);
-        }
-    }, 500);
+    // ---- 高亮定位功能 ----
+    if (pendingHighlightId) {
+        const highlightId = pendingHighlightId;
+        pendingHighlightId = null; // 清除，防止重复触发
+        setTimeout(() => {
+            const target = document.querySelector(`.comment[data-id="${highlightId}"]`);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                target.style.backgroundColor = 'var(--status-bg)';
+                target.style.transition = 'background 0.3s ease';
+                target.style.borderRadius = '8px';
+                setTimeout(() => {
+                    target.style.backgroundColor = '';
+                    target.style.borderRadius = '';
+                }, 3000);
+            }
+        }, 500);
+    }
 }
-}
+
     // 提交举报（模态框确认）
     async function submitReport() {
     if (!pendingReportCommentId) return;
@@ -1075,19 +1067,47 @@ if (highlightId && !highlightApplied) {
         }
         repliesMap.get(reply.parent_id).push(reply);
     });
-    // 对每个组内的回复按时间降序排列
     for (const [parentId, replyList] of repliesMap) {
         replyList.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }
 
-    // 存储到全局
     allMainComments = mainComments;
     allRepliesMap = repliesMap;
     totalComments = data.length;
 
-    renderCommentsForPage(1);
-}
+    // 计算目标页码和待高亮评论ID
+    const highlightId = new URLSearchParams(window.location.search).get('highlight');
+    let targetPage = 1;
+    if (highlightId) {
+        const targetId = parseInt(highlightId);
+        // 检查是否为主评论
+        const mainIndex = allMainComments.findIndex(c => c.id === targetId);
+        if (mainIndex !== -1) {
+            targetPage = Math.floor(mainIndex / COMMENTS_PER_PAGE) + 1;
+        } else {
+            // 检查是否为回复，找到其父评论
+            for (const [parentId, replies] of allRepliesMap) {
+                if (replies.some(r => r.id === targetId)) {
+                    const parentIndex = allMainComments.findIndex(c => c.id === parentId);
+                    if (parentIndex !== -1) {
+                        targetPage = Math.floor(parentIndex / COMMENTS_PER_PAGE) + 1;
+                    }
+                    break;
+                }
+            }
+        }
+        pendingHighlightId = targetId;
+        // 立即移除 URL 参数，防止刷新页面时重复触发
+        const params = new URLSearchParams(window.location.search);
+        params.delete('highlight');
+        const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+        window.history.replaceState({}, '', newUrl);
+    } else {
+        pendingHighlightId = null;
+    }
 
+    renderCommentsForPage(targetPage);
+}
     async function postComment() {
     if (!currentUser) { showMessage('提示', '请先登录'); return; }
     let content = commentText.value.trim();
