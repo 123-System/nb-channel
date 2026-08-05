@@ -308,6 +308,7 @@
     let allRepliesMap = new Map(); // 所有回复，按 parent_id 分组          // 存储所有评论数据（用于分页）
     let verifiedUsernames = [];
     let pendingReportCommentId = null; // 临时存储待举报的评论ID
+    let highlightApplied = false; // 防止重复高亮
 
     // DOM 元素
     const userStatusSpan = document.getElementById('user-status');
