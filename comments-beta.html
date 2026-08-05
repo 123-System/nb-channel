@@ -914,28 +914,24 @@ function renderCommentsForPage(page) {
         initMentionAutocomplete(textarea);
     });
 
-    // ========== 新增：高亮定位功能（从消息页面跳转过来） ==========
-    const params = new URLSearchParams(window.location.search);
-    const highlightId = params.get('highlight');
-    if (highlightId) {
-        // 延迟执行，确保 DOM 完全渲染
-        setTimeout(() => {
-            const target = document.querySelector(`.comment[data-id="${highlightId}"]`);
-            if (target) {
-                // 滚动到目标评论
-                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // 高亮效果
-                target.style.backgroundColor = 'var(--status-bg)';
-                target.style.transition = 'background 0.3s ease';
-                target.style.borderRadius = '8px';
-                // 3秒后取消高亮
-                setTimeout(() => {
-                    target.style.backgroundColor = '';
-                    target.style.borderRadius = '';
-                }, 3000);
-            }
-        }, 500);
-    }
+   // ========== 新增：高亮定位功能（从消息页面跳转过来） ==========
+const params = new URLSearchParams(window.location.search);
+const highlightId = params.get('highlight');
+if (highlightId && !highlightApplied) {
+    highlightApplied = true;
+    setTimeout(() => {
+        const target = document.querySelector(`.comment[data-id="${highlightId}"]`);
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.style.backgroundColor = 'var(--status-bg)';
+            target.style.transition = 'background 0.3s ease';
+            target.style.borderRadius = '8px';
+            setTimeout(() => {
+                target.style.backgroundColor = '';
+                target.style.borderRadius = '';
+            }, 3000);
+        }
+    }, 500);
 }
 
     // 提交举报（模态框确认）
