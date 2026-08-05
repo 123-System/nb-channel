@@ -636,7 +636,7 @@ function renderCommentsForPage(page) {
     commentSection.appendChild(paginationDiv);
 }
     
-    function renderComments(comments) {
+   function renderComments(comments) {
     if (!comments || comments.length === 0) {
         commentListDiv.innerHTML = '<p>暂无评论，快来抢沙发！</p>';
         return;
@@ -790,6 +790,29 @@ function renderCommentsForPage(page) {
             counterSpan.innerText = textarea.value.length;
         });
     });
+
+    // ========== 新增：高亮定位功能（从消息页面跳转过来） ==========
+    const params = new URLSearchParams(window.location.search);
+    const highlightId = params.get('highlight');
+    if (highlightId) {
+        // 延迟执行，确保 DOM 完全渲染
+        setTimeout(() => {
+            const target = document.querySelector(`.comment[data-id="${highlightId}"]`);
+            if (target) {
+                // 滚动到目标评论
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // 高亮效果
+                target.style.backgroundColor = 'var(--status-bg)';
+                target.style.transition = 'background 0.3s ease';
+                target.style.borderRadius = '8px';
+                // 3秒后取消高亮
+                setTimeout(() => {
+                    target.style.backgroundColor = '';
+                    target.style.borderRadius = '';
+                }, 3000);
+            }
+        }, 500);
+    }
 }
 
     // 提交举报（模态框确认）
@@ -1222,6 +1245,35 @@ function renderCommentsForPage(page) {
     submitCommentBtn.onclick = postComment;
     loadUser();
 
+// 处理消息页面跳转过来的高亮定位
+function handleHighlight() {
+    const params = new URLSearchParams(window.location.search);
+    const commentId = params.get('highlight');
+    if (!commentId) return;
+    
+    // 等待评论区渲染完成
+    const waitForComments = setInterval(() => {
+        const target = document.querySelector(`.comment[data-id="${commentId}"]`);
+        if (target) {
+            clearInterval(waitForComments);
+            // 滚动到目标评论
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // 高亮效果
+            target.style.backgroundColor = 'var(--status-bg)';
+            target.style.transition = 'background 0.3s';
+            setTimeout(() => {
+                target.style.backgroundColor = '';
+            }, 3000);
+        }
+    }, 300);
+    
+    // 5秒后停止检查，避免一直轮询
+    setTimeout(() => clearInterval(waitForComments), 5000);
+}
+
+// 等第一次评论加载完成后执行高亮检查
+setTimeout(handleHighlight, 1500);
+    
     window.addEventListener('scroll', function() {
         const backBtn = document.getElementById('backToTop');
         if (backBtn) {
