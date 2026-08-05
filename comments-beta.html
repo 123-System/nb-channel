@@ -821,6 +821,7 @@ function renderCommentsForPage(page) {
                     textarea.value = '';
                     const counter = replyForm.querySelector('.char-counter span');
                     if (counter) counter.innerText = '0';
+                    initMentionAutocomplete(textarea);
                 }
             }
         };
@@ -910,6 +911,7 @@ function renderCommentsForPage(page) {
         textarea.addEventListener('input', () => {
             counterSpan.innerText = textarea.value.length;
         });
+        initMentionAutocomplete(textarea);
     });
 
     // ========== 新增：高亮定位功能（从消息页面跳转过来） ==========
@@ -1385,35 +1387,6 @@ function renderCommentsForPage(page) {
 
     submitCommentBtn.onclick = postComment;
     loadUser();
-
-// 处理消息页面跳转过来的高亮定位
-function handleHighlight() {
-    const params = new URLSearchParams(window.location.search);
-    const commentId = params.get('highlight');
-    if (!commentId) return;
-    
-    // 等待评论区渲染完成
-    const waitForComments = setInterval(() => {
-        const target = document.querySelector(`.comment[data-id="${commentId}"]`);
-        if (target) {
-            clearInterval(waitForComments);
-            // 滚动到目标评论
-            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            // 高亮效果
-            target.style.backgroundColor = 'var(--status-bg)';
-            target.style.transition = 'background 0.3s';
-            setTimeout(() => {
-                target.style.backgroundColor = '';
-            }, 3000);
-        }
-    }, 300);
-    
-    // 5秒后停止检查，避免一直轮询
-    setTimeout(() => clearInterval(waitForComments), 5000);
-}
-
-// 等第一次评论加载完成后执行高亮检查
-setTimeout(handleHighlight, 1500);
     
     window.addEventListener('scroll', function() {
         const backBtn = document.getElementById('backToTop');
