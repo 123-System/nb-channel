@@ -403,6 +403,14 @@
         return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;');
     }
 
+function renderContentWithMentions(text) {
+    if (!text) return '';
+    const escaped = escapeHtml(text);
+    return escaped.replace(/@([a-zA-Z0-9_\u4e00-\u9fa5]+)/g, (match, username) => {
+        return `<span style="color:#00a1d6; font-weight:500;">@${username}</span>`;
+    });
+}
+    
     // 获取认证用户列表
     async function fetchVerifiedUsers() {
     const { data, error } = await supabaseClient
@@ -615,7 +623,7 @@ function mentionInputHandler(e) {
                 <span class="comment-author">${escapeHtml(author)}${verifiedBadge}${companyTag}</span>
                 <span class="comment-time">${new Date(node.created_at).toLocaleString()}</span>
             </div>
-            <div class="comment-content" data-full="${escapeHtml(fullText)}" data-short="${escapeHtml(displayText)}">${escapeHtml(displayText)}</div>
+            <div class="comment-content" data-full="${fullText}" data-short="${displayText}">${renderContentWithMentions(displayText)}</div>
             ${toggleButton ? `<div class="toggle-btn-container">${toggleButton}</div>` : ''}
             <div class="comment-actions">
                 ${showReplyBtn ? `<button class="reply-btn" data-id="${node.id}">回复</button>` : ''}
@@ -779,11 +787,11 @@ function renderCommentsForPage(page) {
             const contentDiv = commentDiv.querySelector('.comment-content');
             const isCollapsed = btn.dataset.state === 'collapsed';
             if (isCollapsed) {
-                contentDiv.innerText = contentDiv.dataset.full;
+                contentDiv.innerHTML = renderContentWithMentions(contentDiv.dataset.full);
                 btn.innerText = '折叠';
                 btn.dataset.state = 'expanded';
             } else {
-                contentDiv.innerText = contentDiv.dataset.short;
+                contentDiv.innerHTML = renderContentWithMentions(contentDiv.dataset.short);
                 btn.innerText = '展开';
                 btn.dataset.state = 'collapsed';
             }
