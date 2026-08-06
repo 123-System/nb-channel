@@ -280,8 +280,6 @@
     <div id="pagination" class="pagination"></div>
 
     <div id="companyReportsContainer" style="display: none;">加载中...</div>
-
-    <!-- 新增：公司认证审核容器 -->
     <div id="verificationContainer" style="display: none;">加载中...</div>
 
     <div class="unban-section">
@@ -313,7 +311,6 @@
     let currentReports = [];
     let selectedReportIds = new Set();
 
-    // 辅助函数
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
@@ -449,21 +446,23 @@
                 loadCommentReports(); loadDashboard(); loadBannedUsers();
             };
         });
-        // 忽略举报
-        btn.onclick = async () => {
-    const reportId = parseInt(btn.dataset.reportId);
-    if (!confirm('确定忽略此公司举报吗？')) return;
-    const { data, error } = await supabaseClient.rpc('admin_ignore_report', { 
-        p_report_id: reportId 
-    });
-    if (error) {
-        alert('忽略失败：' + error.message);
-    } else {
-        alert('已忽略');
-        loadCompanyReports(); 
-        loadDashboard();
-    }
-};
+        // 忽略举报（评论）
+        document.querySelectorAll('.ignore').forEach(btn => {
+            btn.onclick = async () => {
+                const reportId = parseInt(btn.dataset.reportId);
+                if (!confirm('确定忽略此举报吗？')) return;
+                const { data, error } = await supabaseClient.rpc('admin_ignore_report', { 
+                    p_report_id: reportId 
+                });
+                if (error) {
+                    alert('忽略失败：' + error.message);
+                } else {
+                    alert('已忽略');
+                    loadCommentReports(); 
+                    loadDashboard();
+                }
+            };
+        });
         // 复选框
         document.querySelectorAll('.report-checkbox').forEach(cb => {
             cb.addEventListener('change', (e) => {
@@ -547,6 +546,8 @@
             let html = '';
             for (const report of data) {
                 const company = report.companies;
+                // 调试：打印 company 对象
+                console.log('company object:', company);
                 const ownerName = company.profiles.username;
                 const reporterName = report.reporter?.username || '未知';
                 html += `
@@ -580,14 +581,21 @@
     }
 
     function attachCompanyEvents() {
-        // 忽略举报
+        // 忽略举报（公司）
         document.querySelectorAll('.ignore-company').forEach(btn => {
             btn.onclick = async () => {
-                const reportId = btn.dataset.reportId;
+                const reportId = parseInt(btn.dataset.reportId);
                 if (!confirm('确定忽略此公司举报吗？')) return;
-                await supabaseClient.from('reports').delete().eq('id', reportId);
-                alert('已忽略');
-                loadCompanyReports(); loadDashboard();
+                const { data, error } = await supabaseClient.rpc('admin_ignore_report', { 
+                    p_report_id: reportId 
+                });
+                if (error) {
+                    alert('忽略失败：' + error.message);
+                } else {
+                    alert('已忽略');
+                    loadCompanyReports(); 
+                    loadDashboard();
+                }
             };
         });
         // 封禁所有者
@@ -627,6 +635,7 @@
                     alert(data.message);
                     return;
                 }
+                // 删除举报记录（如果 RPC 没做，这里手动删）
                 await supabaseClient.from('reports').delete().eq('id', reportId);
                 alert('公司已删除，举报已处理');
                 loadCompanyReports(); loadDashboard();
