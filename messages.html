@@ -447,7 +447,7 @@
          data-id="${item.id}" 
          data-comment-id="${item.source_comment_id}">
         <div class="notification-avatar">${fromUsername.charAt(0).toUpperCase()}</div>
-        <div class="notification-body" onclick="handleNotificationClick(${item.id}, ${item.source_comment_id})">>
+        <div class="notification-body" onclick="handleNotificationClick(${item.id}, ${item.source_comment_id})">
             <div>
                 <span class="username">${escapeHtml(fromUsername)}</span>
                 <span class="action-text"> ${displayText}</span>
