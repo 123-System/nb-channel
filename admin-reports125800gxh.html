@@ -450,16 +450,20 @@
             };
         });
         // 忽略举报
-        document.querySelectorAll('.ignore').forEach(btn => {
-            btn.onclick = async () => {
-                const reportId = btn.dataset.reportId;
-                if (!confirm('确定忽略此举报吗？')) return;
-                await supabaseClient.from('reports').delete().eq('id', reportId);
-                alert('已忽略');
-                selectedReportIds.delete(parseInt(reportId));
-                loadCommentReports(); loadDashboard();
-            };
-        });
+        btn.onclick = async () => {
+    const reportId = parseInt(btn.dataset.reportId);
+    if (!confirm('确定忽略此公司举报吗？')) return;
+    const { data, error } = await supabaseClient.rpc('admin_ignore_report', { 
+        p_report_id: reportId 
+    });
+    if (error) {
+        alert('忽略失败：' + error.message);
+    } else {
+        alert('已忽略');
+        loadCompanyReports(); 
+        loadDashboard();
+    }
+};
         // 复选框
         document.querySelectorAll('.report-checkbox').forEach(cb => {
             cb.addEventListener('change', (e) => {
