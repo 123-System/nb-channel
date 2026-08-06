@@ -779,11 +779,24 @@
     rawData.values = newValues;
     totalStocks = rawData.names.length;
 
-    const combined = companies.map(company => ({
-        id: company.id,
-        name: company.company_name,
-        value: company.market_value
-    }));
+    // ⭐ 关键修改：确保 owner 字段正确取值
+    const combined = companies.map(company => {
+        // 兼容两种数据结构
+        let owner = '未知';
+        if (company.profiles) {
+            if (Array.isArray(company.profiles)) {
+                owner = company.profiles[0]?.username || '未知';
+            } else {
+                owner = company.profiles.username || '未知';
+            }
+        }
+        return {
+            id: company.id,
+            name: company.company_name,
+            value: company.market_value,
+            owner: owner
+        };
+    });
     combined.sort((a, b) => b.value - a.value);
     sortedCombined = combined;
 
@@ -804,7 +817,6 @@
         currentChart.update({ duration: 300 });
     }
 
-    // ✅ 新增：同步更新公司区块的市值显示
     if (currentUserId) {
         await fetchMyCompany();
         renderMyCompanySection();
