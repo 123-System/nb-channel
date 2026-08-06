@@ -590,12 +590,15 @@
 }
 
     function attachCompanyEvents() {
-        // 忽略举报
-        document.querySelectorAll('.ignore-company').forEach(btn => {
-            btn.onclick = async () => {
-                const reportId = parseInt(btn.dataset.reportId);
-                if (!confirm('确定忽略此举报吗？')) return;
-                const { data, error } = await supabaseClient.rpc('admin_ignore_report', { p_report_id: reportId });
+    // 1. 忽略举报（公司）——调用 RPC
+    document.querySelectorAll('.ignore-company').forEach(btn => {
+        btn.onclick = async () => {
+            const reportId = parseInt(btn.dataset.reportId);
+            if (!confirm('确定忽略此公司举报吗？')) return;
+            try {
+                const { data, error } = await supabaseClient.rpc('admin_ignore_report', {
+                    p_report_id: reportId
+                });
                 if (error) {
                     alert('忽略失败：' + error.message);
                 } else {
@@ -603,80 +606,105 @@
                     loadCompanyReports();
                     loadDashboard();
                 }
-            };
-        });
+            } catch (err) {
+                alert('操作异常：' + err.message);
+            }
+        };
+    });
 
-        // 封禁所有者
-        document.querySelectorAll('.ban-owner').forEach(btn => {
-            btn.onclick = async () => {
-                const userId = btn.dataset.userId;
-                const reportId = parseInt(btn.dataset.reportId);
-                if (!confirm('确定封禁该用户吗？')) return;
+    // 2. 封禁所有者——调用 RPC
+    document.querySelectorAll('.ban-owner').forEach(btn => {
+        btn.onclick = async () => {
+            const userId = btn.dataset.userId;
+            const reportId = btn.dataset.reportId;
+            if (!userId) {
+                alert('未获取到用户ID，无法封禁');
+                return;
+            }
+            if (!confirm('确定封禁该用户吗？封禁后用户无法登录，其公司将被保留但所有者被封禁。')) return;
+            try {
                 const { data, error } = await supabaseClient.rpc('admin_ban_user', {
                     p_user_id: userId,
-                    p_reason: '公司违规举报处理'
+                    p_reason: '公司名称违规或恶意行为'
                 });
                 if (error) {
                     alert('封禁失败：' + error.message);
-                } else {
-                    await supabaseClient.from('reports').delete().eq('id', reportId);
-                    alert('用户已封禁，举报已处理');
-                    loadCompanyReports();
-                    loadDashboard();
-                    loadBannedUsers();
+                    return;
                 }
-            };
-        });
+                // 同时删除该条举报
+                await supabaseClient.from('reports').delete().eq('id', reportId);
+                alert('用户已封禁');
+                loadCompanyReports();
+                loadDashboard();
+                loadBannedUsers();
+            } catch (err) {
+                alert('操作异常：' + err.message);
+            }
+        };
+    });
 
-        // 删除公司（关键修改）
-        document.querySelectorAll('.delete-company').forEach(btn => {
-            btn.onclick = async () => {
-                const companyId = parseInt(btn.dataset.companyId);
-                const companyName = btn.dataset.companyName || '未知公司';
-                const reportId = parseInt(btn.dataset.reportId);
+    // 3. 删除公司——调用 RPC，并额外删除举报记录
+    document.querySelectorAll('.delete-company').forEach(btn => {
+        btn.onclick = async () => {
+            const companyId = parseInt(btn.dataset.companyId);
+            const companyName = btn.dataset.companyName || '未知公司';
+            const reportId = parseInt(btn.dataset.reportId);
 
-                console.log('删除公司：companyId =', companyId, 'reportId =', reportId);
+            // 严格校验公司ID
+            if (isNaN(companyId) || companyId <= 0) {
+                alert('无效的公司ID，请刷新页面后重试');
+                console.error('companyId 无效:', btn.dataset.companyId);
+                return;
+            }
+            if (isNaN(reportId) || reportId <= 0) {
+                alert('无效的举报ID');
+                return;
+            }
 
-                if (isNaN(companyId) || companyId <= 0) {
-                    alert('无效的公司ID，请刷新后重试');
+            if (!confirm(`确定彻底删除公司“${companyName}”吗？\n此操作将删除该公司、自动支持规则、相关举报及蓝标。`)) {
+                return;
+            }
+
+            try {
+                // 调用 RPC 删除公司
+                const { data, error } = await supabaseClient.rpc('admin_delete_company', {
+                    p_company_id: companyId
+                });
+
+                if (error) {
+                    alert('删除失败（RPC错误）：' + error.message);
+                    console.error('RPC错误:', error);
                     return;
                 }
 
-                if (!confirm(`确定删除公司“${companyName}”吗？\n此操作将删除该公司、所有关联数据及举报记录。`)) {
+                if (!data.success) {
+                    alert('删除失败：' + data.message);
+                    console.error('RPC返回失败:', data);
                     return;
                 }
 
-                try {
-                    // 调用 RPC 删除公司
-                    const { data, error } = await supabaseClient.rpc('admin_delete_company', {
-                        p_company_id: companyId
-                    });
+                // 手动删除该条举报（RPC 中可能已删除，但为了保险再执行一次）
+                const { error: delReportError } = await supabaseClient
+                    .from('reports')
+                    .delete()
+                    .eq('id', reportId);
 
-                    if (error) {
-                        alert('删除失败：' + error.message);
-                        return;
-                    }
-
-                    if (!data.success) {
-                        alert('删除失败：' + data.message);
-                        return;
-                    }
-
-                    // 删除举报记录（如果 RPC 未处理）
-                    await supabaseClient.from('reports').delete().eq('id', reportId);
-
-                    alert(data.message || '公司已删除');
-                    loadCompanyReports();
-                    loadDashboard();
-                    loadBannedUsers();
-
-                } catch (err) {
-                    console.error(err);
-                    alert('操作异常：' + err.message);
+                if (delReportError) {
+                    console.warn('删除举报记录失败（不影响公司删除）:', delReportError);
                 }
-            };
-        });
-    }
+
+                alert('公司已删除，举报已处理');
+                loadCompanyReports();
+                loadDashboard();
+                loadBannedUsers();
+
+            } catch (err) {
+                console.error('操作异常:', err);
+                alert('操作异常：' + err.message);
+            }
+        };
+    });
+}
 
     // ==================== 公司认证审核 ====================
     async function loadVerificationRequests() {
