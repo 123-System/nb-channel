@@ -546,9 +546,12 @@
             let html = '';
             for (const report of data) {
     const company = report.companies;
-    const ownerName = company.profiles.username;
+    const ownerName = company?.profiles?.username || '未知用户';
     const reporterName = report.reporter?.username || '未知';
-    const companyId = report.company_id;          // ✅ 直接从 report 中取
+    const companyId = report.company_id;   // ✅ 直接从 report 取
+
+    console.log('举报ID:', report.id, '公司ID:', companyId); // 调试
+
     html += `
         <div class="report-card" data-report-id="${report.id}">
             <div class="card-header">
@@ -556,8 +559,8 @@
                 <div class="report-time">📅 ${formatDate(report.created_at)}</div>
             </div>
             <div class="company-info">
-                <strong>被举报公司：</strong> ${escapeHtml(company.company_name)}<br>
-                <strong>所有者：</strong> ${escapeHtml(ownerName)} (ID: ${company.user_id})
+                <strong>被举报公司：</strong> ${escapeHtml(company?.company_name || '已删除')}<br>
+                <strong>所有者：</strong> ${escapeHtml(ownerName)} (ID: ${company?.user_id || '未知'})
             </div>
             <div class="report-meta">
                 <span>📢 <strong>举报原因：</strong> ${escapeHtml(report.reason)}</span>
@@ -565,8 +568,8 @@
             </div>
             <div class="report-actions">
                 <button class="ignore-company" data-report-id="${report.id}">🙈 忽略举报</button>
-                <button class="ban-owner" data-user-id="${company.user_id}" data-report-id="${report.id}">🚫 封禁所有者</button>
-                <button class="delete-company" data-company-id="${companyId}" data-company-name="${escapeHtml(company.company_name)}" data-report-id="${report.id}" data-owner-id="${company.user_id}">🗑️ 删除公司</button>
+                <button class="ban-owner" data-user-id="${company?.user_id}" data-report-id="${report.id}">🚫 封禁所有者</button>
+                <button class="delete-company" data-company-id="${companyId}" data-company-name="${escapeHtml(company?.company_name || '未知公司')}" data-report-id="${report.id}">🗑️ 删除公司</button>
             </div>
         </div>
     `;
@@ -618,28 +621,62 @@
         });
         // 删除公司
         document.querySelectorAll('.delete-company').forEach(btn => {
-            btn.onclick = async () => {
-                const companyId = parseInt(btn.dataset.companyId);
-                const companyName = btn.dataset.companyName;
-                const reportId = parseInt(btn.dataset.reportId);
-                if (!confirm(`确定彻底删除公司“${companyName}”吗？\n此操作将删除该公司、自动支持规则及本条举报。`)) return;
-                const { data, error } = await supabaseClient.rpc('admin_delete_company', {
-                    p_company_id: companyId
-                });
-                if (error) {
-                    alert('删除失败：' + error.message);
-                    return;
-                }
-                if (!data.success) {
-                    alert(data.message);
-                    return;
-                }
-                // 删除举报记录（如果 RPC 没做，这里手动删）
-                await supabaseClient.from('reports').delete().eq('id', reportId);
-                alert('公司已删除，举报已处理');
-                loadCompanyReports(); loadDashboard();
-            };
-        });
+    btn.onclick = async () => {
+        const companyId = parseInt(btn.dataset.companyId);
+        const companyName = btn.dataset.companyName || '未知公司';
+        const reportId = parseInt(btn.dataset.reportId);
+
+        // 🔍 校验 ID
+        if (isNaN(companyId) || companyId <= 0) {
+            alert('无效的公司ID，请刷新页面后重试');
+            return;
+        }
+        if (isNaN(reportId) || reportId <= 0) {
+            alert('无效的举报ID');
+            return;
+        }
+
+        if (!confirm(`确定彻底删除公司“${companyName}”吗？\n此操作将删除该公司、自动支持规则、相关举报及蓝标。`)) {
+            return;
+        }
+
+        try {
+            // 1. 调用 RPC 删除公司
+            const { data, error } = await supabaseClient.rpc('admin_delete_company', {
+                p_company_id: companyId
+            });
+
+            if (error) {
+                alert('删除失败（RPC错误）：' + error.message);
+                return;
+            }
+
+            if (!data.success) {
+                alert('删除失败：' + data.message);
+                return;
+            }
+
+            // 2. 删除该公司的举报记录（RPC 可能已删除，但这里手动确保）
+            const { error: delReportError } = await supabaseClient
+                .from('reports')
+                .delete()
+                .eq('id', reportId);
+
+            if (delReportError) {
+                console.warn('删除举报记录失败（不影响公司删除）:', delReportError);
+            }
+
+            alert('公司已删除，举报已处理');
+            loadCompanyReports();
+            loadDashboard();
+            loadBannedUsers();
+
+        } catch (err) {
+            console.error(err);
+            alert('操作异常：' + err.message);
+        }
+    };
+});
     }
 
     // ==================== 公司认证审核相关 ====================
