@@ -442,23 +442,23 @@
         const isUnread = !item.is_read;
         const displayText = currentType === 'reply' ? '回复了你的评论' : '在评论中提到了你';
 
-        html += `
-            <div class="notification-item ${isUnread ? 'unread' : ''}" 
-                 data-id="${item.id}" 
-                 data-comment-id="${item.source_comment_id}">
-                <div class="notification-avatar">${fromUsername.charAt(0).toUpperCase()}</div>
-                <div class="notification-body" onclick="handleNotificationClick(${item.id}, ${item.source_comment_id})">
-                    <div>
-                        <span class="username">${escapeHtml(fromUsername)}</span>
-                        <span class="action-text"> ${displayText}</span>
-                    </div>
-                    <div class="comment-preview">${escapeHtml(commentPreview)}</div>
-                    <div class="time">${timeAgo}</div>
-                </div>
-                <button class="delete-notification-btn" data-id="${item.id}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.8rem; padding:4px 8px;" title="删除此消息">🗑️</button>
-                ${isUnread ? '<div class="notification-unread-dot"></div>' : ''}
+       html += `
+    <div class="notification-item ${isUnread ? 'unread' : ''}" 
+         data-id="${item.id}" 
+         data-comment-id="${item.source_comment_id}">
+        <div class="notification-avatar">${fromUsername.charAt(0).toUpperCase()}</div>
+        <div class="notification-body">
+            <div>
+                <span class="username">${escapeHtml(fromUsername)}</span>
+                <span class="action-text"> ${displayText}</span>
             </div>
-        `;
+            <div class="comment-preview">${escapeHtml(commentPreview)}</div>
+            <div class="time">${timeAgo}</div>
+        </div>
+        <button class="delete-notification-btn" data-id="${item.id}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.8rem; padding:4px 8px;">🗑️</button>
+        ${isUnread ? '<div class="notification-unread-dot"></div>' : ''}
+    </div>
+`;
     }
 
     if (append) {
