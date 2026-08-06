@@ -625,7 +625,7 @@ function mentionInputHandler(e) {
                 <span class="comment-author">${escapeHtml(author)}${verifiedBadge}${companyTag}</span>
                 <span class="comment-time">${new Date(node.created_at).toLocaleString()}</span>
             </div>
-           <div class="comment-content" data-full="${escapeHtml(fullText)}" data-short="${escapeHtml(displayText)}">${renderContentWithMentions(displayText)}</div>` : ''}
+           <div class="comment-content" data-full="${fullText}" data-short="${displayText}">${renderContentWithMentions(displayText)}</div>
             <div class="comment-actions">
                 ${showReplyBtn ? `<button class="reply-btn" data-id="${node.id}">回复</button>` : ''}
                 ${currentUser && currentUser.id === node.user_id ? `<button class="delete-btn" data-id="${node.id}">删除</button>` : ''}
