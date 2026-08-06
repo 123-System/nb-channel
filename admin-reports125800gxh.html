@@ -545,33 +545,32 @@
             }
             let html = '';
             for (const report of data) {
-                const company = report.companies;
-                // 调试：打印 company 对象
-                console.log('company object:', company);
-                const ownerName = company.profiles.username;
-                const reporterName = report.reporter?.username || '未知';
-                html += `
-                    <div class="report-card" data-report-id="${report.id}">
-                        <div class="card-header">
-                            <strong>🏢 公司举报 #${report.id}</strong>
-                            <div class="report-time">📅 ${formatDate(report.created_at)}</div>
-                        </div>
-                        <div class="company-info">
-                            <strong>被举报公司：</strong> ${escapeHtml(company.company_name)}<br>
-                            <strong>所有者：</strong> ${escapeHtml(ownerName)} (ID: ${company.user_id})
-                        </div>
-                        <div class="report-meta">
-                            <span>📢 <strong>举报原因：</strong> ${escapeHtml(report.reason)}</span>
-                            <span>🔍 <strong>举报人：</strong> ${escapeHtml(reporterName)}</span>
-                        </div>
-                        <div class="report-actions">
-                            <button class="ignore-company" data-report-id="${report.id}">🙈 忽略举报</button>
-                            <button class="ban-owner" data-user-id="${company.user_id}" data-report-id="${report.id}">🚫 封禁所有者</button>
-                            <button class="delete-company" data-company-id="${company.id}" data-company-name="${escapeHtml(company.company_name)}" data-report-id="${report.id}" data-owner-id="${company.user_id}">🗑️ 删除公司</button>
-                        </div>
-                    </div>
-                `;
-            }
+    const company = report.companies;
+    const ownerName = company.profiles.username;
+    const reporterName = report.reporter?.username || '未知';
+    const companyId = report.company_id;          // ✅ 直接从 report 中取
+    html += `
+        <div class="report-card" data-report-id="${report.id}">
+            <div class="card-header">
+                <strong>🏢 公司举报 #${report.id}</strong>
+                <div class="report-time">📅 ${formatDate(report.created_at)}</div>
+            </div>
+            <div class="company-info">
+                <strong>被举报公司：</strong> ${escapeHtml(company.company_name)}<br>
+                <strong>所有者：</strong> ${escapeHtml(ownerName)} (ID: ${company.user_id})
+            </div>
+            <div class="report-meta">
+                <span>📢 <strong>举报原因：</strong> ${escapeHtml(report.reason)}</span>
+                <span>🔍 <strong>举报人：</strong> ${escapeHtml(reporterName)}</span>
+            </div>
+            <div class="report-actions">
+                <button class="ignore-company" data-report-id="${report.id}">🙈 忽略举报</button>
+                <button class="ban-owner" data-user-id="${company.user_id}" data-report-id="${report.id}">🚫 封禁所有者</button>
+                <button class="delete-company" data-company-id="${companyId}" data-company-name="${escapeHtml(company.company_name)}" data-report-id="${report.id}" data-owner-id="${company.user_id}">🗑️ 删除公司</button>
+            </div>
+        </div>
+    `;
+}
             container.innerHTML = html;
             attachCompanyEvents();
         } catch (err) {
