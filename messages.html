@@ -390,93 +390,115 @@
     }
 
     async function fetchNotifications(append = false) {
-        if (!currentUser) {
-            document.getElementById('notificationList').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><p>请先登录查看消息</p></div>';
-            return;
-        }
-        if (isLoading) return;
+    if (!currentUser) {
+        document.getElementById('notificationList').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><p>请先登录查看消息</p></div>';
+        return;
+    }
+    if (isLoading) return;
+    if (!append) {
+        currentPage = 1;
+        hasMore = true;
+        document.getElementById('notificationList').innerHTML = '<div class="loading-spinner" style="text-align:center; padding:40px; color:var(--count-text);">加载中...</div>';
+    }
+    isLoading = true;
+
+    const from = (currentPage - 1) * PAGE_SIZE;
+    const { data, error } = await supabaseClient.rpc('get_my_notifications', {
+        p_user_id: currentUser.id,
+        p_type: currentType,
+        p_limit: PAGE_SIZE,
+        p_offset: from
+    });
+
+    isLoading = false;
+    document.getElementById('loadMoreContainer').style.display = 'none';
+
+    if (error) {
+        console.error('加载通知失败:', error);
+        document.getElementById('notificationList').innerHTML = `<div class="empty-state"><p>加载失败: ${error.message}</p></div>`;
+        return;
+    }
+
+    if (!data || data.length === 0) {
         if (!append) {
-            currentPage = 1;
-            hasMore = true;
-            document.getElementById('notificationList').innerHTML = '<div class="loading-spinner" style="text-align:center; padding:40px; color:var(--count-text);">加载中...</div>';
-        }
-        isLoading = true;
-
-        const from = (currentPage - 1) * PAGE_SIZE;
-        const { data, error } = await supabaseClient.rpc('get_my_notifications', {
-            p_user_id: currentUser.id,
-            p_type: currentType,
-            p_limit: PAGE_SIZE,
-            p_offset: from
-        });
-
-        isLoading = false;
-        document.getElementById('loadMoreContainer').style.display = 'none';
-
-        if (error) {
-            console.error('加载通知失败:', error);
-            document.getElementById('notificationList').innerHTML = `<div class="empty-state"><p>加载失败: ${error.message}</p></div>`;
-            return;
-        }
-
-        if (!data || data.length === 0) {
-            if (!append) {
-                document.getElementById('notificationList').innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">📭</div>
-                        <p>暂无${currentType === 'reply' ? '回复' : '提及'}消息</p>
-                    </div>
-                `;
-            } else {
-                document.getElementById('loadMoreContainer').style.display = 'none';
-                hasMore = false;
-            }
-            return;
-        }
-
-        let html = '';
-        for (const item of data) {
-            const fromUsername = item.from_username || '已注销用户';
-            const commentPreview = item.comment_content || '评论已删除';
-            const timeAgo = timeSince(new Date(item.created_at));
-            const isUnread = !item.is_read;
-            const displayText = currentType === 'reply' ? '回复了你的评论' : '在评论中提到了你';
-
-            html += `
-                <div class="notification-item ${isUnread ? 'unread' : ''}" 
-                     data-id="${item.id}" 
-                     data-comment-id="${item.source_comment_id}"
-                     onclick="handleNotificationClick(${item.id}, ${item.source_comment_id})">
-                    <div class="notification-avatar">${fromUsername.charAt(0).toUpperCase()}</div>
-                    <div class="notification-body">
-                        <div>
-                            <span class="username">${escapeHtml(fromUsername)}</span>
-                            <span class="action-text"> ${displayText}</span>
-                        </div>
-                        <div class="comment-preview">${escapeHtml(commentPreview)}</div>
-                        <div class="time">${timeAgo}</div>
-                    </div>
-                    ${isUnread ? '<div class="notification-unread-dot"></div>' : ''}
+            document.getElementById('notificationList').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <p>暂无${currentType === 'reply' ? '回复' : '提及'}消息</p>
                 </div>
             `;
-        }
-
-        if (append) {
-            document.getElementById('notificationList').innerHTML += html;
         } else {
-            document.getElementById('notificationList').innerHTML = html;
-        }
-
-        if (data.length < PAGE_SIZE) {
             document.getElementById('loadMoreContainer').style.display = 'none';
             hasMore = false;
-        } else {
-            document.getElementById('loadMoreContainer').style.display = 'block';
-            hasMore = true;
         }
-
-        await fetchUnreadCounts();
+        return;
     }
+
+    let html = '';
+    for (const item of data) {
+        const fromUsername = item.from_username || '已注销用户';
+        const commentPreview = item.comment_content || '评论已删除';
+        const timeAgo = timeSince(new Date(item.created_at));
+        const isUnread = !item.is_read;
+        const displayText = currentType === 'reply' ? '回复了你的评论' : '在评论中提到了你';
+
+        html += `
+            <div class="notification-item ${isUnread ? 'unread' : ''}" 
+                 data-id="${item.id}" 
+                 data-comment-id="${item.source_comment_id}">
+                <div class="notification-avatar">${fromUsername.charAt(0).toUpperCase()}</div>
+                <div class="notification-body" onclick="handleNotificationClick(${item.id}, ${item.source_comment_id})">
+                    <div>
+                        <span class="username">${escapeHtml(fromUsername)}</span>
+                        <span class="action-text"> ${displayText}</span>
+                    </div>
+                    <div class="comment-preview">${escapeHtml(commentPreview)}</div>
+                    <div class="time">${timeAgo}</div>
+                </div>
+                <button class="delete-notification-btn" data-id="${item.id}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.8rem; padding:4px 8px;" title="删除此消息">🗑️</button>
+                ${isUnread ? '<div class="notification-unread-dot"></div>' : ''}
+            </div>
+        `;
+    }
+
+    if (append) {
+        document.getElementById('notificationList').innerHTML += html;
+    } else {
+        document.getElementById('notificationList').innerHTML = html;
+    }
+
+    // 绑定删除事件
+    document.querySelectorAll('.delete-notification-btn').forEach(btn => {
+        btn.onclick = async (e) => {
+            e.stopPropagation();
+            const notificationId = parseInt(btn.dataset.id);
+            if (!confirm('确定要删除这条消息吗？')) return;
+            const { error } = await supabaseClient
+                .from('notifications')
+                .delete()
+                .eq('id', notificationId)
+                .eq('user_id', currentUser.id);
+            if (error) {
+                console.error('删除失败:', error);
+                alert('删除失败，请重试');
+                return;
+            }
+            // 重新加载当前页列表并更新未读数
+            await fetchNotifications(false);
+            await fetchUnreadCounts();
+            showToast('✅ 消息已删除');
+        };
+    });
+
+    // 判断是否还有更多
+    if (data.length < PAGE_SIZE) {
+        document.getElementById('loadMoreContainer').style.display = 'none';
+        hasMore = false;
+    } else {
+        document.getElementById('loadMoreContainer').style.display = 'block';
+        hasMore = true;
+    }
+}
 
     async function handleNotificationClick(notificationId, commentId) {
     const { data, error } = await supabaseClient.rpc('mark_notification_read', {
