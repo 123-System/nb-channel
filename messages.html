@@ -468,27 +468,33 @@
     }
 
     // 绑定删除事件
-    document.querySelectorAll('.delete-notification-btn').forEach(btn => {
-        btn.onclick = async (e) => {
-            e.stopPropagation();
-            const notificationId = parseInt(btn.dataset.id);
-            if (!confirm('确定要删除这条消息吗？')) return;
-            const { error } = await supabaseClient
-                .from('notifications')
-                .delete()
-                .eq('id', notificationId)
-                .eq('user_id', currentUser.id);
-            if (error) {
-                console.error('删除失败:', error);
-                alert('删除失败，请重试');
-                return;
-            }
-            // 重新加载当前页列表并更新未读数
-            await fetchNotifications(false);
-            await fetchUnreadCounts();
-            showToast('✅ 消息已删除');
-        };
-    });
+   document.querySelectorAll('.delete-notification-btn').forEach(btn => {
+    btn.onclick = async (e) => {
+        e.stopPropagation();
+        const notificationId = parseInt(btn.dataset.id);
+        if (!confirm('确定要删除这条消息吗？')) return;
+        
+        // 改用 RPC 删除（绕过 RLS）
+        const { data, error } = await supabaseClient.rpc('delete_notification', {
+            p_notification_id: notificationId,
+            p_user_id: currentUser.id
+        });
+        
+        if (error) {
+            console.error('删除失败:', error);
+            alert('删除失败: ' + error.message);
+            return;
+        }
+        if (!data) {
+            alert('未找到该消息');
+            return;
+        }
+        
+        await fetchNotifications(false);
+        await fetchUnreadCounts();
+        showToast('✅ 消息已删除');
+    };
+});
 
     // 判断是否还有更多
     if (data.length < PAGE_SIZE) {
