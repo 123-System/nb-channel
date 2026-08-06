@@ -368,7 +368,7 @@
             </div>
             <table class="data-table">
                 <thead>
-                    <tr><th>虚拟股票名称</th><th>虚拟市值</th><th>与旧数据相比涨跌百分比</th></tr>
+                   <tr><th>虚拟股票名称</th><th>虚拟市值</th><th>归属用户</th><th>与旧数据相比涨跌百分比</th></tr>
                 </thead>
                 <tbody id="tableBody">
                     <tr><td colspan="3">加载中...</td></tr>
@@ -1235,7 +1235,8 @@
             html += `<tr>
                 <td>${escapeHtml(item.name)}<br>${reportBtn}</td>
                 <td>${formatValue(item.value)}</td>
-                <td>${changeHtml}</td>
+                <td>${escapeHtml(item.owner || '未知')}</td>
+                 <td>${changeHtml}</td>
             </tr>`;
         }
         tbody.innerHTML = html;
