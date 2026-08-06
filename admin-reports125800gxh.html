@@ -519,6 +519,7 @@
 
     // ==================== 公司举报相关（完全重写） ====================
     async function loadCompanyReports() {
+    console.log('🟢 loadCompanyReports 开始执行');
     const container = document.getElementById('companyReportsContainer');
     container.innerHTML = '<div class="loading">加载中...</div>';
     try {
@@ -540,6 +541,9 @@
             .eq('target_type', 'company')
             .order('created_at', { ascending: false });
 
+        console.log('🔹 查询结果 data:', data);
+        console.log('🔹 查询错误 error:', error);
+
         if (error) throw error;
         if (!data || data.length === 0) {
             container.innerHTML = '<div class="loading">暂无公司举报记录</div>';
@@ -548,16 +552,13 @@
 
         let html = '';
         for (const report of data) {
-            // ✅ 直接从 report.companies 取对象
             const company = report.companies;
-            // ✅ 备用方案：如果 company 为空，尝试从 company_id 获取（但理论上不会）
             const companyId = company?.id || report.company_id;
             const ownerName = company?.profiles?.username || '未知用户';
             const reporterName = report.reporter?.username || '未知';
             const companyName = company?.company_name || '已删除公司';
 
-            // 调试日志
-            console.log('举报ID:', report.id, '公司ID:', companyId, '公司名:', companyName);
+            console.log(`📌 举报 ${report.id} -> 公司ID: ${companyId}, 公司名: ${companyName}`);
 
             html += `
                 <div class="report-card" data-report-id="${report.id}">
@@ -582,9 +583,66 @@
             `;
         }
         container.innerHTML = html;
-        attachCompanyEvents();
+
+        // 直接在这里绑定事件（不再依赖 attachCompanyEvents）
+        console.log('🔗 开始绑定事件');
+        container.querySelectorAll('.ignore-company').forEach(btn => {
+            btn.onclick = async function() {
+                const reportId = parseInt(this.dataset.reportId);
+                if (!confirm('确定忽略此公司举报吗？')) return;
+                const { error } = await supabaseClient.rpc('admin_ignore_report', { p_report_id: reportId });
+                if (error) alert('忽略失败：' + error.message);
+                else { alert('已忽略'); loadCompanyReports(); loadDashboard(); }
+            };
+        });
+
+        container.querySelectorAll('.ban-owner').forEach(btn => {
+            btn.onclick = async function() {
+                const userId = this.dataset.userId;
+                const reportId = this.dataset.reportId;
+                if (!confirm('确定封禁该用户吗？')) return;
+                const { error } = await supabaseClient.rpc('admin_ban_user', { p_user_id: userId, p_reason: '公司违规' });
+                if (error) alert('封禁失败：' + error.message);
+                else {
+                    await supabaseClient.from('reports').delete().eq('id', reportId);
+                    alert('用户已封禁');
+                    loadCompanyReports(); loadDashboard(); loadBannedUsers();
+                }
+            };
+        });
+
+        container.querySelectorAll('.delete-company').forEach(btn => {
+            btn.onclick = async function() {
+                const companyId = parseInt(this.dataset.companyId);
+                const companyName = this.dataset.companyName || '未知公司';
+                const reportId = parseInt(this.dataset.reportId);
+                console.log('删除按钮点击，公司ID:', companyId, '举报ID:', reportId);
+
+                if (isNaN(companyId) || companyId <= 0) {
+                    alert('公司ID无效');
+                    return;
+                }
+                if (!confirm(`确定删除公司“${companyName}”吗？`)) return;
+
+                const { data, error } = await supabaseClient.rpc('admin_delete_company', { p_company_id: companyId });
+                console.log('RPC返回:', data, error);
+                if (error) {
+                    alert('删除失败：' + error.message);
+                    return;
+                }
+                if (!data.success) {
+                    alert('删除失败：' + data.message);
+                    return;
+                }
+                await supabaseClient.from('reports').delete().eq('id', reportId);
+                alert('公司已删除');
+                loadCompanyReports(); loadDashboard(); loadBannedUsers();
+            };
+        });
+
+        console.log('✅ 事件绑定完成');
     } catch (err) {
-        console.error(err);
+        console.error('❌ 加载失败:', err);
         container.innerHTML = `<div class="error">加载失败: ${err.message}</div>`;
     }
 }
