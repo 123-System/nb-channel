@@ -158,8 +158,8 @@
     // ========== 配置 ==========
     const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
-    // 替换为你的 PythonAnywhere 后端地址
-    const API_BASE = 'https://nbchannel.pythonanywhere.com/';
+    // ⚠️ 替换为你的 PythonAnywhere 后端地址
+    const API_BASE = 'https://nbchannel.pythonanywhere.com';  // 例如 https://yourname.pythonanywhere.com
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -173,13 +173,6 @@
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;');
-    }
-
-    // 获取 JWT token（用于后端认证）
-    async function getJWTToken() {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) return null;
-        return session.access_token;
     }
 
     // ========== 用户信息更新 ==========
@@ -224,7 +217,6 @@
         const container = document.getElementById('productList');
         container.innerHTML = '<div class="loading-spinner">⏳ 加载中...</div>';
 
-        // 使用 RPC get_products（之前应已创建）
         const { data, error } = await supabaseClient.rpc('get_products');
         if (error) {
             console.error('加载失败:', error);
@@ -243,12 +235,10 @@
             const isOwner = user && user.id === p.author_id;
             const priceText = p.price === 0 ? '<span class="free-badge">免费</span>' : `<span class="price-tag">${p.price} NB币</span>`;
 
-            // 按钮逻辑：如果是自己的作品，不显示下载/购买，仅显示“你的作品”
             let actionHtml = '';
             if (isOwner) {
                 actionHtml = `<span class="owner-badge">[你的作品]</span>`;
             } else if (user) {
-                // 已登录但不是作者：显示“免费下载”或“购买”按钮
                 const btnText = p.price === 0 ? '📥 免费下载' : `💳 购买（${p.price} NB币）`;
                 const btnClass = p.price === 0 ? 'download-btn' : 'buy-btn';
                 actionHtml = `<button class="action-btn ${btnClass}" data-id="${p.id}">${btnText}</button>`;
@@ -272,7 +262,6 @@
         }
         container.innerHTML = html;
 
-        // 绑定按钮事件
         container.querySelectorAll('.download-btn, .buy-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const productId = parseInt(btn.dataset.id);
@@ -281,7 +270,7 @@
         });
     }
 
-    // ========== 上传作品（调用 PythonAnywhere API） ==========
+    // ========== 上传作品 ==========
     async function uploadProduct() {
         const user = getCurrentUser();
         if (!user) { alert('请先登录'); return; }
@@ -298,9 +287,6 @@
         if (price < 0 || price > 999999999) { alert('价格需在 0~999999999 之间'); return; }
         if (file.size > 50 * 1024 * 1024) { alert('文件不能超过 50 MB'); return; }
 
-        const token = await getJWTToken();
-        if (!token) { alert('请重新登录'); return; }
-
         const formData = new FormData();
         formData.append('title', title);
         formData.append('description', desc);
@@ -312,7 +298,7 @@
         try {
             const response = await fetch(`${API_BASE}/upload`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
+                headers: { 'X-User-Id': user.id },
                 body: formData
             });
             const result = await response.json();
@@ -333,28 +319,23 @@
         }
     }
 
-    // ========== 购买/下载作品（调用 PythonAnywhere API） ==========
+    // ========== 购买/下载 ==========
     async function purchaseProduct(productId) {
         const user = getCurrentUser();
         if (!user) { alert('请先登录'); return; }
-
-        const token = await getJWTToken();
-        if (!token) { alert('请重新登录'); return; }
 
         try {
             const response = await fetch(`${API_BASE}/download`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'X-User-Id': user.id
                 },
                 body: JSON.stringify({ product_id: productId })
             });
             const result = await response.json();
             if (result.success) {
-                // 打开下载链接（新窗口或当前窗口）
                 window.open(result.file_url, '_blank');
-                // 刷新列表以更新下载次数
                 await loadProducts();
                 await updateUserUI();
             } else {
