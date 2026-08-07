@@ -81,15 +81,16 @@
         .file-input-wrapper {
             margin-bottom: 12px;
         }
-        .download-btn {
+        .action-btn {
             background: var(--nav-btn-bg);
             color: var(--nav-btn-text);
             border: none;
             padding: 6px 16px;
             border-radius: 30px;
             cursor: pointer;
+            font-size: 0.9rem;
         }
-        .download-btn:hover {
+        .action-btn:hover {
             background: var(--nav-btn-hover-bg);
             color: white;
         }
@@ -97,6 +98,7 @@
         .price-tag { font-weight: bold; color: var(--status-border); }
         .no-data { text-align: center; padding: 40px; color: var(--count-text); }
         .loading-spinner { text-align: center; padding: 20px; }
+        .owner-badge { font-size: 0.8rem; color: var(--count-text); }
     </style>
 </head>
 <body>
@@ -156,8 +158,8 @@
     // ========== 配置 ==========
     const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
-    // ⚠️ 替换成你的 Worker 地址
-    const WORKER_URL = 'https://product-storage.gxh123456790.workers.dev/';
+    // 替换为你的 PythonAnywhere 后端地址
+    const API_BASE = 'https://nbchannel.pythonanywhere.com/';
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -171,6 +173,13 @@
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;');
+    }
+
+    // 获取 JWT token（用于后端认证）
+    async function getJWTToken() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) return null;
+        return session.access_token;
     }
 
     // ========== 用户信息更新 ==========
@@ -215,6 +224,7 @@
         const container = document.getElementById('productList');
         container.innerHTML = '<div class="loading-spinner">⏳ 加载中...</div>';
 
+        // 使用 RPC get_products（之前应已创建）
         const { data, error } = await supabaseClient.rpc('get_products');
         if (error) {
             console.error('加载失败:', error);
@@ -232,9 +242,20 @@
         for (const p of data) {
             const isOwner = user && user.id === p.author_id;
             const priceText = p.price === 0 ? '<span class="free-badge">免费</span>' : `<span class="price-tag">${p.price} NB币</span>`;
-            const downloadBtn = user
-                ? `<button class="download-btn" data-id="${p.id}">📥 下载</button>`
-                : `<span style="color:var(--count-text);">请登录后下载</span>`;
+
+            // 按钮逻辑：如果是自己的作品，不显示下载/购买，仅显示“你的作品”
+            let actionHtml = '';
+            if (isOwner) {
+                actionHtml = `<span class="owner-badge">[你的作品]</span>`;
+            } else if (user) {
+                // 已登录但不是作者：显示“免费下载”或“购买”按钮
+                const btnText = p.price === 0 ? '📥 免费下载' : `💳 购买（${p.price} NB币）`;
+                const btnClass = p.price === 0 ? 'download-btn' : 'buy-btn';
+                actionHtml = `<button class="action-btn ${btnClass}" data-id="${p.id}">${btnText}</button>`;
+            } else {
+                actionHtml = `<span style="color:var(--count-text);">请登录后下载</span>`;
+            }
+
             html += `
                 <div class="product-card">
                     <div class="product-title">${escapeHtml(p.title)}</div>
@@ -243,8 +264,7 @@
                     <div style="margin-top:auto;">
                         <span>${priceText}</span>
                         <div class="product-actions">
-                            ${downloadBtn}
-                            ${isOwner ? `<span style="font-size:0.8rem;color:var(--count-text);">[你的作品]</span>` : ''}
+                            ${actionHtml}
                         </div>
                     </div>
                 </div>
@@ -252,22 +272,19 @@
         }
         container.innerHTML = html;
 
-        // 绑定下载事件
-        document.querySelectorAll('.download-btn').forEach(btn => {
+        // 绑定按钮事件
+        container.querySelectorAll('.download-btn, .buy-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const id = parseInt(btn.dataset.id);
-                downloadProduct(id);
+                const productId = parseInt(btn.dataset.id);
+                purchaseProduct(productId);
             });
         });
     }
 
-    // ========== 上传作品（通过 Worker） ==========
+    // ========== 上传作品（调用 PythonAnywhere API） ==========
     async function uploadProduct() {
         const user = getCurrentUser();
-        if (!user) {
-            alert('请先登录');
-            return;
-        }
+        if (!user) { alert('请先登录'); return; }
 
         const title = document.getElementById('productTitle').value.trim();
         const desc = document.getElementById('productDesc').value.trim();
@@ -278,122 +295,74 @@
 
         if (!title) { alert('请输入作品标题'); return; }
         if (!file) { alert('请选择要上传的文件'); return; }
-        if (price < 0 || price > 999999999) { alert('价格需在0~999999999之间'); return; }
+        if (price < 0 || price > 999999999) { alert('价格需在 0~999999999 之间'); return; }
         if (file.size > 50 * 1024 * 1024) { alert('文件不能超过 50 MB'); return; }
 
-        statusDiv.innerText = '⏳ 准备上传...';
+        const token = await getJWTToken();
+        if (!token) { alert('请重新登录'); return; }
+
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('description', desc);
+        formData.append('price', price);
+        formData.append('file', file);
+
+        statusDiv.innerText = '⏳ 上传中...';
 
         try {
-            // 直接使用 user.id
-            const resp = await fetch(`${WORKER_URL}/upload`, {
+            const response = await fetch(`${API_BASE}/upload`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-User-Id': user.id,
-                },
-                body: JSON.stringify({
-                    fileName: file.name,
-                    fileType: file.type || 'application/octet-stream',
-                })
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
             });
-
-            const result = await resp.json();
-            if (!resp.ok || !result.success) {
-                statusDiv.innerText = '❌ ' + (result.error || '获取上传链接失败');
-                return;
+            const result = await response.json();
+            if (result.success) {
+                statusDiv.innerText = '✅ 发布成功！';
+                document.getElementById('productTitle').value = '';
+                document.getElementById('productDesc').value = '';
+                document.getElementById('productPrice').value = '0';
+                fileInput.value = '';
+                await loadProducts();
+                await updateUserUI();
+            } else {
+                statusDiv.innerText = '❌ ' + result.message;
             }
-
-            statusDiv.innerText = '⏳ 上传文件到云存储...';
-            const uploadResp = await fetch(result.uploadUrl, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': result.file_type || 'application/octet-stream',
-                },
-                body: file,
-            });
-
-            if (!uploadResp.ok) {
-                statusDiv.innerText = '❌ 文件上传失败';
-                return;
-            }
-
-            statusDiv.innerText = '⏳ 保存产品信息...';
-            const { data: insertData, error: insertError } = await supabaseClient
-                .from('products')
-                .insert({
-                    title: title,
-                    description: desc || '',
-                    price: price,
-                    r2_path: result.r2_path,
-                    file_name: result.file_name,
-                    file_type: result.file_type,
-                    author_id: user.id,
-                })
-                .select()
-                .single();
-
-            if (insertError) {
-                console.error(insertError);
-                statusDiv.innerText = '❌ 保存失败: ' + insertError.message;
-                return;
-            }
-
-            statusDiv.innerText = '✅ 发布成功！';
-            document.getElementById('productTitle').value = '';
-            document.getElementById('productDesc').value = '';
-            document.getElementById('productPrice').value = '0';
-            fileInput.value = '';
-            await loadProducts();
-            await updateUserUI();
         } catch (err) {
             console.error(err);
-            statusDiv.innerText = '❌ 上传失败: ' + err.message;
+            statusDiv.innerText = '❌ 网络错误：' + err.message;
         }
     }
 
-    // ========== 下载作品（通过 Worker） ==========
-    async function downloadProduct(productId) {
+    // ========== 购买/下载作品（调用 PythonAnywhere API） ==========
+    async function purchaseProduct(productId) {
         const user = getCurrentUser();
-        if (!user) {
-            alert('请先登录');
-            return;
-        }
+        if (!user) { alert('请先登录'); return; }
 
-        const product = productsData.find(p => p.id === productId);
-        if (!product) {
-            alert('作品不存在');
-            return;
-        }
-        if (product.price > 0) {
-            if (!confirm(`下载此作品需要支付 ${product.price} NB币，确认吗？`)) return;
-        }
+        const token = await getJWTToken();
+        if (!token) { alert('请重新登录'); return; }
 
         try {
-            const resp = await fetch(`${WORKER_URL}/download?id=${productId}`, {
-                method: 'GET',
+            const response = await fetch(`${API_BASE}/download`, {
+                method: 'POST',
                 headers: {
-                    'X-User-Id': user.id,
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
+                body: JSON.stringify({ product_id: productId })
             });
-
-            const result = await resp.json();
-            if (!resp.ok || !result.success) {
-                alert('下载失败：' + (result.error || '未知错误'));
-                return;
+            const result = await response.json();
+            if (result.success) {
+                // 打开下载链接（新窗口或当前窗口）
+                window.open(result.file_url, '_blank');
+                // 刷新列表以更新下载次数
+                await loadProducts();
+                await updateUserUI();
+            } else {
+                alert(result.message || '操作失败');
             }
-
-            const link = document.createElement('a');
-            link.href = result.downloadUrl;
-            link.download = product.file_name || 'download';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            await loadProducts();
-            await updateUserUI();
         } catch (err) {
             console.error(err);
-            alert('下载失败：' + err.message);
+            alert('网络错误：' + err.message);
         }
     }
 
