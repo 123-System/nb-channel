@@ -870,9 +870,10 @@
                     showMessage('错误', data.message);
                 } else {
                     replyForm.style.display = 'none';
-                    // ⭐ 关键修复：用快照保存当前页码
                     const savedPage = currentPage;
-                    fetchComments(savedPage);
+                    // 先重新加载数据，然后强制跳转到保存的页码
+                    await fetchComments();
+                    renderCommentsForPage(savedPage);
                 }
             };
         });
@@ -1014,7 +1015,8 @@
         if (error) showMessage('错误', '删除失败');
         else {
             const savedPage = currentPage;
-            fetchComments(savedPage);
+            await fetchComments();
+            renderCommentsForPage(savedPage);
         }
     }
 
@@ -1135,9 +1137,9 @@
 
         commentText.value = '';
         charCountSpan.innerText = '0';
-        // ⭐ 关键修复：用快照保存当前页码
         const savedPage = currentPage;
-        fetchComments(savedPage);
+        await fetchComments();
+        renderCommentsForPage(savedPage);
     }
 
     async function getClientIP() {
