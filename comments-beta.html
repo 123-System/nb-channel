@@ -870,8 +870,9 @@
                     showMessage('错误', data.message);
                 } else {
                     replyForm.style.display = 'none';
-                    // ✅ 修复：传递当前页码
-                    fetchComments(currentPage);
+                    // ⭐ 关键修复：用快照保存当前页码
+                    const savedPage = currentPage;
+                    fetchComments(savedPage);
                 }
             };
         });
@@ -1011,7 +1012,10 @@
             .eq('id', commentId)
             .eq('user_id', currentUser.id);
         if (error) showMessage('错误', '删除失败');
-        else fetchComments(currentPage);  // ✅ 删除后留在当前页
+        else {
+            const savedPage = currentPage;
+            fetchComments(savedPage);
+        }
     }
 
     async function fetchComments(page) {
@@ -1131,8 +1135,9 @@
 
         commentText.value = '';
         charCountSpan.innerText = '0';
-        // ✅ 修复：传递当前页码
-        fetchComments(currentPage);
+        // ⭐ 关键修复：用快照保存当前页码
+        const savedPage = currentPage;
+        fetchComments(savedPage);
     }
 
     async function getClientIP() {
