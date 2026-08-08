@@ -1031,7 +1031,10 @@ function renderCommentsForPage(page) {
         else fetchComments();
     }
 
-  async function fetchComments() {
+  async function fetchComments(page) {
+    // 如果传了 page，使用它；否则使用 currentPage
+    let targetPage = page !== undefined ? page : currentPage;
+
     verifiedUsernames = await fetchVerifiedUsers();
     const { data, error } = await supabaseClient
         .from('comments')
@@ -1060,10 +1063,8 @@ function renderCommentsForPage(page) {
     const mainComments = data.filter(c => !c.parent_id);
     const replies = data.filter(c => c.parent_id);
 
-    // 主评论按时间降序
     mainComments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // 回复按 parent_id 分组，每组按时间降序
     const repliesMap = new Map();
     replies.forEach(reply => {
         if (!repliesMap.has(reply.parent_id)) {
@@ -1079,18 +1080,14 @@ function renderCommentsForPage(page) {
     allRepliesMap = repliesMap;
     totalComments = data.length;
 
-    // ---------- 修复点 ----------
-    // 默认使用当前页码（不再固定为1）
-    let targetPage = currentPage;
+    // 高亮逻辑
     const highlightId = new URLSearchParams(window.location.search).get('highlight');
     if (highlightId) {
         const targetId = parseInt(highlightId);
-        // 尝试在主评论中查找
         const mainIndex = allMainComments.findIndex(c => c.id === targetId);
         if (mainIndex !== -1) {
             targetPage = Math.floor(mainIndex / COMMENTS_PER_PAGE) + 1;
         } else {
-            // 尝试在回复中查找，找到其父评论
             for (const [parentId, replies] of allRepliesMap) {
                 if (replies.some(r => r.id === targetId)) {
                     const parentIndex = allMainComments.findIndex(c => c.id === parentId);
@@ -1102,7 +1099,6 @@ function renderCommentsForPage(page) {
             }
         }
         pendingHighlightId = targetId;
-        // 移除 URL 参数
         const params = new URLSearchParams(window.location.search);
         params.delete('highlight');
         const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
