@@ -1031,7 +1031,7 @@ function renderCommentsForPage(page) {
         else fetchComments();
     }
 
-   async function fetchComments() {
+  async function fetchComments() {
     verifiedUsernames = await fetchVerifiedUsers();
     const { data, error } = await supabaseClient
         .from('comments')
@@ -1060,10 +1060,10 @@ function renderCommentsForPage(page) {
     const mainComments = data.filter(c => !c.parent_id);
     const replies = data.filter(c => c.parent_id);
 
-    // 主评论按时间降序排列
+    // 主评论按时间降序
     mainComments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // 将回复按 parent_id 分组
+    // 回复按 parent_id 分组，每组按时间降序
     const repliesMap = new Map();
     replies.forEach(reply => {
         if (!repliesMap.has(reply.parent_id)) {
@@ -1079,17 +1079,18 @@ function renderCommentsForPage(page) {
     allRepliesMap = repliesMap;
     totalComments = data.length;
 
-    // 计算目标页码和待高亮评论ID
+    // ---------- 修复点 ----------
+    // 默认使用当前页码（不再固定为1）
+    let targetPage = currentPage;
     const highlightId = new URLSearchParams(window.location.search).get('highlight');
-    let targetPage = 1;
     if (highlightId) {
         const targetId = parseInt(highlightId);
-        // 检查是否为主评论
+        // 尝试在主评论中查找
         const mainIndex = allMainComments.findIndex(c => c.id === targetId);
         if (mainIndex !== -1) {
             targetPage = Math.floor(mainIndex / COMMENTS_PER_PAGE) + 1;
         } else {
-            // 检查是否为回复，找到其父评论
+            // 尝试在回复中查找，找到其父评论
             for (const [parentId, replies] of allRepliesMap) {
                 if (replies.some(r => r.id === targetId)) {
                     const parentIndex = allMainComments.findIndex(c => c.id === parentId);
@@ -1101,7 +1102,7 @@ function renderCommentsForPage(page) {
             }
         }
         pendingHighlightId = targetId;
-        // 立即移除 URL 参数，防止刷新页面时重复触发
+        // 移除 URL 参数
         const params = new URLSearchParams(window.location.search);
         params.delete('highlight');
         const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
