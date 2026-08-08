@@ -301,11 +301,11 @@
     let currentPage = 1;           // 当前页码
     let totalComments = 0;         // 评论总数
     let allMainComments = [];      // 所有主评论（不含回复）
-    let allRepliesMap = new Map(); // 所有回复，按 parent_id 分组          // 存储所有评论数据（用于分页）
+    let allRepliesMap = new Map(); // 所有回复，按 parent_id 分组
     let verifiedUsernames = [];
-    let pendingReportCommentId = null; // 临时存储待举报的评论ID
-    let highlightApplied = false; // 防止重复高亮
-    let pendingHighlightId = null; // 存储待高亮的评论ID
+    let pendingReportCommentId = null;
+    let highlightApplied = false;
+    let pendingHighlightId = null;
 
     // DOM 元素
     const userStatusSpan = document.getElementById('user-status');
@@ -323,29 +323,27 @@
     const closeReportBtn = document.getElementById('close-report');
 
     if (commentText) {
-    // 字数统计 + 行数超限后备处理（防止粘贴等操作）
-    commentText.addEventListener('input', () => {
-        charCountSpan.innerText = commentText.value.length;
-        const lines = commentText.value.split(/\r\n|\r|\n/).length;
-        if (lines > 10) {
-            const truncated = commentText.value.split(/\r\n|\r|\n/).slice(0, 10).join('\n');
-            commentText.value = truncated;
+        commentText.addEventListener('input', () => {
             charCountSpan.innerText = commentText.value.length;
-            showMessage('提示', '评论最多只能有10行');
-        }
-    });
-
-    // 阻止回车键换行（当行数已达10行时）
-    commentText.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            const currentLines = commentText.value.split(/\r\n|\r|\n/).length;
-            if (currentLines >= 10) {
-                e.preventDefault();
-                showMessage('提示', '评论最多只能有10行，不能再添加新行');
+            const lines = commentText.value.split(/\r\n|\r|\n/).length;
+            if (lines > 10) {
+                const truncated = commentText.value.split(/\r\n|\r|\n/).slice(0, 10).join('\n');
+                commentText.value = truncated;
+                charCountSpan.innerText = commentText.value.length;
+                showMessage('提示', '评论最多只能有10行');
             }
-        }
-    });
-}
+        });
+
+        commentText.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const currentLines = commentText.value.split(/\r\n|\r|\n/).length;
+                if (currentLines >= 10) {
+                    e.preventDefault();
+                    showMessage('提示', '评论最多只能有10行，不能再添加新行');
+                }
+            }
+        });
+    }
     if (reportReason) {
         reportReason.addEventListener('input', () => {
             reportCharCountSpan.innerText = reportReason.value.length;
@@ -399,563 +397,551 @@
         return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;');
     }
 
-function renderContentWithMentions(text) {
-    if (!text) return '';
-    const escaped = escapeHtml(text);
-    return escaped.replace(/@([a-zA-Z0-9_\u4e00-\u9fa5]+)/g, (match, username) => {
-        return `<span style="color:#00a1d6; font-weight:500;">@${username}</span>`;
-    });
-}
-    
+    function renderContentWithMentions(text) {
+        if (!text) return '';
+        const escaped = escapeHtml(text);
+        return escaped.replace(/@([a-zA-Z0-9_\u4e00-\u9fa5]+)/g, (match, username) => {
+            return `<span style="color:#00a1d6; font-weight:500;">@${username}</span>`;
+        });
+    }
+
     // 获取认证用户列表
     async function fetchVerifiedUsers() {
-    const { data, error } = await supabaseClient
-        .from('verified_users')
-        .select('profiles(username)');
-    if (error) {
-        console.error('获取认证用户列表失败', error);
-        return [];
+        const { data, error } = await supabaseClient
+            .from('verified_users')
+            .select('profiles(username)');
+        if (error) {
+            console.error('获取认证用户列表失败', error);
+            return [];
+        }
+        return data.map(item => item.profiles.username);
     }
-    return data.map(item => item.profiles.username);
-}
 
-// ==================== @提及自动补全 ====================
-let cachedUsernames = null;
-let mentionDropdown = null;
+    // ==================== @提及自动补全 ====================
+    let cachedUsernames = null;
+    let mentionDropdown = null;
 
-async function fetchUsernames() {
-    if (cachedUsernames) return cachedUsernames;
-    const { data, error } = await supabaseClient
-        .from('profiles')
-        .select('username')
-        .order('username');
-    if (error) {
-        console.error('获取用户名列表失败', error);
-        return [];
+    async function fetchUsernames() {
+        if (cachedUsernames) return cachedUsernames;
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('username')
+            .order('username');
+        if (error) {
+            console.error('获取用户名列表失败', error);
+            return [];
+        }
+        cachedUsernames = data.map(item => item.username);
+        return cachedUsernames;
     }
-    cachedUsernames = data.map(item => item.username);
-    return cachedUsernames;
-}
 
-function createDropdown() {
-    if (mentionDropdown) return mentionDropdown;
-    const div = document.createElement('div');
-    div.style.cssText = `
-        position: absolute;
-        background: var(--card-bg);
-        border: 1px solid var(--card-border);
-        border-radius: 8px;
-        max-height: 150px;
-        overflow-y: auto;
-        z-index: 1000;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        min-width: 150px;
-        display: none;
-    `;
-    document.body.appendChild(div);
-    mentionDropdown = div;
-    return div;
-}
-
-function showDropdown(textarea, filterText) {
-    const dropdown = createDropdown();
-    dropdown.innerHTML = '';
-    const filtered = cachedUsernames.filter(u => u.toLowerCase().includes(filterText.toLowerCase()));
-    if (filtered.length === 0) {
-        dropdown.style.display = 'none';
-        return;
-    }
-    filtered.forEach(username => {
-        const item = document.createElement('div');
-        item.textContent = username;
-        item.style.cssText = `
-            padding: 6px 12px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            color: var(--text-color);
+    function createDropdown() {
+        if (mentionDropdown) return mentionDropdown;
+        const div = document.createElement('div');
+        div.style.cssText = `
+            position: absolute;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 150px;
+            display: none;
         `;
-        item.onmouseover = () => item.style.backgroundColor = 'var(--count-bg)';
-        item.onmouseout = () => item.style.backgroundColor = '';
-        item.onclick = () => {
-            const cursorPos = textarea.selectionStart;
-            const textBefore = textarea.value.substring(0, cursorPos);
-            const lastAtIndex = textBefore.lastIndexOf('@');
-            if (lastAtIndex !== -1) {
-                const beforeAt = textarea.value.substring(0, lastAtIndex);
-                const afterCursor = textarea.value.substring(cursorPos);
-                const newText = beforeAt + '@' + username + ' ' + afterCursor;
-                textarea.value = newText;
-                textarea.selectionStart = textarea.selectionEnd = beforeAt.length + username.length + 2;
-                textarea.focus();
-                hideDropdown();
-                textarea.dispatchEvent(new Event('input'));
-            }
-        };
-        dropdown.appendChild(item);
-    });
-    dropdown.style.display = 'block';
-    const rect = textarea.getBoundingClientRect();
-    dropdown.style.left = rect.left + 'px';
-    dropdown.style.top = (rect.bottom + 2) + 'px';
-    dropdown.style.width = Math.min(rect.width, 300) + 'px';
-}
-
-function hideDropdown() {
-    if (mentionDropdown) {
-        mentionDropdown.style.display = 'none';
-        mentionDropdown.innerHTML = '';
+        document.body.appendChild(div);
+        mentionDropdown = div;
+        return div;
     }
-}
 
-function initMentionAutocomplete(textarea) {
-    if (!textarea) return;
-    textarea.removeEventListener('input', mentionInputHandler);
-    textarea.addEventListener('input', mentionInputHandler);
-    document.addEventListener('click', function(e) {
-        if (mentionDropdown && mentionDropdown.style.display !== 'none' && !mentionDropdown.contains(e.target) && e.target !== textarea) {
+    function showDropdown(textarea, filterText) {
+        const dropdown = createDropdown();
+        dropdown.innerHTML = '';
+        const filtered = cachedUsernames.filter(u => u.toLowerCase().includes(filterText.toLowerCase()));
+        if (filtered.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+        filtered.forEach(username => {
+            const item = document.createElement('div');
+            item.textContent = username;
+            item.style.cssText = `
+                padding: 6px 12px;
+                cursor: pointer;
+                font-size: 0.9rem;
+                color: var(--text-color);
+            `;
+            item.onmouseover = () => item.style.backgroundColor = 'var(--count-bg)';
+            item.onmouseout = () => item.style.backgroundColor = '';
+            item.onclick = () => {
+                const cursorPos = textarea.selectionStart;
+                const textBefore = textarea.value.substring(0, cursorPos);
+                const lastAtIndex = textBefore.lastIndexOf('@');
+                if (lastAtIndex !== -1) {
+                    const beforeAt = textarea.value.substring(0, lastAtIndex);
+                    const afterCursor = textarea.value.substring(cursorPos);
+                    const newText = beforeAt + '@' + username + ' ' + afterCursor;
+                    textarea.value = newText;
+                    textarea.selectionStart = textarea.selectionEnd = beforeAt.length + username.length + 2;
+                    textarea.focus();
+                    hideDropdown();
+                    textarea.dispatchEvent(new Event('input'));
+                }
+            };
+            dropdown.appendChild(item);
+        });
+        dropdown.style.display = 'block';
+        const rect = textarea.getBoundingClientRect();
+        dropdown.style.left = rect.left + 'px';
+        dropdown.style.top = (rect.bottom + 2) + 'px';
+        dropdown.style.width = Math.min(rect.width, 300) + 'px';
+    }
+
+    function hideDropdown() {
+        if (mentionDropdown) {
+            mentionDropdown.style.display = 'none';
+            mentionDropdown.innerHTML = '';
+        }
+    }
+
+    function initMentionAutocomplete(textarea) {
+        if (!textarea) return;
+        textarea.removeEventListener('input', mentionInputHandler);
+        textarea.addEventListener('input', mentionInputHandler);
+        document.addEventListener('click', function(e) {
+            if (mentionDropdown && mentionDropdown.style.display !== 'none' && !mentionDropdown.contains(e.target) && e.target !== textarea) {
+                hideDropdown();
+            }
+        });
+    }
+
+    function mentionInputHandler(e) {
+        const textarea = e.target;
+        const cursorPos = textarea.selectionStart;
+        const text = textarea.value;
+        const before = text.substring(0, cursorPos);
+        const lastAtIndex = before.lastIndexOf('@');
+        if (lastAtIndex !== -1 && (cursorPos === lastAtIndex + 1 || !before.substring(lastAtIndex + 1).includes(' '))) {
+            const keyword = before.substring(lastAtIndex + 1);
+            fetchUsernames().then(() => {
+                showDropdown(textarea, keyword);
+            });
+        } else {
             hideDropdown();
         }
-    });
-}
-
-function mentionInputHandler(e) {
-    const textarea = e.target;
-    const cursorPos = textarea.selectionStart;
-    const text = textarea.value;
-    const before = text.substring(0, cursorPos);
-    const lastAtIndex = before.lastIndexOf('@');
-    if (lastAtIndex !== -1 && (cursorPos === lastAtIndex + 1 || !before.substring(lastAtIndex + 1).includes(' '))) {
-        const keyword = before.substring(lastAtIndex + 1);
-        fetchUsernames().then(() => {
-            showDropdown(textarea, keyword);
-        });
-    } else {
-        hideDropdown();
     }
-}
-    
+
     // ---------- 评论树构建与渲染（两层嵌套）----------
     function buildCommentTree(comments) {
-    const map = new Map();
-    const roots = [];
-    comments.forEach(c => {
-        map.set(c.id, { ...c, replies: [] });
-    });
-    comments.forEach(c => {
-        const node = map.get(c.id);
-        if (c.parent_id && map.has(c.parent_id)) {
-            map.get(c.parent_id).replies.push(node);
+        const map = new Map();
+        const roots = [];
+        comments.forEach(c => {
+            map.set(c.id, { ...c, replies: [] });
+        });
+        comments.forEach(c => {
+            const node = map.get(c.id);
+            if (c.parent_id && map.has(c.parent_id)) {
+                map.get(c.parent_id).replies.push(node);
+            } else {
+                roots.push(node);
+            }
+        });
+        roots.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        roots.forEach(node => {
+            node.replies.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        });
+        return roots;
+    }
+
+    function renderCommentNode(node, isReply = false) {
+        const author = node.profiles?.username || '匿名';
+        const fullText = node.content;
+        const isLong = fullText.length > 50;
+        let displayText, toggleButton = '';
+        if (isLong) {
+            const shortText = fullText.substring(0, 50) + '...';
+            displayText = shortText;
+            toggleButton = `<button class="toggle-btn" data-id="${node.id}" data-state="collapsed">展开</button>`;
         } else {
-            roots.push(node);
+            displayText = fullText;
         }
-    });
-    // ⭐ 关键修改：主评论按自身的 created_at 降序排列（不受回复影响）
-    roots.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    // 回复评论按 created_at 降序（最新回复在上）
-    roots.forEach(node => {
-        node.replies.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    });
-    return roots;
-}
 
-   function renderCommentNode(node, isReply = false) {
-    const author = node.profiles?.username || '匿名';
-    const fullText = node.content;
-    const isLong = fullText.length > 50;
-    let displayText, toggleButton = '';
-    if (isLong) {
-        const shortText = fullText.substring(0, 50) + '...';
-        displayText = shortText;
-        toggleButton = `<button class="toggle-btn" data-id="${node.id}" data-state="collapsed">展开</button>`;
-    } else {
-        displayText = fullText;
-    }
+        const showReplyBtn = !isReply;
+        let repliesHtml = '';
+        let toggleRepliesBtn = '';
 
-    const showReplyBtn = !isReply;
-    let repliesHtml = '';
-    let toggleRepliesBtn = '';
-
-    if (!isReply && node.replies.length > 0) {
-        const directRepliesCount = node.replies.length;
-        if (directRepliesCount > 3) {
-            const firstReply = node.replies[0];
-            const restReplies = node.replies.slice(1);
-            const firstReplyHtml = renderCommentNode(firstReply, true);
-            const restHtml = restReplies.map(child => renderCommentNode(child, true)).join('');
-            repliesHtml = firstReplyHtml;
-            repliesHtml += `<div class="hidden-replies" style="display:none;">${restHtml}</div>`;
-            toggleRepliesBtn = `<button class="toggle-replies-btn" data-id="${node.id}" data-state="collapsed">展开所有回复</button>`;
-        } else {
-            repliesHtml = node.replies.map(child => renderCommentNode(child, true)).join('');
+        if (!isReply && node.replies.length > 0) {
+            const directRepliesCount = node.replies.length;
+            if (directRepliesCount > 3) {
+                const firstReply = node.replies[0];
+                const restReplies = node.replies.slice(1);
+                const firstReplyHtml = renderCommentNode(firstReply, true);
+                const restHtml = restReplies.map(child => renderCommentNode(child, true)).join('');
+                repliesHtml = firstReplyHtml;
+                repliesHtml += `<div class="hidden-replies" style="display:none;">${restHtml}</div>`;
+                toggleRepliesBtn = `<button class="toggle-replies-btn" data-id="${node.id}" data-state="collapsed">展开所有回复</button>`;
+            } else {
+                repliesHtml = node.replies.map(child => renderCommentNode(child, true)).join('');
+            }
         }
-    }
 
-    let verifiedBadge = '';
-    if (verifiedUsernames.includes(author)) {
-        verifiedBadge = '<img src="https://s41.ax1x.com/2026/04/05/peNSL5t.png" style="width:24px;height:24px; margin-left:6px; margin-top: -3px; vertical-align: middle;">';
-    }
-
-    // ⭐ 在这里计算公司标签（在 return 之前）
-    let companyTag = '';
-    const companyInfo = window.companyMap?.get(node.user_id);
-    if (companyInfo) {
-        const companyName = escapeHtml(companyInfo.company_name);
-        if (companyInfo.verified) {
-            companyTag = `<span style="color:#4caf50; margin-left:8px; font-size:0.8rem;">✅ 已认证虚拟公司：${companyName}</span>`;
-        } else {
-            companyTag = `<span style="color:#f44336; margin-left:8px; font-size:0.8rem;">⚠️ 未认证虚拟公司：${companyName}</span>`;
+        let verifiedBadge = '';
+        if (verifiedUsernames.includes(author)) {
+            verifiedBadge = '<img src="https://s41.ax1x.com/2026/04/05/peNSL5t.png" style="width:24px;height:24px; margin-left:6px; margin-top: -3px; vertical-align: middle;">';
         }
+
+        let companyTag = '';
+        const companyInfo = window.companyMap?.get(node.user_id);
+        if (companyInfo) {
+            const companyName = escapeHtml(companyInfo.company_name);
+            if (companyInfo.verified) {
+                companyTag = `<span style="color:#4caf50; margin-left:8px; font-size:0.8rem;">✅ 已认证虚拟公司：${companyName}</span>`;
+            } else {
+                companyTag = `<span style="color:#f44336; margin-left:8px; font-size:0.8rem;">⚠️ 未认证虚拟公司：${companyName}</span>`;
+            }
+        }
+
+        let reportButton = '';
+        if (currentUser) {
+            reportButton = `<button class="report-btn" data-id="${node.id}" data-author-id="${node.user_id}">举报</button>`;
+        }
+
+        return `
+            <div class="comment" data-id="${node.id}">
+                <div class="comment-meta">
+                    <span class="comment-author">${escapeHtml(author)}${verifiedBadge}${companyTag}</span>
+                    <span class="comment-time">${new Date(node.created_at).toLocaleString()}</span>
+                </div>
+                <div class="comment-content" data-full="${fullText}" data-short="${displayText}">${renderContentWithMentions(displayText)}</div>
+                ${toggleButton ? `<div class="toggle-btn-container">${toggleButton}</div>` : ''}
+                <div class="comment-actions">
+                    ${showReplyBtn ? `<button class="reply-btn" data-id="${node.id}">回复</button>` : ''}
+                    ${currentUser && currentUser.id === node.user_id ? `<button class="delete-btn" data-id="${node.id}">删除</button>` : ''}
+                    ${reportButton}
+                </div>
+                <div class="reply-form" id="reply-form-${node.id}" style="display:none;">
+                    <textarea rows="2" placeholder="写下你的回复... (最多200字)" maxlength="200"></textarea>
+                    <div class="char-counter"><span>0</span>/200</div>
+                    <button class="submit-reply" data-id="${node.id}">提交回复</button>
+                    <button class="cancel-reply" data-id="${node.id}">取消</button>
+                </div>
+                <div class="replies" id="replies-${node.id}">
+                    ${repliesHtml}
+                    ${toggleRepliesBtn ? `<div class="toggle-replies-btn-container">${toggleRepliesBtn}</div>` : ''}
+                </div>
+            </div>
+        `;
     }
 
-    let reportButton = '';
-    if (currentUser) {
-        reportButton = `<button class="report-btn" data-id="${node.id}" data-author-id="${node.user_id}">举报</button>`;
+    function renderCommentsForPage(page) {
+        currentPage = page;
+        const start = (page - 1) * COMMENTS_PER_PAGE;
+        const end = Math.min(start + COMMENTS_PER_PAGE, allMainComments.length);
+        const pageMainComments = allMainComments.slice(start, end);
+
+        const tree = pageMainComments.map(main => {
+            const replies = allRepliesMap.get(main.id) || [];
+            return { ...main, replies: replies };
+        });
+
+        renderComments(tree);
+        renderPagination();
     }
 
-    // ⭐ return 模板中只放 HTML，用 ${companyTag} 插入
-    return `
-        <div class="comment" data-id="${node.id}">
-            <div class="comment-meta">
-                <span class="comment-author">${escapeHtml(author)}${verifiedBadge}${companyTag}</span>
-                <span class="comment-time">${new Date(node.created_at).toLocaleString()}</span>
-            </div>
-            <div class="comment-content" data-full="${fullText}" data-short="${displayText}">${renderContentWithMentions(displayText)}</div>
-            ${toggleButton ? `<div class="toggle-btn-container">${toggleButton}</div>` : ''}
-            <div class="comment-actions">
-                ${showReplyBtn ? `<button class="reply-btn" data-id="${node.id}">回复</button>` : ''}
-                ${currentUser && currentUser.id === node.user_id ? `<button class="delete-btn" data-id="${node.id}">删除</button>` : ''}
-                ${reportButton}
-            </div>
-            <div class="reply-form" id="reply-form-${node.id}" style="display:none;">
-                <textarea rows="2" placeholder="写下你的回复... (最多200字)" maxlength="200"></textarea>
-                <div class="char-counter"><span>0</span>/200</div>
-                <button class="submit-reply" data-id="${node.id}">提交回复</button>
-                <button class="cancel-reply" data-id="${node.id}">取消</button>
-            </div>
-            <div class="replies" id="replies-${node.id}">
-                ${repliesHtml}
-                ${toggleRepliesBtn ? `<div class="toggle-replies-btn-container">${toggleRepliesBtn}</div>` : ''}
-            </div>
-        </div>
-    `;
-}
+    function renderPagination() {
+        const totalPages = Math.ceil(allMainComments.length / COMMENTS_PER_PAGE);
+        if (totalPages <= 1) {
+            const oldPagination = document.querySelector('.pagination-bar');
+            if (oldPagination) oldPagination.remove();
+            return;
+        }
 
-function renderCommentsForPage(page) {
-    currentPage = page;
-    const start = (page - 1) * COMMENTS_PER_PAGE;
-    const end = Math.min(start + COMMENTS_PER_PAGE, allMainComments.length);
-    const pageMainComments = allMainComments.slice(start, end);
-
-    // 构建树：为每个主评论附加对应的回复
-    const tree = pageMainComments.map(main => {
-        const replies = allRepliesMap.get(main.id) || [];
-        return { ...main, replies: replies };
-    });
-
-    renderComments(tree);
-    renderPagination();
-}
-
-   function renderPagination() {
-    const totalPages = Math.ceil(allMainComments.length / COMMENTS_PER_PAGE);
-    if (totalPages <= 1) {
         const oldPagination = document.querySelector('.pagination-bar');
         if (oldPagination) oldPagination.remove();
-        return;
-    }
 
-    const oldPagination = document.querySelector('.pagination-bar');
-    if (oldPagination) oldPagination.remove();
+        const paginationDiv = document.createElement('div');
+        paginationDiv.className = 'pagination-bar';
+        paginationDiv.style.cssText = 'display:flex; justify-content:center; align-items:center; gap:8px; margin-top:20px; flex-wrap:wrap;';
 
-    const paginationDiv = document.createElement('div');
-    paginationDiv.className = 'pagination-bar';
-    paginationDiv.style.cssText = 'display:flex; justify-content:center; align-items:center; gap:8px; margin-top:20px; flex-wrap:wrap;';
-
-    // 上一页
-    if (currentPage > 1) {
-        const prevBtn = document.createElement('button');
-        prevBtn.textContent = '‹ 上一页';
-        prevBtn.style.cssText = 'background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); padding:5px 12px; border-radius:6px; cursor:pointer;';
-        prevBtn.onmouseover = () => { prevBtn.style.background = 'var(--nav-btn-hover-bg)'; prevBtn.style.color = 'white'; };
-        prevBtn.onmouseout = () => { prevBtn.style.background = 'var(--nav-btn-bg)'; prevBtn.style.color = 'var(--nav-btn-text)'; };
-        prevBtn.onclick = () => renderCommentsForPage(currentPage - 1);
-        paginationDiv.appendChild(prevBtn);
-    }
-
-    // 页码按钮
-    let startPage = Math.max(1, currentPage - 3);
-    let endPage = Math.min(totalPages, currentPage + 3);
-    if (endPage - startPage < 6) {
-        if (startPage === 1) endPage = Math.min(totalPages, 7);
-        else if (endPage === totalPages) startPage = Math.max(1, totalPages - 6);
-    }
-
-    if (startPage > 1) {
-        const firstBtn = document.createElement('button');
-        firstBtn.textContent = '1';
-        firstBtn.style.cssText = 'background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); padding:5px 12px; border-radius:6px; cursor:pointer;';
-        firstBtn.onmouseover = () => { firstBtn.style.background = 'var(--nav-btn-hover-bg)'; firstBtn.style.color = 'white'; };
-        firstBtn.onmouseout = () => { firstBtn.style.background = 'var(--nav-btn-bg)'; firstBtn.style.color = 'var(--nav-btn-text)'; };
-        firstBtn.onclick = () => renderCommentsForPage(1);
-        paginationDiv.appendChild(firstBtn);
-        if (startPage > 2) {
-            const dot = document.createElement('span');
-            dot.textContent = '…';
-            dot.style.cssText = 'padding:0 4px; color:var(--count-text);';
-            paginationDiv.appendChild(dot);
+        if (currentPage > 1) {
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = '‹ 上一页';
+            prevBtn.style.cssText = 'background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); padding:5px 12px; border-radius:6px; cursor:pointer;';
+            prevBtn.onmouseover = () => { prevBtn.style.background = 'var(--nav-btn-hover-bg)'; prevBtn.style.color = 'white'; };
+            prevBtn.onmouseout = () => { prevBtn.style.background = 'var(--nav-btn-bg)'; prevBtn.style.color = 'var(--nav-btn-text)'; };
+            prevBtn.onclick = () => renderCommentsForPage(currentPage - 1);
+            paginationDiv.appendChild(prevBtn);
         }
+
+        let startPage = Math.max(1, currentPage - 3);
+        let endPage = Math.min(totalPages, currentPage + 3);
+        if (endPage - startPage < 6) {
+            if (startPage === 1) endPage = Math.min(totalPages, 7);
+            else if (endPage === totalPages) startPage = Math.max(1, totalPages - 6);
+        }
+
+        if (startPage > 1) {
+            const firstBtn = document.createElement('button');
+            firstBtn.textContent = '1';
+            firstBtn.style.cssText = 'background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); padding:5px 12px; border-radius:6px; cursor:pointer;';
+            firstBtn.onmouseover = () => { firstBtn.style.background = 'var(--nav-btn-hover-bg)'; firstBtn.style.color = 'white'; };
+            firstBtn.onmouseout = () => { firstBtn.style.background = 'var(--nav-btn-bg)'; firstBtn.style.color = 'var(--nav-btn-text)'; };
+            firstBtn.onclick = () => renderCommentsForPage(1);
+            paginationDiv.appendChild(firstBtn);
+            if (startPage > 2) {
+                const dot = document.createElement('span');
+                dot.textContent = '…';
+                dot.style.cssText = 'padding:0 4px; color:var(--count-text);';
+                paginationDiv.appendChild(dot);
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            const btn = document.createElement('button');
+            btn.textContent = i;
+            if (i === currentPage) {
+                btn.style.cssText = 'background:#00a1d6; color:white; border:1px solid #00a1d6; padding:5px 12px; border-radius:6px; cursor:pointer; font-weight:bold;';
+            } else {
+                btn.style.cssText = 'background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); padding:5px 12px; border-radius:6px; cursor:pointer;';
+                btn.onmouseover = () => { btn.style.background = 'var(--nav-btn-hover-bg)'; btn.style.color = 'white'; };
+                btn.onmouseout = () => { btn.style.background = 'var(--nav-btn-bg)'; btn.style.color = 'var(--nav-btn-text)'; };
+                btn.onclick = () => renderCommentsForPage(i);
+            }
+            paginationDiv.appendChild(btn);
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                const dot = document.createElement('span');
+                dot.textContent = '…';
+                dot.style.cssText = 'padding:0 4px; color:var(--count-text);';
+                paginationDiv.appendChild(dot);
+            }
+            const lastBtn = document.createElement('button');
+            lastBtn.textContent = totalPages;
+            lastBtn.style.cssText = 'background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); padding:5px 12px; border-radius:6px; cursor:pointer;';
+            lastBtn.onmouseover = () => { lastBtn.style.background = 'var(--nav-btn-hover-bg)'; lastBtn.style.color = 'white'; };
+            lastBtn.onmouseout = () => { lastBtn.style.background = 'var(--nav-btn-bg)'; lastBtn.style.color = 'var(--nav-btn-text)'; };
+            lastBtn.onclick = () => renderCommentsForPage(totalPages);
+            paginationDiv.appendChild(lastBtn);
+        }
+
+        if (currentPage < totalPages) {
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = '下一页 ›';
+            nextBtn.style.cssText = 'background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); padding:5px 12px; border-radius:6px; cursor:pointer;';
+            nextBtn.onmouseover = () => { nextBtn.style.background = 'var(--nav-btn-hover-bg)'; nextBtn.style.color = 'white'; };
+            nextBtn.onmouseout = () => { nextBtn.style.background = 'var(--nav-btn-bg)'; nextBtn.style.color = 'var(--nav-btn-text)'; };
+            nextBtn.onclick = () => renderCommentsForPage(currentPage + 1);
+            paginationDiv.appendChild(nextBtn);
+        }
+
+        const info = document.createElement('span');
+        info.textContent = `共 ${totalComments} 条评论`;
+        info.style.cssText = 'font-size:0.85rem; color:var(--count-text); margin-left:12px;';
+        paginationDiv.appendChild(info);
+
+        const commentSection = document.querySelector('.comment-section');
+        commentSection.appendChild(paginationDiv);
     }
 
-    for (let i = startPage; i <= endPage; i++) {
-        const btn = document.createElement('button');
-        btn.textContent = i;
-        if (i === currentPage) {
-            btn.style.cssText = 'background:#00a1d6; color:white; border:1px solid #00a1d6; padding:5px 12px; border-radius:6px; cursor:pointer; font-weight:bold;';
+    function renderComments(comments) {
+        if (!comments || comments.length === 0) {
+            commentListDiv.innerHTML = '<p>暂无评论，快来抢沙发！</p>';
+            return;
+        }
+
+        let tree;
+        if (comments[0] && comments[0].replies !== undefined) {
+            tree = comments;
         } else {
-            btn.style.cssText = 'background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); padding:5px 12px; border-radius:6px; cursor:pointer;';
-            btn.onmouseover = () => { btn.style.background = 'var(--nav-btn-hover-bg)'; btn.style.color = 'white'; };
-            btn.onmouseout = () => { btn.style.background = 'var(--nav-btn-bg)'; btn.style.color = 'var(--nav-btn-text)'; };
-            btn.onclick = () => renderCommentsForPage(i);
+            tree = buildCommentTree(comments);
         }
-        paginationDiv.appendChild(btn);
-    }
 
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            const dot = document.createElement('span');
-            dot.textContent = '…';
-            dot.style.cssText = 'padding:0 4px; color:var(--count-text);';
-            paginationDiv.appendChild(dot);
-        }
-        const lastBtn = document.createElement('button');
-        lastBtn.textContent = totalPages;
-        lastBtn.style.cssText = 'background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); padding:5px 12px; border-radius:6px; cursor:pointer;';
-        lastBtn.onmouseover = () => { lastBtn.style.background = 'var(--nav-btn-hover-bg)'; lastBtn.style.color = 'white'; };
-        lastBtn.onmouseout = () => { lastBtn.style.background = 'var(--nav-btn-bg)'; lastBtn.style.color = 'var(--nav-btn-text)'; };
-        lastBtn.onclick = () => renderCommentsForPage(totalPages);
-        paginationDiv.appendChild(lastBtn);
-    }
+        const html = tree.map(node => renderCommentNode(node, false)).join('');
+        commentListDiv.innerHTML = html;
 
-    // 下一页
-    if (currentPage < totalPages) {
-        const nextBtn = document.createElement('button');
-        nextBtn.textContent = '下一页 ›';
-        nextBtn.style.cssText = 'background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); padding:5px 12px; border-radius:6px; cursor:pointer;';
-        nextBtn.onmouseover = () => { nextBtn.style.background = 'var(--nav-btn-hover-bg)'; nextBtn.style.color = 'white'; };
-        nextBtn.onmouseout = () => { nextBtn.style.background = 'var(--nav-btn-bg)'; nextBtn.style.color = 'var(--nav-btn-text)'; };
-        nextBtn.onclick = () => renderCommentsForPage(currentPage + 1);
-        paginationDiv.appendChild(nextBtn);
-    }
-
-    // 统计信息
-    const info = document.createElement('span');
-    info.textContent = `共 ${totalComments} 条评论`;
-    info.style.cssText = 'font-size:0.85rem; color:var(--count-text); margin-left:12px;';
-    paginationDiv.appendChild(info);
-
-    const commentSection = document.querySelector('.comment-section');
-    commentSection.appendChild(paginationDiv);
-}
-    
-   function renderComments(comments) {
-    if (!comments || comments.length === 0) {
-        commentListDiv.innerHTML = '<p>暂无评论，快来抢沙发！</p>';
-        return;
-    }
-
-    // 判断是否已经是树结构
-    let tree;
-    if (comments[0] && comments[0].replies !== undefined) {
-        tree = comments;
-    } else {
-        tree = buildCommentTree(comments);
-    }
-
-    const html = tree.map(node => renderCommentNode(node, false)).join('');
-    commentListDiv.innerHTML = html;
-
-    // ---- 事件绑定（保持原样） ----
-    // 折叠/展开正文按钮
-    document.querySelectorAll('.toggle-btn').forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const commentDiv = btn.closest('.comment');
-            const contentDiv = commentDiv.querySelector('.comment-content');
-            const isCollapsed = btn.dataset.state === 'collapsed';
-            if (isCollapsed) {
-                contentDiv.innerHTML = renderContentWithMentions(contentDiv.dataset.full);
-                btn.innerText = '折叠';
-                btn.dataset.state = 'expanded';
-            } else {
-                contentDiv.innerHTML = renderContentWithMentions(contentDiv.dataset.short);
-                btn.innerText = '展开';
-                btn.dataset.state = 'collapsed';
-            }
-        };
-    });
-
-    document.querySelectorAll('.toggle-replies-btn').forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const commentId = btn.dataset.id;
-            const repliesDiv = document.getElementById(`replies-${commentId}`);
-            const hiddenDiv = repliesDiv.querySelector('.hidden-replies');
-            const isCollapsed = btn.dataset.state === 'collapsed';
-            if (isCollapsed) {
-                if (hiddenDiv) hiddenDiv.style.display = 'block';
-                btn.innerText = '折叠所有回复';
-                btn.dataset.state = 'expanded';
-            } else {
-                if (hiddenDiv) hiddenDiv.style.display = 'none';
-                btn.innerText = '展开所有回复';
-                btn.dataset.state = 'collapsed';
-            }
-        };
-    });
-
-    document.querySelectorAll('.reply-btn').forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const commentId = btn.dataset.id;
-            const replyForm = document.getElementById(`reply-form-${commentId}`);
-            if (replyForm) {
-                replyForm.style.display = replyForm.style.display === 'block' ? 'none' : 'block';
-                const textarea = replyForm.querySelector('textarea');
-                if (textarea) {
-                    textarea.value = '';
-                    const counter = replyForm.querySelector('.char-counter span');
-                    if (counter) counter.innerText = '0';
-                    initMentionAutocomplete(textarea);
+        // ---- 事件绑定 ----
+        document.querySelectorAll('.toggle-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const commentDiv = btn.closest('.comment');
+                const contentDiv = commentDiv.querySelector('.comment-content');
+                const isCollapsed = btn.dataset.state === 'collapsed';
+                if (isCollapsed) {
+                    contentDiv.innerHTML = renderContentWithMentions(contentDiv.dataset.full);
+                    btn.innerText = '折叠';
+                    btn.dataset.state = 'expanded';
+                } else {
+                    contentDiv.innerHTML = renderContentWithMentions(contentDiv.dataset.short);
+                    btn.innerText = '展开';
+                    btn.dataset.state = 'collapsed';
                 }
-            }
-        };
-    });
-
-    document.querySelectorAll('.cancel-reply').forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const commentId = btn.dataset.id;
-            const replyForm = document.getElementById(`reply-form-${commentId}`);
-            if (replyForm) replyForm.style.display = 'none';
-        };
-    });
-
-    document.querySelectorAll('.submit-reply').forEach(btn => {
-        btn.onclick = async (e) => {
-            e.stopPropagation();
-            const parentId = btn.dataset.id;
-            const parentDiv = document.querySelector(`.comment[data-id="${parentId}"]`);
-            if (!parentDiv) return;
-            const replyForm = document.getElementById(`reply-form-${parentId}`);
-            const textarea = replyForm.querySelector('textarea');
-            let content = textarea.value.trim();
-            if (!content) { showMessage('提示', '回复内容不能为空'); return; }
-            if (content.length > 200) { showMessage('提示', '回复内容不能超过200字'); return; }
-            if (!currentUser) { showMessage('提示', '请先登录'); return; }
-
-            const BAD_WORDS = ["操你妈", "傻逼", "垃圾", "废物", "脑残", "智障", "滚", "去死", "sb", "nmsl", "炸服务器",
-                "他妈", "特么", "尼玛", "妈逼", "操蛋", "王八蛋", "混蛋", "杂种", "狗日的", "法克", "fuck", "shit", "bitch",
-                "黑鬼", "白皮猪", "支那", "台巴子", "回子", "圣母婊", "娘炮", "人妖",
-                "五毛", "美分", "带节奏", "洗地", "脑残粉", "水军", "喷子", "网暴",
-                "卖淫", "嫖娼", "约炮", "裸聊", "毒品", "海洛因", "办证", "加微信", "兼职刷单", "返利",
-                "垃圾频道", "SB频道", "脑残UP" ,"gay" ,"Gay" ,"GAY"];
-            let containsBadWord = false;
-            for (const word of BAD_WORDS) {
-                if (content.includes(word)) {
-                    containsBadWord = true;
-                    break;
-                }
-            }
-            if (containsBadWord) {
-                showMessage('提示', '您的回复包含违禁词，禁止发布');
-                return;
-            }
-
-            const { data, error } = await supabaseClient.rpc('insert_comment', {
-                p_page_path: pagePath,
-                p_user_id: currentUser.id,
-                p_content: content,
-                p_parent_id: parseInt(parentId)
-            });
-            if (error) {
-                showMessage('错误', '回复失败: ' + error.message);
-            } else if (!data.success) {
-                showMessage('错误', data.message);
-            } else {
-                replyForm.style.display = 'none';
-                fetchComments();
-            }
-        };
-    });
-
-    // 举报按钮
-    document.querySelectorAll('.report-btn').forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const commentId = btn.dataset.id;
-            pendingReportCommentId = parseInt(commentId);
-            reportReason.value = '';
-            reportCharCountSpan.innerText = '0';
-            reportModal.style.display = 'flex';
-        };
-    });
-
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.onclick = () => {
-            const commentId = btn.dataset.id;
-            showConfirm('确认删除', '确定要删除这条评论吗？', async () => {
-                await deleteComment(commentId);
-            });
-        };
-    });
-
-    document.querySelectorAll('.reply-form textarea').forEach(textarea => {
-        const counterSpan = textarea.closest('.reply-form').querySelector('.char-counter span');
-        textarea.addEventListener('input', () => {
-            counterSpan.innerText = textarea.value.length;
+            };
         });
-        initMentionAutocomplete(textarea);
-    });
 
-    // ---- 高亮定位功能 ----
-    if (pendingHighlightId) {
-        const highlightId = pendingHighlightId;
-        pendingHighlightId = null; // 清除，防止重复触发
-        setTimeout(() => {
-            const target = document.querySelector(`.comment[data-id="${highlightId}"]`);
-            if (target) {
-                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                target.style.backgroundColor = 'var(--status-bg)';
-                target.style.transition = 'background 0.3s ease';
-                target.style.borderRadius = '8px';
-                setTimeout(() => {
-                    target.style.backgroundColor = '';
-                    target.style.borderRadius = '';
-                }, 3000);
-            }
-        }, 500);
+        document.querySelectorAll('.toggle-replies-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const commentId = btn.dataset.id;
+                const repliesDiv = document.getElementById(`replies-${commentId}`);
+                const hiddenDiv = repliesDiv.querySelector('.hidden-replies');
+                const isCollapsed = btn.dataset.state === 'collapsed';
+                if (isCollapsed) {
+                    if (hiddenDiv) hiddenDiv.style.display = 'block';
+                    btn.innerText = '折叠所有回复';
+                    btn.dataset.state = 'expanded';
+                } else {
+                    if (hiddenDiv) hiddenDiv.style.display = 'none';
+                    btn.innerText = '展开所有回复';
+                    btn.dataset.state = 'collapsed';
+                }
+            };
+        });
+
+        document.querySelectorAll('.reply-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const commentId = btn.dataset.id;
+                const replyForm = document.getElementById(`reply-form-${commentId}`);
+                if (replyForm) {
+                    replyForm.style.display = replyForm.style.display === 'block' ? 'none' : 'block';
+                    const textarea = replyForm.querySelector('textarea');
+                    if (textarea) {
+                        textarea.value = '';
+                        const counter = replyForm.querySelector('.char-counter span');
+                        if (counter) counter.innerText = '0';
+                        initMentionAutocomplete(textarea);
+                    }
+                }
+            };
+        });
+
+        document.querySelectorAll('.cancel-reply').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const commentId = btn.dataset.id;
+                const replyForm = document.getElementById(`reply-form-${commentId}`);
+                if (replyForm) replyForm.style.display = 'none';
+            };
+        });
+
+        document.querySelectorAll('.submit-reply').forEach(btn => {
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+                const parentId = btn.dataset.id;
+                const parentDiv = document.querySelector(`.comment[data-id="${parentId}"]`);
+                if (!parentDiv) return;
+                const replyForm = document.getElementById(`reply-form-${parentId}`);
+                const textarea = replyForm.querySelector('textarea');
+                let content = textarea.value.trim();
+                if (!content) { showMessage('提示', '回复内容不能为空'); return; }
+                if (content.length > 200) { showMessage('提示', '回复内容不能超过200字'); return; }
+                if (!currentUser) { showMessage('提示', '请先登录'); return; }
+
+                const BAD_WORDS = ["操你妈", "傻逼", "垃圾", "废物", "脑残", "智障", "滚", "去死", "sb", "nmsl", "炸服务器",
+                    "他妈", "特么", "尼玛", "妈逼", "操蛋", "王八蛋", "混蛋", "杂种", "狗日的", "法克", "fuck", "shit", "bitch",
+                    "黑鬼", "白皮猪", "支那", "台巴子", "回子", "圣母婊", "娘炮", "人妖",
+                    "五毛", "美分", "带节奏", "洗地", "脑残粉", "水军", "喷子", "网暴",
+                    "卖淫", "嫖娼", "约炮", "裸聊", "毒品", "海洛因", "办证", "加微信", "兼职刷单", "返利",
+                    "垃圾频道", "SB频道", "脑残UP" ,"gay" ,"Gay" ,"GAY"];
+                let containsBadWord = false;
+                for (const word of BAD_WORDS) {
+                    if (content.includes(word)) {
+                        containsBadWord = true;
+                        break;
+                    }
+                }
+                if (containsBadWord) {
+                    showMessage('提示', '您的回复包含违禁词，禁止发布');
+                    return;
+                }
+
+                const { data, error } = await supabaseClient.rpc('insert_comment', {
+                    p_page_path: pagePath,
+                    p_user_id: currentUser.id,
+                    p_content: content,
+                    p_parent_id: parseInt(parentId)
+                });
+                if (error) {
+                    showMessage('错误', '回复失败: ' + error.message);
+                } else if (!data.success) {
+                    showMessage('错误', data.message);
+                } else {
+                    replyForm.style.display = 'none';
+                    // ✅ 修复：传递当前页码
+                    fetchComments(currentPage);
+                }
+            };
+        });
+
+        // 举报按钮
+        document.querySelectorAll('.report-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const commentId = btn.dataset.id;
+                pendingReportCommentId = parseInt(commentId);
+                reportReason.value = '';
+                reportCharCountSpan.innerText = '0';
+                reportModal.style.display = 'flex';
+            };
+        });
+
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.onclick = () => {
+                const commentId = btn.dataset.id;
+                showConfirm('确认删除', '确定要删除这条评论吗？', async () => {
+                    await deleteComment(commentId);
+                });
+            };
+        });
+
+        document.querySelectorAll('.reply-form textarea').forEach(textarea => {
+            const counterSpan = textarea.closest('.reply-form').querySelector('.char-counter span');
+            textarea.addEventListener('input', () => {
+                counterSpan.innerText = textarea.value.length;
+            });
+            initMentionAutocomplete(textarea);
+        });
+
+        if (pendingHighlightId) {
+            const highlightId = pendingHighlightId;
+            pendingHighlightId = null;
+            setTimeout(() => {
+                const target = document.querySelector(`.comment[data-id="${highlightId}"]`);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    target.style.backgroundColor = 'var(--status-bg)';
+                    target.style.transition = 'background 0.3s ease';
+                    target.style.borderRadius = '8px';
+                    setTimeout(() => {
+                        target.style.backgroundColor = '';
+                        target.style.borderRadius = '';
+                    }, 3000);
+                }
+            }, 500);
+        }
     }
-}
 
     // 提交举报（模态框确认）
     async function submitReport() {
-    if (!pendingReportCommentId) return;
-    const reason = reportReason.value.trim();
-    if (!reason) {
-        showMessage('提示', '请填写举报原因');
-        return;
-    }
-    if (reason.length > 100) {
-        showMessage('提示', '举报原因不能超过100字');
-        return;
-    }
-    if (!currentUser) {
-        showMessage('提示', '请先登录再举报');
-        reportModal.style.display = 'none';
-        return;
-    }
+        if (!pendingReportCommentId) return;
+        const reason = reportReason.value.trim();
+        if (!reason) {
+            showMessage('提示', '请填写举报原因');
+            return;
+        }
+        if (reason.length > 100) {
+            showMessage('提示', '举报原因不能超过100字');
+            return;
+        }
+        if (!currentUser) {
+            showMessage('提示', '请先登录再举报');
+            reportModal.style.display = 'none';
+            return;
+        }
 
-        // 1. 检查是否已举报过该评论
         const { data: existing, error: checkError } = await supabaseClient
             .from('reports')
             .select('id')
@@ -968,7 +954,6 @@ function renderCommentsForPage(page) {
             return;
         }
 
-        // 2. 获取IP并检查频率（使用 report_attempts 表）
         let ip = null;
         try {
             ip = await getClientIP();
@@ -996,7 +981,6 @@ function renderCommentsForPage(page) {
             return;
         }
 
-        // 3. 插入举报记录
         const { error: insertError } = await supabaseClient
             .from('reports')
             .insert({
@@ -1010,7 +994,6 @@ function renderCommentsForPage(page) {
             return;
         }
 
-        // 4. 记录本次举报尝试
         await supabaseClient
             .from('report_attempts')
             .insert({ ip_address: ip });
@@ -1028,132 +1011,130 @@ function renderCommentsForPage(page) {
             .eq('id', commentId)
             .eq('user_id', currentUser.id);
         if (error) showMessage('错误', '删除失败');
-        else fetchComments();
+        else fetchComments(currentPage);  // ✅ 删除后留在当前页
     }
 
-  async function fetchComments(page) {
-    // 如果传了 page，使用它；否则使用 currentPage
-    let targetPage = page !== undefined ? page : currentPage;
+    async function fetchComments(page) {
+        let targetPage = page !== undefined ? page : currentPage;
 
-    verifiedUsernames = await fetchVerifiedUsers();
-    const { data, error } = await supabaseClient
-        .from('comments')
-        .select('*, profiles(username)')
-        .eq('page_path', pagePath)
-        .order('created_at', { ascending: false });
-    if (error) { console.error(error); return; }
+        verifiedUsernames = await fetchVerifiedUsers();
+        const { data, error } = await supabaseClient
+            .from('comments')
+            .select('*, profiles(username)')
+            .eq('page_path', pagePath)
+            .order('created_at', { ascending: false });
+        if (error) { console.error(error); return; }
 
-    // 获取公司信息
-    const userIds = [...new Set(data.map(c => c.user_id).filter(id => id))];
-    if (userIds.length > 0) {
-        const { data: companies, error: compError } = await supabaseClient
-            .from('user_companies')
-            .select('user_id, company_name, verified')
-            .in('user_id', userIds);
-        if (!compError && companies) {
-            window.companyMap = new Map(companies.map(c => [c.user_id, c]));
+        const userIds = [...new Set(data.map(c => c.user_id).filter(id => id))];
+        if (userIds.length > 0) {
+            const { data: companies, error: compError } = await supabaseClient
+                .from('user_companies')
+                .select('user_id, company_name, verified')
+                .in('user_id', userIds);
+            if (!compError && companies) {
+                window.companyMap = new Map(companies.map(c => [c.user_id, c]));
+            } else {
+                window.companyMap = new Map();
+            }
         } else {
             window.companyMap = new Map();
         }
-    } else {
-        window.companyMap = new Map();
-    }
 
-    // 分离主评论和回复
-    const mainComments = data.filter(c => !c.parent_id);
-    const replies = data.filter(c => c.parent_id);
+        const mainComments = data.filter(c => !c.parent_id);
+        const replies = data.filter(c => c.parent_id);
 
-    mainComments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        mainComments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    const repliesMap = new Map();
-    replies.forEach(reply => {
-        if (!repliesMap.has(reply.parent_id)) {
-            repliesMap.set(reply.parent_id, []);
+        const repliesMap = new Map();
+        replies.forEach(reply => {
+            if (!repliesMap.has(reply.parent_id)) {
+                repliesMap.set(reply.parent_id, []);
+            }
+            repliesMap.get(reply.parent_id).push(reply);
+        });
+        for (const [parentId, replyList] of repliesMap) {
+            replyList.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         }
-        repliesMap.get(reply.parent_id).push(reply);
-    });
-    for (const [parentId, replyList] of repliesMap) {
-        replyList.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    }
 
-    allMainComments = mainComments;
-    allRepliesMap = repliesMap;
-    totalComments = data.length;
+        allMainComments = mainComments;
+        allRepliesMap = repliesMap;
+        totalComments = data.length;
 
-    // 高亮逻辑
-    const highlightId = new URLSearchParams(window.location.search).get('highlight');
-    if (highlightId) {
-        const targetId = parseInt(highlightId);
-        const mainIndex = allMainComments.findIndex(c => c.id === targetId);
-        if (mainIndex !== -1) {
-            targetPage = Math.floor(mainIndex / COMMENTS_PER_PAGE) + 1;
-        } else {
-            for (const [parentId, replies] of allRepliesMap) {
-                if (replies.some(r => r.id === targetId)) {
-                    const parentIndex = allMainComments.findIndex(c => c.id === parentId);
-                    if (parentIndex !== -1) {
-                        targetPage = Math.floor(parentIndex / COMMENTS_PER_PAGE) + 1;
+        const highlightId = new URLSearchParams(window.location.search).get('highlight');
+        if (highlightId) {
+            const targetId = parseInt(highlightId);
+            const mainIndex = allMainComments.findIndex(c => c.id === targetId);
+            if (mainIndex !== -1) {
+                targetPage = Math.floor(mainIndex / COMMENTS_PER_PAGE) + 1;
+            } else {
+                for (const [parentId, replies] of allRepliesMap) {
+                    if (replies.some(r => r.id === targetId)) {
+                        const parentIndex = allMainComments.findIndex(c => c.id === parentId);
+                        if (parentIndex !== -1) {
+                            targetPage = Math.floor(parentIndex / COMMENTS_PER_PAGE) + 1;
+                        }
+                        break;
                     }
-                    break;
                 }
             }
+            pendingHighlightId = targetId;
+            const params = new URLSearchParams(window.location.search);
+            params.delete('highlight');
+            const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+            window.history.replaceState({}, '', newUrl);
+        } else {
+            pendingHighlightId = null;
         }
-        pendingHighlightId = targetId;
-        const params = new URLSearchParams(window.location.search);
-        params.delete('highlight');
-        const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
-        window.history.replaceState({}, '', newUrl);
-    } else {
-        pendingHighlightId = null;
+
+        renderCommentsForPage(targetPage);
     }
 
-    renderCommentsForPage(targetPage);
-}
     async function postComment() {
-    if (!currentUser) { showMessage('提示', '请先登录'); return; }
-    let content = commentText.value.trim();
-    if (!content) { showMessage('提示', '评论内容不能为空'); return; }
-    if (content.length > 200) { showMessage('提示', '评论内容不能超过200字'); return; }
+        if (!currentUser) { showMessage('提示', '请先登录'); return; }
+        let content = commentText.value.trim();
+        if (!content) { showMessage('提示', '评论内容不能为空'); return; }
+        if (content.length > 200) { showMessage('提示', '评论内容不能超过200字'); return; }
 
-    const BAD_WORDS = ["操你妈", "傻逼", "垃圾", "废物", "脑残", "智障", "滚", "去死", "sb", "nmsl", "炸服务器",
-            "他妈", "特么", "尼玛", "妈逼", "操蛋", "王八蛋", "混蛋", "杂种", "狗日的", "法克", "fuck", "shit", "bitch",
-            "黑鬼", "白皮猪", "支那", "台巴子", "回子", "圣母婊", "娘炮", "人妖",
-            "五毛", "美分", "带节奏", "洗地", "脑残粉", "水军", "喷子", "网暴",
-            "卖淫", "嫖娼", "约炮", "裸聊", "毒品", "海洛因", "办证", "加微信", "兼职刷单", "返利",
-              "垃圾频道", "SB频道", "脑残UP" ,"gay" ,"Gay" ,"GAY"];
-    let containsBadWord = false;
-    for (const word of BAD_WORDS) {
-        if (content.includes(word)) {
-            containsBadWord = true;
-            break;
+        const BAD_WORDS = ["操你妈", "傻逼", "垃圾", "废物", "脑残", "智障", "滚", "去死", "sb", "nmsl", "炸服务器",
+                "他妈", "特么", "尼玛", "妈逼", "操蛋", "王八蛋", "混蛋", "杂种", "狗日的", "法克", "fuck", "shit", "bitch",
+                "黑鬼", "白皮猪", "支那", "台巴子", "回子", "圣母婊", "娘炮", "人妖",
+                "五毛", "美分", "带节奏", "洗地", "脑残粉", "水军", "喷子", "网暴",
+                "卖淫", "嫖娼", "约炮", "裸聊", "毒品", "海洛因", "办证", "加微信", "兼职刷单", "返利",
+                "垃圾频道", "SB频道", "脑残UP" ,"gay" ,"Gay" ,"GAY"];
+        let containsBadWord = false;
+        for (const word of BAD_WORDS) {
+            if (content.includes(word)) {
+                containsBadWord = true;
+                break;
+            }
         }
-    }
-    if (containsBadWord) {
-        showMessage('提示', '您的评论包含违禁词，禁止发布');
-        return;
+        if (containsBadWord) {
+            showMessage('提示', '您的评论包含违禁词，禁止发布');
+            return;
+        }
+
+        const { data, error } = await supabaseClient.rpc('insert_comment', {
+            p_page_path: pagePath,
+            p_user_id: currentUser.id,
+            p_content: content,
+            p_parent_id: null
+        });
+
+        if (error) {
+            showMessage('错误', '发表失败: ' + error.message);
+            return;
+        }
+        if (!data.success) {
+            showMessage('错误', data.message);
+            return;
+        }
+
+        commentText.value = '';
+        charCountSpan.innerText = '0';
+        // ✅ 修复：传递当前页码
+        fetchComments(currentPage);
     }
 
-    // 调用 RPC 插入评论
-    const { data, error } = await supabaseClient.rpc('insert_comment', {
-        p_page_path: pagePath,
-        p_user_id: currentUser.id,
-        p_content: content,
-        p_parent_id: null
-    });
-
-    if (error) {
-        showMessage('错误', '发表失败: ' + error.message);
-        return;
-    }
-    if (!data.success) {
-        showMessage('错误', data.message);
-        return;
-    }
-
-    commentText.value = '';
-    charCountSpan.innerText = '0';
-    fetchComments();
-}
     async function getClientIP() {
         const services = [
             'https://icanhazip.com',
@@ -1264,61 +1245,59 @@ function renderCommentsForPage(page) {
     }
 
     async function loadUser() {
-    const stored = localStorage.getItem('nb_user');
-    if (stored) {
-        try {
-            const user = JSON.parse(stored);
-            const { data: profile, error } = await supabaseClient
-                .from('profiles')
-                .select('id, username, is_banned, banned_reason')
-                .eq('id', user.id)
-                .maybeSingle();
-            if (error) throw error;
-            if (!profile) {
-                localStorage.removeItem('nb_user');
-                showMessage('提示', '登录信息已失效，请重新登录');
-                currentUser = null;
-                userStatusSpan.innerHTML = `<a href="login.html?redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
-                newCommentArea.style.display = 'none';
-                fetchComments();
-                return;
-            }
-            if (profile.is_banned) {
-                userStatusSpan.innerHTML = `您的账号已被封禁，原因：${profile.banned_reason || '多次违规'} <button class="apology-btn" id="apologyBtn">找我解封</button>`;
-                document.getElementById('apologyBtn').onclick = () => {
-                    window.location.href = 'https://message.bilibili.com/?spm_id_from=333.1387.0.0#/whisper/mid3493259582114264';
+        const stored = localStorage.getItem('nb_user');
+        if (stored) {
+            try {
+                const user = JSON.parse(stored);
+                const { data: profile, error } = await supabaseClient
+                    .from('profiles')
+                    .select('id, username, is_banned, banned_reason')
+                    .eq('id', user.id)
+                    .maybeSingle();
+                if (error) throw error;
+                if (!profile) {
+                    localStorage.removeItem('nb_user');
+                    showMessage('提示', '登录信息已失效，请重新登录');
+                    currentUser = null;
+                    userStatusSpan.innerHTML = `<a href="login.html?redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
+                    newCommentArea.style.display = 'none';
+                    fetchComments();
+                    return;
+                }
+                if (profile.is_banned) {
+                    userStatusSpan.innerHTML = `您的账号已被封禁，原因：${profile.banned_reason || '多次违规'} <button class="apology-btn" id="apologyBtn">找我解封</button>`;
+                    document.getElementById('apologyBtn').onclick = () => {
+                        window.location.href = 'https://message.bilibili.com/?spm_id_from=333.1387.0.0#/whisper/mid3493259582114264';
+                    };
+                    newCommentArea.style.display = 'none';
+                    fetchComments();
+                    return;
+                }
+                currentUser = { id: profile.id, username: profile.username };
+                userStatusSpan.innerHTML = `欢迎，${escapeHtml(currentUser.username)} <button id="logout-btn">退出</button>`;
+                document.getElementById('logout-btn').onclick = () => {
+                    localStorage.removeItem('nb_user');
+                    location.reload();
                 };
-                newCommentArea.style.display = 'none';
+                newCommentArea.style.display = 'block';
                 fetchComments();
-                return;
-            }
-            currentUser = { id: profile.id, username: profile.username };
-            userStatusSpan.innerHTML = `欢迎，${escapeHtml(currentUser.username)} <button id="logout-btn">退出</button>`;
-            document.getElementById('logout-btn').onclick = () => {
-                localStorage.removeItem('nb_user');
-                location.reload();
-            };
-            newCommentArea.style.display = 'block';
-            fetchComments();
 
-            // ========== 新增：主评论框 @提及功能 ==========
-            const mainTextarea = document.getElementById('comment-text');
-            if (mainTextarea) {
-                // 延迟初始化确保 DOM 完全加载
-                setTimeout(() => {
-                    initMentionAutocomplete(mainTextarea);
-                }, 100);
+                const mainTextarea = document.getElementById('comment-text');
+                if (mainTextarea) {
+                    setTimeout(() => {
+                        initMentionAutocomplete(mainTextarea);
+                    }, 100);
+                }
+                return;
+            } catch(e) {
+                console.error(e);
             }
-            return;
-        } catch(e) {
-            console.error(e);
         }
+        currentUser = null;
+        userStatusSpan.innerHTML = `<a href="login.html?redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
+        newCommentArea.style.display = 'none';
+        fetchComments();
     }
-    currentUser = null;
-    userStatusSpan.innerHTML = `<a href="login.html?redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
-    newCommentArea.style.display = 'none';
-    fetchComments();
-}
 
     // 模态框事件绑定
     closeReportBtn.onclick = () => {
@@ -1333,7 +1312,6 @@ function renderCommentsForPage(page) {
     const accountModal = document.getElementById('account-modal');
     const closeAccount = document.getElementById('close-account');
 
-    
     document.getElementById('accountBtn').onclick = () => {
         if (!currentUser) { showMessage('提示', '请先登录'); return; }
         accountModal.style.display = 'flex';
@@ -1411,7 +1389,7 @@ function renderCommentsForPage(page) {
 
     submitCommentBtn.onclick = postComment;
     loadUser();
-    
+
     window.addEventListener('scroll', function() {
         const backBtn = document.getElementById('backToTop');
         if (backBtn) {
