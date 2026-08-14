@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="js/common.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
     <style>
         /* 基础样式（原有样式保持不变） */
         .chart-wrapper { padding: 20px 0 32px 0; }
@@ -352,6 +353,14 @@
             <canvas id="totalHistoryChart" width="1100" height="200"></canvas>
         </div>
 
+<!-- K线图 -->
+<div class="history-chart-container" id="kLineContainer" style="margin-top:20px; background:var(--card-bg); border-radius:24px; padding:12px 16px; border:1px solid var(--card-border);">
+    <div class="history-title">
+        <span id="kLineTitle">📈 个股日K线（点击表格中的股票名称查看）</span>
+    </div>
+    <div id="kLineChart" style="width:100%; height:400px;"></div>
+</div>
+        
         <div class="histogram-container">
             <div class="histogram-title">📊 虚拟市值分布直方图</div>
             <canvas id="histogramChart" width="1100" height="250"></canvas>
@@ -1245,7 +1254,7 @@
                 ? `<button class="report-company-btn" data-company-id="${item.id}" data-company-name="${escapeHtml(item.name)}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.7rem;">🚨 举报公司</button>`
                 : '';
             html += `<tr>
-                <td>${escapeHtml(item.name)}<br>${reportBtn}</td>
+                <td><a href="#" class="stock-link" data-id="${item.id}" data-name="${escapeHtml(item.name)}">${escapeHtml(item.name)}</a><br>${reportBtn}</td>
                 <td>${formatValue(item.value)}</td>
                 <td>${escapeHtml(item.owner || '未知')}</td>
                  <td>${changeHtml}</td>
@@ -1264,6 +1273,13 @@
                 const companyId = parseInt(btn.dataset.companyId);
                 const companyName = btn.dataset.companyName;
                 reportCompany(companyId, companyName);
+
+        document.querySelectorAll('.stock-link').forEach(link => {
+    link.onclick = (e) => {
+        e.preventDefault();
+        const companyId = parseInt(link.dataset.id);
+        const companyName = link.dataset.name;
+        loadKLineData(companyId, companyName);      
             };
         });
     }
@@ -1299,7 +1315,120 @@
         await showMessage('成功', '举报已提交');
     }
 }
-    
+
+// ========== K线图 ==========
+let kLineChartInstance = null;
+
+async function loadKLineData(companyId, companyName) {
+    const container = document.getElementById('kLineChart');
+    const title = document.getElementById('kLineTitle');
+    if (!container) return;
+
+    title.innerText = `📈 ${companyName} 日K线（加载中...）`;
+
+    // 从 stock_history_full 获取历史快照
+    const { data, error } = await supabaseClient
+        .from('stock_history_full')
+        .select('snapshot, recorded_at')
+        .order('recorded_at', { ascending: true })
+        .limit(200);
+
+    if (error || !data || data.length < 2) {
+        title.innerText = `📈 ${companyName} 日K线（数据不足）`;
+        container.innerHTML = '数据不足，无法绘制K线';
+        return;
+    }
+
+    // 提取该公司的市值数据（按日期分组聚合）
+    const dailyData = new Map();
+    for (const record of data) {
+        const snapshot = record.snapshot;
+        const idx = snapshot.names.indexOf(companyName);
+        if (idx === -1) continue;
+        const date = new Date(record.recorded_at);
+        const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+        const value = snapshot.values[idx];
+
+        if (!dailyData.has(dateKey)) {
+            dailyData.set(dateKey, { date: dateKey, values: [] });
+        }
+        dailyData.get(dateKey).values.push(value);
+    }
+
+    if (dailyData.size < 2) {
+        title.innerText = `📈 ${companyName} 日K线（数据不足）`;
+        container.innerHTML = '该公司历史数据不足（至少需要2个交易日）';
+        return;
+    }
+
+    // 构造K线数据：每组取开盘、收盘、最高、最低
+    const kData = [];
+    const sortedDates = Array.from(dailyData.keys()).sort();
+    for (const dateKey of sortedDates) {
+        const day = dailyData.get(dateKey);
+        const values = day.values;
+        kData.push({
+            date: dateKey,
+            open: values[0],           // 当天第一个值作为开盘
+            close: values[values.length - 1], // 最后一个作为收盘
+            high: Math.max(...values),
+            low: Math.min(...values)
+        });
+    }
+
+    // 销毁旧图表
+    if (kLineChartInstance) {
+        kLineChartInstance.dispose();
+    }
+
+    // 渲染 ECharts K线图
+    kLineChartInstance = echarts.init(container);
+    const option = {
+        title: {
+            text: `${companyName} 日K线`,
+            left: 'center',
+            textStyle: { fontSize: 14, color: '#00a1d6' }
+        },
+        tooltip: {
+            trigger: 'axis',
+            formatter: function(params) {
+                const d = params[0].data;
+                return `${d.date}<br/>开盘: ${d.open}<br/>收盘: ${d.close}<br/>最高: ${d.high}<br/>最低: ${d.low}`;
+            }
+        },
+        xAxis: {
+            data: kData.map(d => d.date),
+            axisLabel: { rotate: 45, fontSize: 10 }
+        },
+        yAxis: {
+            scale: true,
+            splitLine: { show: true, lineStyle: { type: 'dashed' } }
+        },
+        series: [{
+            type: 'candlestick',
+            data: kData.map(d => [d.open, d.close, d.low, d.high]),
+            itemStyle: {
+                color: '#ef232a',      // 阳线（涨）红色
+                color0: '#14b143',     // 阴线（跌）绿色
+                borderColor: '#ef232a',
+                borderColor0: '#14b143'
+            },
+            markLine: {
+                data: [{ type: 'average', name: '均价' }],
+                lineStyle: { color: '#ff9800', type: 'dashed' }
+            }
+        }],
+        grid: { top: 50, bottom: 60, left: 60, right: 30 }
+    };
+
+    kLineChartInstance.setOption(option);
+    kLineChartInstance.resize();
+
+    title.innerText = `📈 ${companyName} 日K线（${kData.length}个交易日）`;
+    container.innerHTML = '';
+    container.appendChild(kLineChartInstance.getDom());
+}
+            
     function toggleTable() { fullTableVisible = !fullTableVisible; updateDataTable(); }
     function updateStatsPanel(total) {
     if (!rawData.values.length) {
