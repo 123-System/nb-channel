@@ -248,17 +248,16 @@
         .custom-modal .modal-content button.cancel { background: var(--nav-btn-bg); color: var(--nav-btn-text); }
 
         .distribution-card .stat-value {
-    display: inline-flex;
-    gap: 6px;
-    background: none;
-    padding: 0;
-}
-.distribution-card .stat-value span {
-    padding: 2px 8px;
-    border-radius: 30px;
-    background: var(--count-bg);
-}
-        
+            display: inline-flex;
+            gap: 6px;
+            background: none;
+            padding: 0;
+        }
+        .distribution-card .stat-value span {
+            padding: 2px 8px;
+            border-radius: 30px;
+            background: var(--count-bg);
+        }
     </style>
 </head>
 <body>
@@ -353,14 +352,14 @@
             <canvas id="totalHistoryChart" width="1100" height="200"></canvas>
         </div>
 
-<!-- K线图 -->
-<div class="history-chart-container" id="kLineContainer" style="margin-top:20px; background:var(--card-bg); border-radius:24px; padding:12px 16px; border:1px solid var(--card-border);">
-    <div class="history-title">
-        <span id="kLineTitle">📈 个股日K线（点击表格中的股票名称查看）</span>
-    </div>
-    <div id="kLineChart" style="width:100%; height:400px;"></div>
-</div>
-        
+        <!-- K线图 -->
+        <div class="history-chart-container" id="kLineContainer" style="margin-top:20px; background:var(--card-bg); border-radius:24px; padding:12px 16px; border:1px solid var(--card-border);">
+            <div class="history-title">
+                <span id="kLineTitle">📈 个股日K线（点击表格中的股票名称查看）</span>
+            </div>
+            <div id="kLineChart" style="width:100%; height:400px;"></div>
+        </div>
+
         <div class="histogram-container">
             <div class="histogram-title">📊 虚拟市值分布直方图</div>
             <canvas id="histogramChart" width="1100" height="250"></canvas>
@@ -380,7 +379,7 @@
                    <tr><th>虚拟股票名称</th><th>虚拟市值</th><th>归属用户</th><th>与旧数据相比涨跌百分比</th></tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr><td colspan="3">加载中...</td></tr>
+                    <tr><td colspan="4">加载中...</td></tr>
                 </tbody>
             </table>
             <button id="toggleTableBtn" class="toggle-table-btn">📋 展开全部</button>
@@ -514,6 +513,9 @@
     let currentTopN = 'all';
     const pagePath = 'stock_market';
 
+    // ========== K线图全局变量 ==========
+    let kLineChartInstance = null;
+
     // ========== NB币与公司管理函数 ==========
     async function fetchCurrentUser() {
         const stored = localStorage.getItem('nb_user');
@@ -579,56 +581,56 @@
     }
 
     async function supportCompany(companyId, amount, isSilent = false) {
-    const cid = parseInt(companyId);
-    if (isNaN(cid) || cid <= 0) {
-        if (!isSilent) await showMessage('错误', '无效的公司ID，无法支持');
-        return false;
+        const cid = parseInt(companyId);
+        if (isNaN(cid) || cid <= 0) {
+            if (!isSilent) await showMessage('错误', '无效的公司ID，无法支持');
+            return false;
+        }
+        if (!currentUserId) {
+            if (!isSilent) await showMessage('提示', '请先登录');
+            return false;
+        }
+        if (amount > 2000) {
+            if (!isSilent) await showMessage('提示', '单次手动支持金额不能超过2000 NB币');
+            return false;
+        }
+        const balance = await fetchUserBalance();
+        if (balance < amount) {
+            if (!isSilent) await showMessage('提示', 'NB币余额不足');
+            return false;
+        }
+        const { data: company } = await supabaseClient
+            .from('user_companies')
+            .select('market_value')
+            .eq('id', cid)
+            .single();
+        if (!company) {
+            if (!isSilent) await showMessage('错误', '虚拟公司不存在');
+            return false;
+        }
+        const newValue = company.market_value + amount;
+        const { error: updateErr } = await supabaseClient
+            .from('user_companies')
+            .update({ market_value: newValue })
+            .eq('id', cid);
+        if (updateErr) {
+            if (!isSilent) await showMessage('错误', '支持失败');
+            return false;
+        }
+        const newBalance = balance - amount;
+        await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
+        await supabaseClient.from('support_logs').insert({
+            supporter_id: currentUserId,
+            company_id: cid,
+            amount: amount
+        });
+        await fetchUserBalance();
+        await fetchAllCompanies();
+        await refreshStockDataFromDB();
+        await buildChartWithFade(currentChartType);
+        if (!isSilent) await showMessage('成功', `成功支持 ${amount} NB币`);
+        return true;
     }
-    if (!currentUserId) {
-        if (!isSilent) await showMessage('提示', '请先登录');
-        return false;
-    }
-    if (amount > 2000) {
-        if (!isSilent) await showMessage('提示', '单次手动支持金额不能超过2000 NB币');
-        return false;
-    }
-    const balance = await fetchUserBalance();
-    if (balance < amount) {
-        if (!isSilent) await showMessage('提示', 'NB币余额不足');
-        return false;
-    }
-    const { data: company } = await supabaseClient
-        .from('user_companies')
-        .select('market_value')
-        .eq('id', cid)
-        .single();
-    if (!company) {
-        if (!isSilent) await showMessage('错误', '虚拟公司不存在');
-        return false;
-    }
-    const newValue = company.market_value + amount;
-    const { error: updateErr } = await supabaseClient
-        .from('user_companies')
-        .update({ market_value: newValue })
-        .eq('id', cid);
-    if (updateErr) {
-        if (!isSilent) await showMessage('错误', '支持失败');
-        return false;
-    }
-    const newBalance = balance - amount;
-    await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
-    await supabaseClient.from('support_logs').insert({
-        supporter_id: currentUserId,
-        company_id: cid,
-        amount: amount
-    });
-    await fetchUserBalance();
-    await fetchAllCompanies();
-    await refreshStockDataFromDB();
-    await buildChartWithFade(currentChartType);
-    if (!isSilent) await showMessage('成功', `成功支持 ${amount} NB币`);
-    return true;
-}
 
     async function setAutoSupportRule(companyId, threshold, amount) {
         if (!currentUserId) return false;
@@ -649,271 +651,265 @@
     }
 
     async function bankruptCompany() {
-    if (!myCompany) { await showMessage('提示', '您还没有虚拟公司'); return; }
-    const companyId = myCompany.id;
-    const companyName = myCompany.company_name;
-    const currentValue = myCompany.market_value;
-    let reward = 0;
-    let confirmMsg = '';
-    if (currentValue > 20000) {
-        reward = currentValue - 20000;
-        confirmMsg = `确定破产吗？您的虚拟公司将被彻底删除（任何痕迹都将不复存在），您将获得 ${reward} NB币（当前市值减去20000）`;
-    } else {
-        reward = 0;
-        confirmMsg = `您的虚拟公司市值不足或等于20000，破产将无法获得NB币，但虚拟公司及历史数据会被彻底删除，确定破产吗？`;
-    }
-    const confirmed = await showConfirm('确认破产', confirmMsg);
-    if (!confirmed) return;
+        if (!myCompany) { await showMessage('提示', '您还没有虚拟公司'); return; }
+        const companyId = myCompany.id;
+        const companyName = myCompany.company_name;
+        const currentValue = myCompany.market_value;
+        let reward = 0;
+        let confirmMsg = '';
+        if (currentValue > 20000) {
+            reward = currentValue - 20000;
+            confirmMsg = `确定破产吗？您的虚拟公司将被彻底删除（任何痕迹都将不复存在），您将获得 ${reward} NB币（当前市值减去20000）`;
+        } else {
+            reward = 0;
+            confirmMsg = `您的虚拟公司市值不足或等于20000，破产将无法获得NB币，但虚拟公司及历史数据会被彻底删除，确定破产吗？`;
+        }
+        const confirmed = await showConfirm('确认破产', confirmMsg);
+        if (!confirmed) return;
 
-    // 1. 删除公司记录
-    const { error: delError } = await supabaseClient
-        .from('user_companies')
-        .delete()
-        .eq('id', companyId);
-    if (delError) {
-        await showMessage('破产失败', delError.message);
-        return;
-    }
+        // 1. 删除公司记录
+        const { error: delError } = await supabaseClient
+            .from('user_companies')
+            .delete()
+            .eq('id', companyId);
+        if (delError) {
+            await showMessage('破产失败', delError.message);
+            return;
+        }
 
-    // 2. 删除该用户的蓝标（使用 RPC 绕过 RLS）
-    const { data: deleted, error: delBadgeError } = await supabaseClient.rpc(
-        'delete_verified_user',
-        { p_user_id: currentUserId }
-    );
-    if (delBadgeError) {
-        console.error('删除蓝标失败:', delBadgeError);
-    } else if (deleted) {
-        console.log('蓝标已删除');
-    } else {
-        console.warn('该用户没有蓝标记录');
-    }
+        // 2. 删除该用户的蓝标（使用 RPC 绕过 RLS）
+        const { data: deleted, error: delBadgeError } = await supabaseClient.rpc(
+            'delete_verified_user',
+            { p_user_id: currentUserId }
+        );
+        if (delBadgeError) {
+            console.error('删除蓝标失败:', delBadgeError);
+        } else if (deleted) {
+            console.log('蓝标已删除');
+        } else {
+            console.warn('该用户没有蓝标记录');
+        }
 
-    // 3. 删除该公司的自动支持规则
-    await supabaseClient.from('support_rules').delete().eq('company_id', companyId);
+        // 3. 删除该公司的自动支持规则
+        await supabaseClient.from('support_rules').delete().eq('company_id', companyId);
 
-    // 4. 从所有历史快照中移除该公司数据
-    const { data: snapshots, error: fetchError } = await supabaseClient
-        .from('stock_history_full')
-        .select('id, snapshot');
-    if (!fetchError && snapshots) {
-        for (const snap of snapshots) {
-            const snapshot = snap.snapshot;
-            if (!snapshot.names || !snapshot.values) continue;
-            const idx = snapshot.names.indexOf(companyName);
+        // 4. 从所有历史快照中移除该公司数据
+        const { data: snapshots, error: fetchError } = await supabaseClient
+            .from('stock_history_full')
+            .select('id, snapshot');
+        if (!fetchError && snapshots) {
+            for (const snap of snapshots) {
+                const snapshot = snap.snapshot;
+                if (!snapshot.names || !snapshot.values) continue;
+                const idx = snapshot.names.indexOf(companyName);
+                if (idx !== -1) {
+                    snapshot.names.splice(idx, 1);
+                    snapshot.values.splice(idx, 1);
+                    await supabaseClient
+                        .from('stock_history_full')
+                        .update({ snapshot: snapshot })
+                        .eq('id', snap.id);
+                }
+            }
+        }
+
+        // 5. 从最新快照中移除
+        const { data: latestData } = await supabaseClient
+            .from('stock_latest')
+            .select('id, snapshot_data')
+            .order('created_at', { ascending: false })
+            .limit(1);
+        if (latestData && latestData.length > 0) {
+            const latest = latestData[0];
+            const snapshot = latest.snapshot_data;
+            const idx = snapshot.names?.indexOf(companyName);
             if (idx !== -1) {
                 snapshot.names.splice(idx, 1);
                 snapshot.values.splice(idx, 1);
                 await supabaseClient
-                    .from('stock_history_full')
-                    .update({ snapshot: snapshot })
-                    .eq('id', snap.id);
+                    .from('stock_latest')
+                    .update({ snapshot_data: snapshot })
+                    .eq('id', latest.id);
             }
         }
-    }
 
-    // 5. 从最新快照中移除
-    const { data: latestData } = await supabaseClient
-        .from('stock_latest')
-        .select('id, snapshot_data')
-        .order('created_at', { ascending: false })
-        .limit(1);
-    if (latestData && latestData.length > 0) {
-        const latest = latestData[0];
-        const snapshot = latest.snapshot_data;
-        const idx = snapshot.names?.indexOf(companyName);
-        if (idx !== -1) {
-            snapshot.names.splice(idx, 1);
-            snapshot.values.splice(idx, 1);
-            await supabaseClient
-                .from('stock_latest')
-                .update({ snapshot_data: snapshot })
-                .eq('id', latest.id);
-        }
-    }
-
-    // 6. 发放奖励
-    if (reward > 0) {
-        const balance = await fetchUserBalance();
-        const newBalance = balance + reward;
-        await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
-        await fetchUserBalance();
-        await showMessage('破产成功', `您的虚拟公司及历史数据已清除，您获得 ${reward} NB币。当前余额: ${newBalance}`);
-    } else {
-        await showMessage('破产成功', '您的虚拟公司及历史数据已清除，您未获得NB币。');
-    }
-
-    myCompany = null;
-    await refreshStockDataFromDB();
-    renderMyCompanySection();
-}
-    async function checkAutoSupportRules() {
-    if (!currentUserId) return;
-    const { data: rules, error } = await supabaseClient
-        .from('support_rules')
-        .select('id, company_id, threshold, amount')
-        .eq('user_id', currentUserId);
-    if (error || !rules.length) return;
-    for (const rule of rules) {
-        if (!rule.company_id) continue;  // 跳过无效的 company_id
-        const { data: company } = await supabaseClient
-            .from('user_companies')
-            .select('market_value')
-            .eq('id', rule.company_id)
-            .single();
-        if (company && company.market_value < rule.threshold) {
+        // 6. 发放奖励
+        if (reward > 0) {
             const balance = await fetchUserBalance();
-            if (balance >= rule.amount && rule.amount <= 500) {
-                await supportCompany(rule.company_id, rule.amount, true);
-                await new Promise(r => setTimeout(r, 1000));
-            } else {
-                await supabaseClient.from('support_rules').delete().eq('id', rule.id);
-                console.log(`自动支持规则已删除：余额不足或金额超限 (rule ${rule.id})`);
-            }
+            const newBalance = balance + reward;
+            await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
+            await fetchUserBalance();
+            await showMessage('破产成功', `您的虚拟公司及历史数据已清除，您获得 ${reward} NB币。当前余额: ${newBalance}`);
+        } else {
+            await showMessage('破产成功', '您的虚拟公司及历史数据已清除，您未获得NB币。');
         }
-    }
-}
 
-    async function refreshStockDataFromDB() {
-    const companies = await fetchAllCompanies();
-    if (!companies.length) {
-        rawData = { names: [], values: [] };
-        sortedCombined = [];
-        totalStocks = 0;
-        return;
-    }
-    const newNames = companies.map(c => c.company_name);
-    const newValues = companies.map(c => c.market_value);
-    const newTotal = newValues.reduce((a,b)=>a+b,0);
-    rawData.names = newNames;
-    rawData.values = newValues;
-    totalStocks = rawData.names.length;
-
-    // ⭐ 关键修改：确保 owner 字段正确取值
-    const combined = companies.map(company => {
-        // 兼容两种数据结构
-        let owner = '未知';
-        if (company.profiles) {
-            if (Array.isArray(company.profiles)) {
-                owner = company.profiles[0]?.username || '未知';
-            } else {
-                owner = company.profiles.username || '未知';
-            }
-        }
-        return {
-            id: company.id,
-            name: company.company_name,
-            value: company.market_value,
-            owner: owner
-        };
-    });
-    combined.sort((a, b) => b.value - a.value);
-    sortedCombined = combined;
-
-    await saveFullSnapshot(newTotal);
-    await loadFullHistory();
-    updateStatsPanel(newTotal);
-    updateDataTable();
-    updateMiniPieChart();
-    updateHistogramChart();
-    if (currentChart && rawData.names.length) {
-        const windowData = getWindowData();
-        currentChart.data.labels = windowData.names;
-        currentChart.data.datasets[0].data = windowData.values;
-        if (currentChartType === 'bar' || currentChartType === 'pie') {
-            const barColors = windowData.values.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`);
-            currentChart.data.datasets[0].backgroundColor = barColors;
-        }
-        currentChart.update({ duration: 300 });
-    }
-
-    if (currentUserId) {
-        await fetchMyCompany();
+        myCompany = null;
+        await refreshStockDataFromDB();
         renderMyCompanySection();
     }
-}
 
-    function renderMyCompanySection() {
-    const container = document.getElementById('myCompanySection');
-    if (!currentUserId) {
-        container.innerHTML = '<div style="width:100%;text-align:center;">请先登录</div>';
-        return;
-    }
-    if (!myCompany) {
-        container.innerHTML = `
-            <div>尚未注册虚拟公司</div>
-            <div><button id="registerCompanyBtn" class="company-btn">🏢 注册您的虚拟公司</button></div>
-        `;
-        document.getElementById('registerCompanyBtn')?.addEventListener('click', () => {
-            window.location.href = 'register_company.html';
-        });
-        return;
-    }
-
-    // 公司已存在，显示信息
-    let statusHtml = '';
-    let actionButtons = ''; // 操作按钮（认证按钮 + 破产按钮）
-
-    if (myCompany.verified) {
-        statusHtml = '<span style="color:#4caf50;">✅ 已认证</span>';
-    } else {
-        if (myCompany.verification_status === 'pending') {
-            statusHtml = '<span style="color:#ff9800;">⏳ 认证审核中</span>';
-        } else if (myCompany.verification_status === 'rejected') {
-            statusHtml = '<span style="color:#f44336;">❌ 认证被拒绝</span>';
-            actionButtons += `<button id="applyVerifyBtn" class="company-btn">🔑 重新申请认证</button>`;
-        } else {
-            statusHtml = '<span style="color:#f44336;">⚠️ 未认证</span>';
-            // 未认证且非待审核，显示“去认证你的虚拟公司”按钮
-            actionButtons += `<button id="applyVerifyBtn" class="company-btn">🔑 去认证你的虚拟公司</button>`;
+    async function checkAutoSupportRules() {
+        if (!currentUserId) return;
+        const { data: rules, error } = await supabaseClient
+            .from('support_rules')
+            .select('id, company_id, threshold, amount')
+            .eq('user_id', currentUserId);
+        if (error || !rules.length) return;
+        for (const rule of rules) {
+            if (!rule.company_id) continue;
+            const { data: company } = await supabaseClient
+                .from('user_companies')
+                .select('market_value')
+                .eq('id', rule.company_id)
+                .single();
+            if (company && company.market_value < rule.threshold) {
+                const balance = await fetchUserBalance();
+                if (balance >= rule.amount && rule.amount <= 500) {
+                    await supportCompany(rule.company_id, rule.amount, true);
+                    await new Promise(r => setTimeout(r, 1000));
+                } else {
+                    await supabaseClient.from('support_rules').delete().eq('id', rule.id);
+                    console.log(`自动支持规则已删除：余额不足或金额超限 (rule ${rule.id})`);
+                }
+            }
         }
     }
 
-    container.innerHTML = `
-        <div>
-            <strong>🏢 ${escapeHtml(myCompany.company_name)}</strong> 
-            虚拟市值: ${formatValue(myCompany.market_value)} 
-            ${statusHtml}
-        </div>
-        <div>
-            ${actionButtons}
-            <button id="bankruptBtn" class="company-btn danger-btn">💥 破产</button>
-        </div>
-    `;
+    async function refreshStockDataFromDB() {
+        const companies = await fetchAllCompanies();
+        if (!companies.length) {
+            rawData = { names: [], values: [] };
+            sortedCombined = [];
+            totalStocks = 0;
+            return;
+        }
+        const newNames = companies.map(c => c.company_name);
+        const newValues = companies.map(c => c.market_value);
+        const newTotal = newValues.reduce((a,b)=>a+b,0);
+        rawData.names = newNames;
+        rawData.values = newValues;
+        totalStocks = rawData.names.length;
 
-    // 绑定破产事件
-    document.getElementById('bankruptBtn')?.addEventListener('click', bankruptCompany);
-
-    // 绑定认证申请按钮（如果有）
-    const applyBtn = document.getElementById('applyVerifyBtn');
-    if (applyBtn) {
-        applyBtn.addEventListener('click', async () => {
-            const { data, error } = await supabaseClient.rpc('apply_company_verification', {
-                p_user_id: currentUserId
-            });
-            if (error) {
-                await showMessage('错误', error.message);
-            } else if (!data.success) {
-                await showMessage('提示', data.message);
-            } else {
-                await showMessage('成功', data.message);
-                // 刷新公司信息
-                await fetchMyCompany();
-                renderMyCompanySection();
+        const combined = companies.map(company => {
+            let owner = '未知';
+            if (company.profiles) {
+                if (Array.isArray(company.profiles)) {
+                    owner = company.profiles[0]?.username || '未知';
+                } else {
+                    owner = company.profiles.username || '未知';
+                }
             }
+            return {
+                id: company.id,
+                name: company.company_name,
+                value: company.market_value,
+                owner: owner
+            };
         });
+        combined.sort((a, b) => b.value - a.value);
+        sortedCombined = combined;
+
+        await saveFullSnapshot(newTotal);
+        await loadFullHistory();
+        updateStatsPanel(newTotal);
+        updateDataTable();
+        updateMiniPieChart();
+        updateHistogramChart();
+        if (currentChart && rawData.names.length) {
+            const windowData = getWindowData();
+            currentChart.data.labels = windowData.names;
+            currentChart.data.datasets[0].data = windowData.values;
+            if (currentChartType === 'bar' || currentChartType === 'pie') {
+                const barColors = windowData.values.map((_, idx) => `hsla(${(idx * 25) % 360}, 65%, 55%, 0.85)`);
+                currentChart.data.datasets[0].backgroundColor = barColors;
+            }
+            currentChart.update({ duration: 300 });
+        }
+
+        if (currentUserId) {
+            await fetchMyCompany();
+            renderMyCompanySection();
+        }
     }
-}
+
+    function renderMyCompanySection() {
+        const container = document.getElementById('myCompanySection');
+        if (!currentUserId) {
+            container.innerHTML = '<div style="width:100%;text-align:center;">请先登录</div>';
+            return;
+        }
+        if (!myCompany) {
+            container.innerHTML = `
+                <div>尚未注册虚拟公司</div>
+                <div><button id="registerCompanyBtn" class="company-btn">🏢 注册您的虚拟公司</button></div>
+            `;
+            document.getElementById('registerCompanyBtn')?.addEventListener('click', () => {
+                window.location.href = 'register_company.html';
+            });
+            return;
+        }
+
+        let statusHtml = '';
+        let actionButtons = '';
+
+        if (myCompany.verified) {
+            statusHtml = '<span style="color:#4caf50;">✅ 已认证</span>';
+        } else {
+            if (myCompany.verification_status === 'pending') {
+                statusHtml = '<span style="color:#ff9800;">⏳ 认证审核中</span>';
+            } else if (myCompany.verification_status === 'rejected') {
+                statusHtml = '<span style="color:#f44336;">❌ 认证被拒绝</span>';
+                actionButtons += `<button id="applyVerifyBtn" class="company-btn">🔑 重新申请认证</button>`;
+            } else {
+                statusHtml = '<span style="color:#f44336;">⚠️ 未认证</span>';
+                actionButtons += `<button id="applyVerifyBtn" class="company-btn">🔑 去认证你的虚拟公司</button>`;
+            }
+        }
+
+        container.innerHTML = `
+            <div>
+                <strong>🏢 ${escapeHtml(myCompany.company_name)}</strong> 
+                虚拟市值: ${formatValue(myCompany.market_value)} 
+                ${statusHtml}
+            </div>
+            <div>
+                ${actionButtons}
+                <button id="bankruptBtn" class="company-btn danger-btn">💥 破产</button>
+            </div>
+        `;
+
+        document.getElementById('bankruptBtn')?.addEventListener('click', bankruptCompany);
+
+        const applyBtn = document.getElementById('applyVerifyBtn');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', async () => {
+                const { data, error } = await supabaseClient.rpc('apply_company_verification', {
+                    p_user_id: currentUserId
+                });
+                if (error) {
+                    await showMessage('错误', error.message);
+                } else if (!data.success) {
+                    await showMessage('提示', data.message);
+                } else {
+                    await showMessage('成功', data.message);
+                    await fetchMyCompany();
+                    renderMyCompanySection();
+                }
+            });
+        }
+    }
 
     function showSupportDialog() {
-    if (!currentUserId) { showMessage('提示', '请先登录'); return; }
-    const companyOptions = allCompanies
-        .filter(c => c.id != null && !isNaN(c.id))
-        .map(c => `<option value="${c.id}">${escapeHtml(c.company_name)} (市值: ${formatValue(c.market_value)})</option>`)
-        .join('');
-    if (!companyOptions) {
-        showMessage('提示', '暂无有效公司可支持');
-        return;
-    }
+        if (!currentUserId) { showMessage('提示', '请先登录'); return; }
+        const companyOptions = allCompanies
+            .filter(c => c.id != null && !isNaN(c.id))
+            .map(c => `<option value="${c.id}">${escapeHtml(c.company_name)} (市值: ${formatValue(c.market_value)})</option>`)
+            .join('');
+        if (!companyOptions) {
+            showMessage('提示', '暂无有效公司可支持');
+            return;
+        }
         const html = `
             <div id="customDialog" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--card-bg); border-radius:24px; padding:24px; z-index:1001; width:90%; max-width:450px; box-shadow:0 10px 30px rgba(0,0,0,0.3); border:1px solid var(--card-border);">
                 <h3>支持虚拟公司</h3>
@@ -972,10 +968,12 @@
         if (isNaN(n)) return '0';
         return n.toLocaleString();
     }
+
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
     }
+
     function getChangeHtml(currentVal, previousVal) {
         if (previousVal === undefined || previousVal === null) return '<span class="change-icon">—</span>';
         const diff = currentVal - previousVal;
@@ -985,6 +983,7 @@
         const colorClass = diff > 0 ? 'change-up' : 'change-down';
         return `<span class="${colorClass}">${arrow} ${Math.abs(percent)}%</span>`;
     }
+
     function updateTimestamp(status) {
         const elem = document.getElementById('dataTimestamp');
         const now = new Date();
@@ -993,12 +992,14 @@
         else if (status === 'error') elem.innerHTML = `⚠️ 上次更新失败 (${timeStr})`;
         else elem.innerHTML = `🕒 自动刷新: ${refreshInterval/1000}秒 | 最新: ${timeStr}`;
     }
+
     function updateCountdownDisplay() {
         const badge = document.getElementById('countdownBadge');
         if (!badge) return;
         if (!autoRefreshEnabled) { badge.innerHTML = '⏸️ 已暂停'; return; }
         badge.innerHTML = `🕒 下次刷新: ${secondsLeft}秒`;
     }
+
     function startCountdown() {
         if (countdownInterval) clearInterval(countdownInterval);
         countdownInterval = setInterval(() => {
@@ -1008,10 +1009,12 @@
             } else if (!autoRefreshEnabled) updateCountdownDisplay();
         }, 1000);
     }
+
     function resetCountdown() {
         secondsLeft = refreshInterval / 1000;
         updateCountdownDisplay();
     }
+
     function getWindowData() {
         if (isFullViewMode || currentChartType === 'pie') {
             return { names: rawData.names.slice(), values: rawData.values.slice() };
@@ -1020,6 +1023,7 @@
         const end = Math.min(start + windowSize, totalStocks);
         return { names: rawData.names.slice(start, end), values: rawData.values.slice(start, end) };
     }
+
     function updateSliderUI() {
         const sliderContainer = document.getElementById('rangeSliderContainer');
         const slider = document.getElementById('xAxisSlider');
@@ -1047,6 +1051,7 @@
             fullViewBtn.style.margin = '';
         }
     }
+
     function getChartColors() {
         const isDark = document.body.classList.contains('dark-mode');
         return {
@@ -1060,6 +1065,7 @@
             tooltipTitle: isDark ? '#f3f4f6' : '#f0f3f7'
         };
     }
+
     async function buildChartWithFade(type) {
         if (!rawData.names.length) return;
         const container = document.getElementById('chartContainer');
@@ -1092,30 +1098,31 @@
         container.classList.add('fade-in');
         setTimeout(() => container.classList.remove('fade-in'), 150);
     }
+
     function computeHistogram(values, step = 10000) {
-    if (!values || values.length === 0) return { labels: [], counts: [] };
-    const maxVal = Math.max(...values);
-    const binCount = Math.ceil(maxVal / step);
-    const labels = [];
-    const counts = new Array(binCount).fill(0);
-    for (let i = 0; i < binCount; i++) {
-        const start = i === 0 ? 0 : (i * step + 1);
-        const end = (i + 1) * step;
-        labels.push(`${start}～${end}`);
+        if (!values || values.length === 0) return { labels: [], counts: [] };
+        const maxVal = Math.max(...values);
+        const binCount = Math.ceil(maxVal / step);
+        const labels = [];
+        const counts = new Array(binCount).fill(0);
+        for (let i = 0; i < binCount; i++) {
+            const start = i === 0 ? 0 : (i * step + 1);
+            const end = (i + 1) * step;
+            labels.push(`${start}～${end}`);
+        }
+        for (const val of values) {
+            let binIndex = Math.floor(val / step);
+            if (binIndex >= binCount) binIndex = binCount - 1;
+            counts[binIndex]++;
+        }
+        const filtered = labels.map((label, idx) => ({ label, count: counts[idx] }))
+                               .filter(item => item.count > 0);
+        return {
+            labels: filtered.map(item => item.label),
+            counts: filtered.map(item => item.count)
+        };
     }
-    for (const val of values) {
-        let binIndex = Math.floor(val / step);
-        if (binIndex >= binCount) binIndex = binCount - 1;
-        counts[binIndex]++;
-    }
-    // 过滤掉 counts 为 0 的区间
-    const filtered = labels.map((label, idx) => ({ label, count: counts[idx] }))
-                           .filter(item => item.count > 0);
-    return {
-        labels: filtered.map(item => item.label),
-        counts: filtered.map(item => item.count)
-    };
-}
+
     function updateHistogramChart() {
         if (!rawData.values.length) return;
         const { labels, counts } = computeHistogram(rawData.values, 10000);
@@ -1132,6 +1139,7 @@
             });
         }
     }
+
     async function saveFullSnapshot(totalValue) {
         const snapshotData = { names: rawData.names, values: rawData.values };
         await supabaseClient.from('stock_history_full').insert({ recorded_at: new Date(), total_value: totalValue, snapshot: snapshotData });
@@ -1139,6 +1147,7 @@
         await supabaseClient.from('stock_latest').delete().neq('id', 0);
         await supabaseClient.from('stock_latest').insert({ created_at: new Date(), total_value: totalValue, snapshot_data: snapshotData });
     }
+
     async function loadFullHistory() {
         const { data, error } = await supabaseClient.from('stock_history_full').select('recorded_at, snapshot, total_value').order('recorded_at', { ascending: true }).limit(30);
         if (error || !data || data.length === 0) return;
@@ -1147,6 +1156,7 @@
         updateStockHistoryChartNoRebuild();
         updateTotalHistoryChartNoRebuild();
     }
+
     function getFilteredStockNames() {
         if (!fullHistoryData.length) return [];
         const latest = fullHistoryData[fullHistoryData.length-1];
@@ -1156,6 +1166,7 @@
         const limit = parseInt(currentTopN, 10);
         return stocks.slice(0, limit).map(s => s.name);
     }
+
     function updateStockHistoryChartNoRebuild() {
         if (!fullHistoryData.length || allStockNames.length === 0) return;
         const displayNames = getFilteredStockNames();
@@ -1190,6 +1201,7 @@
             stockHistoryChart = new Chart(ctx, { type: 'line', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatValue(ctx.raw)}` } }, legend: { position: 'top', labels: { font: { size: 10 } } } }, scales: { y: { beginAtZero: true, ticks: { callback: v => formatValue(v) } } } } });
         }
     }
+
     function updateTotalHistoryChartNoRebuild() {
         if (!fullHistoryData.length) return;
         const labels = fullHistoryData.map(r => r.time.toLocaleTimeString());
@@ -1203,11 +1215,13 @@
             totalHistoryChart = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: '总虚拟市值', data: totals, borderColor: '#00a1d6', backgroundColor: 'rgba(0,161,214,0.1)', fill: true, tension: 0.2 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `总虚拟市值: ${formatValue(ctx.raw)}` } } } } });
         }
     }
+
     function toggleFullscreen(element) {
         if (!element) return;
         if (!document.fullscreenElement) element.requestFullscreen().catch(err => console.error(err));
         else document.exitFullscreen();
     }
+
     function updateMiniPieChart() {
         if (!rawData.values.length) return;
         const combined = rawData.names.map((n, i) => ({ name: n, value: rawData.values[i] }));
@@ -1228,10 +1242,150 @@
             miniPieChart = new Chart(ctx, { type: 'pie', data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'right', labels: { font: { size: 10 } } }, tooltip: { callbacks: { label: ctx => `${ctx.label}: ${formatValue(ctx.raw)} (${((ctx.raw / data.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)` } } } } });
         }
     }
+
+    // ========== 举报公司函数 ==========
+    async function reportCompany(companyId, companyName) {
+        const cid = Number(companyId);
+        if (isNaN(cid) || cid <= 0) {
+            await showMessage('错误', '无效的公司ID');
+            return;
+        }
+        const user = JSON.parse(localStorage.getItem('nb_user') || '{}');
+        if (!user.id) {
+            await showMessage('提示', '请先登录');
+            return;
+        }
+        const reason = prompt(`举报“${companyName}”的原因（1-200字）：`);
+        if (!reason) return;
+        if (reason.length < 1 || reason.length > 200) {
+            await showMessage('提示', '原因长度需1-200字');
+            return;
+        }
+        const { data, error } = await supabaseClient.rpc('report_company', {
+            p_user_id: user.id,
+            p_company_id: cid,
+            p_reason: reason
+        });
+        if (error) {
+            await showMessage('错误', error.message);
+        } else if (!data.success) {
+            await showMessage('提示', data.message);
+        } else {
+            await showMessage('成功', '举报已提交');
+        }
+    }
+
+    // ========== K线图函数 ==========
+    async function loadKLineData(companyId, companyName) {
+        const container = document.getElementById('kLineChart');
+        const title = document.getElementById('kLineTitle');
+        if (!container) return;
+
+        title.innerText = `📈 ${companyName} 日K线（加载中...）`;
+
+        const { data, error } = await supabaseClient
+            .from('stock_history_full')
+            .select('snapshot, recorded_at')
+            .order('recorded_at', { ascending: true })
+            .limit(200);
+
+        if (error || !data || data.length < 2) {
+            title.innerText = `📈 ${companyName} 日K线（数据不足）`;
+            container.innerHTML = '数据不足，无法绘制K线';
+            return;
+        }
+
+        const dailyData = new Map();
+        for (const record of data) {
+            const snapshot = record.snapshot;
+            const idx = snapshot.names.indexOf(companyName);
+            if (idx === -1) continue;
+            const date = new Date(record.recorded_at);
+            const dateKey = date.toISOString().split('T')[0];
+            const value = snapshot.values[idx];
+
+            if (!dailyData.has(dateKey)) {
+                dailyData.set(dateKey, { date: dateKey, values: [] });
+            }
+            dailyData.get(dateKey).values.push(value);
+        }
+
+        if (dailyData.size < 2) {
+            title.innerText = `📈 ${companyName} 日K线（数据不足）`;
+            container.innerHTML = '该公司历史数据不足（至少需要2个交易日）';
+            return;
+        }
+
+        const kData = [];
+        const sortedDates = Array.from(dailyData.keys()).sort();
+        for (const dateKey of sortedDates) {
+            const day = dailyData.get(dateKey);
+            const values = day.values;
+            kData.push({
+                date: dateKey,
+                open: values[0],
+                close: values[values.length - 1],
+                high: Math.max(...values),
+                low: Math.min(...values)
+            });
+        }
+
+        if (kLineChartInstance) {
+            kLineChartInstance.dispose();
+        }
+
+        kLineChartInstance = echarts.init(container);
+        const option = {
+            title: {
+                text: `${companyName} 日K线`,
+                left: 'center',
+                textStyle: { fontSize: 14, color: '#00a1d6' }
+            },
+            tooltip: {
+                trigger: 'axis',
+                formatter: function(params) {
+                    const d = params[0].data;
+                    return `${d.date}<br/>开盘: ${d.open}<br/>收盘: ${d.close}<br/>最高: ${d.high}<br/>最低: ${d.low}`;
+                }
+            },
+            xAxis: {
+                data: kData.map(d => d.date),
+                axisLabel: { rotate: 45, fontSize: 10 }
+            },
+            yAxis: {
+                scale: true,
+                splitLine: { show: true, lineStyle: { type: 'dashed' } }
+            },
+            series: [{
+                type: 'candlestick',
+                data: kData.map(d => [d.open, d.close, d.low, d.high]),
+                itemStyle: {
+                    color: '#ef232a',
+                    color0: '#14b143',
+                    borderColor: '#ef232a',
+                    borderColor0: '#14b143'
+                },
+                markLine: {
+                    data: [{ type: 'average', name: '均价' }],
+                    lineStyle: { color: '#ff9800', type: 'dashed' }
+                }
+            }],
+            grid: { top: 50, bottom: 60, left: 60, right: 30 }
+        };
+
+        kLineChartInstance.setOption(option);
+        kLineChartInstance.resize();
+
+        title.innerText = `📈 ${companyName} 日K线（${kData.length}个交易日）`;
+        container.innerHTML = '';
+        container.appendChild(kLineChartInstance.getDom());
+    }
+
+    // ========== 表格相关函数 ==========
     function updateDataTable() {
         const tbody = document.getElementById('tableBody');
         if (!sortedCombined.length) {
-            tbody.innerHTML = '<tr><td colspan="3">暂无数据</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4">暂无数据</td></tr>';
             return;
         }
         
@@ -1257,7 +1411,7 @@
                 <td><a href="#" class="stock-link" data-id="${item.id}" data-name="${escapeHtml(item.name)}">${escapeHtml(item.name)}</a><br>${reportBtn}</td>
                 <td>${formatValue(item.value)}</td>
                 <td>${escapeHtml(item.owner || '未知')}</td>
-                 <td>${changeHtml}</td>
+                <td>${changeHtml}</td>
             </tr>`;
         }
         tbody.innerHTML = html;
@@ -1269,268 +1423,124 @@
         
         // 绑定举报按钮事件
         document.querySelectorAll('.report-company-btn').forEach(btn => {
-            btn.onclick = () => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
                 const companyId = parseInt(btn.dataset.companyId);
                 const companyName = btn.dataset.companyName;
                 reportCompany(companyId, companyName);
+            };
+        });
 
+        // ✅ 独立绑定股票名称点击事件
         document.querySelectorAll('.stock-link').forEach(link => {
-    link.onclick = (e) => {
-        e.preventDefault();
-        const companyId = parseInt(link.dataset.id);
-        const companyName = link.dataset.name;
-        loadKLineData(companyId, companyName);      
+            link.onclick = (e) => {
+                e.preventDefault();
+                const companyId = parseInt(link.dataset.id);
+                const companyName = link.dataset.name;
+                loadKLineData(companyId, companyName);
             };
         });
     }
-    
-    // 举报公司函数
-    async function reportCompany(companyId, companyName) {
-    const cid = Number(companyId);
-    if (isNaN(cid) || cid <= 0) {
-        await showMessage('错误', '无效的公司ID');
-        return;
-    }
-    const user = JSON.parse(localStorage.getItem('nb_user') || '{}');
-    if (!user.id) {
-        await showMessage('提示', '请先登录');
-        return;
-    }
-    const reason = prompt(`举报“${companyName}”的原因（1-200字）：`);
-    if (!reason) return;
-    if (reason.length < 1 || reason.length > 200) {
-        await showMessage('提示', '原因长度需1-200字');
-        return;
-    }
-    const { data, error } = await supabaseClient.rpc('report_company', {
-        p_user_id: user.id,
-        p_company_id: cid,
-        p_reason: reason
-    });
-    if (error) {
-        await showMessage('错误', error.message);
-    } else if (!data.success) {
-        await showMessage('提示', data.message);
-    } else {
-        await showMessage('成功', '举报已提交');
-    }
-}
 
-// ========== K线图 ==========
-let kLineChartInstance = null;
-
-async function loadKLineData(companyId, companyName) {
-    const container = document.getElementById('kLineChart');
-    const title = document.getElementById('kLineTitle');
-    if (!container) return;
-
-    title.innerText = `📈 ${companyName} 日K线（加载中...）`;
-
-    // 从 stock_history_full 获取历史快照
-    const { data, error } = await supabaseClient
-        .from('stock_history_full')
-        .select('snapshot, recorded_at')
-        .order('recorded_at', { ascending: true })
-        .limit(200);
-
-    if (error || !data || data.length < 2) {
-        title.innerText = `📈 ${companyName} 日K线（数据不足）`;
-        container.innerHTML = '数据不足，无法绘制K线';
-        return;
+    function toggleTable() {
+        fullTableVisible = !fullTableVisible;
+        updateDataTable();
     }
 
-    // 提取该公司的市值数据（按日期分组聚合）
-    const dailyData = new Map();
-    for (const record of data) {
-        const snapshot = record.snapshot;
-        const idx = snapshot.names.indexOf(companyName);
-        if (idx === -1) continue;
-        const date = new Date(record.recorded_at);
-        const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
-        const value = snapshot.values[idx];
-
-        if (!dailyData.has(dateKey)) {
-            dailyData.set(dateKey, { date: dateKey, values: [] });
-        }
-        dailyData.get(dateKey).values.push(value);
-    }
-
-    if (dailyData.size < 2) {
-        title.innerText = `📈 ${companyName} 日K线（数据不足）`;
-        container.innerHTML = '该公司历史数据不足（至少需要2个交易日）';
-        return;
-    }
-
-    // 构造K线数据：每组取开盘、收盘、最高、最低
-    const kData = [];
-    const sortedDates = Array.from(dailyData.keys()).sort();
-    for (const dateKey of sortedDates) {
-        const day = dailyData.get(dateKey);
-        const values = day.values;
-        kData.push({
-            date: dateKey,
-            open: values[0],           // 当天第一个值作为开盘
-            close: values[values.length - 1], // 最后一个作为收盘
-            high: Math.max(...values),
-            low: Math.min(...values)
-        });
-    }
-
-    // 销毁旧图表
-    if (kLineChartInstance) {
-        kLineChartInstance.dispose();
-    }
-
-    // 渲染 ECharts K线图
-    kLineChartInstance = echarts.init(container);
-    const option = {
-        title: {
-            text: `${companyName} 日K线`,
-            left: 'center',
-            textStyle: { fontSize: 14, color: '#00a1d6' }
-        },
-        tooltip: {
-            trigger: 'axis',
-            formatter: function(params) {
-                const d = params[0].data;
-                return `${d.date}<br/>开盘: ${d.open}<br/>收盘: ${d.close}<br/>最高: ${d.high}<br/>最低: ${d.low}`;
-            }
-        },
-        xAxis: {
-            data: kData.map(d => d.date),
-            axisLabel: { rotate: 45, fontSize: 10 }
-        },
-        yAxis: {
-            scale: true,
-            splitLine: { show: true, lineStyle: { type: 'dashed' } }
-        },
-        series: [{
-            type: 'candlestick',
-            data: kData.map(d => [d.open, d.close, d.low, d.high]),
-            itemStyle: {
-                color: '#ef232a',      // 阳线（涨）红色
-                color0: '#14b143',     // 阴线（跌）绿色
-                borderColor: '#ef232a',
-                borderColor0: '#14b143'
-            },
-            markLine: {
-                data: [{ type: 'average', name: '均价' }],
-                lineStyle: { color: '#ff9800', type: 'dashed' }
-            }
-        }],
-        grid: { top: 50, bottom: 60, left: 60, right: 30 }
-    };
-
-    kLineChartInstance.setOption(option);
-    kLineChartInstance.resize();
-
-    title.innerText = `📈 ${companyName} 日K线（${kData.length}个交易日）`;
-    container.innerHTML = '';
-    container.appendChild(kLineChartInstance.getDom());
-}
-            
-    function toggleTable() { fullTableVisible = !fullTableVisible; updateDataTable(); }
     function updateStatsPanel(total) {
-    if (!rawData.values.length) {
-        document.getElementById('statsPanel').innerHTML = '<div>暂无数据</div>';
-        return;
-    }
+        if (!rawData.values.length) {
+            document.getElementById('statsPanel').innerHTML = '<div>暂无数据</div>';
+            return;
+        }
 
-    const vals = rawData.values, names = rawData.names;
-    const sum = vals.reduce((a,b)=>a+b,0);
-    const max = Math.max(...vals);
-    const maxIdx = vals.indexOf(max);
-    const min = Math.min(...vals);
-    const minIdx = vals.indexOf(min);
-    const avg = (sum / vals.length).toFixed(0);
-    const first = vals[0], last = vals[vals.length-1];
-    const change = ((last - first) / first * 100).toFixed(2);
-    const changeSym = change >= 0 ? '📈 +' : '📉 ';
+        const vals = rawData.values, names = rawData.names;
+        const sum = vals.reduce((a,b)=>a+b,0);
+        const max = Math.max(...vals);
+        const maxIdx = vals.indexOf(max);
+        const min = Math.min(...vals);
+        const minIdx = vals.indexOf(min);
+        const avg = (sum / vals.length).toFixed(0);
+        const first = vals[0], last = vals[vals.length-1];
+        const change = ((last - first) / first * 100).toFixed(2);
+        const changeSym = change >= 0 ? '📈 +' : '📉 ';
 
-    // ========== 新增：涨跌分布计算 ==========
-    let upCount = 0, downCount = 0, flatCount = 0;
-    let totalUpChange = 0, totalDownChange = 0;
-    if (previousSnapshot && previousSnapshot.names && previousSnapshot.values) {
-        // 遍历当前所有股票，与上次快照对比
-        for (let i = 0; i < names.length; i++) {
-            const name = names[i];
-            const currentVal = vals[i];
-            const prevIdx = previousSnapshot.names.indexOf(name);
-            if (prevIdx !== -1) {
-                const prevVal = previousSnapshot.values[prevIdx];
-                const diff = currentVal - prevVal;
-                if (diff > 0) {
-                    upCount++;
-                    totalUpChange += diff;
-                } else if (diff < 0) {
-                    downCount++;
-                    totalDownChange += diff; // 负值
+        let upCount = 0, downCount = 0, flatCount = 0;
+        let totalUpChange = 0, totalDownChange = 0;
+        if (previousSnapshot && previousSnapshot.names && previousSnapshot.values) {
+            for (let i = 0; i < names.length; i++) {
+                const name = names[i];
+                const currentVal = vals[i];
+                const prevIdx = previousSnapshot.names.indexOf(name);
+                if (prevIdx !== -1) {
+                    const prevVal = previousSnapshot.values[prevIdx];
+                    const diff = currentVal - prevVal;
+                    if (diff > 0) {
+                        upCount++;
+                        totalUpChange += diff;
+                    } else if (diff < 0) {
+                        downCount++;
+                        totalDownChange += diff;
+                    } else {
+                        flatCount++;
+                    }
                 } else {
                     flatCount++;
                 }
-            } else {
-                // 新公司，没有历史数据，视为持平
-                flatCount++;
             }
         }
-    } else {
-        // 无历史快照，显示提示
-        // 不计算，保持所有计数为0
-    }
 
-    // 计算比例
-    const totalCount = upCount + downCount + flatCount;
-    const upPercent = totalCount ? (upCount / totalCount * 100).toFixed(1) : 0;
-    const downPercent = totalCount ? (downCount / totalCount * 100).toFixed(1) : 0;
-    const avgUp = upCount ? (totalUpChange / upCount).toFixed(0) : 0;
-    const avgDown = downCount ? (totalDownChange / downCount).toFixed(0) : 0;
+        const totalCount = upCount + downCount + flatCount;
+        const upPercent = totalCount ? (upCount / totalCount * 100).toFixed(1) : 0;
+        const downPercent = totalCount ? (downCount / totalCount * 100).toFixed(1) : 0;
+        const avgUp = upCount ? (totalUpChange / upCount).toFixed(0) : 0;
+        const avgDown = downCount ? (totalDownChange / downCount).toFixed(0) : 0;
 
-    let totalChangeHtml = '';
-    if (previousSnapshot && previousSnapshot.total) {
-        const totalDiff = sum - previousSnapshot.total;
-        const totalPercent = (totalDiff / previousSnapshot.total * 100).toFixed(2);
-        totalChangeHtml = `<div class="stat-card"><span class="stat-label">📊 总市值变化</span><span class="stat-value ${totalDiff >= 0 ? 'change-up' : 'change-down'}">${totalDiff >= 0 ? '▲' : '▼'} ${Math.abs(totalPercent)}%</span></div>`;
-    }
+        let totalChangeHtml = '';
+        if (previousSnapshot && previousSnapshot.total) {
+            const totalDiff = sum - previousSnapshot.total;
+            const totalPercent = (totalDiff / previousSnapshot.total * 100).toFixed(2);
+            totalChangeHtml = `<div class="stat-card"><span class="stat-label">📊 总市值变化</span><span class="stat-value ${totalDiff >= 0 ? 'change-up' : 'change-down'}">${totalDiff >= 0 ? '▲' : '▼'} ${Math.abs(totalPercent)}%</span></div>`;
+        }
 
-    // 构建涨跌分布 HTML
-    let distributionHtml = '';
-    if (totalCount > 0) {
-        distributionHtml = `
-            <div class="stat-card distribution-card">
-                <span class="stat-label">📈 涨跌分布</span>
-                <span class="stat-value">
-                    <span style="color:#f44336;">▲ ${upCount}</span> 
-                    <span style="color:#4caf50;">▼ ${downCount}</span> 
-                    <span style="color:#999;">- ${flatCount}</span>
-                </span>
-                <span style="font-size:0.75rem; color:var(--count-text);">
-                    涨 ${upPercent}% / 跌 ${downPercent}%
-                </span>
-                <span style="font-size:0.75rem; color:var(--count-text); margin-left:8px;">
-                    平均涨 ${avgUp} / 平均跌 ${avgDown}
-                </span>
-            </div>
+        let distributionHtml = '';
+        if (totalCount > 0) {
+            distributionHtml = `
+                <div class="stat-card distribution-card">
+                    <span class="stat-label">📈 涨跌分布</span>
+                    <span class="stat-value">
+                        <span style="color:#f44336;">▲ ${upCount}</span> 
+                        <span style="color:#4caf50;">▼ ${downCount}</span> 
+                        <span style="color:#999;">- ${flatCount}</span>
+                    </span>
+                    <span style="font-size:0.75rem; color:var(--count-text);">
+                        涨 ${upPercent}% / 跌 ${downPercent}%
+                    </span>
+                    <span style="font-size:0.75rem; color:var(--count-text); margin-left:8px;">
+                        平均涨 ${avgUp} / 平均跌 ${avgDown}
+                    </span>
+                </div>
+            `;
+        } else {
+            distributionHtml = `
+                <div class="stat-card">
+                    <span class="stat-label">📈 涨跌分布</span>
+                    <span class="stat-value" style="font-size:0.85rem; color:var(--count-text);">暂无历史数据</span>
+                </div>
+            `;
+        }
+
+        document.getElementById('statsPanel').innerHTML = `
+            <div class="stat-card"><span class="stat-label">🏦 总虚拟股票数</span><span class="stat-value">${vals.length}</span></div>
+            <div class="stat-card"><span class="stat-label">💰 虚拟总值</span><span class="stat-value">${formatValue(sum)}</span></div>
+            <div class="stat-card"><span class="stat-label">🏆 最高价股</span><span class="stat-value">${escapeHtml(names[maxIdx])} : ${formatValue(max)}</span></div>
+            <div class="stat-card"><span class="stat-label">📉 最低价股</span><span class="stat-value">${escapeHtml(names[minIdx])} : ${formatValue(min)}</span></div>
+            <div class="stat-card"><span class="stat-label">📊 平均估值</span><span class="stat-value">${formatValue(avg)}</span></div>
+            <div class="stat-card"><span class="stat-label">🔄 首尾变化</span><span class="stat-value">${changeSym}${Math.abs(change)}%</span></div>
+            ${totalChangeHtml}
+            ${distributionHtml}
         `;
-    } else {
-        distributionHtml = `
-            <div class="stat-card">
-                <span class="stat-label">📈 涨跌分布</span>
-                <span class="stat-value" style="font-size:0.85rem; color:var(--count-text);">暂无历史数据</span>
-            </div>
-        `;
     }
 
-    document.getElementById('statsPanel').innerHTML = `
-        <div class="stat-card"><span class="stat-label">🏦 总虚拟股票数</span><span class="stat-value">${vals.length}</span></div>
-        <div class="stat-card"><span class="stat-label">💰 虚拟总值</span><span class="stat-value">${formatValue(sum)}</span></div>
-        <div class="stat-card"><span class="stat-label">🏆 最高价股</span><span class="stat-value">${escapeHtml(names[maxIdx])} : ${formatValue(max)}</span></div>
-        <div class="stat-card"><span class="stat-label">📉 最低价股</span><span class="stat-value">${escapeHtml(names[minIdx])} : ${formatValue(min)}</span></div>
-        <div class="stat-card"><span class="stat-label">📊 平均估值</span><span class="stat-value">${formatValue(avg)}</span></div>
-        <div class="stat-card"><span class="stat-label">🔄 首尾变化</span><span class="stat-value">${changeSym}${Math.abs(change)}%</span></div>
-        ${totalChangeHtml}
-        ${distributionHtml}
-    `;
-}
     async function loadPreviousSnapshot() {
         const { data, error } = await supabaseClient.from('stock_latest').select('snapshot_data, total_value').order('created_at', { ascending: false }).limit(1);
         if (data && data.length > 0) previousSnapshot = { names: data[0].snapshot_data.names, values: data[0].snapshot_data.values, total: data[0].total_value };
@@ -1589,6 +1599,11 @@ async function loadKLineData(companyId, companyName) {
             await buildChartWithFade(currentChartType);
             startAutoRefreshTimer();
             startAutoSupportWatcher();
+            
+            // 默认加载第一个公司的K线
+            if (allCompanies && allCompanies.length > 0) {
+                loadKLineData(allCompanies[0].id, allCompanies[0].company_name);
+            }
         } else {
             const redirectUrl = encodeURIComponent(window.location.href);
             document.getElementById('userStatusSpan').innerHTML = `未登录 <a href="login.html?redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login.html?register=1&redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
@@ -1605,12 +1620,14 @@ async function loadKLineData(companyId, companyName) {
                 updateMiniPieChart();
                 updateHistogramChart();
                 await buildChartWithFade(currentChartType);
+                // 未登录也加载第一个公司的K线
+                loadKLineData(companies[0].id, companies[0].company_name);
             }
             await loadFullHistory();
             startAutoRefreshTimer();
         }
     }
-    
+
     function startAutoSupportWatcher() {
         if (autoSupportTimer) clearInterval(autoSupportTimer);
         autoSupportTimer = setInterval(() => { checkAutoSupportRules(); }, 10000);
@@ -1635,6 +1652,7 @@ async function loadKLineData(companyId, companyName) {
             buildChartWithFade(currentChartType);
         }
     }
+
     function onSliderChange() {
         if (isFullViewMode || currentChartType === 'pie') return;
         const slider = document.getElementById('xAxisSlider');
@@ -1653,6 +1671,7 @@ async function loadKLineData(companyId, companyName) {
             }
         }
     }
+
     function toggleFullView() {
         if (currentChartType === 'pie') return;
         isFullViewMode = !isFullViewMode;
@@ -1671,6 +1690,7 @@ async function loadKLineData(companyId, companyName) {
             currentChart.update({ duration: 300 });
         }
     }
+
     function toggleAutoRefresh() {
         autoRefreshEnabled = !autoRefreshEnabled;
         const btn = document.getElementById('pauseRefreshBtn');
@@ -1686,6 +1706,7 @@ async function loadKLineData(companyId, companyName) {
             updateCountdownDisplay();
         }
     }
+
     function handleVisibilityChange() {
         if (document.hidden) {
             if (autoRefreshTimer) clearInterval(autoRefreshTimer);
@@ -1696,7 +1717,7 @@ async function loadKLineData(companyId, companyName) {
         }
     }
 
-    // 事件绑定
+    // ========== 事件绑定 ==========
     document.getElementById('barBtn')?.addEventListener('click', () => setChartType('bar'));
     document.getElementById('lineBtn')?.addEventListener('click', () => setChartType('line'));
     document.getElementById('pieBtn')?.addEventListener('click', () => setChartType('pie'));
@@ -1712,6 +1733,7 @@ async function loadKLineData(companyId, companyName) {
     if (zoomBtn) zoomBtn.addEventListener('click', () => { const container = document.getElementById('stockHistoryContainer'); toggleFullscreen(container); });
     document.getElementById('openSupportDialogBtn')?.addEventListener('click', showSupportDialog);
 
+    // ========== 启动 ==========
     windowSize = 15;
     initUserAndData();
     startCountdown();
