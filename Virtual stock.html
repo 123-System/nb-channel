@@ -385,10 +385,10 @@
             </div>
             <table class="data-table">
                 <thead>
-                   <tr><th>虚拟股票名称</th><th>虚拟市值</th><th>股价</th><th>归属用户</th><th>与旧数据相比涨跌百分比</th><th>操作</th></tr>
+                   <tr><th>虚拟股票名称</th><th>虚拟市值</th><th>归属用户</th><th>与旧数据相比涨跌百分比</th><th>操作</th></tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr><td colspan="6">加载中...</td></tr>
+                    <tr><td colspan="5">加载中...</td></tr>
                 </tbody>
             </table>
             <button id="toggleTableBtn" class="toggle-table-btn">📋 展开全部</button>
@@ -431,20 +431,20 @@
     </div>
 </div>
 
-<!-- 股票交易弹窗 -->
+<!-- 股票交易弹窗（金额制） -->
 <div id="tradeModal" class="custom-modal">
     <div class="modal-content" style="max-width: 420px; text-align: left;">
-        <h3 id="tradeTitle" style="text-align:center; margin-bottom:12px;">📈 股票交易</h3>
+        <h3 id="tradeTitle" style="text-align:center; margin-bottom:12px;">📈 投资交易</h3>
         <div style="font-size:0.9rem; line-height:1.9;">
             <div>🏢 公司：<strong id="tradeCompanyName"></strong></div>
-            <div>💰 当前股价：<strong id="tradePrice" style="color:#00a1d6;"></strong> NB币/股</div>
-            <div>📊 我的持仓：<strong id="tradeHolding"></strong> 股</div>
+            <div>💰 当前市值：<strong id="tradePrice" style="color:#00a1d6;"></strong> NB币</div>
+            <div>📊 我的投资：<strong id="tradeHolding"></strong></div>
             <div>🏦 我的余额：<strong id="tradeBalance"></strong> NB币</div>
         </div>
         <div style="margin: 14px 0;">
-            <label style="font-size:0.85rem;">交易股数（总股本 <span id="tradeTotalShares"></span> 股，手续费 5%）：</label>
-            <input type="number" id="tradeShares" min="1" max="10000" value="1" style="width:100%; padding:8px; margin:6px 0; border-radius:30px; border:1px solid var(--card-border); background:var(--bg-color); color:var(--text-color);">
-            <div id="tradeAmountPreview" style="font-size:0.85rem; color:var(--count-text); text-align:right;">预计金额：-- NB币</div>
+            <label style="font-size:0.85rem;">交易金额（NB币，手续费 5%）：</label>
+            <input type="number" id="tradeShares" min="1" max="10000" value="100" style="width:100%; padding:8px; margin:6px 0; border-radius:30px; border:1px solid var(--card-border); background:var(--bg-color); color:var(--text-color);">
+            <div id="tradeAmountPreview" style="font-size:0.85rem; color:var(--count-text); text-align:right;">预计份额：--</div>
         </div>
         <div style="display:flex; gap:10px; margin-top:8px;">
             <button id="tradeBuyBtn" style="flex:1; background:#f44336;">📈 买入</button>
@@ -1386,8 +1386,8 @@
                 ? `<button class="report-company-btn" data-company-id="${item.id}" data-company-name="${escapeHtml(item.name)}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.7rem;">🚨 举报公司</button>`
                 : '';
             const tradeBtns = currentUserId
-                ? `<button class="trade-btn buy" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-price="${item.price}" data-shares="${item.total_shares}" style="background:#f44336; color:white; border:none; border-radius:20px; padding:3px 12px; cursor:pointer; font-size:0.75rem; margin-right:4px;">买入</button>
-                   <button class="trade-btn sell" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-price="${item.price}" data-shares="${item.total_shares}" style="background:#4caf50; color:white; border:none; border-radius:20px; padding:3px 12px; cursor:pointer; font-size:0.75rem;">卖出</button>`
+                ? `<button class="trade-btn buy" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-value="${item.value}" style="background:#f44336; color:white; border:none; border-radius:20px; padding:3px 12px; cursor:pointer; font-size:0.75rem; margin-right:4px;">买入</button>
+                   <button class="trade-btn sell" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-value="${item.value}" style="background:#4caf50; color:white; border:none; border-radius:20px; padding:3px 12px; cursor:pointer; font-size:0.75rem;">卖出</button>`
                 : '<span style="color:var(--count-text); font-size:0.75rem;">登录后可交易</span>';
             html += `<tr>
                 <td><a href="#" class="stock-link" data-id="${item.id}" data-name="${escapeHtml(item.name)}">${escapeHtml(item.name)}</a><br>${reportBtn}</td>
@@ -1421,10 +1421,9 @@
                 e.stopPropagation();
                 const companyId = parseInt(btn.dataset.id);
                 const companyName = btn.dataset.name;
-                const price = parseInt(btn.dataset.price) || 0;
-                const totalShares = parseInt(btn.dataset.shares) || 1000;
+                const marketValue = parseInt(btn.dataset.value) || 0;
                 const mode = btn.classList.contains('buy') ? 'buy' : 'sell';
-                showTradeDialog(companyId, companyName, price, totalShares, mode);
+                showTradeDialog(companyId, companyName, marketValue, mode);
             };
         });
 
@@ -1444,36 +1443,39 @@
         updateDataTable();
     }
 
-    // ========== 股票交易 ==========
-    let tradeState = null;  // { companyId, name, price, totalShares, mode, myShares, balance }
+    // ========== 金额制投资交易 ==========
+    let tradeState = null;  // { companyId, name, marketValue, mode, myValue, myShares }
 
-    function showTradeDialog(companyId, companyName, price, totalShares, mode) {
+    function showTradeDialog(companyId, companyName, marketValue, mode) {
         if (!currentUserId) { showMessage('提示', '请先登录'); return; }
         const modal = document.getElementById('tradeModal');
         document.getElementById('tradeCompanyName').innerText = companyName;
-        document.getElementById('tradePrice').innerText = formatValue(price);
-        document.getElementById('tradeTotalShares').innerText = formatValue(totalShares);
-        document.getElementById('tradeTitle').innerText = mode === 'buy' ? '📈 买入股票' : '📉 卖出股票';
+        document.getElementById('tradePrice').innerText = formatValue(marketValue);
+        document.getElementById('tradeTitle').innerText = mode === 'buy' ? '📈 买入投资' : '📉 卖出投资';
 
-        // 我的持仓
-        let myShares = 0;
+        // 我的投资（当前价值 + 份额）
+        let myValue = 0, myShares = 0;
         if (window.myHoldingsList) {
             const h = window.myHoldingsList.find(x => x.company_id === companyId);
-            if (h) myShares = h.shares;
+            if (h) {
+                myShares = parseFloat(h.shares) || 0;
+                myValue = myShares * (parseFloat(h.current_price) || 0);
+            }
         }
-        document.getElementById('tradeHolding').innerText = myShares;
+        document.getElementById('tradeHolding').innerText = myShares > 0
+            ? `${formatValue(Math.round(myValue))} NB币（${myShares} 份）`
+            : '暂无投资';
 
         // 当前余额
         fetchUserBalance().then(balance => {
             document.getElementById('tradeBalance').innerText = formatValue(balance);
         });
 
-        const sharesInput = document.getElementById('tradeShares');
-        sharesInput.value = 1;
-        sharesInput.max = mode === 'buy' ? 10000 : (myShares || 1);
-        updateTradePreview(price, myShares);
+        const amountInput = document.getElementById('tradeShares');
+        amountInput.value = mode === 'buy' ? 100 : (Math.round(myValue) || 100);
+        updateTradePreview();
 
-        tradeState = { companyId, name: companyName, price, totalShares, mode, myShares };
+        tradeState = { companyId, name: companyName, marketValue, mode, myValue, myShares };
         modal.style.display = 'flex';
 
         // 动态事件（防止重复绑定）
@@ -1483,34 +1485,33 @@
         sellBtn.onclick = null;
         buyBtn.onclick = () => executeTrade('buy');
         sellBtn.onclick = () => executeTrade('sell');
-        sharesInput.oninput = () => updateTradePreview(price, myShares);
+        amountInput.oninput = updateTradePreview;
     }
 
-    function updateTradePreview(price, myShares) {
-        const val = parseInt(document.getElementById('tradeShares').value) || 0;
+    function updateTradePreview() {
+        const val = parseFloat(document.getElementById('tradeShares').value) || 0;
         const preview = document.getElementById('tradeAmountPreview');
-        if (val <= 0) { preview.innerText = '预计金额：-- NB币'; return; }
-        if (tradeState && tradeState.mode === 'sell' && val > (tradeState.myShares || 0)) {
-            preview.innerText = '⚠️ 超过持仓数量';
+        if (val <= 0) { preview.innerText = '请输入有效金额'; return; }
+        if (tradeState && tradeState.mode === 'sell' && val > tradeState.myValue + 0.01) {
+            preview.innerText = '⚠️ 超过您的投资价值';
             return;
         }
-        const amount = price * val;
         if (tradeState && tradeState.mode === 'sell') {
-            const fee = Math.floor(amount * 0.05);
-            preview.innerText = `交易额 ${formatValue(amount)} NB币 - 手续费 ${formatValue(fee)} NB币 = 到账 ${formatValue(amount - fee)} NB币`;
+            const fee = Math.floor(val * 0.05);
+            preview.innerText = `卖出金额 ${formatValue(val)} NB币 - 手续费 ${formatValue(fee)} NB币 = 到账 ${formatValue(val - fee)} NB币`;
         } else {
-            const fee = Math.floor(amount * 0.05);
-            preview.innerText = `交易额 ${formatValue(amount)} NB币 + 手续费 ${formatValue(fee)} NB币 = 支付 ${formatValue(amount + fee)} NB币`;
+            const fee = Math.floor(val * 0.05);
+            preview.innerText = `投入 ${formatValue(val)} NB币 + 手续费 ${formatValue(fee)} NB币 = 支付 ${formatValue(val + fee)} NB币`;
         }
     }
 
     async function executeTrade(mode) {
         if (!tradeState || !currentUserId) return;
-        const shares = parseInt(document.getElementById('tradeShares').value) || 0;
-        if (shares <= 0) { await showMessage('提示', '请输入有效的股数'); return; }
+        const amount = parseFloat(document.getElementById('tradeShares').value) || 0;
+        if (amount <= 0) { await showMessage('提示', '请输入有效的金额'); return; }
 
-        if (mode === 'sell' && shares > (tradeState.myShares || 0)) {
-            await showMessage('提示', '卖出数量超过持仓');
+        if (mode === 'sell' && amount > tradeState.myValue + 0.01) {
+            await showMessage('提示', '卖出金额超过您的投资价值');
             return;
         }
 
@@ -1518,7 +1519,7 @@
         const { data, error } = await supabaseClient.rpc(rpcName, {
             p_user_id: currentUserId,
             p_company_id: tradeState.companyId,
-            p_shares: shares
+            p_amount: amount
         });
         if (error) {
             await showMessage('交易失败', error.message);
@@ -1558,28 +1559,31 @@
 
         const list = document.getElementById('holdingsList');
         const totalValue = document.getElementById('holdingsTotalValue');
-        let html = '<table class="data-table" style="font-size:0.85rem;"><thead><tr><th>公司</th><th>持仓</th><th>成本价</th><th>现价</th><th>浮动盈亏</th><th>持仓市值</th></tr></thead><tbody>';
+        let html = '<table class="data-table" style="font-size:0.85rem;"><thead><tr><th>公司</th><th>我的份额</th><th>投入成本</th><th>当前价值</th><th>浮动盈亏</th><th>占比</th></tr></thead><tbody>';
         let totalCost = 0, totalNow = 0;
         for (const h of window.myHoldingsList) {
-            const cost = (h.average_price || 0) * h.shares;
-            const now = (h.current_price || 0) * h.shares;
+            const shares = parseFloat(h.shares) || 0;
+            const nav = parseFloat(h.current_price) || 0;
+            const cost = (parseFloat(h.average_price) || 0) * shares;
+            const now = nav * shares;
             totalCost += cost;
             totalNow += now;
             const profit = now - cost;
-            const profitHtml = `<span style="color:${profit >= 0 ? '#f44336' : '#4caf50'};">${profit >= 0 ? '▲' : '▼'} ${formatValue(Math.abs(profit))}</span>`;
+            const pct = h.market_value > 0 ? (now / h.market_value * 100).toFixed(2) : '0.00';
+            const profitHtml = `<span style="color:${profit >= 0 ? '#f44336' : '#4caf50'};">${profit >= 0 ? '▲' : '▼'} ${formatValue(Math.abs(Math.round(profit)))}</span>`;
             html += `<tr>
                 <td><a href="#" class="stock-link" data-id="${h.company_id}" data-name="${escapeHtml(h.company_name)}" style="color:var(--status-border);">${escapeHtml(h.company_name)}</a></td>
-                <td>${h.shares} 股</td>
-                <td>${formatValue(h.average_price)}</td>
-                <td style="font-family:monospace; color:#00a1d6;">${formatValue(h.current_price)}</td>
+                <td>${shares} 份</td>
+                <td style="font-family:monospace;">${formatValue(Math.round(cost))}</td>
+                <td style="font-family:monospace; color:#00a1d6;">${formatValue(Math.round(now))}</td>
                 <td>${profitHtml}</td>
-                <td style="font-family:monospace;">${formatValue(now)}</td>
+                <td style="font-family:monospace;">${pct}%</td>
             </tr>`;
         }
         html += '</tbody></table>';
         list.innerHTML = html;
         const totalProfit = totalNow - totalCost;
-        totalValue.innerHTML = `总成本 ${formatValue(totalCost)} · 当前市值 ${formatValue(totalNow)} · 浮动盈亏 <span style="color:${totalProfit >= 0 ? '#f44336' : '#4caf50'};">${totalProfit >= 0 ? '▲' : '▼'} ${formatValue(Math.abs(totalProfit))}</span>`;
+        totalValue.innerHTML = `总投入 ${formatValue(Math.round(totalCost))} · 当前价值 ${formatValue(Math.round(totalNow))} · 浮动盈亏 <span style="color:${totalProfit >= 0 ? '#f44336' : '#4caf50'};">${totalProfit >= 0 ? '▲' : '▼'} ${formatValue(Math.abs(Math.round(totalProfit)))}</span>`;
 
         // 持仓里的股票名也可以点开K线
         list.querySelectorAll('.stock-link').forEach(link => {
