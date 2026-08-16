@@ -6,12 +6,24 @@
 --       本脚本只做：修复表缺陷 + 新建缺失的 create_product + 权限收紧。
 -- ============================================================
 
--- ========== 0. 修复 products.id 无默认值（关键！） ==========
--- 导出结果显示 products.id 为 bigint 且无默认值（非自增），
--- 直接 INSERT 不带 id 会失败。这里补上序列默认值。
-CREATE SEQUENCE IF NOT EXISTS products_id_seq;
-ALTER TABLE public.products ALTER COLUMN id SET DEFAULT nextval('products_id_seq');
-SELECT setval('products_id_seq', GREATEST((SELECT COALESCE(MAX(id), 1) FROM public.products), 1));
+-- ========== 0. 兜底检查：products.id 缺自增才补序列 ==========
+-- 若 id 是 identity 列（自带自增）则自动跳过，避免 ALTER 报错。
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'products'
+          AND column_name = 'id'
+          AND is_identity = 'NO' AND column_default IS NULL
+    ) THEN
+        RAISE NOTICE 'products.id 已是自增（identity 或有默认值），跳过';
+    ELSE
+        CREATE SEQUENCE IF NOT EXISTS products_id_seq;
+        ALTER TABLE public.products ALTER COLUMN id SET DEFAULT nextval('products_id_seq');
+        PERFORM setval('products_id_seq', GREATEST((SELECT COALESCE(MAX(id), 1) FROM public.products), 1));
+        RAISE NOTICE 'products.id 已补自增序列';
+    END IF;
+END $$;
 
 -- ========== 1. 权限：anon 只能读，写入走 RPC ==========
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;

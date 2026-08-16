@@ -1,23 +1,62 @@
 -- ============================================================
--- NB频道 - 数据库缺陷修复（db_fixes）
+-- NB频道 - 数据库缺陷修复（db_fixes）v2
 -- 在 Supabase SQL Editor 中执行本文件
 -- 修复内容：
---   1) notifications.id / product_downloads.id 没有自增默认值
---      （导致通知触发器插入失败、下载记录插入失败）
---   2) download_product 对"已购付费作品"会重复扣款
+--   1) download_product 对"已购付费作品"会重复扣款（真实修复）
+--   2) 检查 notifications / product_downloads / products 的 id 是否缺自增
+--      （注意：若 id 是 identity 列则自动跳过——identity 列自带自增，无需处理）
 -- ============================================================
 
--- ========== 1. notifications.id 补自增序列 ==========
--- 你的 notify_reply / notify_mentions 触发器 INSERT 时不带 id，
--- 若 id 无默认值会直接报错（消息系统静默失效）。
-CREATE SEQUENCE IF NOT EXISTS notifications_id_seq;
-ALTER TABLE public.notifications ALTER COLUMN id SET DEFAULT nextval('notifications_id_seq');
-SELECT setval('notifications_id_seq', GREATEST((SELECT COALESCE(MAX(id), 1) FROM public.notifications), 1));
+-- ========== 1. 兜底检查：id 缺自增的才补序列 ==========
+-- 只有当 id 既不是 identity、又没有默认值时才会执行 ALTER，
+-- 避免对 identity 列执行 SET DEFAULT 报错（42601）。
+DO $$
+BEGIN
+    -- notifications.id
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'notifications'
+          AND column_name = 'id'
+          AND is_identity = 'NO' AND column_default IS NULL
+    ) THEN
+        RAISE NOTICE 'notifications.id 已是自增（identity 或有默认值），跳过';
+    ELSE
+        CREATE SEQUENCE IF NOT EXISTS notifications_id_seq;
+        ALTER TABLE public.notifications ALTER COLUMN id SET DEFAULT nextval('notifications_id_seq');
+        PERFORM setval('notifications_id_seq', GREATEST((SELECT COALESCE(MAX(id), 1) FROM public.notifications), 1));
+        RAISE NOTICE 'notifications.id 已补自增序列';
+    END IF;
 
--- ========== 2. product_downloads.id 补自增序列 ==========
-CREATE SEQUENCE IF NOT EXISTS product_downloads_id_seq;
-ALTER TABLE public.product_downloads ALTER COLUMN id SET DEFAULT nextval('product_downloads_id_seq');
-SELECT setval('product_downloads_id_seq', GREATEST((SELECT COALESCE(MAX(id), 1) FROM public.product_downloads), 1));
+    -- product_downloads.id
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'product_downloads'
+          AND column_name = 'id'
+          AND is_identity = 'NO' AND column_default IS NULL
+    ) THEN
+        RAISE NOTICE 'product_downloads.id 已是自增（identity 或有默认值），跳过';
+    ELSE
+        CREATE SEQUENCE IF NOT EXISTS product_downloads_id_seq;
+        ALTER TABLE public.product_downloads ALTER COLUMN id SET DEFAULT nextval('product_downloads_id_seq');
+        PERFORM setval('product_downloads_id_seq', GREATEST((SELECT COALESCE(MAX(id), 1) FROM public.product_downloads), 1));
+        RAISE NOTICE 'product_downloads.id 已补自增序列';
+    END IF;
+
+    -- products.id
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'products'
+          AND column_name = 'id'
+          AND is_identity = 'NO' AND column_default IS NULL
+    ) THEN
+        RAISE NOTICE 'products.id 已是自增（identity 或有默认值），跳过';
+    ELSE
+        CREATE SEQUENCE IF NOT EXISTS products_id_seq;
+        ALTER TABLE public.products ALTER COLUMN id SET DEFAULT nextval('products_id_seq');
+        PERFORM setval('products_id_seq', GREATEST((SELECT COALESCE(MAX(id), 1) FROM public.products), 1));
+        RAISE NOTICE 'products.id 已补自增序列';
+    END IF;
+END $$;
 
 -- ========== 3. download_product 修复：已购/作者不再重复扣款 ==========
 -- 原逻辑：价格>0 且非作者就扣款，不检查是否已购买 → 重复下载会重复扣费。
