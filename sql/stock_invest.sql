@@ -11,6 +11,8 @@ ALTER TABLE public.holdings ALTER COLUMN average_price TYPE numeric(18,4);
 
 -- ========== 2. buy_stock 重写：金额制买入 ==========
 -- 参数：p_amount 投入 NB 币金额
+-- 先删除旧的"股数制"版本（参数 p_shares integer），避免重载混淆
+DROP FUNCTION IF EXISTS public.buy_stock(uuid, bigint, integer);
 CREATE OR REPLACE FUNCTION public.buy_stock(p_user_id uuid, p_company_id bigint, p_amount numeric)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -94,6 +96,7 @@ $$;
 
 -- ========== 3. sell_stock 重写：金额制卖出 ==========
 -- 参数：p_amount 想卖出的金额（按当前净值折算份额）
+DROP FUNCTION IF EXISTS public.sell_stock(uuid, bigint, integer);
 CREATE OR REPLACE FUNCTION public.sell_stock(p_user_id uuid, p_company_id bigint, p_amount numeric)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -173,6 +176,8 @@ END;
 $$;
 
 -- ========== 4. get_my_holdings 更新：返回份额/净值/当前价值 ==========
+-- 返回类型从 integer 改为 numeric，必须先 DROP 再 CREATE（PostgreSQL 限制）
+DROP FUNCTION IF EXISTS public.get_my_holdings(uuid);
 CREATE OR REPLACE FUNCTION public.get_my_holdings(p_user_id uuid)
 RETURNS TABLE(
     company_id bigint,
