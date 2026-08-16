@@ -1271,12 +1271,24 @@
         title.innerText = `📈 ${companyName} 日K线（加载中...）`;
 
         // 读取日K线表（大智慧式：每天一行，自然积累）
-        const { data, error } = await supabaseClient
+        let { data, error } = await supabaseClient
             .from('stock_daily_kline')
             .select('trade_date, open, close, high, low, volume')
             .eq('company_id', companyId)
             .order('trade_date', { ascending: true })
             .limit(120);
+
+        // 兜底：表里还没有这家公司的K线时，主动聚合一次（生成今天的K线，无需等待快照）
+        if (!error && (!data || data.length === 0)) {
+            try { await supabaseClient.rpc('record_daily_kline'); } catch (e) { console.warn('主动聚合K线失败', e); }
+            const retry = await supabaseClient
+                .from('stock_daily_kline')
+                .select('trade_date, open, close, high, low, volume')
+                .eq('company_id', companyId)
+                .order('trade_date', { ascending: true })
+                .limit(120);
+            if (!retry.error && retry.data) data = retry.data;
+        }
 
         if (error) {
             console.error('K线数据加载失败', error);
