@@ -33,6 +33,25 @@
         .char-counter { text-align: right; font-size: 0.8rem; color: var(--count-text); margin-top: 5px; }
         .new-comment-area { margin-bottom: 30px; }
         /* 排序工具栏 */
+        /* 公告栏 */
+        .announcement-bar {
+            background: linear-gradient(135deg, #fff8e6, #fffdf5);
+            border: 1px solid #ffd591;
+            border-left: 4px solid #ff9800;
+            border-radius: 12px;
+            padding: 10px 16px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            white-space: pre-line;
+            word-break: break-word;
+            color: var(--text-color);
+        }
+        body.dark-mode .announcement-bar {
+            background: #2d2418;
+            border-color: #664a1f;
+            border-left-color: #ff9800;
+        }
         .comment-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
         .toolbar-label { font-size: 0.85rem; color: var(--count-text); }
         .toolbar-total { font-size: 0.8rem; color: var(--count-text); margin-left: auto; }
@@ -210,6 +229,9 @@
 
 
     <div class="comment-section">
+        <!-- 公告栏（内容在 Supabase admin_config 表，key=announcement） -->
+        <div id="announcementBar" class="announcement-bar" style="display:none;"></div>
+
         <div class="auth-bar">
             <span id="user-status">未登录</span>
         </div>
@@ -1569,7 +1591,29 @@
         }
     };
 
+    // ========== 公告栏（内容在 admin_config 表，key=announcement） ==========
+    async function fetchAnnouncement() {
+        try {
+            const { data, error } = await supabaseClient
+                .from('admin_config')
+                .select('value')
+                .eq('key', 'announcement')
+                .maybeSingle();
+            const bar = document.getElementById('announcementBar');
+            if (!bar) return;
+            if (error || !data || !data.value || !data.value.trim()) {
+                bar.style.display = 'none';
+                return;
+            }
+            bar.innerHTML = '📢 <strong>公告：</strong>' + escapeHtml(data.value);
+            bar.style.display = 'block';
+        } catch (e) {
+            console.warn('公告加载失败', e);
+        }
+    }
+
     submitCommentBtn.onclick = postComment;
+    fetchAnnouncement();
 
     // 排序切换
     function switchSort(mode) {
