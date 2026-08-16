@@ -1,5 +1,7 @@
 # NB频道官网
 
+> 🚀 自动同步测试：如果你在 PythonAnywhere 站看到这行字，说明 webhook 全链路已打通！（2026-08-16）
+
 [![GitHub Pages](https://img.shields.io/badge/hosting-GitHub%20Pages%20%7C%20Cloudflare%20Pages%20%7C%20PythonAnywhere-blue)](https://github.nb-channel.top)
 [![Auto Update Videos](https://github.com/NB-Channel/nb-channel/actions/workflows/auto-update.yml/badge.svg)](https://github.com/NB-Channel/nb-channel/actions/workflows/auto-update.yml)
 
