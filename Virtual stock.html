@@ -1466,7 +1466,7 @@
         const val = parseFloat(document.getElementById('tradeShares').value) || 0;
         const preview = document.getElementById('tradeAmountPreview');
         if (val <= 0) { preview.innerText = '请输入有效金额'; return; }
-        if (tradeState && tradeState.mode === 'sell' && val > tradeState.myValue + 0.01) {
+        if (tradeState && tradeState.mode === 'sell' && val > Math.round(tradeState.myValue) + 0.01) {
             preview.innerText = `⚠️ 最多可卖 ${formatValue(Math.round(tradeState.myValue))} NB币（您的当前持仓价值）`;
             return;
         }
@@ -1484,7 +1484,7 @@
         const amount = parseFloat(document.getElementById('tradeShares').value) || 0;
         if (amount <= 0) { await showMessage('提示', '请输入有效的金额'); return; }
 
-        if (mode === 'sell' && amount > tradeState.myValue + 0.01) {
+        if (mode === 'sell' && amount > Math.round(tradeState.myValue) + 0.01) {
             await showMessage('提示', `卖出金额超过您的持仓价值（当前价值 ${formatValue(Math.round(tradeState.myValue))} NB币）`);
             return;
         }
