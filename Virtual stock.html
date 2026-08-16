@@ -1137,7 +1137,7 @@
     }
 
     async function loadFullHistory() {
-        const { data, error } = await supabaseClient.from('stock_history_full').select('recorded_at, snapshot, total_value').order('recorded_at', { ascending: true }).limit(200);
+        const { data, error } = await supabaseClient.from('stock_history_full').select('recorded_at, snapshot, total_value').order('recorded_at', { ascending: true }).limit(30);
         if (error || !data || data.length === 0) return;
         fullHistoryData = data.map(row => ({ time: new Date(row.recorded_at), snapshot: row.snapshot, total: row.total_value }));
         if (allStockNames.length === 0 && fullHistoryData.length > 0) { const latest = fullHistoryData[fullHistoryData.length-1]; allStockNames = [...latest.snapshot.names]; }
