@@ -355,7 +355,7 @@
         <!-- K线图 -->
         <div class="history-chart-container" id="kLineContainer" style="margin-top:20px; background:var(--card-bg); border-radius:24px; padding:12px 16px; border:1px solid var(--card-border);">
             <div class="history-title">
-                <span id="kLineTitle">📈 个股日K线（点击表格中的股票名称查看）</span>
+                <span id="kLineTitle">📈 个股市值走势（点击表格中的股票名称查看，每天一条走势线）</span>
             </div>
             <div id="kLineChart" style="width:100%; height:400px;"></div>
         </div>
@@ -1251,190 +1251,140 @@
     }
 
     // ========== K线图函数 ==========
-    // 计算移动平均线（不足 N 天返回 null 表示不画，ECharts 会断线）
-    function calcMA(closes, n) {
-        const result = [];
-        for (let i = 0; i < closes.length; i++) {
-            if (i < n - 1) { result.push(null); continue; }
-            let sum = 0;
-            for (let j = i - n + 1; j <= i; j++) sum += closes[j];
-            result.push(+(sum / n).toFixed(2));
-        }
-        return result;
-    }
+    // ========== 个股走势线（每天从开盘到收盘的市值走势，一天一个样） ==========
+    let kLineDayKeys = [];
+    let kLineDayData = new Map();
+    let kLineCurrentDay = null;
+    let kLineCompanyName = '';
+    let kLineNavCreated = false;
 
     async function loadKLineData(companyId, companyName) {
         const container = document.getElementById('kLineChart');
         const title = document.getElementById('kLineTitle');
         if (!container) return;
+        kLineCompanyName = companyName;
+        title.innerText = `📈 ${companyName} 市值走势（加载中...）`;
 
-        title.innerText = `📈 ${companyName} 日K线（加载中...）`;
+        const { data, error } = await supabaseClient
+            .from('stock_history_full')
+            .select('recorded_at, snapshot')
+            .order('recorded_at', { ascending: true })
+            .limit(1000);
 
-        // 读取日K线表（大智慧式：每天一行，自然积累）
-        let { data, error } = await supabaseClient
-            .from('stock_daily_kline')
-            .select('trade_date, open, close, high, low, volume')
-            .eq('company_id', companyId)
-            .order('trade_date', { ascending: true })
-            .limit(120);
-
-        // 兜底：表里还没有这家公司的K线时，主动聚合一次（生成今天的K线，无需等待快照）
-        if (!error && (!data || data.length === 0)) {
-            try { await supabaseClient.rpc('record_daily_kline'); } catch (e) { console.warn('主动聚合K线失败', e); }
-            const retry = await supabaseClient
-                .from('stock_daily_kline')
-                .select('trade_date, open, close, high, low, volume')
-                .eq('company_id', companyId)
-                .order('trade_date', { ascending: true })
-                .limit(120);
-            if (!retry.error && retry.data) data = retry.data;
-        }
-
-        if (error) {
-            console.error('K线数据加载失败', error);
-            title.innerText = `📈 ${companyName} 日K线（加载失败）`;
-            container.innerHTML = 'K线数据加载失败，请刷新重试';
-            return;
-        }
-        if (!data || data.length === 0) {
-            title.innerText = `📈 ${companyName} 日K线（暂无数据）`;
-            container.innerHTML = '暂无K线数据（今日市值快照保存后自动生成，明天起逐日积累）';
+        if (error || !data || data.length === 0) {
+            title.innerText = `📈 ${companyName} 市值走势（暂无数据）`;
+            container.innerHTML = '暂无数据：市值快照保存后自动生成（每55秒一条）';
             return;
         }
 
-        const kData = data.map(d => ({
-            date: d.trade_date,
-            open: d.open,
-            close: d.close,
-            high: d.high,
-            low: d.low,
-            volume: d.volume || 0
-        }));
-
-        if (kLineChartInstance) {
-            kLineChartInstance.dispose();
+        // 提取该公司的采样点（时间 + 市值）
+        const points = [];
+        for (const rec of data) {
+            const snap = rec.snapshot;
+            if (!snap || !snap.names) continue;
+            const idx = snap.names.indexOf(companyName);
+            if (idx !== -1) points.push({ t: new Date(rec.recorded_at), v: snap.values[idx] });
+        }
+        if (points.length < 2) {
+            title.innerText = `📈 ${companyName} 市值走势（数据积累中）`;
+            container.innerHTML = '采样点不足，等待快照积累…';
+            return;
         }
 
+        // 按天分组（一天一条走势线）
+        kLineDayData = new Map();
+        for (const p of points) {
+            const key = p.t.toISOString().split('T')[0];
+            if (!kLineDayData.has(key)) kLineDayData.set(key, []);
+            kLineDayData.get(key).push(p);
+        }
+        kLineDayKeys = Array.from(kLineDayData.keys()).sort();
+        kLineCurrentDay = kLineDayKeys[kLineDayKeys.length - 1];  // 默认最近一天
+
+        ensureDayNav();
+        renderDayNav();
+        renderIntradayLine();
+    }
+
+    function ensureDayNav() {
+        if (kLineNavCreated) return;
+        const container = document.getElementById('kLineChart');
+        const nav = document.createElement('div');
+        nav.id = 'kLineDayNav';
+        nav.style.cssText = 'display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; align-items:center;';
+        container.parentNode.insertBefore(nav, container);
+        kLineNavCreated = true;
+    }
+
+    function renderDayNav() {
+        const nav = document.getElementById('kLineDayNav');
+        if (!nav) return;
+        const recent = kLineDayKeys.slice(-7);  // 最近7天
+        nav.innerHTML = '<span style="font-size:0.8rem; color:var(--count-text);">📅 选择日期：</span>';
+        recent.forEach(key => {
+            const btn = document.createElement('button');
+            btn.textContent = key.slice(5).replace('-', '/');  // MM/DD
+            btn.style.cssText = `background:${key === kLineCurrentDay ? '#00a1d6' : 'var(--nav-btn-bg)'}; color:${key === kLineCurrentDay ? 'white' : 'var(--nav-btn-text)'}; border:none; border-radius:20px; padding:3px 12px; font-size:0.8rem; cursor:pointer;`;
+            btn.onclick = () => { kLineCurrentDay = key; renderDayNav(); renderIntradayLine(); };
+            nav.appendChild(btn);
+        });
+    }
+
+    function renderIntradayLine() {
+        const container = document.getElementById('kLineChart');
+        const title = document.getElementById('kLineTitle');
+        const pts = (kLineDayData.get(kLineCurrentDay) || []).slice().sort((a, b) => a.t - b.t);
+        if (pts.length < 2) {
+            container.innerHTML = '该日采样点不足';
+            return;
+        }
+        const times = pts.map(p => p.t.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }));
+        const values = pts.map(p => p.v);
+        const open = pts[0].v, close = pts[pts.length - 1].v;
+        const up = close >= open;
+        const lineColor = up ? '#ef232a' : '#14b143';  // 红涨绿跌
+
+        if (kLineChartInstance) kLineChartInstance.dispose();
         kLineChartInstance = echarts.init(container);
-        const dates = kData.map(d => d.date);
-        const closes = kData.map(d => d.close);
-        const ma5 = calcMA(closes, 5);
-        const ma10 = calcMA(closes, 10);
-        // 成交量颜色：涨红跌绿（大智慧配色）
-        const volColors = kData.map(d => d.close >= d.open ? '#ef232a' : '#14b143');
-
-        const option = {
+        kLineChartInstance.setOption({
             animation: false,
             tooltip: {
                 trigger: 'axis',
-                axisPointer: { type: 'cross' },
                 formatter: function(params) {
-                    const k = params.find(p => p.seriesType === 'candlestick');
-                    if (!k) return '';
-                    const d = k.data;
-                    const vol = params.find(p => p.seriesType === 'bar');
-                    let html = `<b>${d[4]}</b><br/>` +
-                        `开盘: ${d[0]}<br/>收盘: ${d[1]}<br/>最低: ${d[2]}<br/>最高: ${d[3]}<br/>` +
-                        `成交量: ${vol ? vol.value : 0} NB币<br/>`;
-                    const ma = params.filter(p => p.seriesType === 'line');
-                    ma.forEach(m => { html += `${m.seriesName}: ${m.value}<br/>`; });
-                    return html;
+                    const p = params[0];
+                    return `${kLineCurrentDay} ${p.axisValue}<br/>市值: ${formatValue(p.data)}`;
                 }
             },
-            axisPointer: { link: [{ xAxisIndex: 'all' }] },
-            legend: {
-                data: ['MA5', 'MA10'],
-                top: 5,
-                textStyle: { fontSize: 11 }
+            xAxis: { type: 'category', data: times, axisLabel: { rotate: 45, fontSize: 9 } },
+            yAxis: {
+                type: 'value', scale: true,
+                min: function(v) { return Math.floor(v.min * 0.97); },
+                max: function(v) { return Math.ceil(v.max * 1.03); },
+                splitLine: { show: true, lineStyle: { type: 'dashed' } }
             },
-            grid: [
-                { left: 60, right: 30, top: 35, height: '55%' },
-                { left: 60, right: 30, top: '72%', height: '18%' }
-            ],
-            xAxis: [
-                {
-                    type: 'category',
-                    data: dates,
-                    axisLabel: { rotate: 45, fontSize: 9 },
-                    axisLine: { lineStyle: { color: '#999' } }
-                },
-                {
-                    type: 'category',
-                    gridIndex: 1,
-                    data: dates,
-                    axisLabel: { show: false },
-                    axisLine: { lineStyle: { color: '#999' } }
+            series: [{
+                type: 'line',
+                data: values,
+                smooth: true,
+                symbol: 'none',
+                lineStyle: { width: 2, color: lineColor },
+                areaStyle: { color: lineColor, opacity: 0.12 },
+                markPoint: {
+                    symbolSize: 44,
+                    label: { fontSize: 10 },
+                    data: [
+                        { name: '开盘', coord: [times[0], open], value: '开盘 ' + formatValue(open), itemStyle: { color: '#4caf50' } },
+                        { name: '收盘', coord: [times[times.length - 1], close], value: '收盘 ' + formatValue(close), itemStyle: { color: up ? '#ef232a' : '#14b143' } }
+                    ]
                 }
-            ],
-            yAxis: [
-                {
-                    scale: true,
-                    // 上下留 3% 边距，避免单根蜡烛顶满画布
-                    min: function(value) { return Math.floor(value.min * 0.97); },
-                    max: function(value) { return Math.ceil(value.max * 1.03); },
-                    splitLine: { show: true, lineStyle: { type: 'dashed' } }
-                },
-                {
-                    gridIndex: 1,
-                    scale: true,
-                    splitNumber: 2,
-                    axisLabel: { show: false },
-                    splitLine: { show: false }
-                }
-            ],
-            dataZoom: [
-                { type: 'inside', xAxisIndex: [0, 1], start: 0, end: 100 },
-                { type: 'slider', xAxisIndex: [0, 1], top: '93%', height: 16 }
-            ],
-            series: [
-                {
-                    name: '日K',
-                    type: 'candlestick',
-                    data: kData.map(d => [d.open, d.close, d.low, d.high, d.date]),
-                    itemStyle: {
-                        color: '#ef232a',      // 阳线（涨）红
-                        color0: '#14b143',     // 阴线（跌）绿
-                        borderColor: '#ef232a',
-                        borderColor0: '#14b143'
-                    }
-                },
-                {
-                    name: 'MA5',
-                    type: 'line',
-                    data: ma5,
-                    smooth: true,
-                    showSymbol: false,
-                    lineStyle: { width: 1.2, color: '#f59e0b' },
-                    itemStyle: { color: '#f59e0b' }
-                },
-                {
-                    name: 'MA10',
-                    type: 'line',
-                    data: ma10,
-                    smooth: true,
-                    showSymbol: false,
-                    lineStyle: { width: 1.2, color: '#3b82f6' },
-                    itemStyle: { color: '#3b82f6' }
-                },
-                {
-                    name: '成交量',
-                    type: 'bar',
-                    xAxisIndex: 1,
-                    yAxisIndex: 1,
-                    data: kData.map((d, i) => ({
-                        value: d.volume,
-                        itemStyle: { color: volColors[i] }
-                    }))
-                }
-            ]
-        };
-
-        kLineChartInstance.setOption(option);
+            }],
+            grid: { left: 60, right: 40, top: 30, bottom: 55 }
+        });
         kLineChartInstance.resize();
 
-        title.innerText = `📈 ${companyName} 日K线（${kData.length}个交易日）`;
+        const dayLabel = kLineCurrentDay.replace('2026-', '').replace('-', '/');
+        title.innerText = `📈 ${kLineCompanyName} ${dayLabel} 市值走势（开盘 ${formatValue(open)} → 收盘 ${formatValue(close)}${up ? ' 📈' : ' 📉'}）`;
     }
-
     // ========== 表格相关函数 ==========
     function updateDataTable() {
         const tbody = document.getElementById('tableBody');
