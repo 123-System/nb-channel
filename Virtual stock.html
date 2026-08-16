@@ -753,15 +753,10 @@
                     owner = company.profiles.username || '未知';
                 }
             }
-            // 股价 = 市值 / 流通股（与后端 buy_stock/sell_stock 算法一致）
-            const circulating = company.circulating_shares || company.total_shares || 1000;
-            const price = Math.floor((company.market_value || 0) / circulating);
             return {
                 id: company.id,
                 name: company.company_name,
                 value: company.market_value,
-                price: price,
-                total_shares: company.total_shares || 1000,
                 owner: owner
             };
         });
@@ -1392,7 +1387,6 @@
             html += `<tr>
                 <td><a href="#" class="stock-link" data-id="${item.id}" data-name="${escapeHtml(item.name)}">${escapeHtml(item.name)}</a><br>${reportBtn}</td>
                 <td>${formatValue(item.value)}</td>
-                <td style="font-family:monospace; font-weight:600; color:#00a1d6;">${formatValue(item.price)}</td>
                 <td>${escapeHtml(item.owner || '未知')}</td>
                 <td>${changeHtml}</td>
                 <td>${tradeBtns}</td>
@@ -1777,13 +1771,10 @@
                 rawData.values = companies.map(c => c.market_value);
                 totalStocks = rawData.names.length;
                 const combined = companies.map(company => {
-                    const circulating = company.circulating_shares || company.total_shares || 1000;
                     return {
                         id: company.id,
                         name: company.company_name,
                         value: company.market_value,
-                        price: Math.floor((company.market_value || 0) / circulating),
-                        total_shares: company.total_shares || 1000,
                         owner: '未知'
                     };
                 });
