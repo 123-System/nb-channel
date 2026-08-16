@@ -1,69 +1,84 @@
-# NB频道 作品分享后端 — PythonAnywhere 部署指南
+# NB频道 PythonAnywhere 一体化部署指南
 
-`product_share.html` 页面（作品上传/下载）需要本后端提供文件存储接口。
-本目录包含完整的 Flask 应用，部署到 PythonAnywhere 后即可工作。
+这个 Flask 应用同时承担三件事：
+1. **网站本体**：服务 NB频道 的静态页面（`/` → 网站文件目录）
+2. **作品分享后端**：`/upload`（上传）、`/download`（购买/下载）、`/uploads/`（附件下载）
+3. **GitHub 自动同步**：`/webhook` 收到 push 通知后自动 `git pull`
 
-## 一、文件说明
+> ⚠️ 重要：原来 GitHub Webhook 投递到 `https://nbchannel.pythonanywhere.com/webhook` 一直返回 404，
+> 因为旧站点是纯静态站、没有这个端点。部署本应用后，404 会消失，自动同步才能真正工作。
 
-| 文件 | 作用 |
-|------|------|
-| `app.py` | Flask 应用：`/upload`（上传）、`/download`（购买/下载）、`/uploads/<文件名>`（文件下载） |
-| `wsgi.py` | PythonAnywhere 的 WSGI 入口 |
-| `requirements.txt` | 依赖清单（flask、supabase） |
+---
 
-## 二、部署步骤（PythonAnywhere）
+## 一、把网站代码放进 PythonAnywhere（并变成 git 仓库）
 
-1. **把本目录代码上传到 PythonAnywhere**
-   - 登录 https://www.pythonanywhere.com/ → Files 页
-   - 在 `/home/你的用户名/` 下创建目录 `nb_api/`，把 `app.py`、`wsgi.py`、`requirements.txt` 上传进去
-   - 上传后确认路径为：`/home/你的用户名/nb_api/app.py`、`/home/你的用户名/nb_api/wsgi.py`
+1. 登录 PythonAnywhere → **Bash 控制台**，执行（把 `/home/nbchannel` 换成你的实际用户名路径）：
 
-2. **安装依赖**
-   - 打开 Bash 控制台，执行：
-     ```
-     pip3 install --user flask supabase
-     ```
+```bash
+cd /home/nbchannel
+# 如果网站文件已经直接在 /home/nbchannel/ 下（旧静态站），先备份再 clone
+mv nb-channel nb-channel_backup 2>/dev/null   # 若存在旧目录则改名备份
+git clone https://github.com/NB-Channel/nb-channel.git
+```
 
-3. **创建 Web 应用**
-   - Web 页 → Add a new web app → 选 **Flask** → Python 3.10
-   - 在 **Code** 区把 "WSGI configuration file" 路径改为：`/home/你的用户名/nb_api/wsgi.py`
-   - 在 **Virtualenv** 区可以创建虚拟环境（可选，建议：`mkvirtualenv nb_api` 后 `pip install flask supabase`）
+2. **配置 git 自动拉取凭据**（二选一）：
 
-4. **配置静态文件目录（可选）**
-   - 不需要额外配置，文件下载已由 `/uploads/<文件名>` 接口处理（附件方式）
+   **方式 A（推荐，SSH 密钥）**：
+   ```bash
+   cd /home/nbchannel/nb-channel
+   git remote set-url origin git@github.com:NB-Channel/nb-channel.git
+   cd ~
+   ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -C "pythonanywhere-sync"
+   cat ~/.ssh/id_ed25519.pub
+   # 把输出的公钥添加到 GitHub：Settings → SSH and GPG keys → New SSH key
+   ```
+   **方式 B（HTTPS + token）**：
+   ```bash
+   cd /home/nbchannel/nb-channel
+   git remote set-url origin https://<你的GitHub用户名>:<PersonalAccessToken>@github.com/NB-Channel/nb-channel.git
+   # token 创建：GitHub → Settings → Developer settings → Personal access tokens（repo 权限）
+   ```
 
-5. **配置出站请求白名单（重要！）**
-   - PythonAnywhere 免费版只允许访问白名单内的外部网站
-   - 打开 https://www.pythonanywhere.com/account/allowed_hosts/ 把下面地址加入白名单：
-     - `pbaafgjkwdbwcmsikcmg.supabase.co`（主 Supabase 项目）
+3. 验证：`cd /home/nbchannel/nb-channel && git pull` 应能正常拉取。
 
-6. **Reload 应用**（Web 页顶部绿色按钮）
+## 二、部署 Flask 应用
 
-7. **验证**
-   - 浏览器访问 `https://你的用户名.pythonanywhere.com/health`，应返回 `{"ok": true, ...}`
-   - 打开 `product_share.html`，登录后上传一个小文件测试
+1. 上传本目录的 `app.py`、`wsgi.py`、`requirements.txt` 到 `/home/nbchannel/nb_api/`
+2. Bash 安装依赖：
+   ```bash
+   pip3 install --user flask supabase
+   ```
+3. Web 面板 → 新建 web app（**Flask、Python 3.10**；若已有 web app 则编辑它）
+   - **WSGI configuration file** 改为：`/home/nbchannel/nb_api/wsgi.py`
+4. **配置环境变量**（Web 面板 → Web → 你的 app → **Environment variables**）：
+   | 变量 | 值 | 说明 |
+   |------|-----|------|
+   | `SITE_DIR` | `/home/nbchannel/nb-channel` | 网站代码目录（就是上面 clone 的）|
+   | `GITHUB_WEBHOOK_SECRET` | 你自定义的一串随机字符 | 与 GitHub webhook 里配置的 secret 一致 |
+5. **配置出站白名单**（重要！）：
+   https://www.pythonanywhere.com/account/allowed_hosts/ 加入 `pbaafgjkwdbwcmsikcmg.supabase.co`
+6. **Reload** web app。
 
-## 三、必须先执行 SQL 脚本
+## 三、配置 GitHub Webhook
 
-在 Supabase 后台（https://supabase.com/dashboard → 你的项目 → SQL Editor）执行：
-`sql/product_share.sql`
+1. 打开 https://github.com/NB-Channel/nb-channel/settings/hooks → **Add webhook**
+2. 填写：
+   - **Payload URL**：`https://nbchannel.pythonanywhere.com/webhook`
+   - **Content type**：`application/json`
+   - **Secret**：与上面的 `GITHUB_WEBHOOK_SECRET` 相同
+   - **Which events**：Just the push event
+3. 保存后，GitHub 会立即发送一次测试投递，应显示绿色 ✓（200）
 
-该脚本会创建 `products`、`product_purchases` 表和相关 RPC 函数。
-如果执行报错说函数/表已存在，请把脚本内容发给我，我根据你的实际结构调整。
+## 四、验证
 
-## 四、常见问题
+- 访问 `https://nbchannel.pythonanywhere.com/health` → `{"ok": true, ...}`
+- 访问 `https://nbchannel.pythonanywhere.com/` → 网站首页正常
+- 访问 `https://nbchannel.pythonanywhere.com/webhook`（GET）→ 405（方法不允许，说明端点存在 ✅）
+- 在 GitHub 上 push 一次 → Webhook 投递记录 200 → 等几秒刷新 PythonAnywhere 站，代码已更新
 
-| 现象 | 原因与解决 |
-|------|-----------|
-| 上传报"网络错误" | 后端没部署成功，或 CORS 没生效（检查 Web 应用是否 Reload） |
-| 上传报"写入数据库失败" | 没执行 SQL 脚本，或 RPC 名称不一致 |
-| 下载付费作品提示余额不足 | NB币余额不够，去首页签到攒币 |
-| 文件下载后打不开 | 文件上传时损坏（网络中断），重新上传 |
-| PythonAnywhere 免费版限制 | 磁盘 512MB、每月出站流量有限，适合小文件分享 |
+## 五、注意事项
 
-## 五、安全说明
-
-- 所有数据库写入都通过 Supabase RPC（`create_product`、`purchase_product`）完成，
-  不需要也不应该把 Supabase service_role key 放到前端。
-- 上传文件以 UUID 重命名并以"附件下载"方式提供，避免上传 HTML 被浏览器直接执行。
-- 上传身份靠 `X-User-Id` 头 + 后端校验用户存在性；完整防伪造需要迁移到 Supabase Auth（后续可做）。
+- **自动同步只更新网站代码目录**；本后端（nb_api）更新后需要手动在 Web 面板点 Reload
+- `git pull` 在后台执行（不阻塞 webhook 响应），约 1-3 秒完成
+- 免费版 PythonAnywhere 出站流量/磁盘有限，作品文件（uploads/）请勿上传过大文件
+- 若 `SITE_DIR` 路径不对，网站会 404，检查环境变量是否生效（Web 面板设置后必须 **Reload** 才生效）

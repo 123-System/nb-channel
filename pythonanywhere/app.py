@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-NB频道 - 作品分享后端（PythonAnywhere Flask 应用）
+NB频道 - PythonAnywhere 一体化 Flask 应用
 ====================================================
-提供接口：
-  POST /upload     上传作品（multipart/form-data + 头 X-User-Id）
-  POST /download   下载/购买作品（JSON + 头 X-User-Id）
-  GET  /uploads/<filename>  文件下载（附件方式）
-  GET  /health     健康检查
+功能：
+  GET  /                网站本体（静态文件服务，需配置 SITE_DIR）
+  POST /upload          上传作品（multipart/form-data + 头 X-User-Id）
+  POST /download        下载/购买作品（JSON + 头 X-User-Id）
+  GET  /uploads/<文件名>  文件下载（附件方式）
+  POST /webhook         GitHub push 后自动 git pull 同步代码
+  GET  /health          健康检查
 
 部署前必读：pythonanywhere/README.md
 依赖：pip install flask supabase
@@ -14,7 +16,10 @@ NB频道 - 作品分享后端（PythonAnywhere Flask 应用）
 import os
 import re
 import uuid
+import hmac
+import hashlib
 import datetime
+import subprocess
 
 from flask import Flask, request, jsonify, send_from_directory
 from supabase import create_client, Client
@@ -28,6 +33,12 @@ ALLOWED_EXT = re.compile(r'^[a-zA-Z0-9]{1,10}$')  # 扩展名白名单格式
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# 网站静态文件目录（git 仓库目录，供 / 和 /webhook 使用）
+# 可通过 WSGI 文件或 PythonAnywhere 环境变量覆盖，默认假设在 /home/nbchannel/nb-channel
+SITE_DIR = os.environ.get('SITE_DIR', '/home/nbchannel/nb-channel')
+# GitHub webhook secret（与 GitHub 仓库 Webhooks 配置保持一致；不配置则跳过校验）
+GITHUB_WEBHOOK_SECRET = os.environ.get('GITHUB_WEBHOOK_SECRET', '')
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
@@ -230,6 +241,71 @@ def serve_file(filename):
     if not re.match(r'^[a-f0-9]{32}(\.[a-zA-Z0-9]{1,10})?$', filename):
         return jsonify({'success': False, 'message': '非法文件名'}), 400
     return send_from_directory(UPLOAD_DIR, filename, as_attachment=True)
+
+
+# ==================== GitHub 自动同步 ====================
+
+@app.route('/webhook', methods=['POST'])
+def github_webhook():
+    """GitHub Webhook：push 后自动 git pull 网站代码和本后端代码。"""
+    payload = request.get_data()
+    signature = request.headers.get('X-Hub-Signature-256', '')
+    if GITHUB_WEBHOOK_SECRET:
+        expected = 'sha256=' + hmac.new(
+            GITHUB_WEBHOOK_SECRET.encode('utf-8'), payload, hashlib.sha256
+        ).hexdigest()
+        if not hmac.compare_digest(expected, signature):
+            return jsonify({'success': False, 'message': '签名校验失败'}), 403
+    else:
+        print('[webhook] 警告：未配置 GITHUB_WEBHOOK_SECRET，跳过签名校验')
+
+    event = request.headers.get('X-GitHub-Event', 'push')
+    if event != 'push':
+        return jsonify({'success': True, 'message': '忽略事件: ' + event})
+
+    # 需要同步的目录：网站代码目录 + 本后端目录
+    sync_dirs = [SITE_DIR]
+    api_dir = os.path.dirname(os.path.abspath(__file__))
+    if os.path.abspath(api_dir) not in [os.path.abspath(d) for d in sync_dirs]:
+        sync_dirs.append(api_dir)
+
+    for d in sync_dirs:
+        if not os.path.isdir(os.path.join(d, '.git')):
+            print('[webhook] 跳过（不是 git 仓库）: %s' % d)
+            continue
+        log_name = 'pull_site.log' if d == SITE_DIR else 'pull_api.log'
+        log_path = os.path.join('/tmp', log_name)
+        try:
+            with open(log_path, 'a') as log:
+                subprocess.Popen(['git', '-C', d, 'pull'], stdout=log, stderr=log, cwd=d)
+            print('[webhook] 已在后台触发 git pull: %s' % d)
+        except Exception as e:
+            print('[webhook] 触发失败 %s: %s' % (d, e))
+
+    return jsonify({'success': True, 'message': '同步已触发'})
+
+
+# ==================== 网站本体（静态文件服务） ====================
+# 注意：此路由放在最后定义，避免吞掉 /upload /download /webhook 等 API 路由
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_site(path):
+    """服务 NB频道 静态站点文件。"""
+    if path.startswith('uploads/'):
+        return serve_file(path[len('uploads/'):])
+
+    if not path:
+        path = 'index.html'
+    full = os.path.join(SITE_DIR, path)
+    if not os.path.isfile(full):
+        # 支持无 .html 后缀的访问（/about -> about.html）
+        alt = full + '.html'
+        if os.path.isfile(alt):
+            full = alt
+        else:
+            return '404 Not Found - %s' % path, 404
+    return send_from_directory(SITE_DIR, os.path.relpath(full, SITE_DIR))
 
 
 if __name__ == '__main__':
