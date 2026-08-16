@@ -1503,12 +1503,33 @@
         }
 
         document.getElementById('tradeModal').style.display = 'none';
-        await showMessage('交易成功', data.message);
-        // 刷新全部数据
+        // 刷新全部数据（持仓会重新加载）
         await fetchUserBalance();
         await fetchAllCompanies();
         await refreshStockDataFromDB();
         await buildChartWithFade(currentChartType);
+
+        // 交易成功 + 盈亏汇总
+        let msg = data.message;
+        if (window.myHoldingsList && window.myHoldingsList.length) {
+            // 该公司的持仓盈亏
+            const h = window.myHoldingsList.find(x => x.company_id === tradeState.companyId);
+            if (h) {
+                const cost = (parseFloat(h.average_price) || 0) * (parseFloat(h.shares) || 0);
+                const now = (parseFloat(h.current_price) || 0) * (parseFloat(h.shares) || 0);
+                const profit = now - cost;
+                msg += `\n\n📊 持有「${h.company_name}」：投入 ${formatValue(Math.round(cost))} NB币，当前价值 ${formatValue(Math.round(now))} NB币，${profit >= 0 ? '赚' : '亏'} ${formatValue(Math.abs(Math.round(profit)))} NB币`;
+            }
+            // 全部持仓总盈亏
+            let tc = 0, tn = 0;
+            for (const x of window.myHoldingsList) {
+                tc += (parseFloat(x.average_price) || 0) * (parseFloat(x.shares) || 0);
+                tn += (parseFloat(x.current_price) || 0) * (parseFloat(x.shares) || 0);
+            }
+            const tp = tn - tc;
+            msg += `\n💰 全部持仓：投入 ${formatValue(Math.round(tc))} NB币，当前价值 ${formatValue(Math.round(tn))} NB币，${tp >= 0 ? '赚' : '亏'} ${formatValue(Math.abs(Math.round(tp)))} NB币`;
+        }
+        await showMessage('交易成功', msg);
     }
 
     // ========== 我的持仓 ==========
