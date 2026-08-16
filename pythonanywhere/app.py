@@ -1,0 +1,237 @@
+# -*- coding: utf-8 -*-
+"""
+NB频道 - 作品分享后端（PythonAnywhere Flask 应用）
+====================================================
+提供接口：
+  POST /upload     上传作品（multipart/form-data + 头 X-User-Id）
+  POST /download   下载/购买作品（JSON + 头 X-User-Id）
+  GET  /uploads/<filename>  文件下载（附件方式）
+  GET  /health     健康检查
+
+部署前必读：pythonanywhere/README.md
+依赖：pip install flask supabase
+"""
+import os
+import re
+import uuid
+import datetime
+
+from flask import Flask, request, jsonify, send_from_directory
+from supabase import create_client, Client
+
+# ==================== 配置 ====================
+SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co'
+SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg'
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
+ALLOWED_EXT = re.compile(r'^[a-zA-Z0-9]{1,10}$')  # 扩展名白名单格式
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+# 允许的跨域来源（你的三个站点 + PythonAnywhere 站）
+ALLOWED_ORIGINS = {
+    'https://nb-channel.top',
+    'https://www.nb-channel.top',
+    'https://github.nb-channel.top',
+    'https://cloudflare.nb-channel.top',
+    'https://pythonanywhere.nb-channel.top',
+    'https://nbchannel.pythonanywhere.com',
+    'https://nb-channel.pages.dev',
+}
+
+def _cors_headers():
+    origin = request.headers.get('Origin', '')
+    allow = origin if origin in ALLOWED_ORIGINS else ''
+    return {
+        'Access-Control-Allow-Origin': allow if allow else '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, X-User-Id',
+        'Access-Control-Max-Age': '86400',
+    }
+
+@app.after_request
+def after_request(resp):
+    for k, v in _cors_headers().items():
+        resp.headers[k] = v
+    return resp
+
+# ==================== 工具函数 ====================
+
+def get_user_id():
+    """从请求头获取用户 ID 并校验其存在。返回 (user_id, error_msg)。"""
+    uid = request.headers.get('X-User-Id', '').strip()
+    if not uid:
+        return None, '缺少 X-User-Id 请求头'
+    try:
+        res = supabase.table('profiles').select('id').eq('id', uid).maybe_single().execute()
+    except Exception as e:
+        return None, '后端数据库连接失败: %s' % e
+    if not res.data:
+        return None, '用户不存在或登录已失效'
+    return res.data['id'], None
+
+
+def safe_filename(original_name):
+    """生成安全的存储文件名：uuid + 白名单扩展名。"""
+    ext = ''
+    if '.' in original_name:
+        cand = original_name.rsplit('.', 1)[1]
+        if ALLOWED_EXT.match(cand):
+            ext = '.' + cand.lower()
+    return str(uuid.uuid4().hex) + ext
+
+
+def rpc(name, params):
+    """调用 Supabase RPC，返回 (data, error)。"""
+    try:
+        res = supabase.rpc(name, params).execute()
+        return res.data, None
+    except Exception as e:
+        return None, str(e)
+
+
+# ==================== 接口 ====================
+
+@app.route('/health')
+def health():
+    return jsonify({'ok': True, 'time': datetime.datetime.now().isoformat()})
+
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    user_id, err = get_user_id()
+    if err:
+        return jsonify({'success': False, 'message': err}), 401
+
+    title = (request.form.get('title') or '').strip()
+    description = (request.form.get('description') or '').strip()
+    price_str = (request.form.get('price') or '0').strip()
+    file = request.files.get('file')
+
+    if not title:
+        return jsonify({'success': False, 'message': '请输入作品标题'}), 400
+    if len(title) > 100:
+        return jsonify({'success': False, 'message': '标题不能超过100字'}), 400
+    if len(description) > 1000:
+        return jsonify({'success': False, 'message': '简介不能超过1000字'}), 400
+    if not file or file.filename == '':
+        return jsonify({'success': False, 'message': '请选择要上传的文件'}), 400
+
+    try:
+        price = int(price_str)
+    except ValueError:
+        return jsonify({'success': False, 'message': '定价必须是数字'}), 400
+    if price < 0 or price > 999999999:
+        return jsonify({'success': False, 'message': '价格需在 0~999999999 之间'}), 400
+
+    # 大小校验（Flask 的 MAX_CONTENT_LENGTH 超限会抛 413，这里再兜底）
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+    if size > MAX_FILE_SIZE:
+        return jsonify({'success': False, 'message': '文件不能超过 50 MB'}), 400
+
+    filename = safe_filename(file.filename)
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    try:
+        file.save(filepath)
+    except Exception as e:
+        return jsonify({'success': False, 'message': '文件保存失败: %s' % e}), 500
+
+    file_url = request.host_url.rstrip('/') + '/uploads/' + filename
+
+    data, rpc_err = rpc('create_product', {
+        'p_user_id': user_id,
+        'p_title': title,
+        'p_description': description,
+        'p_price': price,
+        'p_file_url': file_url,
+        'p_file_name': file.filename,
+        'p_file_size': size,
+        'p_mime_type': file.mimetype or '',
+    })
+    if rpc_err or not data or data.get('success') is not True:
+        # 数据库写入失败时删除已保存的文件，避免孤儿文件
+        try:
+            os.remove(filepath)
+        except OSError:
+            pass
+        msg = (rpc_err or (data and data.get('message')) or '写入数据库失败，请检查 SQL 脚本是否已执行')
+        return jsonify({'success': False, 'message': msg}), 500
+
+    return jsonify({'success': True, 'message': '发布成功', 'product_id': data.get('id')})
+
+
+@app.route('/download', methods=['POST'])
+def download():
+    user_id, err = get_user_id()
+    if err:
+        return jsonify({'success': False, 'message': err}), 401
+
+    body = request.get_json(silent=True) or {}
+    try:
+        product_id = int(body.get('product_id'))
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'message': '无效的作品 ID'}), 400
+
+    # 1. 查产品信息（价格/作者/文件地址）
+    try:
+        prod = supabase.table('products').select('id, price, author_id, file_url, status') \
+            .eq('id', product_id).maybe_single().execute()
+    except Exception as e:
+        return jsonify({'success': False, 'message': '后端数据库连接失败: %s' % e}), 500
+    if not prod.data or prod.data.get('status') != 'active':
+        return jsonify({'success': False, 'message': '作品不存在或已下架'}), 404
+
+    price = prod.data['price'] or 0
+    author_id = prod.data['author_id']
+
+    # 2. 作者本人：直接返回下载地址（不扣费）
+    if str(author_id) == str(user_id):
+        return jsonify({'success': True, 'file_url': prod.data['file_url'], 'message': '你的作品，直接下载'})
+
+    # 3. 免费作品：走 download_product（记录下载次数）
+    if price == 0:
+        data, rpc_err = rpc('download_product', {'p_product_id': product_id, 'p_user_id': user_id})
+        if rpc_err:
+            return jsonify({'success': False, 'message': '后端错误: %s' % rpc_err}), 500
+        if not data or data.get('success') is not True:
+            return jsonify({'success': False, 'message': (data and data.get('message')) or '下载失败'}), 400
+        return jsonify({'success': True, 'file_url': data.get('file_url'), 'message': data.get('message', '下载成功')})
+
+    # 4. 付费作品：先查是否已购买（避免重复扣费）
+    try:
+        pur = supabase.table('product_purchases').select('id') \
+            .eq('product_id', product_id).eq('buyer_id', user_id).maybe_single().execute()
+    except Exception as e:
+        return jsonify({'success': False, 'message': '后端数据库连接失败: %s' % e}), 500
+    if pur.data:
+        return jsonify({'success': True, 'file_url': prod.data['file_url'], 'message': '已购买，直接下载'})
+
+    # 5. 未购买：走 purchase_product（扣款并返回下载地址）
+    data, rpc_err = rpc('purchase_product', {'p_product_id': product_id, 'p_buyer_id': user_id})
+    if rpc_err:
+        return jsonify({'success': False, 'message': '后端错误: %s' % rpc_err}), 500
+    if not data or data.get('success') is not True:
+        return jsonify({'success': False, 'message': (data and data.get('message')) or '购买失败'}), 400
+
+    return jsonify({'success': True, 'file_url': data.get('file_url'), 'message': data.get('message', '购买成功')})
+
+
+@app.route('/uploads/<path:filename>')
+def serve_file(filename):
+    """以附件方式提供下载，防止上传的 HTML 被浏览器直接执行。"""
+    if not re.match(r'^[a-f0-9]{32}(\.[a-zA-Z0-9]{1,10})?$', filename):
+        return jsonify({'success': False, 'message': '非法文件名'}), 400
+    return send_from_directory(UPLOAD_DIR, filename, as_attachment=True)
+
+
+if __name__ == '__main__':
+    # 本地调试用：python app.py
+    app.run(host='127.0.0.1', port=5000, debug=True)

@@ -275,7 +275,7 @@
             <a href="APP.html" class="nav-btn">软件/APP下载</a>
         </div>
         <div class="nav-actions">
-            <a href="comments-beta.html" class="nav-btn">💬 Beat0.1版评论区</a>
+            <a href="comments-beta.html" class="nav-btn">💬 评论区</a>
             <a href="Virtual stock.html" class="nav-btn active">📈 NB虚拟股票</a>
         </div>
     </div>
@@ -370,16 +370,25 @@
             <canvas id="miniPieChart" width="400" height="200" class="mini-canvas"></canvas>
         </div>
 
+        <!-- 我的持仓区块 -->
+        <div id="myHoldingsSection" class="my-company-card" style="display:none;">
+            <div style="width:100%;">
+                <strong>📊 我的持仓</strong>
+                <span id="holdingsTotalValue" style="margin-left:12px; font-size:0.85rem; color:var(--count-text);"></span>
+            </div>
+            <div id="holdingsList" style="width:100%; font-size:0.9rem;">加载中...</div>
+        </div>
+
         <div class="data-table-wrapper">
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="🔍 搜索虚拟股票名称" autocomplete="off">
             </div>
             <table class="data-table">
                 <thead>
-                   <tr><th>虚拟股票名称</th><th>虚拟市值</th><th>归属用户</th><th>与旧数据相比涨跌百分比</th></tr>
+                   <tr><th>虚拟股票名称</th><th>虚拟市值</th><th>股价</th><th>归属用户</th><th>与旧数据相比涨跌百分比</th><th>操作</th></tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr><td colspan="4">加载中...</td></tr>
+                    <tr><td colspan="6">加载中...</td></tr>
                 </tbody>
             </table>
             <button id="toggleTableBtn" class="toggle-table-btn">📋 展开全部</button>
@@ -418,6 +427,31 @@
         <div>
             <button id="customConfirmOk">确定</button>
             <button id="customConfirmCancel" class="cancel">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 股票交易弹窗 -->
+<div id="tradeModal" class="custom-modal">
+    <div class="modal-content" style="max-width: 420px; text-align: left;">
+        <h3 id="tradeTitle" style="text-align:center; margin-bottom:12px;">📈 股票交易</h3>
+        <div style="font-size:0.9rem; line-height:1.9;">
+            <div>🏢 公司：<strong id="tradeCompanyName"></strong></div>
+            <div>💰 当前股价：<strong id="tradePrice" style="color:#00a1d6;"></strong> NB币/股</div>
+            <div>📊 我的持仓：<strong id="tradeHolding"></strong> 股</div>
+            <div>🏦 我的余额：<strong id="tradeBalance"></strong> NB币</div>
+        </div>
+        <div style="margin: 14px 0;">
+            <label style="font-size:0.85rem;">交易股数（总股本 <span id="tradeTotalShares"></span> 股，手续费 5%）：</label>
+            <input type="number" id="tradeShares" min="1" max="10000" value="1" style="width:100%; padding:8px; margin:6px 0; border-radius:30px; border:1px solid var(--card-border); background:var(--bg-color); color:var(--text-color);">
+            <div id="tradeAmountPreview" style="font-size:0.85rem; color:var(--count-text); text-align:right;">预计金额：-- NB币</div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:8px;">
+            <button id="tradeBuyBtn" style="flex:1; background:#f44336;">📈 买入</button>
+            <button id="tradeSellBtn" style="flex:1; background:#4caf50;">📉 卖出</button>
+        </div>
+        <div style="text-align:center; margin-top:10px;">
+            <button id="tradeCloseBtn" class="cancel">关闭</button>
         </div>
     </div>
 </div>
@@ -560,7 +594,7 @@
     async function fetchAllCompanies() {
         const { data, error } = await supabaseClient
             .from('user_companies')
-            .select('id, company_name, market_value, user_id, profiles!inner(username)')
+            .select('id, company_name, market_value, total_shares, circulating_shares, user_id, profiles!inner(username)')
             .order('market_value', { ascending: false });
         if (!error) allCompanies = data;
         return data || [];
@@ -568,13 +602,18 @@
 
     async function createCompany(companyName) {
         if (!currentUserId) return false;
-        const { error } = await supabaseClient.from('user_companies').insert({
-            user_id: currentUserId,
-            company_name: companyName,
-            market_value: 1000
+        // 统一走 register_company RPC（蓝标用户自动认证、初始市值 20000、防重复注册）
+        const { data, error } = await supabaseClient.rpc('register_company', {
+            p_user_id: currentUserId,
+            p_company_name: companyName,
+            p_need_verify: false
         });
         if (error) {
             await showMessage('注册失败', error.message);
+            return false;
+        }
+        if (!data.success) {
+            await showMessage('提示', data.message);
             return false;
         }
         return true;
@@ -590,45 +629,25 @@
             if (!isSilent) await showMessage('提示', '请先登录');
             return false;
         }
-        if (amount > 2000) {
-            if (!isSilent) await showMessage('提示', '单次手动支持金额不能超过2000 NB币');
-            return false;
-        }
-        const balance = await fetchUserBalance();
-        if (balance < amount) {
-            if (!isSilent) await showMessage('提示', 'NB币余额不足');
-            return false;
-        }
-        const { data: company } = await supabaseClient
-            .from('user_companies')
-            .select('market_value')
-            .eq('id', cid)
-            .single();
-        if (!company) {
-            if (!isSilent) await showMessage('错误', '虚拟公司不存在');
-            return false;
-        }
-        const newValue = company.market_value + amount;
-        const { error: updateErr } = await supabaseClient
-            .from('user_companies')
-            .update({ market_value: newValue })
-            .eq('id', cid);
-        if (updateErr) {
-            if (!isSilent) await showMessage('错误', '支持失败');
-            return false;
-        }
-        const newBalance = balance - amount;
-        await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
-        await supabaseClient.from('support_logs').insert({
-            supporter_id: currentUserId,
-            company_id: cid,
-            amount: amount
+        // 统一走 support_company RPC（服务端校验：余额/上限/禁止支持自己的公司）
+        const { data, error } = await supabaseClient.rpc('support_company', {
+            p_user_id: currentUserId,
+            p_company_id: cid,
+            p_amount: parseInt(amount) || 0
         });
+        if (error) {
+            if (!isSilent) await showMessage('错误', error.message);
+            return false;
+        }
+        if (!data.success) {
+            if (!isSilent) await showMessage('提示', data.message);
+            return false;
+        }
         await fetchUserBalance();
         await fetchAllCompanies();
         await refreshStockDataFromDB();
         await buildChartWithFade(currentChartType);
-        if (!isSilent) await showMessage('成功', `成功支持 ${amount} NB币`);
+        if (!isSilent) await showMessage('成功', data.message);
         return true;
     }
 
@@ -652,101 +671,35 @@
 
     async function bankruptCompany() {
         if (!myCompany) { await showMessage('提示', '您还没有虚拟公司'); return; }
-        const companyId = myCompany.id;
         const companyName = myCompany.company_name;
         const currentValue = myCompany.market_value;
-        let reward = 0;
         let confirmMsg = '';
         if (currentValue > 20000) {
-            reward = currentValue - 20000;
-            confirmMsg = `确定破产吗？您的虚拟公司将被彻底删除（任何痕迹都将不复存在），您将获得 ${reward} NB币（当前市值减去20000）`;
+            confirmMsg = `确定破产吗？您的虚拟公司将被彻底删除（任何痕迹都将不复存在），您将获得 ${currentValue - 20000} NB币（当前市值减去20000），且所有股东持仓将作废`;
         } else {
-            reward = 0;
-            confirmMsg = `您的虚拟公司市值不足或等于20000，破产将无法获得NB币，但虚拟公司及历史数据会被彻底删除，确定破产吗？`;
+            confirmMsg = `您的虚拟公司市值不足或等于20000，破产将无法获得NB币，但虚拟公司、股东持仓及历史数据会被彻底删除，确定破产吗？`;
         }
         const confirmed = await showConfirm('确认破产', confirmMsg);
         if (!confirmed) return;
 
-        // 1. 删除公司记录
-        const { error: delError } = await supabaseClient
-            .from('user_companies')
-            .delete()
-            .eq('id', companyId);
-        if (delError) {
-            await showMessage('破产失败', delError.message);
+        // 统一走 bankrupt_company RPC（服务端处理：删公司/蓝标/规则/持仓/快照/奖励）
+        const { data, error } = await supabaseClient.rpc('bankrupt_company', {
+            p_user_id: currentUserId
+        });
+        if (error) {
+            await showMessage('破产失败', error.message);
+            return;
+        }
+        if (!data.success) {
+            await showMessage('提示', data.message);
             return;
         }
 
-        // 2. 删除该用户的蓝标（使用 RPC 绕过 RLS）
-        const { data: deleted, error: delBadgeError } = await supabaseClient.rpc(
-            'delete_verified_user',
-            { p_user_id: currentUserId }
-        );
-        if (delBadgeError) {
-            console.error('删除蓝标失败:', delBadgeError);
-        } else if (deleted) {
-            console.log('蓝标已删除');
-        } else {
-            console.warn('该用户没有蓝标记录');
-        }
-
-        // 3. 删除该公司的自动支持规则
-        await supabaseClient.from('support_rules').delete().eq('company_id', companyId);
-
-        // 4. 从所有历史快照中移除该公司数据
-        const { data: snapshots, error: fetchError } = await supabaseClient
-            .from('stock_history_full')
-            .select('id, snapshot');
-        if (!fetchError && snapshots) {
-            for (const snap of snapshots) {
-                const snapshot = snap.snapshot;
-                if (!snapshot.names || !snapshot.values) continue;
-                const idx = snapshot.names.indexOf(companyName);
-                if (idx !== -1) {
-                    snapshot.names.splice(idx, 1);
-                    snapshot.values.splice(idx, 1);
-                    await supabaseClient
-                        .from('stock_history_full')
-                        .update({ snapshot: snapshot })
-                        .eq('id', snap.id);
-                }
-            }
-        }
-
-        // 5. 从最新快照中移除
-        const { data: latestData } = await supabaseClient
-            .from('stock_latest')
-            .select('id, snapshot_data')
-            .order('created_at', { ascending: false })
-            .limit(1);
-        if (latestData && latestData.length > 0) {
-            const latest = latestData[0];
-            const snapshot = latest.snapshot_data;
-            const idx = snapshot.names?.indexOf(companyName);
-            if (idx !== -1) {
-                snapshot.names.splice(idx, 1);
-                snapshot.values.splice(idx, 1);
-                await supabaseClient
-                    .from('stock_latest')
-                    .update({ snapshot_data: snapshot })
-                    .eq('id', latest.id);
-            }
-        }
-
-        // 6. 发放奖励
-        if (reward > 0) {
-            const balance = await fetchUserBalance();
-            const newBalance = balance + reward;
-            await supabaseClient.from('profiles').update({ nb_balance: newBalance }).eq('id', currentUserId);
-            await fetchUserBalance();
-            await showMessage('破产成功', `您的虚拟公司及历史数据已清除，您获得 ${reward} NB币。当前余额: ${newBalance}`);
-        } else {
-            await showMessage('破产成功', '您的虚拟公司及历史数据已清除，您未获得NB币。');
-        }
-
         myCompany = null;
+        await fetchUserBalance();
         await refreshStockDataFromDB();
         renderMyCompanySection();
+        await showMessage('破产成功', data.message);
     }
 
     async function checkAutoSupportRules() {
@@ -800,10 +753,15 @@
                     owner = company.profiles.username || '未知';
                 }
             }
+            // 股价 = 市值 / 流通股（与后端 buy_stock/sell_stock 算法一致）
+            const circulating = company.circulating_shares || company.total_shares || 1000;
+            const price = Math.floor((company.market_value || 0) / circulating);
             return {
                 id: company.id,
                 name: company.company_name,
                 value: company.market_value,
+                price: price,
+                total_shares: company.total_shares || 1000,
                 owner: owner
             };
         });
@@ -816,6 +774,9 @@
         updateDataTable();
         updateMiniPieChart();
         updateHistogramChart();
+        if (currentUserId) {
+            await renderMyHoldings();
+        }
         if (currentChart && rawData.names.length) {
             const windowData = getWindowData();
             currentChart.data.labels = windowData.names;
@@ -1140,12 +1101,29 @@
         }
     }
 
+    // ========== 快照写入节流（防刷优化） ==========
+    // 原逻辑：每次刷新都插入 stock_history_full/stock_history，
+    // 多个用户同时在线时每人每10秒写一次库，免费额度很快耗尽。
+    // 优化：①最新快照（stock_latest）3秒内不重复写；
+    //       ②历史快照（stock_history_full）每分钟最多写一条（K线按天聚合，10秒一条没有意义）。
+    let lastLatestWrite = 0;
+    let lastHistoryWrite = 0;
+
     async function saveFullSnapshot(totalValue) {
         const snapshotData = { names: rawData.names, values: rawData.values };
-        await supabaseClient.from('stock_history_full').insert({ recorded_at: new Date(), total_value: totalValue, snapshot: snapshotData });
-        await supabaseClient.from('stock_history').insert({ total_value: totalValue });
+        const now = Date.now();
+
+        // 最新快照：3秒内已写过则跳过（页面级节流）
+        if (now - lastLatestWrite < 3000) return;
+        lastLatestWrite = now;
         await supabaseClient.from('stock_latest').delete().neq('id', 0);
         await supabaseClient.from('stock_latest').insert({ created_at: new Date(), total_value: totalValue, snapshot_data: snapshotData });
+
+        // 历史快照：55秒内已写过则跳过（降频到每分钟约1条）
+        if (now - lastHistoryWrite < 55000) return;
+        lastHistoryWrite = now;
+        await supabaseClient.from('stock_history_full').insert({ recorded_at: new Date(), total_value: totalValue, snapshot: snapshotData });
+        await supabaseClient.from('stock_history').insert({ total_value: totalValue });
     }
 
     async function loadFullHistory() {
@@ -1385,7 +1363,7 @@
     function updateDataTable() {
         const tbody = document.getElementById('tableBody');
         if (!sortedCombined.length) {
-            tbody.innerHTML = '<tr><td colspan="4">暂无数据</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6">暂无数据</td></tr>';
             return;
         }
         
@@ -1407,11 +1385,17 @@
             const reportBtn = (item.id && item.id !== 'undefined' && !isNaN(item.id))
                 ? `<button class="report-company-btn" data-company-id="${item.id}" data-company-name="${escapeHtml(item.name)}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.7rem;">🚨 举报公司</button>`
                 : '';
+            const tradeBtns = currentUserId
+                ? `<button class="trade-btn buy" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-price="${item.price}" data-shares="${item.total_shares}" style="background:#f44336; color:white; border:none; border-radius:20px; padding:3px 12px; cursor:pointer; font-size:0.75rem; margin-right:4px;">买入</button>
+                   <button class="trade-btn sell" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-price="${item.price}" data-shares="${item.total_shares}" style="background:#4caf50; color:white; border:none; border-radius:20px; padding:3px 12px; cursor:pointer; font-size:0.75rem;">卖出</button>`
+                : '<span style="color:var(--count-text); font-size:0.75rem;">登录后可交易</span>';
             html += `<tr>
                 <td><a href="#" class="stock-link" data-id="${item.id}" data-name="${escapeHtml(item.name)}">${escapeHtml(item.name)}</a><br>${reportBtn}</td>
                 <td>${formatValue(item.value)}</td>
+                <td style="font-family:monospace; font-weight:600; color:#00a1d6;">${formatValue(item.price)}</td>
                 <td>${escapeHtml(item.owner || '未知')}</td>
                 <td>${changeHtml}</td>
+                <td>${tradeBtns}</td>
             </tr>`;
         }
         tbody.innerHTML = html;
@@ -1431,6 +1415,19 @@
             };
         });
 
+        // 绑定买入/卖出按钮
+        document.querySelectorAll('.trade-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const companyId = parseInt(btn.dataset.id);
+                const companyName = btn.dataset.name;
+                const price = parseInt(btn.dataset.price) || 0;
+                const totalShares = parseInt(btn.dataset.shares) || 1000;
+                const mode = btn.classList.contains('buy') ? 'buy' : 'sell';
+                showTradeDialog(companyId, companyName, price, totalShares, mode);
+            };
+        });
+
         // ✅ 独立绑定股票名称点击事件
         document.querySelectorAll('.stock-link').forEach(link => {
             link.onclick = (e) => {
@@ -1445,6 +1442,152 @@
     function toggleTable() {
         fullTableVisible = !fullTableVisible;
         updateDataTable();
+    }
+
+    // ========== 股票交易 ==========
+    let tradeState = null;  // { companyId, name, price, totalShares, mode, myShares, balance }
+
+    function showTradeDialog(companyId, companyName, price, totalShares, mode) {
+        if (!currentUserId) { showMessage('提示', '请先登录'); return; }
+        const modal = document.getElementById('tradeModal');
+        document.getElementById('tradeCompanyName').innerText = companyName;
+        document.getElementById('tradePrice').innerText = formatValue(price);
+        document.getElementById('tradeTotalShares').innerText = formatValue(totalShares);
+        document.getElementById('tradeTitle').innerText = mode === 'buy' ? '📈 买入股票' : '📉 卖出股票';
+
+        // 我的持仓
+        let myShares = 0;
+        if (window.myHoldingsList) {
+            const h = window.myHoldingsList.find(x => x.company_id === companyId);
+            if (h) myShares = h.shares;
+        }
+        document.getElementById('tradeHolding').innerText = myShares;
+
+        // 当前余额
+        fetchUserBalance().then(balance => {
+            document.getElementById('tradeBalance').innerText = formatValue(balance);
+        });
+
+        const sharesInput = document.getElementById('tradeShares');
+        sharesInput.value = 1;
+        sharesInput.max = mode === 'buy' ? 10000 : (myShares || 1);
+        updateTradePreview(price, myShares);
+
+        tradeState = { companyId, name: companyName, price, totalShares, mode, myShares };
+        modal.style.display = 'flex';
+
+        // 动态事件（防止重复绑定）
+        const buyBtn = document.getElementById('tradeBuyBtn');
+        const sellBtn = document.getElementById('tradeSellBtn');
+        buyBtn.onclick = null;
+        sellBtn.onclick = null;
+        buyBtn.onclick = () => executeTrade('buy');
+        sellBtn.onclick = () => executeTrade('sell');
+        sharesInput.oninput = () => updateTradePreview(price, myShares);
+    }
+
+    function updateTradePreview(price, myShares) {
+        const val = parseInt(document.getElementById('tradeShares').value) || 0;
+        const preview = document.getElementById('tradeAmountPreview');
+        if (val <= 0) { preview.innerText = '预计金额：-- NB币'; return; }
+        if (tradeState && tradeState.mode === 'sell' && val > (tradeState.myShares || 0)) {
+            preview.innerText = '⚠️ 超过持仓数量';
+            return;
+        }
+        const amount = price * val;
+        if (tradeState && tradeState.mode === 'sell') {
+            const fee = Math.floor(amount * 0.05);
+            preview.innerText = `交易额 ${formatValue(amount)} NB币 - 手续费 ${formatValue(fee)} NB币 = 到账 ${formatValue(amount - fee)} NB币`;
+        } else {
+            const fee = Math.floor(amount * 0.05);
+            preview.innerText = `交易额 ${formatValue(amount)} NB币 + 手续费 ${formatValue(fee)} NB币 = 支付 ${formatValue(amount + fee)} NB币`;
+        }
+    }
+
+    async function executeTrade(mode) {
+        if (!tradeState || !currentUserId) return;
+        const shares = parseInt(document.getElementById('tradeShares').value) || 0;
+        if (shares <= 0) { await showMessage('提示', '请输入有效的股数'); return; }
+
+        if (mode === 'sell' && shares > (tradeState.myShares || 0)) {
+            await showMessage('提示', '卖出数量超过持仓');
+            return;
+        }
+
+        const rpcName = mode === 'buy' ? 'buy_stock' : 'sell_stock';
+        const { data, error } = await supabaseClient.rpc(rpcName, {
+            p_user_id: currentUserId,
+            p_company_id: tradeState.companyId,
+            p_shares: shares
+        });
+        if (error) {
+            await showMessage('交易失败', error.message);
+            return;
+        }
+        if (!data.success) {
+            await showMessage('提示', data.message);
+            return;
+        }
+
+        document.getElementById('tradeModal').style.display = 'none';
+        await showMessage('交易成功', data.message);
+        // 刷新全部数据
+        await fetchUserBalance();
+        await fetchAllCompanies();
+        await refreshStockDataFromDB();
+        await buildChartWithFade(currentChartType);
+    }
+
+    // ========== 我的持仓 ==========
+    async function renderMyHoldings() {
+        const section = document.getElementById('myHoldingsSection');
+        if (!currentUserId) {
+            if (section) section.style.display = 'none';
+            return;
+        }
+        const { data, error } = await supabaseClient.rpc('get_my_holdings', {
+            p_user_id: currentUserId
+        });
+        window.myHoldingsList = (error || !data) ? [] : data;
+
+        if (window.myHoldingsList.length === 0) {
+            if (section) section.style.display = 'none';
+            return;
+        }
+        if (section) section.style.display = 'flex';
+
+        const list = document.getElementById('holdingsList');
+        const totalValue = document.getElementById('holdingsTotalValue');
+        let html = '<table class="data-table" style="font-size:0.85rem;"><thead><tr><th>公司</th><th>持仓</th><th>成本价</th><th>现价</th><th>浮动盈亏</th><th>持仓市值</th></tr></thead><tbody>';
+        let totalCost = 0, totalNow = 0;
+        for (const h of window.myHoldingsList) {
+            const cost = (h.average_price || 0) * h.shares;
+            const now = (h.current_price || 0) * h.shares;
+            totalCost += cost;
+            totalNow += now;
+            const profit = now - cost;
+            const profitHtml = `<span style="color:${profit >= 0 ? '#f44336' : '#4caf50'};">${profit >= 0 ? '▲' : '▼'} ${formatValue(Math.abs(profit))}</span>`;
+            html += `<tr>
+                <td><a href="#" class="stock-link" data-id="${h.company_id}" data-name="${escapeHtml(h.company_name)}" style="color:var(--status-border);">${escapeHtml(h.company_name)}</a></td>
+                <td>${h.shares} 股</td>
+                <td>${formatValue(h.average_price)}</td>
+                <td style="font-family:monospace; color:#00a1d6;">${formatValue(h.current_price)}</td>
+                <td>${profitHtml}</td>
+                <td style="font-family:monospace;">${formatValue(now)}</td>
+            </tr>`;
+        }
+        html += '</tbody></table>';
+        list.innerHTML = html;
+        const totalProfit = totalNow - totalCost;
+        totalValue.innerHTML = `总成本 ${formatValue(totalCost)} · 当前市值 ${formatValue(totalNow)} · 浮动盈亏 <span style="color:${totalProfit >= 0 ? '#f44336' : '#4caf50'};">${totalProfit >= 0 ? '▲' : '▼'} ${formatValue(Math.abs(totalProfit))}</span>`;
+
+        // 持仓里的股票名也可以点开K线
+        list.querySelectorAll('.stock-link').forEach(link => {
+            link.onclick = (e) => {
+                e.preventDefault();
+                loadKLineData(parseInt(link.dataset.id), link.dataset.name);
+            };
+        });
     }
 
     function updateStatsPanel(total) {
@@ -1552,8 +1695,25 @@
         isLoading = true;
         updateTimestamp('loading');
         try {
-            const { error: rpcError } = await supabaseClient.rpc('random_fluctuate_market_values');
-            if (rpcError) throw rpcError;
+            // 全局波动节流（防刷优化）：
+            // 原逻辑是每个在线用户每10秒都调用 random_fluctuate_market_values 波动一次，
+            // N个用户同时在线 = 每10秒N次数据库写入。
+            // 现在先读 stock_latest 的最新时间，若8秒内刚波动过则跳过波动，只刷新展示数据，
+            // 让全站"每8秒左右最多波动一次"（配合 SQL 脚本中的数据库级节流效果更佳）。
+            let shouldFluctuate = true;
+            const { data: latestRows } = await supabaseClient
+                .from('stock_latest')
+                .select('created_at')
+                .order('created_at', { ascending: false })
+                .limit(1);
+            if (latestRows && latestRows.length > 0) {
+                const lastTs = new Date(latestRows[0].created_at).getTime();
+                if (Date.now() - lastTs < 8000) shouldFluctuate = false;
+            }
+            if (shouldFluctuate) {
+                const { error: rpcError } = await supabaseClient.rpc('random_fluctuate_market_values');
+                if (rpcError) throw rpcError;
+            }
             await refreshStockDataFromDB();
             await loadPreviousSnapshot();
             updateTimestamp('success');
@@ -1612,7 +1772,17 @@
                 rawData.names = companies.map(c => c.company_name);
                 rawData.values = companies.map(c => c.market_value);
                 totalStocks = rawData.names.length;
-                const combined = companies.map(company => ({ id: company.id, name: company.company_name, value: company.market_value }));
+                const combined = companies.map(company => {
+                    const circulating = company.circulating_shares || company.total_shares || 1000;
+                    return {
+                        id: company.id,
+                        name: company.company_name,
+                        value: company.market_value,
+                        price: Math.floor((company.market_value || 0) / circulating),
+                        total_shares: company.total_shares || 1000,
+                        owner: '未知'
+                    };
+                });
                 combined.sort((a, b) => b.value - a.value);
                 sortedCombined = combined;
                 updateStatsPanel(rawData.values.reduce((a,b)=>a+b,0));
@@ -1732,6 +1902,9 @@
     const zoomBtn = document.getElementById('zoomStockHistoryBtn');
     if (zoomBtn) zoomBtn.addEventListener('click', () => { const container = document.getElementById('stockHistoryContainer'); toggleFullscreen(container); });
     document.getElementById('openSupportDialogBtn')?.addEventListener('click', showSupportDialog);
+    document.getElementById('tradeCloseBtn')?.addEventListener('click', () => {
+        document.getElementById('tradeModal').style.display = 'none';
+    });
 
     // ========== 启动 ==========
     windowSize = 15;

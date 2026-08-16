@@ -469,31 +469,21 @@
             await showMessage('提示', '请输入有效的阈值和金额');
             return;
         }
+        if (newThreshold < 0) {
+            await showMessage('提示', '阈值不能为负数');
+            return;
+        }
         if (newAmount > 500) {
             await showMessage('提示', '自动支持金额不能超过500 NB币');
             return;
         }
-        // 先删除旧规则，再插入新规则（原子性较差，但简单）
-        const { error: delError } = await supabaseClient.from('support_rules').delete().eq('id', ruleId);
-        if (delError) {
-            await showMessage('修改失败', delError.message);
-            return;
-        }
-        const { error: insError } = await supabaseClient.from('support_rules').insert({
-            user_id: currentUser.id,
-            company_id: companyId,
-            threshold: newThreshold,
-            amount: newAmount
-        });
-        if (insError) {
-            await showMessage('修改失败', insError.message);
-            // 尝试恢复旧规则
-            await supabaseClient.from('support_rules').insert({
-                user_id: currentUser.id,
-                company_id: companyId,
-                threshold: oldThreshold,
-                amount: oldAmount
-            });
+        // 原子更新（直接 UPDATE，不再"先删后插"，避免中间态丢数据）
+        const { error: updError } = await supabaseClient.from('support_rules')
+            .update({ threshold: newThreshold, amount: newAmount })
+            .eq('id', ruleId)
+            .eq('user_id', currentUser.id);
+        if (updError) {
+            await showMessage('修改失败', updError.message);
         } else {
             await showMessage('成功', '修改成功');
             modal.style.display = 'none';

@@ -32,6 +32,25 @@
         textarea { width:100%; padding:10px; border:1px solid var(--card-border); border-radius:8px; background:var(--bg-color); color:var(--text-color); font-family:inherit; resize: vertical; }
         .char-counter { text-align: right; font-size: 0.8rem; color: var(--count-text); margin-top: 5px; }
         .new-comment-area { margin-bottom: 30px; }
+        /* 排序工具栏 */
+        .comment-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+        .toolbar-label { font-size: 0.85rem; color: var(--count-text); }
+        .toolbar-total { font-size: 0.8rem; color: var(--count-text); margin-left: auto; }
+        .sort-btn { background: var(--nav-btn-bg); color: var(--nav-btn-text); border: none; padding: 5px 14px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
+        .sort-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
+        .sort-btn.active { background: #00a1d6; color: white; }
+        /* 点赞/点踩 */
+        .comment-reactions { display: flex; gap: 6px; margin-top: 8px; }
+        .react-btn { background: none; border: 1px solid var(--card-border); border-radius: 20px; padding: 2px 10px; font-size: 0.8rem; cursor: pointer; color: var(--count-text); transition: 0.15s; }
+        .react-btn:hover { border-color: var(--status-border); color: var(--status-border); }
+        .react-btn.active-like { background: rgba(0,161,214,0.12); border-color: #00a1d6; color: #00a1d6; }
+        .react-btn.active-dislike { background: rgba(255,107,107,0.12); border-color: #ff6b6b; color: #ff6b6b; }
+        .react-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+        .edit-btn { background: none; border: none; color: var(--status-border); cursor: pointer; padding: 0; font-size: 0.85rem; margin-right: 10px; }
+        .edit-btn:hover { text-decoration: underline; background: none; color: var(--nav-btn-hover-bg); }
+        .edit-form textarea { width: 100%; padding: 8px; border: 1px solid var(--card-border); border-radius: 8px; background: var(--bg-color); color: var(--text-color); font-family: inherit; resize: vertical; }
+        .edit-form button { margin-top: 5px; margin-right: 8px; }
+        .floor-badge { font-size: 0.75rem; color: var(--count-text); margin-right: 8px; }
         .account-btn { background: var(--nav-btn-bg); color: var(--nav-btn-text); border: none; border-radius: 30px; padding: 10px 20px; font-size: 1rem; cursor: pointer; }
         .account-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
         .toggle-replies-btn { background: none; border: none; color: var(--status-border); cursor: pointer; font-size: 0.85rem; margin-top: 8px; padding: 0; }
@@ -181,8 +200,7 @@
             <a href="APP.html" class="nav-btn">软件/APP下载</a>
         </div>
         <div class="nav-actions">
-            <a href="comments-beta.html" class="nav-btn active">💬 评论Beta0.1版本</a>
-            <a href="comments.html" class="nav-btn" target="_blank">旧版评论区</a>
+            <a href="comments-beta.html" class="nav-btn active">💬 评论区</a>
             <button class="account-btn" id="accountBtn">⚙️ 账号设置</button>
         </div>
     </div>
@@ -196,6 +214,14 @@
             <textarea id="comment-text" rows="3" placeholder="写下你的评论... (最多200字)" maxlength="200"></textarea>
             <div class="char-counter"><span id="char-count">0</span>/200</div>
             <button id="submit-comment" style="margin-top:10px;">发布评论</button>
+        </div>
+
+        <!-- 排序工具栏 -->
+        <div class="comment-toolbar">
+            <span class="toolbar-label">排序：</span>
+            <button id="sortLatestBtn" class="sort-btn active">🕐 最新</button>
+            <button id="sortHotBtn" class="sort-btn">🔥 最热</button>
+            <span class="toolbar-total" id="toolbarTotal"></span>
         </div>
 
         <div id="comment-list"></div>
@@ -306,6 +332,9 @@
     let pendingReportCommentId = null;
     let highlightApplied = false;
     let pendingHighlightId = null;
+    let commentSort = 'latest';    // 排序方式：latest=最新 hot=最热
+    let reactionAgg = {};          // comment_id -> {likes, dislikes}
+    let myReactions = {};          // comment_id -> 1|-1（当前用户的选择）
 
     // DOM 元素
     const userStatusSpan = document.getElementById('user-status');
@@ -607,18 +636,33 @@
             reportButton = `<button class="report-btn" data-id="${node.id}" data-author-id="${node.user_id}">举报</button>`;
         }
 
+        // 点赞/点踩（楼层与计数）
+        const floorBadge = (!isReply && node.floor) ? `<span class="floor-badge">#${node.floor}</span>` : '';
+        const reacts = reactionAgg[node.id] || { likes: 0, dislikes: 0 };
+        const myReact = currentUser ? (myReactions[node.id] || 0) : 0;
+        const likeClass = myReact === 1 ? 'active-like' : '';
+        const dislikeClass = myReact === -1 ? 'active-dislike' : '';
+        const editButton = (currentUser && currentUser.id === node.user_id)
+            ? `<button class="edit-btn" data-id="${node.id}">编辑</button>` : '';
+
         return `
             <div class="comment" data-id="${node.id}">
                 <div class="comment-meta">
+                    ${floorBadge}
                     <span class="comment-author">${escapeHtml(author)}${verifiedBadge}${companyTag}</span>
                     <span class="comment-time">${new Date(node.created_at).toLocaleString()}</span>
                 </div>
-                <div class="comment-content" data-full="${fullText}" data-short="${displayText}">${renderContentWithMentions(displayText)}</div>
+                <div class="comment-content" data-full="${escapeHtml(fullText)}" data-short="${escapeHtml(displayText)}">${renderContentWithMentions(displayText)}</div>
                 ${toggleButton ? `<div class="toggle-btn-container">${toggleButton}</div>` : ''}
                 <div class="comment-actions">
                     ${showReplyBtn ? `<button class="reply-btn" data-id="${node.id}">回复</button>` : ''}
+                    ${editButton}
                     ${currentUser && currentUser.id === node.user_id ? `<button class="delete-btn" data-id="${node.id}">删除</button>` : ''}
                     ${reportButton}
+                </div>
+                <div class="comment-reactions">
+                    <button class="react-btn ${likeClass}" data-id="${node.id}" data-reaction="1">👍 <span class="like-count">${reacts.likes}</span></button>
+                    <button class="react-btn ${dislikeClass}" data-id="${node.id}" data-reaction="-1">👎 <span class="dislike-count">${reacts.dislikes}</span></button>
                 </div>
                 <div class="reply-form" id="reply-form-${node.id}" style="display:none;">
                     <textarea rows="2" placeholder="写下你的回复... (最多200字)" maxlength="200"></textarea>
@@ -640,9 +684,10 @@
         const end = Math.min(start + COMMENTS_PER_PAGE, allMainComments.length);
         const pageMainComments = allMainComments.slice(start, end);
 
-        const tree = pageMainComments.map(main => {
+        const tree = pageMainComments.map((main, idx) => {
             const replies = allRepliesMap.get(main.id) || [];
-            return { ...main, replies: replies };
+            // 楼层号：按排序后的全局位置计算
+            return { ...main, replies: replies, floor: start + idx + 1 };
         });
 
         renderComments(tree);
@@ -893,9 +938,105 @@
         document.querySelectorAll('.delete-btn').forEach(btn => {
             btn.onclick = () => {
                 const commentId = btn.dataset.id;
-                showConfirm('确认删除', '确定要删除这条评论吗？', async () => {
+                showConfirm('确认删除', '确定要删除这条评论吗？（其下的所有回复将一并删除）', async () => {
                     await deleteComment(commentId);
                 });
+            };
+        });
+
+        // 点赞/点踩
+        document.querySelectorAll('.react-btn').forEach(btn => {
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+                if (!currentUser) { showMessage('提示', '请先登录'); return; }
+                const commentId = parseInt(btn.dataset.id);
+                const reaction = parseInt(btn.dataset.reaction);
+                btn.disabled = true;
+                const { data, error } = await supabaseClient.rpc('toggle_comment_reaction', {
+                    p_user_id: currentUser.id,
+                    p_comment_id: commentId,
+                    p_reaction: reaction
+                });
+                btn.disabled = false;
+                if (error) { showMessage('错误', error.message); return; }
+                if (!data.success) { showMessage('提示', data.message); return; }
+
+                // 更新本地状态：再点相同按钮=取消，否则切换
+                if (myReactions[commentId] === reaction) myReactions[commentId] = 0;
+                else myReactions[commentId] = reaction;
+                reactionAgg[commentId] = { likes: data.likes, dislikes: data.dislikes };
+
+                // 局部刷新该评论的点赞按钮 UI（无需重新渲染整页）
+                const commentDiv = document.querySelector(`.comment[data-id="${commentId}"]`);
+                if (commentDiv) {
+                    const likeBtn = commentDiv.querySelector('.react-btn[data-reaction="1"]');
+                    const dislikeBtn = commentDiv.querySelector('.react-btn[data-reaction="-1"]');
+                    if (likeBtn) {
+                        likeBtn.querySelector('.like-count').innerText = data.likes;
+                        likeBtn.classList.toggle('active-like', myReactions[commentId] === 1);
+                    }
+                    if (dislikeBtn) {
+                        dislikeBtn.querySelector('.dislike-count').innerText = data.dislikes;
+                        dislikeBtn.classList.toggle('active-dislike', myReactions[commentId] === -1);
+                    }
+                }
+            };
+        });
+
+        // 编辑自己的评论
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const commentId = btn.dataset.id;
+                const commentDiv = document.querySelector(`.comment[data-id="${commentId}"]`);
+                if (!commentDiv) return;
+                const contentDiv = commentDiv.querySelector('.comment-content');
+                if (!contentDiv) return;
+                const fullText = contentDiv.dataset.full || '';
+
+                const editForm = document.createElement('div');
+                editForm.className = 'edit-form';
+                const textarea = document.createElement('textarea');
+                textarea.rows = 2;
+                textarea.maxLength = 200;
+                textarea.value = fullText;
+                const counter = document.createElement('div');
+                counter.className = 'char-counter';
+                counter.innerHTML = '<span>' + fullText.length + '</span>/200';
+                const saveBtn = document.createElement('button');
+                saveBtn.textContent = '保存';
+                const cancelBtn = document.createElement('button');
+                cancelBtn.textContent = '取消';
+                editForm.appendChild(textarea);
+                editForm.appendChild(counter);
+                editForm.appendChild(saveBtn);
+                editForm.appendChild(cancelBtn);
+
+                textarea.addEventListener('input', () => {
+                    counter.querySelector('span').innerText = textarea.value.length;
+                });
+
+                saveBtn.onclick = async () => {
+                    const newContent = textarea.value.trim();
+                    if (!newContent) { showMessage('提示', '内容不能为空'); return; }
+                    if (newContent.length > 200) { showMessage('提示', '内容不能超过200字'); return; }
+                    const { data, error } = await supabaseClient.rpc('update_comment', {
+                        p_user_id: currentUser.id,
+                        p_comment_id: parseInt(commentId),
+                        p_content: newContent
+                    });
+                    if (error) { showMessage('错误', error.message); return; }
+                    if (!data.success) { showMessage('提示', data.message); return; }
+                    const savedPage = currentPage;
+                    await fetchComments();
+                    renderCommentsForPage(savedPage);
+                };
+                cancelBtn.onclick = () => {
+                    const savedPage = currentPage;
+                    fetchComments().then(() => renderCommentsForPage(savedPage));
+                };
+
+                contentDiv.replaceWith(editForm);
             };
         });
 
@@ -1007,13 +1148,15 @@
 
     async function deleteComment(commentId) {
         if (!currentUser) return;
-        const { error } = await supabaseClient
-            .from('comments')
-            .delete()
-            .eq('id', commentId)
-            .eq('user_id', currentUser.id);
-        if (error) showMessage('错误', '删除失败');
-        else {
+        const { data, error } = await supabaseClient.rpc('delete_comment_cascade', {
+            p_user_id: currentUser.id,
+            p_comment_id: commentId
+        });
+        if (error) {
+            showMessage('错误', '删除失败: ' + error.message);
+        } else if (!data.success) {
+            showMessage('提示', data.message);
+        } else {
             const savedPage = currentPage;
             await fetchComments();
             renderCommentsForPage(savedPage);
@@ -1049,7 +1192,32 @@
         const mainComments = data.filter(c => !c.parent_id);
         const replies = data.filter(c => c.parent_id);
 
-        mainComments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        // 点赞/点踩数据（计数 + 当前用户的选择）
+        reactionAgg = {};
+        myReactions = {};
+        const { data: reactions, error: reactErr } = await supabaseClient
+            .from('comment_reactions')
+            .select('comment_id, reaction, user_id');
+        if (!reactErr && reactions) {
+            for (const r of reactions) {
+                if (!reactionAgg[r.comment_id]) reactionAgg[r.comment_id] = { likes: 0, dislikes: 0 };
+                if (r.reaction === 1) reactionAgg[r.comment_id].likes++;
+                else reactionAgg[r.comment_id].dislikes++;
+                if (currentUser && r.user_id === currentUser.id) myReactions[r.comment_id] = r.reaction;
+            }
+        }
+
+        // 排序：最新（默认）或最热（点赞数-点踩数）
+        if (commentSort === 'hot') {
+            mainComments.sort((a, b) => {
+                const hotA = (reactionAgg[a.id]?.likes || 0) - (reactionAgg[a.id]?.dislikes || 0);
+                const hotB = (reactionAgg[b.id]?.likes || 0) - (reactionAgg[b.id]?.dislikes || 0);
+                if (hotB !== hotA) return hotB - hotA;
+                return new Date(b.created_at) - new Date(a.created_at);
+            });
+        } else {
+            mainComments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        }
 
         const repliesMap = new Map();
         replies.forEach(reply => {
@@ -1065,6 +1233,9 @@
         allMainComments = mainComments;
         allRepliesMap = repliesMap;
         totalComments = data.length;
+
+        const toolbarTotal = document.getElementById('toolbarTotal');
+        if (toolbarTotal) toolbarTotal.innerText = `共 ${data.length} 条评论`;
 
         const highlightId = new URLSearchParams(window.location.search).get('highlight');
         if (highlightId) {
@@ -1395,6 +1566,18 @@
     };
 
     submitCommentBtn.onclick = postComment;
+
+    // 排序切换
+    function switchSort(mode) {
+        if (commentSort === mode) return;
+        commentSort = mode;
+        document.getElementById('sortLatestBtn').classList.toggle('active', mode === 'latest');
+        document.getElementById('sortHotBtn').classList.toggle('active', mode === 'hot');
+        fetchComments();
+    }
+    document.getElementById('sortLatestBtn').onclick = () => switchSort('latest');
+    document.getElementById('sortHotBtn').onclick = () => switchSort('hot');
+
     loadUser();
 
     window.addEventListener('scroll', function() {

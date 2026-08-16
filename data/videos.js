@@ -1,11 +1,10 @@
-console.log('【data.js】开始执行');
 // data/videos.js
 window.VIDEOS = /*<VIDEOS>*/[
     {
         "bvid": "BV1Nr3i63ENL",
         "title": "《 行 星 发 动 机 》",
         "cover": "https://i1.hdslb.com/bfs/archive/7fc0a17bb56a553d152776e86ea34e604b9fdbf6.jpg",
-        "play": "2.7万",
+        "play": "2.6万",
         "duration": "6:10",
         "pubdate": 1785219881,
         "category_key": "化学",
@@ -15,7 +14,7 @@ window.VIDEOS = /*<VIDEOS>*/[
         "bvid": "BV1zJ376kENb",
         "title": "《 炸 弹 》",
         "cover": "https://i0.hdslb.com/bfs/archive/9ad74a4776aac3a7c1461c9fd806d081ab725c6c.jpg",
-        "play": "4.7万",
+        "play": "4.6万",
         "duration": "1:41",
         "pubdate": 1785038050,
         "category_key": "产品",
@@ -35,7 +34,7 @@ window.VIDEOS = /*<VIDEOS>*/[
         "bvid": "BV1v8AfzmE9o",
         "title": "《 官 网 0 . 2 . 5 》",
         "cover": "https://i1.hdslb.com/bfs/archive/ed50fccde58ca8466a6dbaef022424c94222a84d.jpg",
-        "play": "7083",
+        "play": "7066",
         "duration": "4:32",
         "pubdate": 1772545041,
         "category_key": "官网",
@@ -75,7 +74,7 @@ window.VIDEOS = /*<VIDEOS>*/[
         "bvid": "BV1WXZUBsEqi",
         "title": "《 官 网 0 . 2 1 》",
         "cover": "https://i1.hdslb.com/bfs/archive/8d071e1ca4ca804694fe7879660c438a509a44d5.jpg",
-        "play": "4324",
+        "play": "4317",
         "duration": "1:28",
         "pubdate": 1771387286,
         "category_key": "官网",
@@ -105,7 +104,7 @@ window.VIDEOS = /*<VIDEOS>*/[
         "bvid": "BV1z8WfzgEr2",
         "title": "《 救 人 5 . 0 》",
         "cover": "https://i0.hdslb.com/bfs/archive/376b34e5ec23597e6649d7ac4e22314d75322f5b.jpg",
-        "play": "8265",
+        "play": "8245",
         "duration": "3:49",
         "pubdate": 1760833254,
         "category_key": "救人",
@@ -265,7 +264,7 @@ window.VIDEOS = /*<VIDEOS>*/[
         "bvid": "BV1BkNNe7Etf",
         "title": "《 逝 验 室 爆 炸 逝 件 》",
         "cover": "https://i1.hdslb.com/bfs/archive/1deef49ba2057ec16c0f7a330c98159bc588e686.jpg",
-        "play": "2.9万",
+        "play": "2.8万",
         "duration": "6:01",
         "pubdate": 1738933013,
         "category_key": "化学",
@@ -282,4 +281,3 @@ window.VIDEOS = /*<VIDEOS>*/[
         "category_name": "《逝验室·化学》"
     }
 ]/*</VIDEOS>*/;
-console.log('【data.js】赋值完成，长度：', window.VIDEOS.length);

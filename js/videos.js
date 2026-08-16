@@ -1,6 +1,4 @@
 // js/videos.js
-console.log('VIDEOS loaded:', VIDEOS);
-console.log('Number of videos:', VIDEOS.length);
 
 let currentCategoryKey = 'all';
 let categoryMap = {};

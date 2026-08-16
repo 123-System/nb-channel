@@ -41,7 +41,7 @@ function updateSiteStats() {
     const statsDiv = document.getElementById('siteStats');
     if (!statsDiv) return;
 
-    if (!VIDEOS || VIDEOS.length === 0) {
+    if (typeof VIDEOS === 'undefined' || !VIDEOS || VIDEOS.length === 0) {
         statsDiv.innerHTML = '📊 建站日期：2026-02-17 | 暂无视频数据';
         return;
     }
