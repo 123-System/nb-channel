@@ -1426,12 +1426,14 @@
         document.getElementById('tradeTitle').innerText = mode === 'buy' ? '📈 买入' : '📉 卖出';
 
         // 我持有的当前价值
-        let myValue = 0, myShares = 0;
+        let myValue = 0, myShares = 0, avgPrice = 0, curPrice = 0;
         if (window.myHoldingsList) {
             const h = window.myHoldingsList.find(x => x.company_id === companyId);
             if (h) {
                 myShares = parseFloat(h.shares) || 0;
                 myValue = myShares * (parseFloat(h.current_price) || 0);
+                avgPrice = parseFloat(h.average_price) || 0;   // 我的平均成本
+                curPrice = parseFloat(h.current_price) || 0;   // 当前净值
             }
         }
         document.getElementById('tradeHolding').innerText = myShares > 0
@@ -1447,7 +1449,7 @@
         amountInput.value = mode === 'buy' ? 100 : (Math.round(myValue) || 100);
         updateTradePreview();
 
-        tradeState = { companyId, name: companyName, marketValue, mode, myValue, myShares };
+        tradeState = { companyId, name: companyName, marketValue, mode, myValue, myShares, avgPrice, curPrice };
         modal.style.display = 'flex';
 
         // 动态事件（防止重复绑定）
@@ -1511,6 +1513,16 @@
 
         // 交易成功 + 盈亏汇总
         let msg = data.message;
+        // 这笔卖出的净收益（卖出金额 vs 买入成本，扣手续费）
+        if (mode === 'sell') {
+            const curPrice = tradeState.curPrice || 1;
+            const soldShares = amount / curPrice;
+            const costOfSold = tradeState.avgPrice * soldShares;   // 这些份额当初的成本
+            const fee = Math.floor(amount * 0.05);
+            const net = amount - costOfSold - fee;                 // 净收益
+            msg += `\n\n🧾 这笔卖出：成本 ${formatValue(Math.round(costOfSold))} NB币，卖出 ${formatValue(Math.round(amount))} NB币，手续费 ${formatValue(fee)} NB币`;
+            msg += `\n   净收益：${net >= 0 ? '✅ 赚' : '❌ 亏'} ${formatValue(Math.abs(Math.round(net)))} NB币`;
+        }
         if (window.myHoldingsList && window.myHoldingsList.length) {
             // 该公司的持仓盈亏
             const h = window.myHoldingsList.find(x => x.company_id === tradeState.companyId);
