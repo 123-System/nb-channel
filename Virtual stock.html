@@ -1523,29 +1523,32 @@
             msg += `\n\n🧾 这笔卖出：成本 ${formatValue(Math.round(costOfSold))} NB币，卖出 ${formatValue(Math.round(amount))} NB币，手续费 ${formatValue(fee)} NB币`;
             msg += `\n   净收益：${net >= 0 ? '✅ 赚' : '❌ 亏'} ${formatValue(Math.abs(Math.round(net)))} NB币`;
         }
-        // 持仓盈亏汇总（若列表为空则主动查询一次，确保显示）
-        let holdings = window.myHoldingsList;
-        if (!holdings || !holdings.length) {
-            const { data: hd } = await supabaseClient.rpc('get_my_holdings', { p_user_id: currentUserId });
-            if (hd) holdings = hd;
-        }
-        if (holdings && holdings.length) {
-            // 该公司的持仓盈亏
-            const h = holdings.find(x => x.company_id === tradeState.companyId);
-            if (h) {
-                const cost = (parseFloat(h.average_price) || 0) * (parseFloat(h.shares) || 0);
-                const now = (parseFloat(h.current_price) || 0) * (parseFloat(h.shares) || 0);
-                const profit = now - cost;
-                msg += `\n\n📊 持有「${h.company_name}」：投入 ${formatValue(Math.round(cost))} NB币，当前价值 ${formatValue(Math.round(now))} NB币，${profit >= 0 ? '赚' : '亏'} ${formatValue(Math.abs(Math.round(profit)))} NB币`;
+        // 持仓盈亏汇总（仅卖出后显示，买入时盈亏无意义）
+        if (mode === 'sell') {
+            // 持仓盈亏汇总（若列表为空则主动查询一次，确保显示）
+            let holdings = window.myHoldingsList;
+            if (!holdings || !holdings.length) {
+                const { data: hd } = await supabaseClient.rpc('get_my_holdings', { p_user_id: currentUserId });
+                if (hd) holdings = hd;
             }
-            // 全部持仓总盈亏
-            let tc = 0, tn = 0;
-            for (const x of holdings) {
-                tc += (parseFloat(x.average_price) || 0) * (parseFloat(x.shares) || 0);
-                tn += (parseFloat(x.current_price) || 0) * (parseFloat(x.shares) || 0);
+            if (holdings && holdings.length) {
+                // 该公司的持仓盈亏
+                const h = holdings.find(x => x.company_id === tradeState.companyId);
+                if (h) {
+                    const cost = (parseFloat(h.average_price) || 0) * (parseFloat(h.shares) || 0);
+                    const now = (parseFloat(h.current_price) || 0) * (parseFloat(h.shares) || 0);
+                    const profit = now - cost;
+                    msg += `\n\n📊 持有「${h.company_name}」：投入 ${formatValue(Math.round(cost))} NB币，当前价值 ${formatValue(Math.round(now))} NB币，${profit >= 0 ? '赚' : '亏'} ${formatValue(Math.abs(Math.round(profit)))} NB币`;
+                }
+                // 全部持仓总盈亏
+                let tc = 0, tn = 0;
+                for (const x of holdings) {
+                    tc += (parseFloat(x.average_price) || 0) * (parseFloat(x.shares) || 0);
+                    tn += (parseFloat(x.current_price) || 0) * (parseFloat(x.shares) || 0);
+                }
+                const tp = tn - tc;
+                msg += `\n💰 全部持仓：投入 ${formatValue(Math.round(tc))} NB币，当前价值 ${formatValue(Math.round(tn))} NB币，${tp >= 0 ? '赚' : '亏'} ${formatValue(Math.abs(Math.round(tp)))} NB币`;
             }
-            const tp = tn - tc;
-            msg += `\n💰 全部持仓：投入 ${formatValue(Math.round(tc))} NB币，当前价值 ${formatValue(Math.round(tn))} NB币，${tp >= 0 ? '赚' : '亏'} ${formatValue(Math.abs(Math.round(tp)))} NB币`;
         }
         await showMessage('交易成功', msg);
     }
