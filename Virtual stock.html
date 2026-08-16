@@ -431,17 +431,17 @@
 <!-- 股票交易弹窗（金额制） -->
 <div id="tradeModal" class="custom-modal">
     <div class="modal-content" style="max-width: 420px; text-align: left;">
-        <h3 id="tradeTitle" style="text-align:center; margin-bottom:12px;">📈 投资交易</h3>
+        <h3 id="tradeTitle" style="text-align:center; margin-bottom:12px;">📈 买入</h3>
         <div style="font-size:0.9rem; line-height:1.9;">
             <div>🏢 公司：<strong id="tradeCompanyName"></strong></div>
             <div>💰 当前市值：<strong id="tradePrice" style="color:#00a1d6;"></strong> NB币</div>
-            <div>📊 我的投资：<strong id="tradeHolding"></strong></div>
+            <div>📊 我持有：<strong id="tradeHolding"></strong></div>
             <div>🏦 我的余额：<strong id="tradeBalance"></strong> NB币</div>
         </div>
         <div style="margin: 14px 0;">
             <label style="font-size:0.85rem;">交易金额（NB币，手续费 5%）：</label>
             <input type="number" id="tradeShares" min="1" max="10000" value="100" style="width:100%; padding:8px; margin:6px 0; border-radius:30px; border:1px solid var(--card-border); background:var(--bg-color); color:var(--text-color);">
-            <div id="tradeAmountPreview" style="font-size:0.85rem; color:var(--count-text); text-align:right;">预计份额：--</div>
+            <div id="tradeAmountPreview" style="font-size:0.85rem; color:var(--count-text); text-align:right;">预计花费：--</div>
         </div>
         <div style="display:flex; gap:10px; margin-top:8px;">
             <button id="tradeBuyBtn" style="flex:1; background:#f44336;">📈 买入</button>
@@ -1423,9 +1423,9 @@
         const modal = document.getElementById('tradeModal');
         document.getElementById('tradeCompanyName').innerText = companyName;
         document.getElementById('tradePrice').innerText = formatValue(marketValue);
-        document.getElementById('tradeTitle').innerText = mode === 'buy' ? '📈 买入投资' : '📉 卖出投资';
+        document.getElementById('tradeTitle').innerText = mode === 'buy' ? '📈 买入' : '📉 卖出';
 
-        // 我的投资（当前价值 + 份额）
+        // 我持有的当前价值
         let myValue = 0, myShares = 0;
         if (window.myHoldingsList) {
             const h = window.myHoldingsList.find(x => x.company_id === companyId);
@@ -1435,8 +1435,8 @@
             }
         }
         document.getElementById('tradeHolding').innerText = myShares > 0
-            ? `${formatValue(Math.round(myValue))} NB币（${myShares} 份）`
-            : '暂无投资';
+            ? `${formatValue(Math.round(myValue))} NB币`
+            : '暂无持有';
 
         // 当前余额
         fetchUserBalance().then(balance => {
@@ -1531,7 +1531,7 @@
 
         const list = document.getElementById('holdingsList');
         const totalValue = document.getElementById('holdingsTotalValue');
-        let html = '<table class="data-table" style="font-size:0.85rem;"><thead><tr><th>公司</th><th>我的份额</th><th>投入成本</th><th>当前价值</th><th>浮动盈亏</th><th>占比</th></tr></thead><tbody>';
+        let html = '<table class="data-table" style="font-size:0.85rem;"><thead><tr><th>公司</th><th>投入成本</th><th>当前价值</th><th>浮动盈亏</th><th>占公司比例</th></tr></thead><tbody>';
         let totalCost = 0, totalNow = 0;
         for (const h of window.myHoldingsList) {
             const shares = parseFloat(h.shares) || 0;
@@ -1545,7 +1545,6 @@
             const profitHtml = `<span style="color:${profit >= 0 ? '#f44336' : '#4caf50'};">${profit >= 0 ? '▲' : '▼'} ${formatValue(Math.abs(Math.round(profit)))}</span>`;
             html += `<tr>
                 <td><a href="#" class="stock-link" data-id="${h.company_id}" data-name="${escapeHtml(h.company_name)}" style="color:var(--status-border);">${escapeHtml(h.company_name)}</a></td>
-                <td>${shares} 份</td>
                 <td style="font-family:monospace;">${formatValue(Math.round(cost))}</td>
                 <td style="font-family:monospace; color:#00a1d6;">${formatValue(Math.round(now))}</td>
                 <td>${profitHtml}</td>

@@ -46,7 +46,7 @@ BEGIN
 
     -- 禁止买入自己的公司
     IF v_owner_id = p_user_id THEN
-        RETURN jsonb_build_object('success', false, 'message', '不能买入自己公司的份额');
+        RETURN jsonb_build_object('success', false, 'message', '不能买入自己公司的股份');
     END IF;
 
     -- 按当前净值折算份额（保留4位小数）
@@ -87,8 +87,8 @@ BEGIN
 
     RETURN jsonb_build_object(
         'success', true,
-        'message', format('成功买入「%s」份额，投入 %s NB币（净值 %s），手续费 %s NB币，共支付 %s NB币',
-                          v_company_name, v_cost, v_nav, v_fee, v_total_pay),
+        'message', format('成功入股「%s」！投入 %s NB币，手续费 %s NB币，共支付 %s NB币（市值涨跌决定您的盈亏）',
+                          v_company_name, v_cost, v_fee, v_total_pay),
         'shares', v_shares
     );
 END;
@@ -168,7 +168,7 @@ BEGIN
 
     RETURN jsonb_build_object(
         'success', true,
-        'message', format('成功卖出「%s」份额，交易额 %s NB币，手续费 %s NB币，实际到账 %s NB币',
+        'message', format('成功退出「%s」！交易额 %s NB币，手续费 %s NB币，实际到账 %s NB币',
                           v_company_name, v_revenue, v_fee, v_net),
         'revenue', v_revenue
     );
