@@ -2,11 +2,31 @@
 
 这个 Flask 应用同时承担三件事：
 1. **网站本体**：服务 NB频道 的静态页面（`/` → 网站文件目录）
-2. **作品分享后端**：`/upload`（上传）、`/download`（购买/下载）、`/uploads/`（附件下载）
+2. **作品分享后端**：`/upload`（上传到 S3）、`/download`（购买/下载）、`/files/<key>`（从 S3 代理下载）
 3. **GitHub 自动同步**：`/webhook` 收到 push 通知后自动 `git pull`
 
 > ⚠️ 重要：原来 GitHub Webhook 投递到 `https://nbchannel.pythonanywhere.com/webhook` 一直返回 404，
 > 因为旧站点是纯静态站、没有这个端点。部署本应用后，404 会消失，自动同步才能真正工作。
+
+---
+
+## 〇、S3 存储配置（作品文件存放）
+
+作品文件存在**数据胶囊 S3**（`nb-products` 桶），PythonAnywhere 只做中转代理（桶保持私有，下载走 `/files/<key>`）。
+
+1. **重新生成 S3 密钥**（旧密钥已泄露过，务必轮换）：
+   登录数据胶囊控制台 → 删除旧的 Access Key → 新建一对
+2. **配置环境变量**（Web 面板 → 你的 app → Environment variables）：
+
+   | 变量 | 值 |
+   |------|-----|
+   | `S3_ENDPOINT` | `https://s3.cstcloud.cn` |
+   | `S3_REGION` | `us-east-1` |
+   | `S3_BUCKET` | `nb-products` |
+   | `S3_ACCESS_KEY` | 你的新 Access Key |
+   | `S3_SECRET_KEY` | 你的新 Secret Key |
+
+3. 若未配置 S3 密钥，上传会**自动退回本地磁盘存储**（`pythonanywhere/uploads/`，仅 512MB 限额，不建议长期使用）
 
 ---
 
@@ -43,10 +63,10 @@ git clone https://github.com/NB-Channel/nb-channel.git
 
 ## 二、部署 Flask 应用
 
-1. 上传本目录的 `app.py`、`wsgi.py`、`requirements.txt` 到 `/home/nbchannel/nb_api/`
+1. 上传本目录的 `app.py`、`wsgi.py`、`requirements.txt` 到 `/home/nbchannel/nb_api/`（若已通过 git clone 则跳过，仓库内已有）
 2. Bash 安装依赖：
    ```bash
-   pip3 install --user flask supabase
+   pip3 install --user flask supabase boto3
    ```
 3. Web 面板 → 新建 web app（**Flask、Python 3.10**；若已有 web app 则编辑它）
    - **WSGI configuration file** 改为：`/home/nbchannel/nb_api/wsgi.py`

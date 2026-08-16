@@ -4,14 +4,14 @@ NB频道 - PythonAnywhere 一体化 Flask 应用
 ====================================================
 功能：
   GET  /                网站本体（静态文件服务，需配置 SITE_DIR）
-  POST /upload          上传作品（multipart/form-data + 头 X-User-Id）
+  POST /upload          上传作品（存 S3，multipart/form-data + 头 X-User-Id）
   POST /download        下载/购买作品（JSON + 头 X-User-Id）
-  GET  /uploads/<文件名>  文件下载（附件方式）
+  GET  /files/<key>     从 S3 代理下载文件（附件方式）
   POST /webhook         GitHub push 后自动 git pull 同步代码
   GET  /health          健康检查
 
 部署前必读：pythonanywhere/README.md
-依赖：pip install flask supabase
+依赖：pip install flask supabase boto3
 """
 import os
 import re
@@ -21,8 +21,19 @@ import hashlib
 import datetime
 import subprocess
 
-from flask import Flask, request, jsonify, send_from_directory
+# 彻底移除所有代理环境变量（否则 S3/外部连接会被 PythonAnywhere 代理干扰）
+for _key in ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'NO_PROXY', 'no_proxy']:
+    os.environ.pop(_key, None)
+
+from flask import Flask, request, jsonify, send_from_directory, Response
 from supabase import create_client, Client
+
+try:
+    import boto3
+    from botocore.client import Config as BotoConfig
+    from botocore.exceptions import ClientError as BotoClientError
+except ImportError:
+    boto3 = None
 
 # ==================== 配置 ====================
 SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co'
@@ -31,14 +42,31 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 ALLOWED_EXT = re.compile(r'^[a-zA-Z0-9]{1,10}$')  # 扩展名白名单格式
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')
+UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')  # 兼容旧版本地存储（新文件全部走 S3）
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # 网站静态文件目录（git 仓库目录，供 / 和 /webhook 使用）
-# 可通过 WSGI 文件或 PythonAnywhere 环境变量覆盖，默认假设在 /home/nbchannel/nb-channel
 SITE_DIR = os.environ.get('SITE_DIR', '/home/nbchannel/nb-channel')
 # GitHub webhook secret（与 GitHub 仓库 Webhooks 配置保持一致；不配置则跳过校验）
 GITHUB_WEBHOOK_SECRET = os.environ.get('GITHUB_WEBHOOK_SECRET', '')
+
+# ---------- S3 存储配置（从环境变量读取，密钥不要写进代码/仓库） ----------
+S3_ENDPOINT = os.environ.get('S3_ENDPOINT', 'https://s3.cstcloud.cn')
+S3_REGION = os.environ.get('S3_REGION', 'us-east-1')
+S3_BUCKET = os.environ.get('S3_BUCKET', 'nb-products')
+S3_ACCESS_KEY = os.environ.get('S3_ACCESS_KEY', '')
+S3_SECRET_KEY = os.environ.get('S3_SECRET_KEY', '')
+
+s3_client = None
+if boto3 is not None and S3_ACCESS_KEY and S3_SECRET_KEY:
+    s3_client = boto3.client(
+        's3',
+        endpoint_url=S3_ENDPOINT,
+        region_name=S3_REGION,
+        aws_access_key_id=S3_ACCESS_KEY,
+        aws_secret_access_key=S3_SECRET_KEY,
+        config=BotoConfig(proxies={}),  # 禁用代理（关键）
+    )
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
@@ -148,14 +176,27 @@ def upload():
     if size > MAX_FILE_SIZE:
         return jsonify({'success': False, 'message': '文件不能超过 50 MB'}), 400
 
-    filename = safe_filename(file.filename)
-    filepath = os.path.join(UPLOAD_DIR, filename)
-    try:
-        file.save(filepath)
-    except Exception as e:
-        return jsonify({'success': False, 'message': '文件保存失败: %s' % e}), 500
-
-    file_url = request.host_url.rstrip('/') + '/uploads/' + filename
+    # ---------- 存储：S3 优先，未配置 S3 时退回本地磁盘 ----------
+    key = safe_filename(file.filename)
+    if s3_client is not None:
+        try:
+            s3_client.put_object(
+                Bucket=S3_BUCKET,
+                Key=key,
+                Body=file.stream,
+                ContentType=file.mimetype or 'application/octet-stream',
+            )
+        except Exception as e:
+            return jsonify({'success': False, 'message': '上传到对象存储失败: %s' % e}), 500
+        # 下载走 PythonAnywhere 代理（/files/<key>），桶保持私有
+        file_url = request.host_url.rstrip('/') + '/files/' + key
+    else:
+        filepath = os.path.join(UPLOAD_DIR, key)
+        try:
+            file.save(filepath)
+        except Exception as e:
+            return jsonify({'success': False, 'message': '文件保存失败: %s' % e}), 500
+        file_url = request.host_url.rstrip('/') + '/uploads/' + key
 
     data, rpc_err = rpc('create_product', {
         'p_user_id': user_id,
@@ -168,10 +209,13 @@ def upload():
         'p_mime_type': file.mimetype or '',
     })
     if rpc_err or not data or data.get('success') is not True:
-        # 数据库写入失败时删除已保存的文件，避免孤儿文件
+        # 数据库写入失败时清理已上传的文件，避免孤儿文件
         try:
-            os.remove(filepath)
-        except OSError:
+            if s3_client is not None:
+                s3_client.delete_object(Bucket=S3_BUCKET, Key=key)
+            else:
+                os.remove(filepath)
+        except Exception:
             pass
         msg = (rpc_err or (data and data.get('message')) or '写入数据库失败，请检查 SQL 脚本是否已执行')
         return jsonify({'success': False, 'message': msg}), 500
@@ -237,10 +281,30 @@ def download():
 
 @app.route('/uploads/<path:filename>')
 def serve_file(filename):
-    """以附件方式提供下载，防止上传的 HTML 被浏览器直接执行。"""
+    """旧版本地存储的文件下载（新文件已走 S3）。"""
     if not re.match(r'^[a-f0-9]{32}(\.[a-zA-Z0-9]{1,10})?$', filename):
         return jsonify({'success': False, 'message': '非法文件名'}), 400
     return send_from_directory(UPLOAD_DIR, filename, as_attachment=True)
+
+
+@app.route('/files/<path:key>')
+def serve_s3_file(key):
+    """从 S3 代理下载文件（附件方式）。桶保持私有，下载统一走本端点。"""
+    if not re.match(r'^[a-f0-9]{32}(\.[a-zA-Z0-9]{1,10})?$', key):
+        return jsonify({'success': False, 'message': '非法文件名'}), 400
+    if s3_client is None:
+        return jsonify({'success': False, 'message': 'S3 未配置（缺少 S3_ACCESS_KEY / S3_SECRET_KEY）'}), 500
+    try:
+        obj = s3_client.get_object(Bucket=S3_BUCKET, Key=key)
+        body = obj['Body'].read()
+        resp = Response(body, mimetype=obj.get('ContentType', 'application/octet-stream'))
+        resp.headers['Content-Disposition'] = 'attachment; filename="%s"' % key
+        return resp
+    except BotoClientError as e:
+        code = e.response.get('ResponseMetadata', {}).get('HTTPStatusCode', 404)
+        return jsonify({'success': False, 'message': '文件不存在或已删除'}), code if code == 404 else 502
+    except Exception as e:
+        return jsonify({'success': False, 'message': '下载失败: %s' % e}), 502
 
 
 # ==================== GitHub 自动同步 ====================
