@@ -342,22 +342,6 @@
             <button id="fullViewBtn" class="reset-btn">🏠 虚拟股票全貌</button>
         </div>
 
-        <div class="history-chart-container" id="stockHistoryContainer">
-            <div class="history-title">
-                <span>📈 个股历史市值走势</span>
-                <div class="chart-controls">
-                    <select id="topNSelect" class="topn-select">
-                        <option value="5">Top5</option>
-                        <option value="10">Top10</option>
-                        <option value="15">Top15</option>
-                        <option value="all" selected>全部</option>
-                    </select>
-                    <button id="zoomStockHistoryBtn" class="zoom-btn">🔍 放大/缩小</button>
-                </div>
-            </div>
-            <canvas id="stockHistoryChart" width="1100" height="280"></canvas>
-        </div>
-
         <div class="history-chart-container">
             <div class="history-title">
                 <span>📉 总市值历史趋势</span>
@@ -536,7 +520,6 @@
     // 图表相关变量
     let currentChart = null;
     let miniPieChart = null;
-    let stockHistoryChart = null;
     let totalHistoryChart = null;
     let histogramChart = null;
     let currentChartType = 'bar';
@@ -556,8 +539,6 @@
     let searchKeyword = '';
     let previousSnapshot = null;
     let fullHistoryData = [];
-    let allStockNames = [];
-    let currentTopN = 'all';
     const pagePath = 'stock_market';
 
     // ========== K线图全局变量 ==========
@@ -1140,54 +1121,7 @@
         const { data, error } = await supabaseClient.from('stock_history_full').select('recorded_at, snapshot, total_value').order('recorded_at', { ascending: true }).limit(30);
         if (error || !data || data.length === 0) return;
         fullHistoryData = data.map(row => ({ time: new Date(row.recorded_at), snapshot: row.snapshot, total: row.total_value }));
-        if (allStockNames.length === 0 && fullHistoryData.length > 0) { const latest = fullHistoryData[fullHistoryData.length-1]; allStockNames = [...latest.snapshot.names]; }
-        updateStockHistoryChartNoRebuild();
         updateTotalHistoryChartNoRebuild();
-    }
-
-    function getFilteredStockNames() {
-        if (!fullHistoryData.length) return [];
-        const latest = fullHistoryData[fullHistoryData.length-1];
-        const stocks = latest.snapshot.names.map((name, idx) => ({ name, value: latest.snapshot.values[idx] }));
-        stocks.sort((a,b) => b.value - a.value);
-        if (currentTopN === 'all') return stocks.map(s => s.name);
-        const limit = parseInt(currentTopN, 10);
-        return stocks.slice(0, limit).map(s => s.name);
-    }
-
-    function updateStockHistoryChartNoRebuild() {
-        if (!fullHistoryData.length || allStockNames.length === 0) return;
-        const displayNames = getFilteredStockNames();
-        if (displayNames.length === 0) return;
-        const labels = fullHistoryData.map(r => r.time.toLocaleTimeString());
-        if (stockHistoryChart && stockHistoryChart.data.datasets.length === displayNames.length) {
-            for (let i=0; i<displayNames.length; i++) {
-                const stockName = displayNames[i];
-                const dataPoints = [];
-                for (const record of fullHistoryData) {
-                    const idx = record.snapshot.names.indexOf(stockName);
-                    dataPoints.push(idx !== -1 ? record.snapshot.values[idx] : null);
-                }
-                stockHistoryChart.data.datasets[i].data = dataPoints;
-            }
-            stockHistoryChart.data.labels = labels;
-            stockHistoryChart.update();
-        } else {
-            const datasets = [];
-            const colorPalette = ['#f44336','#4caf50','#2196f3','#ff9800','#9c27b0','#00bcd4','#e91e63','#3f51b5','#009688','#ffc107','#795548','#607d8b'];
-            for (let i=0; i<displayNames.length; i++) {
-                const stockName = displayNames[i];
-                const dataPoints = [];
-                for (const record of fullHistoryData) {
-                    const idx = record.snapshot.names.indexOf(stockName);
-                    dataPoints.push(idx !== -1 ? record.snapshot.values[idx] : null);
-                }
-                datasets.push({ label: stockName, data: dataPoints, borderColor: colorPalette[i % colorPalette.length], backgroundColor: 'transparent', tension: 0.2, fill: false, pointRadius: 1.5, borderWidth: 1.5 });
-            }
-            const ctx = document.getElementById('stockHistoryChart').getContext('2d');
-            if (stockHistoryChart) stockHistoryChart.destroy();
-            stockHistoryChart = new Chart(ctx, { type: 'line', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatValue(ctx.raw)}` } }, legend: { position: 'top', labels: { font: { size: 10 } } } }, scales: { y: { beginAtZero: true, ticks: { callback: v => formatValue(v) } } } } });
-        }
     }
 
     function updateTotalHistoryChartNoRebuild() {
@@ -1936,10 +1870,6 @@
     document.getElementById('xAxisSlider')?.addEventListener('input', onSliderChange);
     document.getElementById('fullViewBtn')?.addEventListener('click', toggleFullView);
     document.getElementById('searchInput')?.addEventListener('input', (e) => { searchKeyword = e.target.value; updateDataTable(); });
-    const topNSelect = document.getElementById('topNSelect');
-    if (topNSelect) topNSelect.addEventListener('change', (e) => { currentTopN = e.target.value; updateStockHistoryChartNoRebuild(); });
-    const zoomBtn = document.getElementById('zoomStockHistoryBtn');
-    if (zoomBtn) zoomBtn.addEventListener('click', () => { const container = document.getElementById('stockHistoryContainer'); toggleFullscreen(container); });
     document.getElementById('openSupportDialogBtn')?.addEventListener('click', showSupportDialog);
     document.getElementById('tradeCloseBtn')?.addEventListener('click', () => {
         document.getElementById('tradeModal').style.display = 'none';
