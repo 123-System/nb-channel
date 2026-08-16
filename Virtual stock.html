@@ -1523,9 +1523,15 @@
             msg += `\n\n🧾 这笔卖出：成本 ${formatValue(Math.round(costOfSold))} NB币，卖出 ${formatValue(Math.round(amount))} NB币，手续费 ${formatValue(fee)} NB币`;
             msg += `\n   净收益：${net >= 0 ? '✅ 赚' : '❌ 亏'} ${formatValue(Math.abs(Math.round(net)))} NB币`;
         }
-        if (window.myHoldingsList && window.myHoldingsList.length) {
+        // 持仓盈亏汇总（若列表为空则主动查询一次，确保显示）
+        let holdings = window.myHoldingsList;
+        if (!holdings || !holdings.length) {
+            const { data: hd } = await supabaseClient.rpc('get_my_holdings', { p_user_id: currentUserId });
+            if (hd) holdings = hd;
+        }
+        if (holdings && holdings.length) {
             // 该公司的持仓盈亏
-            const h = window.myHoldingsList.find(x => x.company_id === tradeState.companyId);
+            const h = holdings.find(x => x.company_id === tradeState.companyId);
             if (h) {
                 const cost = (parseFloat(h.average_price) || 0) * (parseFloat(h.shares) || 0);
                 const now = (parseFloat(h.current_price) || 0) * (parseFloat(h.shares) || 0);
@@ -1534,7 +1540,7 @@
             }
             // 全部持仓总盈亏
             let tc = 0, tn = 0;
-            for (const x of window.myHoldingsList) {
+            for (const x of holdings) {
                 tc += (parseFloat(x.average_price) || 0) * (parseFloat(x.shares) || 0);
                 tn += (parseFloat(x.current_price) || 0) * (parseFloat(x.shares) || 0);
             }
