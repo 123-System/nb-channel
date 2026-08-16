@@ -125,21 +125,19 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '公司不存在');
     END IF;
 
-    -- 校验持仓存在，并按"金额 vs 持仓价值"判断（价格波动不会误拒）
+    -- 校验持仓存在（有持仓就能卖，金额超出的部分自动按持仓上限成交）
     SELECT shares INTO v_holding_shares
       FROM public.holdings
      WHERE user_id = p_user_id AND company_id = p_company_id;
     IF v_holding_shares IS NULL OR v_holding_shares <= 0 THEN
         RETURN jsonb_build_object('success', false, 'message', '您还没有持有这家公司');
     END IF;
-    -- 持仓价值（按当前净值）四舍五入后与卖出金额比较，容差 1 NB币
-    IF p_amount > round(v_holding_shares * v_nav) + 1 THEN
-        RETURN jsonb_build_object('success', false, 'message',
-            format('卖出金额超过您的持仓价值（当前价值 %s NB币）', round(v_holding_shares * v_nav)));
-    END IF;
 
-    -- 按金额折算份额，超出持仓部分自动截断（按持仓上限成交）
+    -- 按金额折算份额，超出持仓部分自动截断（最多卖完持仓，不会拒绝）
     v_shares := LEAST(round(p_amount / v_nav, 4), v_holding_shares);
+    IF v_shares <= 0 THEN
+        RETURN jsonb_build_object('success', false, 'message', '卖出金额太小');
+    END IF;
 
     v_revenue := round(v_shares * v_nav, 2);
     -- 手续费 5%

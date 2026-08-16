@@ -1485,8 +1485,9 @@
         if (amount <= 0) { await showMessage('提示', '请输入有效的金额'); return; }
 
         if (mode === 'sell' && amount > Math.round(tradeState.myValue) + 0.01) {
-            await showMessage('提示', `卖出金额超过您的持仓价值（当前价值 ${formatValue(Math.round(tradeState.myValue))} NB币）`);
-            return;
+            // 输入超过持仓价值：提示但允许提交，后端会自动按持仓上限成交
+            await showMessage('提示', `金额超过持仓价值（${formatValue(Math.round(tradeState.myValue))} NB币），将按持仓上限全部卖出`);
+            // 不 return，继续提交（后端 LEAST 截断）
         }
 
         const rpcName = mode === 'buy' ? 'buy_stock' : 'sell_stock';
