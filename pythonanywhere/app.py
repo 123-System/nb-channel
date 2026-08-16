@@ -21,10 +21,6 @@ import hashlib
 import datetime
 import subprocess
 
-# 彻底移除所有代理环境变量（否则 S3/外部连接会被 PythonAnywhere 代理干扰）
-for _key in ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'NO_PROXY', 'no_proxy']:
-    os.environ.pop(_key, None)
-
 from flask import Flask, request, jsonify, send_from_directory, Response
 from supabase import create_client, Client
 
