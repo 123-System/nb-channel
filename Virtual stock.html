@@ -1251,11 +1251,11 @@
     }
 
     // ========== K线图函数 ==========
-    // 计算移动平均线（不足 N 天返回 '-' 表示不画）
+    // 计算移动平均线（不足 N 天返回 null 表示不画，ECharts 会断线）
     function calcMA(closes, n) {
         const result = [];
         for (let i = 0; i < closes.length; i++) {
-            if (i < n - 1) { result.push('-'); continue; }
+            if (i < n - 1) { result.push(null); continue; }
             let sum = 0;
             for (let j = i - n + 1; j <= i; j++) sum += closes[j];
             result.push(+(sum / n).toFixed(2));
@@ -1369,6 +1369,9 @@
             yAxis: [
                 {
                     scale: true,
+                    // 上下留 3% 边距，避免单根蜡烛顶满画布
+                    min: function(value) { return Math.floor(value.min * 0.97); },
+                    max: function(value) { return Math.ceil(value.max * 1.03); },
                     splitLine: { show: true, lineStyle: { type: 'dashed' } }
                 },
                 {
