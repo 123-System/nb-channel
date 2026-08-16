@@ -186,6 +186,14 @@ body.dark-mode .author-info {
         font-size: 1rem;
         min-width: auto;
     }
+    /* 手机端补充：卡片内边距与字号 */
+    .home-card, .about-content, .changelog-content {
+        padding: 20px;
+        font-size: 1rem;
+    }
+    .container {
+        padding: 12px;
+    }
 }
 
 /* ==================== 卡片样式（首页、关于等） ==================== */

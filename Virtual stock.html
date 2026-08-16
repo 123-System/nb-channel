@@ -227,11 +227,21 @@
             .slider-container { flex-wrap: wrap; justify-content: center; }
             .slider-label, .range-value, .reset-btn { font-size: 0.7rem; }
             .reset-btn { padding: 4px 12px; }
-            .data-table th, .data-table td { padding: 8px 12px; }
+            .data-table th, .data-table td { padding: 6px 8px; font-size: 0.75rem; }
             .stats { gap: 12px; }
             .stat-card { padding: 6px 16px; }
             .search-box input { width: 100%; }
             .chart-controls { width: 100%; justify-content: space-between; }
+            /* 手机端优化 */
+            .data-table td:first-child { min-width: 90px; }
+            .data-table { min-width: 480px; }  /* 表格窄屏横向滚动，保证可读性 */
+            .trade-btn { padding: 2px 8px !important; font-size: 0.7rem !important; margin-right: 2px !important; }
+            #holdingsList { overflow-x: auto; }
+            #kLineDayNav button { padding: 2px 10px; font-size: 0.75rem; }
+            .my-company-card { padding: 10px 14px; }
+            .company-btn { padding: 5px 12px; font-size: 0.8rem; }
+            .user-info { justify-content: center; }
+            .balance-card { font-size: 0.8rem; }
         }
         /* 新样式 */
         .user-info { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 16px; gap: 12px; }
@@ -376,7 +386,7 @@
                 <strong>📊 我的持仓</strong>
                 <span id="holdingsTotalValue" style="margin-left:12px; font-size:0.85rem; color:var(--count-text);"></span>
             </div>
-            <div id="holdingsList" style="width:100%; font-size:0.9rem;">加载中...</div>
+            <div id="holdingsList" style="width:100%; font-size:0.9rem; overflow-x:auto;">加载中...</div>
         </div>
 
         <div class="data-table-wrapper">
