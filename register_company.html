@@ -95,7 +95,7 @@
     <div id="formContainer">
         <div class="form-group">
             <label>公司名称</label>
-            <input type="text" id="companyName" placeholder="例如：NB科技" maxlength="50">
+            <input type="text" id="companyName" placeholder="例如：NB科技（1-20字）" maxlength="20">
         </div>
         <div class="form-group">
             <label>公司所有人</label>
@@ -156,8 +156,8 @@
             errorDiv.innerText = '请填写公司名称';
             return;
         }
-        if (companyName.length > 50) {
-            errorDiv.innerText = '公司名称不能超过50字';
+        if (companyName.length > 20) {
+            errorDiv.innerText = '公司名称不能超过20字';
             return;
         }
 

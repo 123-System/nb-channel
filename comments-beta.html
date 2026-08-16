@@ -243,7 +243,7 @@
 <div id="register-modal" class="modal">
     <div class="modal-content">
         <h3>注册</h3>
-        <input type="text" id="reg-username" placeholder="用户名">
+        <input type="text" id="reg-username" placeholder="用户名（1-20字）" maxlength="20">
         <input type="password" id="reg-password" placeholder="密码">
         <input type="password" id="reg-password2" placeholder="确认密码">
         <div id="register-error" class="error"></div>
@@ -258,7 +258,7 @@
         <div id="account-error" class="error"></div>
         <div style="margin-bottom:20px;">
             <h4>修改用户名</h4>
-            <input type="text" id="new-username" placeholder="新用户名">
+            <input type="text" id="new-username" placeholder="新用户名（1-20字）" maxlength="20">
             <input type="password" id="old-password-for-username" placeholder="当前密码">
             <button id="do-update-username">修改用户名</button>
         </div>
