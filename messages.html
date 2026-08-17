@@ -276,6 +276,7 @@
                 <span style="font-weight:600; font-size:1.2rem; margin-left:4px;">消息中心</span>
             </div>
             <div class="header-actions">
+                <button class="btn-read-all" id="deleteReadBtn">🗑️ 删除已读</button>
                 <button class="btn-read-all" id="readAllBtn">✅ 全部已读</button>
             </div>
         </div>
@@ -526,12 +527,11 @@
 
     async function markAllAsRead() {
         if (!currentUser) return;
-        const { error } = await supabaseClient
-            .from('notifications')
-            .update({ is_read: true })
-            .eq('user_id', currentUser.id)
-            .eq('type', currentType)
-            .eq('is_read', false);
+        // 改用 RPC（notifications 表 RLS 不允许 anon 直接 UPDATE）
+        const { data, error } = await supabaseClient.rpc('mark_all_notifications_read', {
+            p_user_id: currentUser.id,
+            p_type: currentType
+        });
         if (error) {
             console.error('全部已读失败:', error);
             alert('操作失败，请重试');
@@ -539,7 +539,24 @@
         }
         await fetchNotifications(false);
         await fetchUnreadCounts();
-        showToast('✅ 已全部标记为已读');
+        showToast(`✅ 已标记 ${data || 0} 条为已读`);
+    }
+
+    async function deleteReadNotifications() {
+        if (!currentUser) return;
+        if (!confirm('确定删除当前分类下所有已读消息吗？')) return;
+        const { data, error } = await supabaseClient.rpc('delete_read_notifications', {
+            p_user_id: currentUser.id,
+            p_type: currentType
+        });
+        if (error) {
+            console.error('删除已读失败:', error);
+            alert('操作失败，请重试');
+            return;
+        }
+        await fetchNotifications(false);
+        await fetchUnreadCounts();
+        showToast(`🗑️ 已删除 ${data || 0} 条已读消息`);
     }
 
     function switchTab(type) {
@@ -606,6 +623,7 @@
         document.getElementById('tabReply').addEventListener('click', () => switchTab('reply'));
         document.getElementById('tabMention').addEventListener('click', () => switchTab('mention'));
         document.getElementById('readAllBtn').addEventListener('click', markAllAsRead);
+        document.getElementById('deleteReadBtn').addEventListener('click', deleteReadNotifications);
         document.getElementById('loadMoreBtn').addEventListener('click', () => {
             currentPage++;
             fetchNotifications(true);
