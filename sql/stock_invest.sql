@@ -44,11 +44,6 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '公司不存在');
     END IF;
 
-    -- 禁止买入自己的公司
-    IF v_owner_id = p_user_id THEN
-        RETURN jsonb_build_object('success', false, 'message', '不能买入自己公司的股份');
-    END IF;
-
     -- 按当前净值折算份额（保留4位小数）
     v_shares := round(p_amount / v_nav, 4);
     IF v_shares <= 0 THEN

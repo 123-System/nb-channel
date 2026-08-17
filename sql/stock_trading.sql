@@ -209,7 +209,7 @@ END;
 $$;
 
 -- ========== 4. support_company（支持公司，RPC 化） ==========
--- 修复：禁止支持自己的公司（堵住"自支持→市值暴涨→破产套现"漏洞）
+-- 允许支持自己的公司，但自支持收取 5% 手续费（防"自支持→破产套现"无限刷币）
 CREATE OR REPLACE FUNCTION public.support_company(p_user_id uuid, p_company_id bigint, p_amount integer)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -219,6 +219,8 @@ AS $$
 DECLARE
     v_owner_id UUID;
     v_market_value INTEGER;
+    v_fee INTEGER := 0;
+    v_total_pay INTEGER;
 BEGIN
     IF p_amount IS NULL OR p_amount <= 0 THEN
         RETURN jsonb_build_object('success', false, 'message', '支持金额必须大于0');
@@ -232,15 +234,19 @@ BEGIN
     IF v_owner_id IS NULL THEN
         RETURN jsonb_build_object('success', false, 'message', '虚拟公司不存在');
     END IF;
-    IF v_owner_id = p_user_id THEN
-        RETURN jsonb_build_object('success', false, 'message', '不能支持自己的公司');
-    END IF;
 
-    -- 原子扣款
-    UPDATE public.profiles SET nb_balance = nb_balance - p_amount
-     WHERE id = p_user_id AND nb_balance >= p_amount;
+    -- 自支持收 5% 手续费（他人支持仍免费）
+    IF v_owner_id = p_user_id THEN
+        v_fee := floor(p_amount * 0.05);
+    END IF;
+    v_total_pay := p_amount + v_fee;
+
+    -- 原子扣款（含手续费）
+    UPDATE public.profiles SET nb_balance = nb_balance - v_total_pay
+     WHERE id = p_user_id AND nb_balance >= v_total_pay;
     IF NOT FOUND THEN
-        RETURN jsonb_build_object('success', false, 'message', 'NB币余额不足');
+        RETURN jsonb_build_object('success', false, 'message',
+            format('NB币余额不足（需 %s NB币%s）', v_total_pay, CASE WHEN v_fee > 0 THEN format('，含 %s NB币手续费', v_fee) ELSE '' END));
     END IF;
 
     UPDATE public.user_companies
@@ -250,6 +256,10 @@ BEGIN
     INSERT INTO public.support_logs (supporter_id, company_id, amount)
     VALUES (p_user_id, p_company_id, p_amount);
 
+    IF v_fee > 0 THEN
+        RETURN jsonb_build_object('success', true, 'message',
+            format('成功支持自己的公司 %s NB币（手续费 %s NB币，共支付 %s NB币）', p_amount, v_fee, v_total_pay));
+    END IF;
     RETURN jsonb_build_object('success', true, 'message', format('成功支持 %s NB币', p_amount));
 END;
 $$;
