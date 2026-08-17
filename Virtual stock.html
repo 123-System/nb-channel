@@ -376,6 +376,15 @@
             <div id="holdingsList" style="width:100%; font-size:0.9rem; overflow-x:auto;">加载中...</div>
         </div>
 
+        <!-- 我的交易记录 -->
+        <div id="myTradesSection" class="my-company-card" style="display:none; margin-top:20px;">
+            <div style="width:100%;">
+                <strong>📜 我的交易记录</strong>
+                <span style="margin-left:12px; font-size:0.85rem; color:var(--count-text);">最近 30 笔</span>
+            </div>
+            <div id="tradesList" style="width:100%; font-size:0.9rem; overflow-x:auto;">加载中...</div>
+        </div>
+
         <div class="data-table-wrapper">
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="🔍 搜索虚拟股票名称" autocomplete="off">
@@ -765,6 +774,7 @@
         updateHistogramChart();
         if (currentUserId) {
             await renderMyHoldings();
+            await renderMyTrades();
         }
         if (currentChart && rawData.names.length) {
             const windowData = getWindowData();
@@ -1606,6 +1616,51 @@
                 loadKLineData(parseInt(link.dataset.id), link.dataset.name);
             };
         });
+    }
+
+    // ========== 我的交易记录 ==========
+    async function renderMyTrades() {
+        const section = document.getElementById('myTradesSection');
+        if (!currentUserId) {
+            if (section) section.style.display = 'none';
+            return;
+        }
+        const { data, error } = await supabaseClient
+            .from('transactions')
+            .select('id, company_id, type, shares, price, total_amount, fee, created_at')
+            .eq('user_id', currentUserId)
+            .order('created_at', { ascending: false })
+            .limit(30);
+        if (error || !data || data.length === 0) {
+            if (section) section.style.display = 'none';
+            return;
+        }
+        if (section) section.style.display = 'flex';
+
+        // 公司名映射
+        const cids = [...new Set(data.map(t => t.company_id))];
+        const nameMap = new Map();
+        const { data: companies } = await supabaseClient
+            .from('user_companies')
+            .select('id, company_name')
+            .in('id', cids);
+        if (companies) companies.forEach(c => nameMap.set(c.id, c.company_name));
+
+        const list = document.getElementById('tradesList');
+        let html = '<table class="data-table" style="font-size:0.85rem;"><thead><tr><th>时间</th><th>公司</th><th>类型</th><th>金额</th><th>手续费</th></tr></thead><tbody>';
+        for (const t of data) {
+            const isBuy = t.type === 'buy';
+            const time = new Date(t.created_at).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            html += `<tr>
+                <td style="white-space:nowrap;">${time}</td>
+                <td>${escapeHtml(nameMap.get(t.company_id) || '已删除公司')}</td>
+                <td style="color:${isBuy ? '#f44336' : '#4caf50'}; font-weight:600;">${isBuy ? '📈 买入' : '📉 卖出'}</td>
+                <td style="font-family:monospace;">${formatValue(t.total_amount)}</td>
+                <td style="font-family:monospace;">${formatValue(t.fee || 0)}</td>
+            </tr>`;
+        }
+        html += '</tbody></table>';
+        list.innerHTML = html;
     }
 
     function updateStatsPanel(total) {

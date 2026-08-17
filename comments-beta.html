@@ -67,6 +67,10 @@
         .react-btn:disabled { opacity: 0.55; cursor: not-allowed; }
         .edit-btn { background: none; border: none; color: var(--status-border); cursor: pointer; padding: 0; font-size: 0.85rem; margin-right: 10px; }
         .edit-btn:hover { text-decoration: underline; background: none; color: var(--nav-btn-hover-bg); }
+        /* 表情快捷回复 */
+        .emoji-reply { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+        .emoji-btn { background: var(--count-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 1px 8px; font-size: 0.9rem; cursor: pointer; transition: 0.15s; line-height: 1.6; }
+        .emoji-btn:hover { transform: scale(1.15); border-color: var(--status-border); background: var(--status-bg); }
         .edit-form textarea { width: 100%; padding: 8px; border: 1px solid var(--card-border); border-radius: 8px; background: var(--bg-color); color: var(--text-color); font-family: inherit; resize: vertical; }
         .edit-form button { margin-top: 5px; margin-right: 8px; }
         .floor-badge { font-size: 0.75rem; color: var(--count-text); margin-right: 8px; }
@@ -690,6 +694,13 @@
                     <button class="react-btn ${likeClass}" data-id="${node.id}" data-reaction="1">👍 <span class="like-count">${reacts.likes}</span></button>
                     <button class="react-btn ${dislikeClass}" data-id="${node.id}" data-reaction="-1">👎 <span class="dislike-count">${reacts.dislikes}</span></button>
                 </div>
+                <div class="emoji-reply">
+                    <button class="emoji-btn" data-id="${node.id}" data-emoji="😂">😂</button>
+                    <button class="emoji-btn" data-id="${node.id}" data-emoji="👍">👍</button>
+                    <button class="emoji-btn" data-id="${node.id}" data-emoji="❤️">❤️</button>
+                    <button class="emoji-btn" data-id="${node.id}" data-emoji="😮">😮</button>
+                    <button class="emoji-btn" data-id="${node.id}" data-emoji="🔥">🔥</button>
+                </div>
                 <div class="reply-form" id="reply-form-${node.id}" style="display:none;">
                     <textarea rows="2" placeholder="写下你的回复... (最多200字)" maxlength="200"></textarea>
                     <div class="char-counter"><span>0</span>/200</div>
@@ -1006,6 +1017,27 @@
                         dislikeBtn.classList.toggle('active-dislike', myReactions[commentId] === -1);
                     }
                 }
+            };
+        });
+
+        // 表情快捷回复（以表情作为回复内容）
+        document.querySelectorAll('.emoji-btn').forEach(btn => {
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+                if (!currentUser) { showMessage('提示', '请先登录'); return; }
+                const commentId = parseInt(btn.dataset.id);
+                const emoji = btn.dataset.emoji;
+                const { data, error } = await supabaseClient.rpc('insert_comment', {
+                    p_page_path: pagePath,
+                    p_user_id: currentUser.id,
+                    p_content: emoji,
+                    p_parent_id: commentId
+                });
+                if (error) { showMessage('错误', error.message); return; }
+                if (!data.success) { showMessage('提示', data.message); return; }
+                const savedPage = currentPage;
+                await fetchComments();
+                renderCommentsForPage(savedPage);
             };
         });
 
