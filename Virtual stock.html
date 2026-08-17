@@ -647,8 +647,8 @@
 
     async function setAutoSupportRule(companyId, threshold, amount) {
         if (!currentUserId) return false;
-        if (amount > 500) {
-            await showMessage('提示', '自动支持金额不能超过500 NB币');
+        if (amount > 2000) {
+            await showMessage('提示', '自动支持金额不能超过2000 NB币');
             return false;
         }
         await supabaseClient.from('support_rules').delete().eq('user_id', currentUserId).eq('company_id', companyId);
@@ -873,7 +873,7 @@
                     <h4>⚙️ 自动支持规则</h4>
                     <select id="autoCompanySelect" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">${companyOptions}</select>
                     <input id="thresholdValue" type="number" placeholder="市值低于 (阈值)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
-                    <input id="autoAmount" type="number" placeholder="每次自动支持金额 (不超过500)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
+                    <input id="autoAmount" type="number" placeholder="每次自动支持金额 (不超过2000)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
                     <button id="setAutoRuleBtn" class="company-btn" style="width:100%;">设置自动支持规则</button>
                 </div>
                 <div style="display:flex; gap:10px; margin-top:20px;">
@@ -899,7 +899,7 @@
             const autoAmount = parseInt(document.getElementById('autoAmount').value);
             if (isNaN(threshold) || threshold <= 0) { await showMessage('提示', '请输入有效的阈值'); return; }
             if (isNaN(autoAmount) || autoAmount <= 0) { await showMessage('提示', '请输入有效的自动支持金额'); return; }
-            if (autoAmount > 500) { await showMessage('提示', '自动支持金额不能超过500 NB币'); return; }
+            if (autoAmount > 2000) { await showMessage('提示', '自动支持金额不能超过2000 NB币'); return; }
             await setAutoSupportRule(companyId, threshold, autoAmount);
             closeDialog();
         };
