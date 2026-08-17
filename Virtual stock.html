@@ -1625,6 +1625,10 @@
             if (section) section.style.display = 'none';
             return;
         }
+        // 无记录也显示卡片（提示暂无记录），让功能可见
+        if (section) section.style.display = 'flex';
+        const list = document.getElementById('tradesList');
+
         const { data, error } = await supabaseClient
             .from('transactions')
             .select('id, company_id, type, shares, price, total_amount, fee, created_at')
@@ -1632,10 +1636,9 @@
             .order('created_at', { ascending: false })
             .limit(30);
         if (error || !data || data.length === 0) {
-            if (section) section.style.display = 'none';
+            list.innerHTML = '<div style="text-align:center; padding:16px; color:var(--count-text);">暂无交易记录（买卖股票后这里会显示明细）</div>';
             return;
         }
-        if (section) section.style.display = 'flex';
 
         // 公司名映射
         const cids = [...new Set(data.map(t => t.company_id))];
@@ -1646,7 +1649,6 @@
             .in('id', cids);
         if (companies) companies.forEach(c => nameMap.set(c.id, c.company_name));
 
-        const list = document.getElementById('tradesList');
         let html = '<table class="data-table" style="font-size:0.85rem;"><thead><tr><th>时间</th><th>公司</th><th>类型</th><th>金额</th><th>手续费</th></tr></thead><tbody>';
         for (const t of data) {
             const isBuy = t.type === 'buy';
