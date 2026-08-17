@@ -194,7 +194,7 @@
     <div class="modal-content">
         <h3>修改自动支持规则</h3>
         <input type="number" id="editThreshold" placeholder="市值低于 (阈值)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
-        <input type="number" id="editAmount" placeholder="每次自动支持金额 (≤500)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
+        <input type="number" id="editAmount" placeholder="每次自动支持金额 (≤2000)" style="width:100%; padding:8px; margin:10px 0; border-radius:30px;">
         <div style="display:flex; gap:10px; margin-top:20px;">
             <button id="saveEditBtn" style="flex:1;">保存</button>
             <button id="closeEditBtn" style="flex:1; background:#6c757d;">取消</button>
@@ -473,8 +473,8 @@
             await showMessage('提示', '阈值不能为负数');
             return;
         }
-        if (newAmount > 500) {
-            await showMessage('提示', '自动支持金额不能超过500 NB币');
+        if (newAmount > 2000) {
+            await showMessage('提示', '自动支持金额不能超过2000 NB币');
             return;
         }
         // 原子更新（直接 UPDATE，不再"先删后插"，避免中间态丢数据）
