@@ -712,7 +712,7 @@
                 .single();
             if (company && company.market_value < rule.threshold) {
                 const balance = await fetchUserBalance();
-                if (balance >= rule.amount && rule.amount <= 500) {
+                if (balance >= rule.amount && rule.amount <= 2000) {
                     await supportCompany(rule.company_id, rule.amount, true);
                     await new Promise(r => setTimeout(r, 1000));
                 } else {
