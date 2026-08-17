@@ -3,6 +3,44 @@
 // 全局变量（将被页面中的具体值覆盖）
 let AUTHOR_NAME = '';
 
+// ==========================================================
+// IP 封禁检查（所有页面加载时自动执行，命中则整页替换为封禁提示）
+// ==========================================================
+async function checkBannedIP() {
+    try {
+        // 获取客户端公网 IP
+        const resp = await fetch('https://api.ipify.org?format=text', { cache: 'no-store' });
+        if (!resp.ok) return;
+        const ip = (await resp.text()).trim();
+        if (!ip) return;
+
+        // 查询黑名单（直接走 REST API，不依赖页面各自的 supabaseClient）
+        const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
+        const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/banned_ips?ip=eq.${encodeURIComponent(ip)}&select=reason`,
+            { headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY } }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.length > 0) {
+            const reason = data[0].reason || '违反网站规则';
+            document.body.innerHTML = `
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; background:#1a1a1a; color:#e0e0e0; text-align:center; padding:20px; font-family:sans-serif;">
+                    <div style="font-size:4rem; margin-bottom:16px;">🚫</div>
+                    <h1 style="margin-bottom:12px;">您已被封禁</h1>
+                    <p style="color:#aaa; margin-bottom:8px;">原因：${reason}</p>
+                    <p style="color:#777; font-size:0.85rem;">如有疑问，请联系站长：nbchannel@163.com</p>
+                </div>`;
+            throw new Error('IP banned');
+        }
+    } catch (e) {
+        if (e && e.message === 'IP banned') throw e;  // 已替换页面，停止后续脚本
+        // 其他错误（网络等）忽略，不阻断正常访问
+    }
+}
+checkBannedIP();
+
 function toggleTheme() {
     const body = document.body;
     body.classList.toggle('dark-mode');
