@@ -7,7 +7,7 @@
 
 DO $$
 DECLARE
-    v_uid uuid := 'a800484e-640e-43c5-bc64-0fb138018e68';  -- ← 要删除的用户ID（改成你自己的）
+    v_uid uuid := 'a9bc91db-3d2b-4094-afb3-2a331f31841e';  -- ← 要删除的用户ID（NB科技小琪公共号）
     v_company_ids bigint[];
 BEGIN
     -- 收集该用户拥有的公司
