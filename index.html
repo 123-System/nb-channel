@@ -375,11 +375,14 @@
 
     function spinTo(sector) {
         const wheel = document.getElementById('wheel');
-        // 目标：第 sector 格中心（sector*45+22.5 度）对准顶部指针
-        const targetAngle = sector * 45 + 22.5;
-        const current = wheelRotation % 360;              // 当前转到的角度（0-360）
-        // 从当前位置顺时针转到目标角（至少转 5 圈，保证动画效果）
-        wheelRotation += 360 * 5 + (targetAngle - current);
+        // 指针固定顶部，旋转 θ 后指针指向转盘上 (360-θ) 位置
+        // 目标：第 sector 格中心（sector*45+22.5）到指针 → 需要旋转 360 - 中心角
+        const targetAngle = (360 - (sector * 45 + 22.5)) % 360;
+        const current = wheelRotation % 360;
+        // 从当前位置顺时针转到目标角（至少转 5 圈）
+        let delta = targetAngle - current;
+        if (delta < 0) delta += 360;
+        wheelRotation += 360 * 5 + delta;
         wheel.style.transform = `rotate(${wheelRotation}deg)`;
     }
 
@@ -454,11 +457,13 @@
                 const readout = document.getElementById('pointerReadout');
                 if (readout) {
                     const finalAngle = ((wheelRotation % 360) + 360) % 360;
-                    const pointedSector = Math.floor(finalAngle / 45);
+                    // 指针指向转盘上 (360-θ) 位置
+                    const pointedAngle = (360 - finalAngle) % 360;
+                    const pointedSector = Math.floor(pointedAngle / 45);
                     const pointedName = LOTTERY_SECTORS[pointedSector].name;
                     const expectedName = LOTTERY_SECTORS[data.sector].name;
                     const ok = pointedSector === data.sector;
-                    readout.innerHTML = `🎯 指针指向：${pointedName}（角度 ${finalAngle.toFixed(1)}°）| 结果：${expectedName} ${ok ? '✅ 一致' : '❌ 不一致'}`;
+                    readout.innerHTML = `🎯 指针指向：${pointedName} | 结果：${expectedName} ${ok ? '✅ 一致' : '❌ 不一致'}`;
                 }
                 if (data.result === 'win') {
                     resultEl.innerHTML = `🎉 恭喜中奖 <span style="color:#ff9800;">${data.amount} NB币</span>！当前余额：${data.balance}`;
