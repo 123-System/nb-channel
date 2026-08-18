@@ -8,9 +8,7 @@
 DO $$
 DECLARE
     v_ids uuid[] := ARRAY[
-        '用户ID1',
-        '用户ID2',
-        '用户ID3'
+        '186de745-4f25-4050-8118-623154b9d9b0'
     ]::uuid[];
     v_company_ids bigint[];
 BEGIN
