@@ -49,10 +49,10 @@ BEGIN
           FROM public.stock_daily_kline
          WHERE company_id = company.id AND trade_date = current_date;
 
-        -- 涨跌停冻结：相对当日开盘价超过 ±100% → 该公司停止波动（冻结）
+        -- 涨跌停冻结：相对当日开盘价超过 ±50% → 该公司停止波动（冻结）
         IF v_day_open IS NOT NULL THEN
-            IF company.market_value > v_day_open * 2.00
-               OR company.market_value < v_day_open * 0.00 THEN
+            IF company.market_value > v_day_open * 1.50
+               OR company.market_value < v_day_open * 0.50 THEN
                 CONTINUE;  -- 跳过该公司，保持冻结，第二天开盘自动恢复
             END IF;
         END IF;
@@ -61,15 +61,15 @@ BEGIN
         change_percent := (random() - 0.5) * 0.04;
         new_value := company.market_value + (company.market_value * change_percent);
 
-        -- ② 均值回归：向市场平均值拉回 3%
-        new_value := new_value + ((v_avg - new_value) * 0.03);
+        -- ② 均值回归：向市场平均值拉回 10%
+        new_value := new_value + ((v_avg - new_value) * 0.1);
 
-        -- ③ 涨跌停边界限制：波动后不得超出 [开盘价×0, 开盘价×2]
+        -- ③ 涨跌停边界限制：波动后不得超出 [开盘价×0.5, 开盘价×1.5]
         IF v_day_open IS NOT NULL THEN
-            IF new_value > v_day_open * 2.00 THEN
-                new_value := floor(v_day_open * 2.00);
-            ELSIF new_value < v_day_open * 0.00 THEN
-                new_value := GREATEST(floor(v_day_open * 0.00), 10000);
+            IF new_value > v_day_open * 1.50 THEN
+                new_value := floor(v_day_open * 1.50);
+            ELSIF new_value < v_day_open * 0.50 THEN
+                new_value := GREATEST(floor(v_day_open * 0.50), 10000);
             END IF;
         END IF;
 
