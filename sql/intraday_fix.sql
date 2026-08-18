@@ -40,5 +40,6 @@ AFTER INSERT ON public.stock_history_full
 FOR EACH ROW EXECUTE FUNCTION public.delete_old_history_full();
 
 -- 4. 说明
--- 2000 条 × 55秒/条 ≈ 30.5 小时，可覆盖"当天从开盘到最新"的完整走势。
--- 若数据量担心，可自行把 2000 改小（如 1000 ≈ 15 小时）。
+-- 前端历史快照写入频率为 60 秒/条（saveFullSnapshot 节流），
+-- 2000 条 × 60秒/条 ≈ 33 小时，可覆盖"当天从开盘到最新"的完整走势 + 前一天。
+-- 若数据量担心，可自行把 2000 改小（如 1000 ≈ 16.7 小时）。

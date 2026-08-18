@@ -1107,7 +1107,8 @@
     // 原逻辑：每次刷新都插入 stock_history_full/stock_history，
     // 多个用户同时在线时每人每10秒写一次库，免费额度很快耗尽。
     // 优化：①最新快照（stock_latest）3秒内不重复写；
-    //       ②历史快照（stock_history_full）每分钟最多写一条（K线按天聚合，10秒一条没有意义）。
+    //       ②历史快照（stock_history_full）每分钟最多写一条（60秒/条，2000条≈33小时，
+    //         既覆盖"当天完整走势"，又能让K线图取到最新数据，写入量也可控）。
     let lastLatestWrite = 0;
     let lastHistoryWrite = 0;
 
@@ -1121,8 +1122,8 @@
         await supabaseClient.from('stock_latest').delete().neq('id', 0);
         await supabaseClient.from('stock_latest').insert({ created_at: new Date(), total_value: totalValue, snapshot_data: snapshotData });
 
-        // 历史快照：15秒内已写过则跳过（走势图保持实时感，写入量可控）
-        if (now - lastHistoryWrite < 15000) return;
+        // 历史快照：60秒内已写过则跳过
+        if (now - lastHistoryWrite < 60000) return;
         lastHistoryWrite = now;
         await supabaseClient.from('stock_history_full').insert({ recorded_at: new Date(), total_value: totalValue, snapshot: snapshotData });
         await supabaseClient.from('stock_history').insert({ total_value: totalValue });
@@ -1131,9 +1132,9 @@
     }
 
     async function loadFullHistory() {
-        const { data, error } = await supabaseClient.from('stock_history_full').select('recorded_at, snapshot, total_value').order('recorded_at', { ascending: true }).limit(30);
+        const { data, error } = await supabaseClient.from('stock_history_full').select('recorded_at, snapshot, total_value').order('recorded_at', { ascending: false }).limit(30);
         if (error || !data || data.length === 0) return;
-        fullHistoryData = data.map(row => ({ time: new Date(row.recorded_at), snapshot: row.snapshot, total: row.total_value }));
+        fullHistoryData = data.reverse().map(row => ({ time: new Date(row.recorded_at), snapshot: row.snapshot, total: row.total_value }));
         updateTotalHistoryChartNoRebuild();
     }
 
@@ -1225,15 +1226,29 @@
         kLineCompanyName = companyName;
         title.innerText = `📈 ${companyName} 市值走势（加载中...）`;
 
-        const { data, error } = await supabaseClient
-            .from('stock_history_full')
-            .select('recorded_at, snapshot')
-            .order('recorded_at', { ascending: true })
-            .limit(1000);
+        // 分批拉取历史快照（PostgREST 单次上限 1000 条）：
+        // 按时间倒序取最新数据，拉完再翻转为正序，避免"只取到最旧1000条"导致看不到当天走势
+        const BATCH = 1000;
+        let allRows = [];
+        let from = 0;
+        let fetchError = null;
+        while (true) {
+            const { data, error } = await supabaseClient
+                .from('stock_history_full')
+                .select('recorded_at, snapshot')
+                .order('recorded_at', { ascending: false })
+                .range(from, from + BATCH - 1);
+            if (error) { fetchError = error; break; }
+            if (!data || data.length === 0) break;
+            allRows = allRows.concat(data);
+            if (data.length < BATCH) break;
+            from += BATCH;
+        }
+        const data = allRows.reverse();
 
-        if (error || !data || data.length === 0) {
+        if (fetchError || !data || data.length === 0) {
             title.innerText = `📈 ${companyName} 市值走势（暂无数据）`;
-            container.innerHTML = '暂无数据：市值快照保存后自动生成（每55秒一条）';
+            container.innerHTML = '暂无数据：市值快照保存后自动生成（每分钟一条）';
             return;
         }
 
@@ -1251,10 +1266,10 @@
             return;
         }
 
-        // 按天分组（一天一条走势线）
+        // 按天分组（一天一条走势线，按北京时间分天）
         kLineDayData = new Map();
         for (const p of points) {
-            const key = p.t.toISOString().split('T')[0];
+            const key = p.t.toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' });
             if (!kLineDayData.has(key)) kLineDayData.set(key, []);
             kLineDayData.get(key).push(p);
         }
