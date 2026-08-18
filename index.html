@@ -132,6 +132,25 @@
         .custom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 10000; }
         .custom-modal .modal-content { background: var(--card-bg); border-radius: 24px; padding: 24px; max-width: 350px; width: 90%; text-align: center; box-shadow: 0 20px 35px rgba(0,0,0,0.2); }
         .custom-modal .modal-content button { margin-top: 16px; padding: 6px 20px; border-radius: 30px; border: none; cursor: pointer; background: var(--nav-btn-hover-bg); color: white; }
+        /* 幸运转盘 */
+        .wheel-wrap { position: relative; width: 250px; height: 250px; margin: 8px auto; }
+        .wheel {
+            width: 100%; height: 100%; border-radius: 50%; position: relative;
+            transition: transform 3.8s cubic-bezier(0.15, 0.8, 0.25, 1);
+            border: 6px solid #555; box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+        }
+        .wheel-pointer {
+            position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+            font-size: 22px; color: #f44336; z-index: 10; line-height: 1;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+        .wheel-seg { position: absolute; width: 50%; height: 50%; left: 50%; top: 50%; transform-origin: 0 0; }
+        .wheel-seg span {
+            position: absolute; transform: rotate(22.5deg) translateY(-62px);
+            font-size: 0.8rem; font-weight: 700; color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; left: 50%;
+        }
+        .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 46px; height: 46px; background: #555; border-radius: 50%; z-index: 5; border: 3px solid #888; }
     </style>
 </head>
 <body>
@@ -214,6 +233,9 @@
                     <button id="checkinBtn" class="checkin-btn">📅 签到</button>
                     <div id="nextBonusText" class="next-bonus">明天签到: +? NB</div>
                 </div>
+                <div id="lotterySection" style="display: none;">
+                    <button id="lotteryOpenBtn" class="checkin-btn" style="background:#ff9800;">🎰 幸运转盘</button>
+                </div>
             </div>
         </div>
     </div>
@@ -270,8 +292,139 @@
     </div>
 </div>
 
+<!-- 幸运转盘弹窗 -->
+<div id="lotteryModal" class="custom-modal">
+    <div class="modal-content" style="max-width: 340px;">
+        <h3 style="margin-bottom: 8px;">🎰 幸运转盘</h3>
+        <div style="font-size:0.8rem; color:var(--count-text); margin-bottom:10px;">每次抽奖消耗 50 NB币，今日剩余次数：<span id="lotteryRemain">?</span>/10</div>
+        <div class="wheel-wrap">
+            <div class="wheel-pointer">▼</div>
+            <div class="wheel" id="wheel"></div>
+        </div>
+        <div id="lotteryResult" style="margin: 12px 0; font-size: 0.95rem; min-height: 26px; font-weight: 600;"></div>
+        <button id="lotterySpinBtn" style="width:100%; background:#ff9800; color:white; border:none; border-radius:30px; padding:10px; cursor:pointer; font-size:1rem;">🎰 抽一次（50 NB币）</button>
+        <div style="text-align:center; margin-top:10px;">
+            <button id="lotteryCloseBtn" style="background:#6c757d; color:white; border:none; border-radius:30px; padding:6px 20px; cursor:pointer;">关闭</button>
+        </div>
+    </div>
+</div>
+
 <script src="data/videos.js"></script>
 <script src="js/common.js"></script>
+<script>
+    // ========== 幸运转盘 ==========
+    const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
+    const lotteryClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const LOTTERY_SECTORS = [
+        { name: '谢谢惠顾', color: '#95a5a6' },
+        { name: '10',       color: '#e74c3c' },
+        { name: '50',       color: '#f39c12' },
+        { name: '100',      color: '#2ecc71' },
+        { name: '谢谢惠顾', color: '#95a5a6' },
+        { name: '200',      color: '#3498db' },
+        { name: '500',      color: '#9b59b6' },
+        { name: '2000',     color: '#e67e22' }
+    ];
+    let wheelRotation = 0;
+    let spinning = false;
+
+    function buildWheel() {
+        const wheel = document.getElementById('wheel');
+        if (!wheel) return;
+        wheel.style.background = 'conic-gradient(' + LOTTERY_SECTORS.map((s, i) =>
+            `${s.color} ${i * 45}deg ${(i + 1) * 45}deg`).join(',') + ')';
+        LOTTERY_SECTORS.forEach((s, i) => {
+            const seg = document.createElement('div');
+            seg.className = 'wheel-seg';
+            seg.style.transform = `rotate(${i * 45}deg)`;
+            const label = document.createElement('span');
+            label.textContent = s.name;
+            seg.appendChild(label);
+            wheel.appendChild(seg);
+        });
+        const center = document.createElement('div');
+        center.className = 'wheel-center';
+        wheel.appendChild(center);
+    }
+
+    function spinTo(sector) {
+        const wheel = document.getElementById('wheel');
+        // 让第 sector 格的中心（sector*45+22.5 度）转到顶部指针（0 度）
+        wheelRotation += 360 * 5 + (360 - (sector * 45 + 22.5));
+        wheel.style.transform = `rotate(${wheelRotation}deg)`;
+    }
+
+    function lotteryGetUser() {
+        const stored = localStorage.getItem('nb_user');
+        if (!stored) return null;
+        try { return JSON.parse(stored); } catch (e) { return null; }
+    }
+
+    function initLottery() {
+        const user = lotteryGetUser();
+        const section = document.getElementById('lotterySection');
+        if (!user) { if (section) section.style.display = 'none'; return; }
+        if (section) section.style.display = 'block';
+
+        const modal = document.getElementById('lotteryModal');
+        const resultEl = document.getElementById('lotteryResult');
+        const spinBtn = document.getElementById('lotterySpinBtn');
+        const remainEl = document.getElementById('lotteryRemain');
+        if (!modal || !spinBtn) return;
+
+        document.getElementById('lotteryOpenBtn').onclick = () => {
+            modal.style.display = 'flex';
+            if (remainEl) remainEl.innerText = '?';
+            resultEl.innerText = '';
+            // 查询今日已抽次数
+            lotteryClient.from('lottery_records')
+                .select('id', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .gte('created_at', new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' }) + 'T00:00:00Z').toISOString())
+                .then(({ count }) => {
+                    if (remainEl) remainEl.innerText = Math.max(0, 10 - (count || 0));
+                }).catch(() => {});
+        };
+        document.getElementById('lotteryCloseBtn').onclick = () => { modal.style.display = 'none'; };
+
+        spinBtn.onclick = async () => {
+            if (spinning) return;
+            const u = lotteryGetUser();
+            if (!u) { modal.style.display = 'none'; alert('请先登录'); return; }
+            spinning = true;
+            spinBtn.disabled = true;
+            resultEl.innerText = '🎡 转盘转动中...';
+            const { data, error } = await lotteryClient.rpc('do_lottery', { p_user_id: u.id });
+            if (error || !data || !data.success) {
+                spinning = false;
+                spinBtn.disabled = false;
+                resultEl.innerText = '';
+                alert((error && error.message) || (data && data.message) || '抽奖失败');
+                return;
+            }
+            spinTo(data.sector);
+            if (remainEl) remainEl.innerText = Math.max(0, 10 - (data.today_count || 0));
+            setTimeout(() => {
+                if (data.result === 'win') {
+                    resultEl.innerHTML = `🎉 恭喜中奖 <span style="color:#ff9800;">${data.amount} NB币</span>！当前余额：${data.balance}`;
+                } else {
+                    resultEl.innerHTML = `😅 谢谢惠顾，下次好运！当前余额：${data.balance}`;
+                }
+                spinning = false;
+                spinBtn.disabled = false;
+                // 刷新余额显示
+                const bal = document.getElementById('balanceDisplay');
+                if (bal) bal.innerHTML = `💰 NB币: ${data.balance}`;
+            }, 3900);
+        };
+    }
+
+    // 登录状态变化时初始化抽奖区
+    window.addEventListener('storage', (e) => { if (e.key === 'nb_user') initLottery(); });
+    document.addEventListener('DOMContentLoaded', () => { buildWheel(); initLottery(); });
+</script>
 <script>
     AUTHOR_NAME = 'NB搞事局';
     document.getElementById('authorInfo').innerText = `UP主：${AUTHOR_NAME}`;
