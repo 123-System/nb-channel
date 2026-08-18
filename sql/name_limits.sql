@@ -18,11 +18,12 @@ DECLARE
     new_id UUID;
     clean_name TEXT;
 BEGIN
-    -- 清洗零宽字符（不可见字符，防止伪装同名账号）
+    -- 清洗零宽/不可见字符（含全角空格等，防伪装同名账号）
     clean_name := regexp_replace(
         input_username,
         '[' || chr(8203) || chr(8204) || chr(8205) || chr(8206) || chr(8207)
-             || chr(65279) || chr(173) || chr(8288) || ']',
+             || chr(65279) || chr(173) || chr(8288) || chr(12288) || chr(9)
+             || chr(10) || chr(13) || chr(32) || ']',
         '', 'g'
     );
     clean_name := btrim(clean_name);
@@ -67,11 +68,12 @@ BEGIN
     IF encode(sha256(concat(stored_salt, old_password)::bytea), 'hex') != stored_hash THEN
         RETURN json_build_object('success', false, 'message', '密码错误');
     END IF;
-    -- 清洗零宽字符
+    -- 清洗零宽/不可见字符（含全角空格等，防伪装同名账号）
     clean_name := regexp_replace(
         new_username,
         '[' || chr(8203) || chr(8204) || chr(8205) || chr(8206) || chr(8207)
-             || chr(65279) || chr(173) || chr(8288) || ']',
+             || chr(65279) || chr(173) || chr(8288) || chr(12288) || chr(9)
+             || chr(10) || chr(13) || chr(32) || ']',
         '', 'g'
     );
     clean_name := btrim(clean_name);
