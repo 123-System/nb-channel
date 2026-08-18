@@ -1,14 +1,15 @@
 -- ============================================================
--- NB频道 - 交易时段自动采样（保证每天K线数据完整）
+-- NB频道 - 全天自动采样（保证每天K线数据完整，含休市平线）
 -- 在 Supabase SQL Editor 中执行本文件（幂等，可重复执行）
--- 配套：.github/workflows/market_sample.yml 交易时段内(北京时间8:00-19:55)每5分钟执行一轮
---       "记录开盘价 → 全市场波动 → 采样快照"的完整市场循环，市场不依赖访客自主运转
+-- 配套：.github/workflows/market_sample.yml 全天每5分钟执行一轮
+--       "记录开盘价 → 全市场波动 → 采样快照"的完整市场循环
 -- 功能：
---   1) sample_market_snapshot：交易时段内(北京时间8:00-20:00)采集全市场快照，
---      写入 stock_history_full 并同步聚合当日K线 —— 不依赖访客打开页面
+--   1) sample_market_snapshot：全天采集全市场快照（不分交易时段），
+--      写入 stock_history_full 并同步聚合当日K线 —— 不依赖访客打开页面；
+--      交易时段记真实走势，休市时段记平线（市值冻结，值不变）
 --   2) record_daily_kline 加固：trade_date 改用"北京时间日期"，
 --      避免数据库时区导致凌晨时段写到前一天的行
---   3) 历史快照保留量 2000 → 5000（约7天×12小时×60秒，足够"最近7天"切换）
+--   3) 历史快照保留量 2000 → 5000
 -- ============================================================
 
 -- ========== 1. 采样函数 ==========
@@ -25,11 +26,7 @@ DECLARE
     v_count  integer := 0;
     r RECORD;
 BEGIN
-    -- 仅在交易时段内采样（北京时间 8:00-20:00），非交易时段直接跳过
-    IF (now() AT TIME ZONE 'Asia/Shanghai')::time NOT BETWEEN '08:00'::time AND '20:00'::time THEN
-        RETURN jsonb_build_object('success', false, 'message', '非交易时段，跳过采样');
-    END IF;
-
+    -- 全天采样（不再限制交易时段）：交易时段记真实走势，休市时段记平线
     FOR r IN SELECT company_name, market_value FROM public.user_companies ORDER BY id LOOP
         v_names  := v_names || r.company_name;
         v_values := v_values || r.market_value;
@@ -119,4 +116,4 @@ GRANT EXECUTE ON FUNCTION public.record_daily_kline() TO anon;
 -- SET ROLE anon;
 -- SELECT sample_market_snapshot();
 -- RESET ROLE;
--- 交易时段内应返回 {"success": true, "companies": 54, "total": ...}；非交易时段返回"非交易时段，跳过采样"
+-- 应返回 {"success": true, "companies": 54, "total": ...}（全天均可采样）
