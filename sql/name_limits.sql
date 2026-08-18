@@ -28,6 +28,11 @@ BEGIN
     );
     clean_name := btrim(clean_name);
 
+    -- 拒绝仿冒字符：希腊字母 / 西里尔字母 / 全角字母（如 Β 冒充 B、а 冒充 a）
+    IF clean_name ~ ('[' || chr(880) || '-' || chr(1279) || chr(65313) || '-' || chr(65338) || chr(65345) || '-' || chr(65370) || ']') THEN
+        RAISE EXCEPTION '用户名包含仿冒字符（希腊/西里尔/全角字母），请使用中文、英文和数字';
+    END IF;
+
     -- 用户名长度限制（1~20字，按清洗后计算）
     IF clean_name IS NULL OR length(clean_name) < 1 OR length(clean_name) > 20 THEN
         RAISE EXCEPTION '用户名长度需在 1~20 字之间';
@@ -77,6 +82,11 @@ BEGIN
         '', 'g'
     );
     clean_name := btrim(clean_name);
+
+    -- 拒绝仿冒字符：希腊字母 / 西里尔字母 / 全角字母
+    IF clean_name ~ ('[' || chr(880) || '-' || chr(1279) || chr(65313) || '-' || chr(65338) || chr(65345) || '-' || chr(65370) || ']') THEN
+        RETURN json_build_object('success', false, 'message', '用户名包含仿冒字符（希腊/西里尔/全角字母），请使用中文、英文和数字');
+    END IF;
     -- 用户名长度限制（1~20字）
     IF clean_name IS NULL OR length(clean_name) < 1 OR length(clean_name) > 20 THEN
         RETURN json_build_object('success', false, 'message', '用户名长度需在 1~20 字之间');

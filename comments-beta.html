@@ -1539,6 +1539,11 @@
     document.getElementById('do-register').onclick = async () => {
         // 清洗零宽字符（防伪装同名）
         const username = document.getElementById('reg-username').value.trim().replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF\u00AD]/g, '').trim();
+        // 拒绝仿冒字符（希腊/西里尔/全角字母）
+        if (/[\u0370-\u03FF\u0400-\u04FF\uFF21-\uFF3A\uFF41-\uFF5A]/.test(username)) {
+            document.getElementById('register-error').innerText = '用户名包含仿冒字符（希腊/西里尔/全角字母），请使用中文、英文和数字';
+            return;
+        }
         const password = document.getElementById('reg-password').value;
         const password2 = document.getElementById('reg-password2').value;
         const errorDiv = document.getElementById('register-error');
