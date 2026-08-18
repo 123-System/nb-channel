@@ -1,7 +1,7 @@
 -- ============================================================
 -- NB频道 - 交易时段自动采样（保证每天K线数据完整）
 -- 在 Supabase SQL Editor 中执行本文件（幂等，可重复执行）
--- 配套：.github/workflows/market_sample.yml 每30分钟调用一次
+-- 配套：.github/workflows/market_sample.yml 交易时段内(北京时间8:00-19:55)每5分钟调用一次
 -- 功能：
 --   1) sample_market_snapshot：交易时段内(北京时间8:00-20:00)采集全市场快照，
 --      写入 stock_history_full 并同步聚合当日K线 —— 不依赖访客打开页面
