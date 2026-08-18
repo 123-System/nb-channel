@@ -1,23 +1,43 @@
-name: Market Sample (intraday snapshot every 5 min)
+name: Market Auto Run (fluctuate + snapshot every 5 min)
 
-# 交易时段内（北京时间 8:00-19:55）每 5 分钟自动采集一次全市场快照，
-# 保证每天 K 线数据完整（不依赖访客打开股票页面）。
+# 交易时段内（北京时间 8:00-19:55）每 5 分钟自动执行一轮完整市场循环：
+#   1) record_daily_kline            —— 确保当日开盘价已记录（8:00 时创建当日K线行）
+#   2) random_fluctuate_market_values —— 全市场波动一轮（±2% + 均值回归 + 涨跌停限制 + 保底）
+#   3) sample_market_snapshot        —— 记录波动后的快照，更新当日K线
+# 这样即使全天无人访问，市场也会自动运转，K线数据完整。
 # cron 表达式为 UTC 时间：*/5 0-11 * * * = 北京时间 8:00-19:55 每 5 分钟一次。
-# 数据库侧 sample_market_snapshot() 会校验交易时段（8:00-20:00），非交易时段自动跳过。
+# 各函数内部均有交易时段校验（8:00-20:00），非交易时段自动跳过；
+# random_fluctuate_market_values 另有全局 30 秒节流（与在线访客共享，不会重复波动）。
 on:
   schedule:
     - cron: '*/5 0-11 * * *'
   workflow_dispatch:
 
 jobs:
-  sample:
+  market:
     runs-on: ubuntu-latest
     steps:
-      - name: Sample market snapshot via Supabase RPC
+      - name: Ensure daily open price
+        run: |
+          curl -s -X POST "https://pbaafgjkwdbwcmsikcmg.supabase.co/rest/v1/rpc/record_daily_kline" \
+            -H "apikey: sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
+            -H "Authorization: Bearer sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+          echo "开盘价确认完成"
+      - name: Fluctuate market values
+        run: |
+          curl -s -X POST "https://pbaafgjkwdbwcmsikcmg.supabase.co/rest/v1/rpc/random_fluctuate_market_values" \
+            -H "apikey: sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
+            -H "Authorization: Bearer sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+          echo "市场波动完成"
+      - name: Sample market snapshot
         run: |
           curl -s -X POST "https://pbaafgjkwdbwcmsikcmg.supabase.co/rest/v1/rpc/sample_market_snapshot" \
             -H "apikey: sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
             -H "Authorization: Bearer sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
             -H "Content-Type: application/json" \
             -d '{}'
-          echo "采样完成（北京时间 8:00-19:55，每5分钟一次）"
+          echo "快照采样完成（北京时间 8:00-19:55，每5分钟一轮）"
