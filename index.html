@@ -299,7 +299,7 @@
         <div style="font-size:0.8rem; color:var(--count-text); margin-bottom:10px;">每次抽奖消耗 50 NB币，今日剩余次数：<span id="lotteryRemain">?</span>/10</div>
         <div class="wheel-wrap">
             <div class="wheel-pointer">▼</div>
-            <div class="wheel" id="wheel"></div>
+            <canvas id="wheel" width="250" height="250" class="wheel"></canvas>
         </div>
         <div id="lotteryResult" style="margin: 12px 0; font-size: 0.95rem; min-height: 26px; font-weight: 600;"></div>
         <div id="pointerReadout" style="margin-bottom: 8px; font-size: 0.8rem; color: var(--count-text); min-height: 16px;"></div>
@@ -333,24 +333,44 @@
 
     function buildWheel() {
         const wheel = document.getElementById('wheel');
-        if (!wheel) return;
-        wheel.style.background = 'conic-gradient(' + LOTTERY_SECTORS.map((s, i) =>
-            `${s.color} ${i * 45}deg ${(i + 1) * 45}deg`).join(',') + ')';
-        // 文字精确定位：每个文字放在对应扇区中心（角度 = i*45+22.5）
-        const R = 125;  // 转盘半径（250/2）
-        const r = 76;   // 文字所在半径
+        if (!wheel || !wheel.getContext) return;
+        const ctx = wheel.getContext('2d');
+        const cx = 125, cy = 125, R = 118;
+        // 绘制 8 个扇区（Canvas 坐标系：0弧度=3点方向顺时针，顶部=-90°）
         LOTTERY_SECTORS.forEach((s, i) => {
-            const label = document.createElement('div');
-            label.textContent = s.name;
-            label.style.cssText = 'position:absolute; font-size:0.8rem; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,0.5); white-space:nowrap; transform:translate(-50%,-50%);';
-            const angle = ((i * 45 + 22.5) * Math.PI) / 180;
-            label.style.left = (R + r * Math.sin(angle)) + 'px';
-            label.style.top = (R - r * Math.cos(angle)) + 'px';
-            wheel.appendChild(label);
+            const start = (i * 45 - 90) * Math.PI / 180;
+            const end = ((i + 1) * 45 - 90) * Math.PI / 180;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, R, start, end);
+            ctx.closePath();
+            ctx.fillStyle = s.color;
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            // 扇区中心文字
+            const mid = (start + end) / 2;
+            const tx = cx + R * 0.62 * Math.cos(mid);
+            const ty = cy + R * 0.62 * Math.sin(mid);
+            ctx.save();
+            ctx.translate(tx, ty);
+            ctx.rotate(mid + Math.PI / 2);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 13px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(s.name, 0, 0);
+            ctx.restore();
         });
-        const center = document.createElement('div');
-        center.className = 'wheel-center';
-        wheel.appendChild(center);
+        // 中心圆
+        ctx.beginPath();
+        ctx.arc(cx, cy, 24, 0, Math.PI * 2);
+        ctx.fillStyle = '#555';
+        ctx.fill();
+        ctx.strokeStyle = '#888';
+        ctx.lineWidth = 3;
+        ctx.stroke();
     }
 
     function spinTo(sector) {
