@@ -351,8 +351,9 @@
 
     function spinTo(sector) {
         const wheel = document.getElementById('wheel');
-        // 让第 sector 格的中心（sector*45+22.5 度）转到顶部指针（0 度）
-        wheelRotation += 360 * 5 + (360 - (sector * 45 + 22.5));
+        // 转盘顺时针旋转 θ 后，原来在 θ 位置的扇区会转到顶部指针（0 度）
+        // 目标：第 sector 格中心（sector*45+22.5 度）对准指针 → 顺时针旋转该角度
+        wheelRotation += 360 * 5 + (sector * 45 + 22.5);
         wheel.style.transform = `rotate(${wheelRotation}deg)`;
     }
 
