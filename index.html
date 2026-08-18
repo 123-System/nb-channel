@@ -381,14 +381,30 @@
             modal.style.display = 'flex';
             if (remainEl) remainEl.innerText = '?';
             resultEl.innerText = '';
-            // 查询今日已抽次数
-            lotteryClient.from('lottery_records')
-                .select('id', { count: 'exact', head: true })
-                .eq('user_id', user.id)
-                .gte('created_at', new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' }) + 'T00:00:00Z').toISOString())
-                .then(({ count }) => {
-                    if (remainEl) remainEl.innerText = Math.max(0, 10 - (count || 0));
-                }).catch(() => {});
+            // 读取每日上限（admin_config，可随时调整）
+            lotteryClient.from('admin_config')
+                .select('value')
+                .eq('key', 'lottery_daily_limit')
+                .maybeSingle()
+                .then(({ data: cfg }) => {
+                    const limit = cfg && cfg.value ? parseInt(cfg.value) : 10;
+                    // 查询今日已抽次数
+                    lotteryClient.from('lottery_records')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('user_id', user.id)
+                        .gte('created_at', new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' }) + 'T00:00:00Z').toISOString())
+                        .then(({ count }) => {
+                            if (remainEl) remainEl.innerText = Math.max(0, limit - (count || 0));
+                        }).catch(() => {});
+                }).catch(() => {
+                    lotteryClient.from('lottery_records')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('user_id', user.id)
+                        .gte('created_at', new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' }) + 'T00:00:00Z').toISOString())
+                        .then(({ count }) => {
+                            if (remainEl) remainEl.innerText = Math.max(0, 10 - (count || 0));
+                        }).catch(() => {});
+                });
         };
         document.getElementById('lotteryCloseBtn').onclick = () => { modal.style.display = 'none'; };
 
@@ -408,7 +424,7 @@
                 return;
             }
             spinTo(data.sector);
-            if (remainEl) remainEl.innerText = Math.max(0, 10 - (data.today_count || 0));
+            if (remainEl) remainEl.innerText = Math.max(0, (data.daily_limit || 10) - (data.today_count || 0));
             setTimeout(() => {
                 if (data.result === 'win') {
                     resultEl.innerHTML = `🎉 恭喜中奖 <span style="color:#ff9800;">${data.amount} NB币</span>！当前余额：${data.balance}`;

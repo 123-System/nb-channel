@@ -34,12 +34,19 @@ DECLARE
     v_sector integer := 0;
     v_balance integer;
     v_today_count integer;
+    v_limit integer;
 BEGIN
-    -- 每日抽奖上限 10 次（防刷）
+    -- 每日抽奖上限（从 admin_config 读取，key=lottery_daily_limit，默认 10）
+    SELECT value::integer INTO v_limit FROM public.admin_config WHERE key = 'lottery_daily_limit';
+    IF v_limit IS NULL OR v_limit < 1 THEN
+        v_limit := 10;
+    END IF;
+
     SELECT count(*) INTO v_today_count FROM public.lottery_records
      WHERE user_id = p_user_id AND created_at::date = current_date;
-    IF v_today_count >= 10 THEN
-        RETURN jsonb_build_object('success', false, 'message', '今日抽奖次数已达上限（10次），明天再来吧');
+    IF v_today_count >= v_limit THEN
+        RETURN jsonb_build_object('success', false, 'message',
+            format('今日抽奖次数已达上限（%s次），明天再来吧', v_limit));
     END IF;
 
     -- 扣 50 NB币（原子扣款）
@@ -77,7 +84,8 @@ BEGIN
         'amount', v_amount,
         'sector', v_sector,
         'balance', v_balance,
-        'today_count', v_today_count + 1
+        'today_count', v_today_count + 1,
+        'daily_limit', v_limit
     );
 END;
 $$;
