@@ -1,14 +1,13 @@
 -- ============================================================
--- NB频道 - 虚拟股票波动规则 v4（±2% / 30秒 / 3%回归 / 涨跌停±30%冻结）
+-- NB频道 - 虚拟股票波动规则 v5（交易时段 8:00-20:00 + 涨跌停±30%冻结）
 -- 在 Supabase SQL Editor 中执行（幂等）
 -- 规则：
---   1) 波动幅度：每轮 -2% ~ +2%（对称）
---   2) 全局节流：stock_latest 30 秒内有更新则跳过本轮波动
---   3) 均值回归：每轮向"全市场平均市值"拉回 3%
---   4) 涨跌停：以当日开盘价（stock_daily_kline.open）为基准，
---      上下 ±30% 空间；整体涨跌超过 ±30% 的公司的【波动被冻结】
---      （不再参与波动），第二天开盘（open 更新）后自动恢复波动
---   5) 市值保底 10000 不变
+--   1) 交易时段：北京时间 8:00 开盘 ~ 20:00 收盘，收盘后停止波动（冻结）
+--   2) 波动幅度：每轮 -2% ~ +2%（对称）
+--   3) 全局节流：stock_latest 30 秒内有更新则跳过本轮波动
+--   4) 均值回归：每轮向"全市场平均市值"拉回 3%
+--   5) 涨跌停：以当日开盘价（stock_daily_kline.open）为基准，±30% 冻结
+--   6) 市值保底 10000 不变
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.random_fluctuate_market_values()
@@ -25,6 +24,13 @@ DECLARE
     v_day_open NUMERIC;
     v_last timestamptz;
 BEGIN
+    -- 交易时段判断（北京时间）：8:00 开盘 ~ 20:00 收盘
+    -- 收盘后（20:00 ~ 次日 8:00）停止波动，所有公司冻结
+    IF (now() AT TIME ZONE 'Asia/Shanghai')::time < time '08:00'
+       OR (now() AT TIME ZONE 'Asia/Shanghai')::time >= time '20:00' THEN
+        RETURN;
+    END IF;
+
     -- 全局节流：stock_latest 30 秒内有更新则跳过本轮波动
     SELECT max(created_at) INTO v_last FROM public.stock_latest;
     IF v_last IS NOT NULL AND v_last > now() - interval '30 seconds' THEN
@@ -78,5 +84,6 @@ $$;
 GRANT EXECUTE ON FUNCTION public.random_fluctuate_market_values() TO anon;
 
 -- ========== 说明 ==========
--- 冻结期间玩家支持/买入仍可改变市值（直接操作，不经波动函数），与真实"资金推动"一致。
--- 参数调整：幅度改 0.04；回归强度改 0.03；涨跌停空间改 1.30 / 0.70。
+-- 开盘价：每天 8:00 由 GitHub Actions 定时调用 record_daily_kline() 记录
+-- （= 昨日收盘价，与真实股市一致）；无人触发时由前端保存快照兜底。
+-- 参数调整：交易时段改 time '08:00' / '20:00'；涨跌停改 1.30 / 0.70。

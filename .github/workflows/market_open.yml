@@ -1,0 +1,20 @@
+name: Market Open (record daily open price)
+
+# 每天北京时间 8:00（UTC 0:00）自动记录当日开盘价
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  record-open:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record daily open price via Supabase RPC
+        run: |
+          curl -s -X POST "https://pbaafgjkwdbwcmsikcmg.supabase.co/rest/v1/rpc/record_daily_kline" \
+            -H "apikey: sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
+            -H "Authorization: Bearer sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+          echo "开盘价已记录（北京时间 8:00）"
