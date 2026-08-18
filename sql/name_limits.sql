@@ -33,6 +33,9 @@ BEGIN
 END;
 $$;
 
+-- 补权限（防止 CREATE OR REPLACE 后 anon 无法调用导致 404）
+GRANT EXECUTE ON FUNCTION public.register_user(text, text) TO anon;
+
 -- ========== 2. 修改用户名（update_username）加 20 字限制 ==========
 CREATE OR REPLACE FUNCTION public.update_username(user_id uuid, new_username text, old_password text)
 RETURNS json
