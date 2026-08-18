@@ -151,24 +151,38 @@
             text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; left: 50%;
         }
         .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 46px; height: 46px; background: #555; border-radius: 50%; z-index: 5; border: 3px solid #888; }
-        /* 公告栏 */
+        /* 公告栏（单行无缝循环滚动） */
         .announcement-bar {
             background: linear-gradient(135deg, #fff8e6, #fffdf5);
             border: 1px solid #ffd591;
             border-left: 4px solid #ff9800;
             border-radius: 12px;
-            padding: 10px 16px;
+            padding: 8px 0;
             margin-bottom: 20px;
             font-size: 0.9rem;
-            line-height: 1.7;
-            white-space: pre-line;
-            word-break: break-word;
+            line-height: 1.8;
+            overflow: hidden;
+            white-space: nowrap;
             color: var(--text-color);
         }
         body.dark-mode .announcement-bar {
             background: #2d2418;
             border-color: #664a1f;
             border-left-color: #ff9800;
+        }
+        .marquee-track {
+            display: inline-block;
+            white-space: nowrap;
+            will-change: transform;
+        }
+        .marquee-item {
+            display: inline-block;
+            white-space: nowrap;
+            padding-right: 80px;
+        }
+        @keyframes marqueeMove {
+            from { transform: translateX(0); }
+            to { transform: translateX(var(--marquee-shift, -200px)); }
         }
     </style>
 </head>
@@ -203,7 +217,9 @@
 </div>
 
     <!-- 公告栏（内容在 Supabase admin_config 表，key=announcement，管理后台 admin-announcement.html） -->
-    <div id="announcementBar" class="announcement-bar" style="display:none;"></div>
+    <div id="announcementBar" class="announcement-bar" style="display:none;">
+        <div class="marquee-track" id="announcementTrack"></div>
+    </div>
 
     <!-- Logo 视频区域 -->
     <div class="video-container">
@@ -503,13 +519,30 @@
                 .eq('key', 'announcement')
                 .maybeSingle();
             const bar = document.getElementById('announcementBar');
-            if (!bar) return;
+            const track = document.getElementById('announcementTrack');
+            if (!bar || !track) return;
             if (error || !data || !data.value || !data.value.trim()) {
                 bar.style.display = 'none';
                 return;
             }
-            bar.innerHTML = '📢 <strong>公告：</strong>' + escapeHtml(data.value);
+            const text = '📢 公告：' + data.value.trim();
+            // 先放一份用于测量文字宽度
+            track.innerHTML = `<span class="marquee-item">${escapeHtml(text)}</span>`;
             bar.style.display = 'block';
+            const item = track.querySelector('.marquee-item');
+            const itemW = item.offsetWidth;
+            if (itemW > 0) {
+                // 铺满一行所需份数（至少 2 份才能无缝循环）
+                const barW = bar.clientWidth;
+                const copies = Math.max(2, Math.ceil(barW / itemW) + 1);
+                let html = '';
+                for (let i = 0; i < copies; i++) html += `<span class="marquee-item">${escapeHtml(text)}</span>`;
+                track.innerHTML = html;
+                // 位移正好一份的宽度 = 首尾无缝衔接；速度约 45px/s
+                track.style.setProperty('--marquee-shift', `-${itemW}px`);
+                const duration = Math.max(8, itemW / 45);
+                track.style.animation = `marqueeMove ${duration}s linear infinite`;
+            }
         } catch (e) {
             console.warn('公告加载失败', e);
         }
