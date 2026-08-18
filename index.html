@@ -335,14 +335,17 @@
         if (!wheel) return;
         wheel.style.background = 'conic-gradient(' + LOTTERY_SECTORS.map((s, i) =>
             `${s.color} ${i * 45}deg ${(i + 1) * 45}deg`).join(',') + ')';
+        // 文字精确定位：每个文字放在对应扇区中心（角度 = i*45+22.5）
+        const R = 125;  // 转盘半径（250/2）
+        const r = 76;   // 文字所在半径
         LOTTERY_SECTORS.forEach((s, i) => {
-            const seg = document.createElement('div');
-            seg.className = 'wheel-seg';
-            seg.style.transform = `rotate(${i * 45}deg)`;
-            const label = document.createElement('span');
+            const label = document.createElement('div');
             label.textContent = s.name;
-            seg.appendChild(label);
-            wheel.appendChild(seg);
+            label.style.cssText = 'position:absolute; font-size:0.8rem; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,0.5); white-space:nowrap; transform:translate(-50%,-50%);';
+            const angle = ((i * 45 + 22.5) * Math.PI) / 180;
+            label.style.left = (R + r * Math.sin(angle)) + 'px';
+            label.style.top = (R - r * Math.cos(angle)) + 'px';
+            wheel.appendChild(label);
         });
         const center = document.createElement('div');
         center.className = 'wheel-center';
