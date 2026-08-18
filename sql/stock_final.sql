@@ -46,6 +46,12 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '单次买入不能超过10000 NB币');
     END IF;
 
+    -- 交易时段检查（北京时间 8:00 ~ 20:00）
+    IF (now() AT TIME ZONE 'Asia/Shanghai')::time < time '08:00'
+       OR (now() AT TIME ZONE 'Asia/Shanghai')::time >= time '20:00' THEN
+        RETURN jsonb_build_object('success', false, 'message', '当前为休市时间（每日 8:00-20:00 交易），请开盘后再操作');
+    END IF;
+
     SELECT market_value / total_shares, company_name, user_id, total_shares
       INTO v_nav, v_company_name, v_owner_id, v_total_shares
       FROM public.user_companies
@@ -117,6 +123,12 @@ DECLARE
 BEGIN
     IF p_amount IS NULL OR p_amount <= 0 THEN
         RETURN jsonb_build_object('success', false, 'message', '卖出金额必须大于0');
+    END IF;
+
+    -- 交易时段检查（北京时间 8:00 ~ 20:00）
+    IF (now() AT TIME ZONE 'Asia/Shanghai')::time < time '08:00'
+       OR (now() AT TIME ZONE 'Asia/Shanghai')::time >= time '20:00' THEN
+        RETURN jsonb_build_object('success', false, 'message', '当前为休市时间（每日 8:00-20:00 交易），请开盘后再操作');
     END IF;
 
     SELECT market_value / total_shares, company_name, market_value
@@ -223,6 +235,12 @@ BEGIN
     END IF;
     IF p_amount > 2000 THEN
         RETURN jsonb_build_object('success', false, 'message', '单次手动支持金额不能超过2000 NB币');
+    END IF;
+
+    -- 交易时段检查（北京时间 8:00 ~ 20:00）
+    IF (now() AT TIME ZONE 'Asia/Shanghai')::time < time '08:00'
+       OR (now() AT TIME ZONE 'Asia/Shanghai')::time >= time '20:00' THEN
+        RETURN jsonb_build_object('success', false, 'message', '当前为休市时间（每日 8:00-20:00 交易），请开盘后再操作');
     END IF;
 
     SELECT user_id, market_value INTO v_owner_id, v_market_value

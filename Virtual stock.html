@@ -313,6 +313,7 @@
         <div class="sub" style="color: var(--count-text); margin-bottom: 16px;">
             <span>📈 股票/概念指数 动态追踪</span>
             <span class="update-badge" id="dataTimestamp" style="background: var(--count-bg); padding: 4px 12px; border-radius: 60px;">⚡ 数据加载中...</span>
+            <span class="countdown-badge" id="marketStatus">⏳ 状态加载中...</span>
             <span class="countdown-badge" id="countdownBadge">🕒 下次刷新: --秒</span>
         </div>
 
@@ -1358,9 +1359,12 @@
             const reportBtn = (item.id && item.id !== 'undefined' && !isNaN(item.id))
                 ? `<button class="report-company-btn" data-company-id="${item.id}" data-company-name="${escapeHtml(item.name)}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.7rem;">🚨 举报公司</button>`
                 : '';
+            const trading = isTradingHours();
             const tradeBtns = currentUserId
-                ? `<button class="trade-btn buy" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-value="${item.value}" style="background:#f44336; color:white; border:none; border-radius:20px; padding:3px 12px; cursor:pointer; font-size:0.75rem; margin-right:4px;">买入</button>
-                   <button class="trade-btn sell" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-value="${item.value}" style="background:#4caf50; color:white; border:none; border-radius:20px; padding:3px 12px; cursor:pointer; font-size:0.75rem;">卖出</button>`
+                ? (trading
+                    ? `<button class="trade-btn buy" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-value="${item.value}" style="background:#f44336; color:white; border:none; border-radius:20px; padding:3px 12px; cursor:pointer; font-size:0.75rem; margin-right:4px;">买入</button>
+                       <button class="trade-btn sell" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-value="${item.value}" style="background:#4caf50; color:white; border:none; border-radius:20px; padding:3px 12px; cursor:pointer; font-size:0.75rem;">卖出</button>`
+                    : '<span style="color:var(--count-text); font-size:0.75rem;">😴 休市</span>')
                 : '<span style="color:var(--count-text); font-size:0.75rem;">登录后可交易</span>';
             html += `<tr>
                 <td><a href="#" class="stock-link" data-id="${item.id}" data-name="${escapeHtml(item.name)}">${escapeHtml(item.name)}</a><br>${reportBtn}</td>
@@ -1415,11 +1419,38 @@
         updateDataTable();
     }
 
+    // ========== 交易时段（北京时间 8:00-20:00） ==========
+    function isTradingHours() {
+        try {
+            const bj = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+            const h = bj.getHours();
+            return h >= 8 && h < 20;
+        } catch (e) {
+            const h = new Date().getHours();
+            return h >= 8 && h < 20;
+        }
+    }
+
+    function updateMarketStatus() {
+        const el = document.getElementById('marketStatus');
+        if (!el) return;
+        if (isTradingHours()) {
+            el.innerHTML = '📈 交易中（8:00-20:00）';
+            el.style.background = 'rgba(76,175,80,0.15)';
+            el.style.color = '#4caf50';
+        } else {
+            el.innerHTML = '😴 休市中（20:00-次日8:00）';
+            el.style.background = 'rgba(255,152,0,0.15)';
+            el.style.color = '#ff9800';
+        }
+    }
+
     // ========== 金额制投资交易 ==========
     let tradeState = null;  // { companyId, name, marketValue, mode, myValue, myShares }
 
     function showTradeDialog(companyId, companyName, marketValue, mode) {
         if (!currentUserId) { showMessage('提示', '请先登录'); return; }
+        if (!isTradingHours()) { showMessage('提示', '当前为休市时间（每日 8:00-20:00 交易），请开盘后再操作'); return; }
         const modal = document.getElementById('tradeModal');
         document.getElementById('tradeCompanyName').innerText = companyName;
         document.getElementById('tradePrice').innerText = formatValue(marketValue);
@@ -1920,6 +1951,8 @@
 
     // ========== 启动 ==========
     windowSize = 15;
+    updateMarketStatus();
+    setInterval(updateMarketStatus, 30000);  // 每30秒刷新交易状态
     initUserAndData();
     startCountdown();
     document.addEventListener('visibilitychange', handleVisibilityChange);
