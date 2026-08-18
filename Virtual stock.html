@@ -758,6 +758,18 @@
         combined.sort((a, b) => b.value - a.value);
         sortedCombined = combined;
 
+        // 加载当日开盘价（用于涨停/跌停判断）
+        try {
+            const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' });
+            const { data: kline } = await supabaseClient
+                .from('stock_daily_kline')
+                .select('company_id, open')
+                .eq('trade_date', today);
+            window.dayOpenMap = new Map((kline || []).map(k => [k.company_id, k.open]));
+        } catch (e) {
+            window.dayOpenMap = new Map();
+        }
+
         await saveFullSnapshot(newTotal);
         await loadFullHistory();
         updateStatsPanel(newTotal);
@@ -1360,6 +1372,18 @@
                 ? `<button class="report-company-btn" data-company-id="${item.id}" data-company-name="${escapeHtml(item.name)}" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:0.7rem;">🚨 举报公司</button>`
                 : '';
             const trading = isTradingHours();
+            // 涨停判断：市值达到当日开盘价的 2 倍（±100% 涨跌停）
+            let limitBadge = '';
+            if (window.dayOpenMap && window.dayOpenMap.has(item.id)) {
+                const open = window.dayOpenMap.get(item.id);
+                if (open > 0) {
+                    if (item.value >= open * 2) {
+                        limitBadge = '<span style="color:#f44336; font-size:0.7rem; margin-left:4px; border:1px solid #f44336; border-radius:8px; padding:0 4px;">🔴涨停</span>';
+                    } else if (item.value <= open * 0) {
+                        limitBadge = '<span style="color:#4caf50; font-size:0.7rem; margin-left:4px; border:1px solid #4caf50; border-radius:8px; padding:0 4px;">🟢跌停</span>';
+                    }
+                }
+            }
             const tradeBtns = currentUserId
                 ? (trading
                     ? `<button class="trade-btn buy" data-id="${item.id}" data-name="${escapeHtml(item.name)}" data-value="${item.value}" style="background:#f44336; color:white; border:none; border-radius:20px; padding:3px 12px; cursor:pointer; font-size:0.75rem; margin-right:4px;">买入</button>
@@ -1368,7 +1392,7 @@
                 : '<span style="color:var(--count-text); font-size:0.75rem;">登录后可交易</span>';
             html += `<tr>
                 <td><a href="#" class="stock-link" data-id="${item.id}" data-name="${escapeHtml(item.name)}">${escapeHtml(item.name)}</a><br>${reportBtn}</td>
-                <td>${formatValue(item.value)}</td>
+                <td>${formatValue(item.value)}${limitBadge}</td>
                 <td>${escapeHtml(item.owner || '未知')}</td>
                 <td>${changeHtml}</td>
                 <td>${tradeBtns}</td>
