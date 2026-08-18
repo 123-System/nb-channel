@@ -151,6 +151,25 @@
             text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; left: 50%;
         }
         .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 46px; height: 46px; background: #555; border-radius: 50%; z-index: 5; border: 3px solid #888; }
+        /* 公告栏 */
+        .announcement-bar {
+            background: linear-gradient(135deg, #fff8e6, #fffdf5);
+            border: 1px solid #ffd591;
+            border-left: 4px solid #ff9800;
+            border-radius: 12px;
+            padding: 10px 16px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            white-space: pre-line;
+            word-break: break-word;
+            color: var(--text-color);
+        }
+        body.dark-mode .announcement-bar {
+            background: #2d2418;
+            border-color: #664a1f;
+            border-left-color: #ff9800;
+        }
     </style>
 </head>
 <body>
@@ -183,7 +202,8 @@
     </div>
 </div>
 
-
+    <!-- 公告栏（内容在 Supabase admin_config 表，key=announcement，管理后台 admin-announcement.html） -->
+    <div id="announcementBar" class="announcement-bar" style="display:none;"></div>
 
     <!-- Logo 视频区域 -->
     <div class="video-container">
@@ -235,6 +255,7 @@
                 </div>
                 <div id="lotterySection" style="display: none;">
                     <button id="lotteryOpenBtn" class="checkin-btn" style="background:#ff9800;">🎰 幸运转盘</button>
+                    <a href="lottery_records.html" style="font-size:0.8rem; color:var(--count-text); text-decoration:underline;">📜 我的抽奖记录</a>
                 </div>
             </div>
         </div>
@@ -468,7 +489,33 @@
 
     // 登录状态变化时初始化抽奖区
     window.addEventListener('storage', (e) => { if (e.key === 'nb_user') initLottery(); });
-    document.addEventListener('DOMContentLoaded', () => { buildWheel(); initLottery(); });
+
+    // ========== 公告栏（内容在 admin_config 表，key=announcement） ==========
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+    async function fetchAnnouncement() {
+        try {
+            const { data, error } = await lotteryClient
+                .from('admin_config')
+                .select('value')
+                .eq('key', 'announcement')
+                .maybeSingle();
+            const bar = document.getElementById('announcementBar');
+            if (!bar) return;
+            if (error || !data || !data.value || !data.value.trim()) {
+                bar.style.display = 'none';
+                return;
+            }
+            bar.innerHTML = '📢 <strong>公告：</strong>' + escapeHtml(data.value);
+            bar.style.display = 'block';
+        } catch (e) {
+            console.warn('公告加载失败', e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => { buildWheel(); initLottery(); fetchAnnouncement(); });
 </script>
 <script>
     AUTHOR_NAME = 'NB搞事局';
