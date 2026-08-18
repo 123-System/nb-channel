@@ -302,6 +302,7 @@
             <div class="wheel" id="wheel"></div>
         </div>
         <div id="lotteryResult" style="margin: 12px 0; font-size: 0.95rem; min-height: 26px; font-weight: 600;"></div>
+        <div id="pointerReadout" style="margin-bottom: 8px; font-size: 0.8rem; color: var(--count-text); min-height: 16px;"></div>
         <button id="lotterySpinBtn" style="width:100%; background:#ff9800; color:white; border:none; border-radius:30px; padding:10px; cursor:pointer; font-size:1rem;">🎰 抽一次（50 NB币）</button>
         <div style="text-align:center; margin-top:10px;">
             <button id="lotteryCloseBtn" style="background:#6c757d; color:white; border:none; border-radius:30px; padding:6px 20px; cursor:pointer;">关闭</button>
@@ -429,6 +430,16 @@
             spinTo(data.sector);
             if (remainEl) remainEl.innerText = Math.max(0, (data.daily_limit || 10) - (data.today_count || 0));
             setTimeout(() => {
+                // 自检：指针实际指向的扇区
+                const readout = document.getElementById('pointerReadout');
+                if (readout) {
+                    const finalAngle = ((wheelRotation % 360) + 360) % 360;
+                    const pointedSector = Math.floor(finalAngle / 45);
+                    const pointedName = LOTTERY_SECTORS[pointedSector].name;
+                    const expectedName = LOTTERY_SECTORS[data.sector].name;
+                    const ok = pointedSector === data.sector;
+                    readout.innerHTML = `🎯 指针指向：${pointedName}（角度 ${finalAngle.toFixed(1)}°）| 结果：${expectedName} ${ok ? '✅ 一致' : '❌ 不一致'}`;
+                }
                 if (data.result === 'win') {
                     resultEl.innerHTML = `🎉 恭喜中奖 <span style="color:#ff9800;">${data.amount} NB币</span>！当前余额：${data.balance}`;
                 } else {
