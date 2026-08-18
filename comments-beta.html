@@ -1193,12 +1193,25 @@
         let targetPage = page !== undefined ? page : currentPage;
 
         verifiedUsernames = await fetchVerifiedUsers();
-        const { data, error } = await supabaseClient
-            .from('comments')
-            .select('*, profiles(username)')
-            .eq('page_path', pagePath)
-            .order('created_at', { ascending: false });
-        if (error) { console.error(error); return; }
+        // 分批拉取全部评论（PostgREST 单次最多 1000 条）
+        const BATCH = 1000;
+        let allData = [];
+        let from = 0;
+        let fetchError = null;
+        while (true) {
+            const { data, error } = await supabaseClient
+                .from('comments')
+                .select('*, profiles(username)')
+                .eq('page_path', pagePath)
+                .order('created_at', { ascending: false })
+                .range(from, from + BATCH - 1);
+            if (error) { fetchError = error; break; }
+            allData = allData.concat(data || []);
+            if (!data || data.length < BATCH) break;
+            from += BATCH;
+        }
+        if (fetchError) { console.error(fetchError); return; }
+        const data = allData;
 
         const userIds = [...new Set(data.map(c => c.user_id).filter(id => id))];
         if (userIds.length > 0) {
