@@ -1,9 +1,11 @@
 -- ============================================================
--- NB频道 - 虚拟股票防刷优化（基于你的真实函数体重写）
--- 说明：原 random_fluctuate_market_values 逻辑完全保留
---       （±5% 对称波动、市值保底 10000、浮点计算后取整），
---       仅增加"全局节流"：stock_latest 8 秒内有更新则跳过本次波动。
---       无论多少用户同时在线，数据库层面 8 秒内最多波动一次。
+-- NB频道 - 虚拟股票波动规则 v2（±2% 波动 / 30秒节流 / 3%均值回归）
+-- 在 Supabase SQL Editor 中执行（幂等）
+-- 规则：
+--   1) 波动幅度：每轮 -2% ~ +2%（对称）
+--   2) 全局节流：stock_latest 30 秒内有更新则跳过本轮波动
+--   3) 均值回归：每轮向"全市场平均市值"拉回 3%（防止两极分化）
+--   4) 市值保底 10000 不变
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.random_fluctuate_market_values()
@@ -16,19 +18,33 @@ DECLARE
     company RECORD;
     change_percent FLOAT;
     new_value BIGINT;
+    v_avg NUMERIC;
     v_last timestamptz;
 BEGIN
-    -- 全局节流：stock_latest 8 秒内有更新则跳过本次波动
+    -- 全局节流：stock_latest 30 秒内有更新则跳过本轮波动
     SELECT max(created_at) INTO v_last FROM public.stock_latest;
-    IF v_last IS NOT NULL AND v_last > now() - interval '8 seconds' THEN
+    IF v_last IS NOT NULL AND v_last > now() - interval '30 seconds' THEN
         RETURN;
     END IF;
 
-    -- 原波动逻辑（完全保留）：-5% ~ +5% 对称波动，最低市值 10000
+    -- 全市场平均市值（均值回归的锚点）
+    SELECT AVG(market_value) INTO v_avg FROM public.user_companies;
+    IF v_avg IS NULL THEN
+        RETURN;
+    END IF;
+
     FOR company IN SELECT id, market_value FROM user_companies LOOP
-        change_percent := (random() - 0.5) * 0.1;
+        -- ① 随机波动：-2% ~ +2%（对称）
+        change_percent := (random() - 0.5) * 0.04;
         new_value := company.market_value + (company.market_value * change_percent);
+
+        -- ② 均值回归：向市场平均值拉回 3%
+        --    市值高于均值 → 往下拉；低于均值 → 往上提
+        new_value := new_value + ((v_avg - new_value) * 0.03);
+
+        -- ③ 最低市值保底 10000
         IF new_value < 10000 THEN new_value := 10000; END IF;
+
         UPDATE user_companies SET market_value = new_value WHERE id = company.id;
     END LOOP;
 END;
@@ -36,6 +52,6 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.random_fluctuate_market_values() TO anon;
 
--- ========== 附带说明 ==========
--- 历史快照由 delete_old_history / delete_old_history_full 触发器自动清理（保留30条），无需手动清理。
--- 前端已做写入降频（最新快照3秒节流、历史快照55秒节流），与此函数配合效果最佳。
+-- ========== 说明 ==========
+-- 玩家行为（支持/买入）注入的资金会直接提高市值，不受均值回归影响（回归只作用于自然波动）。
+-- 若要调整参数：±X% 改 (random()-0.5)*0.04 中的 0.04（=2*X%）；回归强度改 0.03；节流改 interval。

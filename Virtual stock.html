@@ -1717,8 +1717,8 @@
             // 全局波动节流（防刷优化）：
             // 原逻辑是每个在线用户每10秒都调用 random_fluctuate_market_values 波动一次，
             // N个用户同时在线 = 每10秒N次数据库写入。
-            // 现在先读 stock_latest 的最新时间，若8秒内刚波动过则跳过波动，只刷新展示数据，
-            // 让全站"每8秒左右最多波动一次"（配合 SQL 脚本中的数据库级节流效果更佳）。
+            // 现在先读 stock_latest 的最新时间，若30秒内刚波动过则跳过波动，只刷新展示数据，
+            // 让全站"每30秒左右最多波动一次"（配合 SQL 脚本中的数据库级节流效果更佳）。
             let shouldFluctuate = true;
             const { data: latestRows } = await supabaseClient
                 .from('stock_latest')
@@ -1727,7 +1727,7 @@
                 .limit(1);
             if (latestRows && latestRows.length > 0) {
                 const lastTs = new Date(latestRows[0].created_at).getTime();
-                if (Date.now() - lastTs < 8000) shouldFluctuate = false;
+                if (Date.now() - lastTs < 30000) shouldFluctuate = false;
             }
             if (shouldFluctuate) {
                 const { error: rpcError } = await supabaseClient.rpc('random_fluctuate_market_values');
