@@ -5,7 +5,7 @@
 --       register_company（注册公司）、admin_rename_company（后台改公司名）
 -- ============================================================
 
--- ========== 1. 注册用户名（两参数版）加 20 字限制 ==========
+-- ========== 1. 注册用户名（两参数版）加 20 字限制 + 零宽字符清洗 ==========
 CREATE OR REPLACE FUNCTION public.register_user(input_username text, input_password text)
 RETURNS uuid
 LANGUAGE plpgsql
@@ -16,18 +16,28 @@ DECLARE
     new_salt TEXT;
     new_hash TEXT;
     new_id UUID;
+    clean_name TEXT;
 BEGIN
-    -- 用户名长度限制（1~20字）
-    IF input_username IS NULL OR length(input_username) < 1 OR length(input_username) > 20 THEN
+    -- 清洗零宽字符（不可见字符，防止伪装同名账号）
+    clean_name := regexp_replace(
+        input_username,
+        '[' || chr(8203) || chr(8204) || chr(8205) || chr(8206) || chr(8207)
+             || chr(65279) || chr(173) || chr(8288) || ']',
+        '', 'g'
+    );
+    clean_name := btrim(clean_name);
+
+    -- 用户名长度限制（1~20字，按清洗后计算）
+    IF clean_name IS NULL OR length(clean_name) < 1 OR length(clean_name) > 20 THEN
         RAISE EXCEPTION '用户名长度需在 1~20 字之间';
     END IF;
-    IF EXISTS (SELECT 1 FROM profiles WHERE username = input_username) THEN
+    IF EXISTS (SELECT 1 FROM profiles WHERE username = clean_name) THEN
         RETURN NULL;
     END IF;
     new_salt := encode(gen_random_bytes(16), 'hex');
     new_hash := encode(sha256(concat(new_salt, input_password)::bytea), 'hex');
     INSERT INTO profiles (username, password_hash, salt)
-    VALUES (input_username, new_hash, new_salt)
+    VALUES (clean_name, new_hash, new_salt)
     RETURNING id INTO new_id;
     RETURN new_id;
 END;
@@ -36,7 +46,7 @@ $$;
 -- 补权限（防止 CREATE OR REPLACE 后 anon 无法调用导致 404）
 GRANT EXECUTE ON FUNCTION public.register_user(text, text) TO anon;
 
--- ========== 2. 修改用户名（update_username）加 20 字限制 ==========
+-- ========== 2. 修改用户名（update_username）加 20 字限制 + 零宽字符清洗 ==========
 CREATE OR REPLACE FUNCTION public.update_username(user_id uuid, new_username text, old_password text)
 RETURNS json
 LANGUAGE plpgsql
@@ -46,6 +56,7 @@ AS $$
 DECLARE
     stored_hash TEXT;
     stored_salt TEXT;
+    clean_name TEXT;
 BEGIN
     SELECT password_hash, salt INTO stored_hash, stored_salt
     FROM profiles
@@ -56,14 +67,22 @@ BEGIN
     IF encode(sha256(concat(stored_salt, old_password)::bytea), 'hex') != stored_hash THEN
         RETURN json_build_object('success', false, 'message', '密码错误');
     END IF;
+    -- 清洗零宽字符
+    clean_name := regexp_replace(
+        new_username,
+        '[' || chr(8203) || chr(8204) || chr(8205) || chr(8206) || chr(8207)
+             || chr(65279) || chr(173) || chr(8288) || ']',
+        '', 'g'
+    );
+    clean_name := btrim(clean_name);
     -- 用户名长度限制（1~20字）
-    IF new_username IS NULL OR length(new_username) < 1 OR length(new_username) > 20 THEN
+    IF clean_name IS NULL OR length(clean_name) < 1 OR length(clean_name) > 20 THEN
         RETURN json_build_object('success', false, 'message', '用户名长度需在 1~20 字之间');
     END IF;
-    IF EXISTS (SELECT 1 FROM profiles WHERE username = new_username AND id != user_id) THEN
+    IF EXISTS (SELECT 1 FROM profiles WHERE username = clean_name AND id != user_id) THEN
         RETURN json_build_object('success', false, 'message', '用户名已被占用');
     END IF;
-    UPDATE profiles SET username = new_username WHERE id = user_id;
+    UPDATE profiles SET username = clean_name WHERE id = user_id;
     RETURN json_build_object('success', true, 'message', '用户名修改成功');
 END;
 $$;

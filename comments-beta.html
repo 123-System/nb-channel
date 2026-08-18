@@ -1537,7 +1537,8 @@
     };
 
     document.getElementById('do-register').onclick = async () => {
-        const username = document.getElementById('reg-username').value.trim();
+        // 清洗零宽字符（防伪装同名）
+        const username = document.getElementById('reg-username').value.trim().replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF\u00AD]/g, '').trim();
         const password = document.getElementById('reg-password').value;
         const password2 = document.getElementById('reg-password2').value;
         const errorDiv = document.getElementById('register-error');
