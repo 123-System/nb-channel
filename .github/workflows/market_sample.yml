@@ -1,0 +1,23 @@
+name: Market Sample (intraday snapshot every 30 min)
+
+# 交易时段内（北京时间 8:00-19:30）每 30 分钟自动采集一次全市场快照，
+# 保证每天 K 线数据完整（不依赖访客打开股票页面）。
+# cron 表达式为 UTC 时间：0,30 0-11 * * * = 北京时间 8:00-19:30 的 :00 和 :30 分。
+# 数据库侧 sample_market_snapshot() 会校验交易时段（8:00-20:00），非交易时段自动跳过。
+on:
+  schedule:
+    - cron: '0,30 0-11 * * *'
+  workflow_dispatch:
+
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sample market snapshot via Supabase RPC
+        run: |
+          curl -s -X POST "https://pbaafgjkwdbwcmsikcmg.supabase.co/rest/v1/rpc/sample_market_snapshot" \
+            -H "apikey: sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
+            -H "Authorization: Bearer sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+          echo "采样完成（北京时间 8:00-19:30，每30分钟一次）"
