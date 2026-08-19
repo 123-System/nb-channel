@@ -167,9 +167,9 @@
         // 清洗零宽字符（防伪装同名）
         const rawName = document.getElementById('regUsername').value.trim();
         const username = rawName.replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF\u00AD]/g, '').trim();
-        // 拒绝仿冒字符（希腊/西里尔/全角字母）
-        if (/[\u0370-\u03FF\u0400-\u04FF\uFF21-\uFF3A\uFF41-\uFF5A]/.test(username)) {
-            document.getElementById('regError').innerText = '用户名包含仿冒字符（希腊/西里尔/全角字母），请使用中文、英文和数字';
+        // 拒绝仿冒字符（希腊/西里尔/科普特/IPA/全角等仿冒字母）
+        if (/[\u0370-\u03FF\u0400-\u04FF\u0500-\u052F\u0250-\u02AF\u02B0-\u02FF\u1D00-\u1D7F\u1F00-\u1FFF\u2100-\u214F\u2C80-\u2CFF\u1D400-\u1D7FF\uFF21-\uFF3A\uFF41-\uFF5A]/.test(username)) {
+            document.getElementById('regError').innerText = '用户名包含仿冒字符（希腊/西里尔/科普特/全角等仿冒字母），请使用中文、英文和数字';
             return;
         }
         const password = document.getElementById('regPassword').value;
