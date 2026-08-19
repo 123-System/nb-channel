@@ -8,10 +8,22 @@ let AUTHOR_NAME = '';
 // ==========================================================
 async function checkBannedIP() {
     try {
-        // 获取客户端公网 IP
-        const resp = await fetch('https://api.ipify.org?format=text', { cache: 'no-store' });
-        if (!resp.ok) return;
-        const ip = (await resp.text()).trim();
+        // 获取客户端公网 IP（多服务兜底：个别 IP 服务不可用时自动切换，不阻断访问）
+        const services = [
+            'https://api.ipify.org?format=text',
+            'https://icanhazip.com',
+            'https://ifconfig.me/ip'
+        ];
+        let ip = '';
+        for (const url of services) {
+            try {
+                const resp = await fetch(url, { cache: 'no-store' });
+                if (resp.ok) {
+                    ip = (await resp.text()).trim();
+                    if (ip) break;
+                }
+            } catch (e) { /* 尝试下一个 */ }
+        }
         if (!ip) return;
 
         // 查询黑名单（直接走 REST API，不依赖页面各自的 supabaseClient）
