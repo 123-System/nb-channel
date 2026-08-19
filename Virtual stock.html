@@ -1228,17 +1228,14 @@
         kLineCompanyName = companyName;
         title.innerText = `📈 ${companyName} 市值走势（加载中...）`;
 
-        // 分批拉取历史快照（PostgREST 单次上限 1000 条）：
-        // 按时间倒序取最新数据，拉完再翻转为正序，避免"只取到最旧1000条"导致看不到当天走势
+        // 调用后端 RPC 只提取该公司的采样点（服务器端过滤，传输量从 ~15MB 降到 ~150KB）
         const BATCH = 1000;
         let allRows = [];
         let from = 0;
         let fetchError = null;
         while (true) {
             const { data, error } = await supabaseClient
-                .from('stock_history_full')
-                .select('recorded_at, snapshot')
-                .order('recorded_at', { ascending: false })
+                .rpc('get_company_kline', { p_company_id: companyId })
                 .range(from, from + BATCH - 1);
             if (error) { fetchError = error; break; }
             if (!data || data.length === 0) break;
@@ -1255,13 +1252,7 @@
         }
 
         // 提取该公司的采样点（时间 + 市值）
-        const points = [];
-        for (const rec of data) {
-            const snap = rec.snapshot;
-            if (!snap || !snap.names) continue;
-            const idx = snap.names.indexOf(companyName);
-            if (idx !== -1) points.push({ t: new Date(rec.recorded_at), v: snap.values[idx] });
-        }
+        const points = data.map(rec => ({ t: new Date(rec.t), v: Number(rec.v) }));
         if (points.length < 2) {
             title.innerText = `📈 ${companyName} 市值走势（数据积累中）`;
             container.innerHTML = '采样点不足，等待快照积累…';
