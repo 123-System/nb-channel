@@ -1217,12 +1217,14 @@
     let kLineDayData = new Map();
     let kLineCurrentDay = null;
     let kLineCompanyName = '';
+    let kLineCompanyId = null;   // 当前查看K线的公司ID（实时同步刷新用）
     let kLineNavCreated = false;
 
     async function loadKLineData(companyId, companyName) {
         const container = document.getElementById('kLineChart');
         const title = document.getElementById('kLineTitle');
         if (!container) return;
+        kLineCompanyId = companyId;
         kLineCompanyName = companyName;
         title.innerText = `📈 ${companyName} 市值走势（加载中...）`;
 
@@ -1959,6 +1961,47 @@
         }
     }
 
+    // ========== 实时同步（Supabase Realtime）==========
+    // 后端任意波动（Actions 定时波动/他人交易/管理员操作）立即推送到前端，
+    // 不依赖轮询，交易时段与休市时段同样生效；订阅失败时 10 秒轮询照常兜底。
+    let liveTableTimer = null;
+    let liveChartTimer = null;
+
+    function setupRealtimeSync() {
+        try {
+            supabaseClient
+                .channel('market-live')
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'user_companies' }, () => {
+                    // 市值被后端改动：1.5秒节流后刷新整个页面数据
+                    if (liveTableTimer) clearTimeout(liveTableTimer);
+                    liveTableTimer = setTimeout(async () => {
+                        if (isLoading) return;
+                        try {
+                            await refreshStockDataFromDB();
+                        } catch (e) { console.warn('实时同步刷新失败', e); }
+                    }, 1500);
+                })
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stock_history_full' }, () => {
+                    // 新快照（含休市平线采样）：30秒节流后刷新总市值图；K线图开着则刷新当前公司走势
+                    if (liveChartTimer) clearTimeout(liveChartTimer);
+                    liveChartTimer = setTimeout(() => {
+                        loadFullHistory();
+                        if (kLineCompanyId !== null) {
+                            const chartEl = document.getElementById('kLineChart');
+                            if (chartEl && chartEl.offsetParent !== null) {
+                                loadKLineData(kLineCompanyId, kLineCompanyName);
+                            }
+                        }
+                    }, 30000);
+                })
+                .subscribe((status) => {
+                    if (status !== 'SUBSCRIBED') console.warn('实时同步连接状态：' + status);
+                });
+        } catch (e) {
+            console.warn('实时同步初始化失败（轮询仍会兜底）', e);
+        }
+    }
+
     // ========== 事件绑定 ==========
     document.getElementById('barBtn')?.addEventListener('click', () => setChartType('bar'));
     document.getElementById('lineBtn')?.addEventListener('click', () => setChartType('line'));
@@ -1980,6 +2023,7 @@
     setInterval(updateMarketStatus, 30000);  // 每30秒刷新交易状态
     initUserAndData();
     startCountdown();
+    setupRealtimeSync();
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', () => {
         if (autoRefreshTimer) clearInterval(autoRefreshTimer);
