@@ -1,41 +1,24 @@
-name: Market Auto Run (fluctuate + snapshot every 5 min, 24h)
+name: Market Sample Backup (hourly)
 
-# 全天每 5 分钟执行一轮市场循环（cron 为 UTC 时间：*/5 * * * * = 每5分钟，24小时）：
-#   1) record_daily_kline            —— 确保当日开盘价已记录（8:00 时创建当日K线行）
-#   2) random_fluctuate_market_values —— 仅交易时段(8:00-20:00)波动，休市时函数自动跳过
-#   3) sample_market_snapshot        —— 全天采样：交易时段记真实走势，休市记平线
-# 效果：市场完全自主运转；即使全天无人访问，K线图每天也是
-#       "0:00-8:00 平线 → 8:00-20:00 真实走势 → 20:00-24:00 平线"的完整一天。
+# 备份采样：数据库自循环（pg_cron）是主力（交易时段15分钟/休市60分钟），
+# 本工作流每小时补采一次作为双保险，并负责休市平线兜底。
+# 私有仓库 Actions 免费额度 2000 分钟/月：本工作流约 24 次/天 × 20秒 ≈ 240分钟/月，
+# 加上 auto-update 与 market_open，总用量约 300-400 分钟/月，余量充足。
+# cron 为 UTC 时间：0 * * * * = 每小时整点。
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 jobs:
-  market:
+  sample:
     runs-on: ubuntu-latest
     steps:
-      - name: Ensure daily open price
-        run: |
-          curl -s -X POST "https://pbaafgjkwdbwcmsikcmg.supabase.co/rest/v1/rpc/record_daily_kline" \
-            -H "apikey: sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
-            -H "Authorization: Bearer sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
-            -H "Content-Type: application/json" \
-            -d '{}'
-          echo "开盘价确认完成"
-      - name: Fluctuate market values
-        run: |
-          curl -s -X POST "https://pbaafgjkwdbwcmsikcmg.supabase.co/rest/v1/rpc/random_fluctuate_market_values" \
-            -H "apikey: sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
-            -H "Authorization: Bearer sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
-            -H "Content-Type: application/json" \
-            -d '{}'
-          echo "市场波动完成（休市时自动跳过）"
-      - name: Sample market snapshot
+      - name: Sample market snapshot (backup)
         run: |
           curl -s -X POST "https://pbaafgjkwdbwcmsikcmg.supabase.co/rest/v1/rpc/sample_market_snapshot" \
             -H "apikey: sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
             -H "Authorization: Bearer sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg" \
             -H "Content-Type: application/json" \
             -d '{}'
-          echo "快照采样完成（全天每5分钟一次）"
+          echo "备份采样完成（每小时一次）"
