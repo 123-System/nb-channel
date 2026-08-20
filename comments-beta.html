@@ -455,9 +455,14 @@
     function renderContentWithMentions(text) {
         if (!text) return '';
         const escaped = escapeHtml(text);
-        return escaped.replace(/@([a-zA-Z0-9_\u4e00-\u9fa5]+)/g, (match, username) => {
-            return `<span style="color:#00a1d6; font-weight:500;">@${username}</span>`;
-        });
+        // 按真实用户名列表匹配高亮：名字长的优先，避免 @AWM 抢走 @AWM（新号）的前缀
+        if (!cachedUsernames || cachedUsernames.length === 0) return escaped;
+        const names = cachedUsernames.slice().sort((a, b) => b.length - a.length);
+        const pattern = names
+            .map(n => '@' + escapeHtml(n).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+            .join('|');
+        if (!pattern) return escaped;
+        return escaped.replace(new RegExp(pattern, 'g'), m => `<span style="color:#00a1d6; font-weight:500;">${m}</span>`);
     }
 
     // 获取认证用户列表
@@ -1193,6 +1198,8 @@
         let targetPage = page !== undefined ? page : currentPage;
 
         verifiedUsernames = await fetchVerifiedUsers();
+        // 确保用户名列表已加载（@高亮按真实用户名匹配，长名优先）
+        await fetchUsernames();
         // 分批拉取全部评论（PostgREST 单次最多 1000 条）
         const BATCH = 1000;
         let allData = [];
