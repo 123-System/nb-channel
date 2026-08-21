@@ -525,14 +525,13 @@ def api_market_history(company_id):
 
     try:
         res = supabase.rpc('get_company_kline', {'p_company_id': company_id}).execute()
+        rows = res.data or []
     except Exception as e:
-        return _err('DB_ERROR', '后端数据库连接失败: %s' % e, 500)
-    if res.error:
-        return _err('DB_ERROR', 'K线数据读取失败: %s' % res.error, 500)
+        return _err('DB_ERROR', 'K线数据读取失败: %s' % e, 500)
 
     cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
     points = []
-    for row in res.data or []:
+    for row in rows:
         t = row.get('t')
         if t is None:
             continue
