@@ -94,6 +94,11 @@ BEGIN
 END $$;
 
 -- ========== 3. 公司名防线：注册公司时校验白名单 + 违禁词 ==========
+-- 违禁词表（若之前未建过则创建，幂等）
+CREATE TABLE IF NOT EXISTS public.bad_words (
+    word text PRIMARY KEY
+);
+
 -- 补充违禁词（只用于公司名检查，不影响评论区词库）
 INSERT INTO public.bad_words (word) VALUES
     ('吃屎'), ('粪'), ('睾丸'), ('鸡巴'), ('瞎78'), ('瞎几把'),
