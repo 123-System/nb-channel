@@ -20,6 +20,7 @@ WHERE c.company_name LIKE '%吃屎%' OR c.company_name LIKE '%粪%'
    OR c.company_name LIKE '%瞎鸡巴%' OR c.company_name LIKE '%封号%'
    OR c.company_name LIKE '%切掉%' OR c.company_name LIKE '%坐标%'
    OR c.company_name LIKE '%傻福%'
+   OR c.company_name ~ '[0-9]+\.[0-9]+\s*,\s*[0-9]+\.[0-9]+'   -- 坐标格式（如 30.2943, 120.1663）
 ORDER BY c.created_at DESC;
 
 -- ========== 2. 删除攻击公司 + 攻击账号（含全部关联数据） ==========
@@ -40,12 +41,14 @@ BEGIN
             OR c.company_name LIKE '%瞎鸡巴%' OR c.company_name LIKE '%封号%'
             OR c.company_name LIKE '%切掉%' OR c.company_name LIKE '%坐标%'
             OR c.company_name LIKE '%傻福%'
+            OR c.company_name ~ '[0-9]+\.[0-9]+\s*,\s*[0-9]+\.[0-9]+'   -- 坐标格式
         UNION
         SELECT id FROM public.profiles
          WHERE username LIKE '%吃屎%' OR username LIKE '%睾丸%'
             OR username LIKE '%瞎78%' OR username LIKE '%瞎几把%'
             OR username LIKE '%瞎鸡巴%' OR username LIKE '%封号%'
             OR username LIKE '%傻福%'
+            OR username LIKE '%坐标%'
     ) t;
 
     IF v_ids IS NULL THEN
