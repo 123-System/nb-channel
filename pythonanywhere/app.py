@@ -346,11 +346,16 @@ def github_webhook():
 
 
 # ==================== 股票市值 API（公开只读） ====================
-# GET /api/market             全市场快照（公司列表 + 总市值）
-# GET /api/market/<company_id> 单家公司市值
+# GET /api/market                       全市场快照（支持 ?name= 模糊查询）
+# GET /api/market/<company_id>          单家公司市值
+# GET /api/market/<company_id>/history  历史K线（?days=7，默认7天，最多30天）
+# GET /api/docs                         接口文档页
+# 别名：/api/virtual-market-value 与 /api/Virtual market value 等价于 /api/market
+# 统一响应：{success, code, message?, ...data}
+#   错误码：OK / UNAUTHORIZED / RATE_LIMITED / NOT_FOUND / INVALID_PARAM / DB_ERROR
 # 可选保护：环境变量 API_KEY 配置后，需带 X-API-Key 请求头或 ?key= 参数访问；
-#           未配置则完全公开（数据本身对 anon 公开）。
-# 节流：每 IP 每分钟最多 60 次；快照缓存 5 秒，避免刷爆 Supabase 免费额度。
+# 节流：每 IP 每分钟最多 60 次（响应头 X-RateLimit-* 告知剩余额度）；
+# 快照缓存 5 秒，避免刷爆 Supabase 免费额度。
 
 API_KEY = os.environ.get('API_KEY', '')
 
@@ -358,14 +363,15 @@ _market_cache = {'ts': 0, 'data': None}
 _rate_buckets = {}  # ip -> [请求时间戳]
 
 def _rate_limited(ip, limit=60, window=60):
+    """返回 (是否受限, 剩余次数)。"""
     now = datetime.datetime.now().timestamp()
     ts_list = [t for t in _rate_buckets.get(ip, []) if now - t < window]
     if len(ts_list) >= limit:
         _rate_buckets[ip] = ts_list
-        return True
+        return True, 0
     ts_list.append(now)
     _rate_buckets[ip] = ts_list
-    return False
+    return False, limit - len(ts_list)
 
 def _check_api_key():
     if not API_KEY:
@@ -374,6 +380,39 @@ def _check_api_key():
     if key != API_KEY:
         return '无效或缺失 API Key'
     return None
+
+def _now_iso():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+def _ok(data):
+    """统一成功响应。"""
+    return jsonify({'success': True, 'code': 'OK', **data})
+
+def _err(code, message, status):
+    """统一错误响应。"""
+    return jsonify({'success': False, 'code': code, 'message': message}), status
+
+def _guard():
+    """统一前置检查（API Key + 限流），并附加限流响应头。
+    返回 None 表示放行；否则返回应直接返回的响应。"""
+    err = _check_api_key()
+    if err:
+        return _err('UNAUTHORIZED', err, 401)
+    limited, remaining = _rate_limited(request.remote_addr or 'unknown')
+    if limited:
+        return _err('RATE_LIMITED', '请求过于频繁，请稍后再试', 429)
+    # 挂上限流剩余信息（after_request 里统一加头）
+    request.environ['_rate_remaining'] = remaining
+    return None
+
+@app.after_request
+def after_request_api(resp):
+    # 限流剩余额度头（CORS 头由上方原有的 after_request 统一处理）
+    remaining = request.environ.get('_rate_remaining')
+    if remaining is not None:
+        resp.headers['X-RateLimit-Limit'] = '60'
+        resp.headers['X-RateLimit-Remaining'] = str(remaining)
+    return resp
 
 def _parse_owner(c):
     p = c.get('profiles')
@@ -404,20 +443,29 @@ def _fetch_market():
             'owner': _parse_owner(c),
         })
         total += c['market_value'] or 0
-    data = {'total_market_value': total, 'count': len(companies), 'companies': companies}
+    data = {'total_market_value': total, 'count': len(companies), 'companies': companies,
+            'as_of': _now_iso()}
     _market_cache['ts'] = now
     _market_cache['data'] = data
     return data, None
+
+def _fetch_company(company_id):
+    """查单家公司，返回 (company dict, error)。"""
+    try:
+        res = supabase.table('user_companies') \
+            .select('id, company_name, market_value, user_id, profiles(username)') \
+            .eq('id', company_id).maybe_single().execute()
+    except Exception as e:
+        return None, str(e)
+    return res.data, None
 
 @app.route('/api/market')
 @app.route('/api/virtual-market-value')
 @app.route('/api/Virtual market value')
 def api_market():
-    err = _check_api_key()
-    if err:
-        return jsonify({'success': False, 'message': err}), 401
-    if _rate_limited(request.remote_addr or 'unknown'):
-        return jsonify({'success': False, 'message': '请求过于频繁，请稍后再试'}), 429
+    denied = _guard()
+    if denied:
+        return denied
     name = (request.args.get('name') or '').strip()
     if name:
         # 按公司名模糊查询（不缓存，保持实时；limit 保护）
@@ -428,7 +476,7 @@ def api_market():
                 .limit(50) \
                 .execute()
         except Exception as e:
-            return jsonify({'success': False, 'message': '后端数据库连接失败: %s' % e}), 500
+            return _err('DB_ERROR', '后端数据库连接失败: %s' % e, 500)
         companies = [{
             'id': c['id'],
             'name': c['company_name'],
@@ -436,32 +484,180 @@ def api_market():
             'owner': _parse_owner(c),
         } for c in res.data or []]
         total = sum(c['market_value'] or 0 for c in companies)
-        return jsonify({'success': True, 'total_market_value': total,
-                        'count': len(companies), 'companies': companies})
+        return _ok({'as_of': _now_iso(), 'total_market_value': total,
+                    'count': len(companies), 'companies': companies})
     data, db_err = _fetch_market()
     if db_err:
-        return jsonify({'success': False, 'message': '后端数据库连接失败: %s' % db_err}), 500
-    return jsonify({'success': True, 'total_market_value': data['total_market_value'],
-                    'count': data['count'], 'companies': data['companies']})
+        return _err('DB_ERROR', '后端数据库连接失败: %s' % db_err, 500)
+    return _ok({'as_of': data['as_of'], 'total_market_value': data['total_market_value'],
+                'count': data['count'], 'companies': data['companies']})
 
 @app.route('/api/market/<int:company_id>')
 def api_market_one(company_id):
-    err = _check_api_key()
-    if err:
-        return jsonify({'success': False, 'message': err}), 401
-    if _rate_limited(request.remote_addr or 'unknown'):
-        return jsonify({'success': False, 'message': '请求过于频繁，请稍后再试'}), 429
+    denied = _guard()
+    if denied:
+        return denied
+    c, db_err = _fetch_company(company_id)
+    if db_err:
+        return _err('DB_ERROR', '后端数据库连接失败: %s' % db_err, 500)
+    if not c:
+        return _err('NOT_FOUND', '公司不存在', 404)
+    return _ok({'as_of': _now_iso(), 'id': c['id'], 'name': c['company_name'],
+                'market_value': c['market_value'], 'owner': _parse_owner(c)})
+
+@app.route('/api/market/<int:company_id>/history')
+def api_market_history(company_id):
+    denied = _guard()
+    if denied:
+        return denied
     try:
-        res = supabase.table('user_companies') \
-            .select('id, company_name, market_value, user_id, profiles(username)') \
-            .eq('id', company_id).maybe_single().execute()
+        days = int(request.args.get('days', 7))
+    except ValueError:
+        return _err('INVALID_PARAM', 'days 必须是数字', 400)
+    if days < 1 or days > 30:
+        return _err('INVALID_PARAM', 'days 需在 1~30 之间', 400)
+
+    c, db_err = _fetch_company(company_id)
+    if db_err:
+        return _err('DB_ERROR', '后端数据库连接失败: %s' % db_err, 500)
+    if not c:
+        return _err('NOT_FOUND', '公司不存在', 404)
+
+    try:
+        res = supabase.rpc('get_company_kline', {'p_company_id': company_id}).execute()
     except Exception as e:
-        return jsonify({'success': False, 'message': '后端数据库连接失败: %s' % e}), 500
-    if not res.data:
-        return jsonify({'success': False, 'message': '公司不存在'}), 404
-    c = res.data
-    return jsonify({'success': True, 'id': c['id'], 'name': c['company_name'],
-                    'market_value': c['market_value'], 'owner': _parse_owner(c)})
+        return _err('DB_ERROR', '后端数据库连接失败: %s' % e, 500)
+    if res.error:
+        return _err('DB_ERROR', 'K线数据读取失败: %s' % res.error, 500)
+
+    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
+    points = []
+    for row in res.data or []:
+        t = row.get('t')
+        if t is None:
+            continue
+        try:
+            ts = datetime.datetime.fromisoformat(t.replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            continue
+        if ts >= cutoff:
+            points.append({'t': row['t'], 'v': row['v']})
+
+    return _ok({'as_of': _now_iso(), 'company_id': c['id'], 'name': c['company_name'],
+                'days': days, 'points_count': len(points), 'points': points})
+
+@app.route('/api/docs')
+def api_docs():
+    """接口文档页。"""
+    return Response(DOCS_HTML, mimetype='text/html')
+
+DOCS_HTML = """<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NB频道 市值 API 文档</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:860px;margin:0 auto;padding:24px 16px;line-height:1.7;background:#f7f8fa;color:#222}
+h1{border-bottom:2px solid #00a1d6;padding-bottom:8px}
+h2{margin-top:32px;color:#00a1d6;border-left:4px solid #00a1d6;padding-left:10px}
+code,pre{background:#eef1f5;border-radius:6px;font-size:0.9em}
+code{padding:2px 6px}
+pre{padding:12px 14px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;margin:12px 0}
+th,td{border:1px solid #d5dae0;padding:8px 10px;text-align:left;font-size:0.92em}
+th{background:#e9eef4}
+.ep{background:#fff;border:1px solid #e1e6ec;border-radius:10px;padding:14px 16px;margin:14px 0}
+.badge{display:inline-block;background:#00a1d6;color:#fff;border-radius:4px;padding:1px 8px;font-size:0.8em;margin-right:6px}
+.badge.g{background:#28a745}
+.footer{margin-top:40px;color:#888;font-size:0.85em;text-align:center}
+</style>
+</head>
+<body>
+<h1>📈 NB频道 虚拟股票市值 API</h1>
+<p>公开只读接口，数据与网站前端实时一致。Base URL：<code>https://nbchannel.pythonanywhere.com</code> 或 <code>https://api.nb-channel.top</code></p>
+
+<h2>统一响应结构</h2>
+<p>成功：<code>{"success": true, "code": "OK", ...数据字段}</code>；失败：<code>{"success": false, "code": "错误码", "message": "说明"}</code></p>
+<table>
+<tr><th>错误码</th><th>HTTP</th><th>含义</th></tr>
+<tr><td><code>OK</code></td><td>200</td><td>成功</td></tr>
+<tr><td><code>UNAUTHORIZED</code></td><td>401</td><td>API Key 缺失或错误（仅配置了 API_KEY 时出现）</td></tr>
+<tr><td><code>RATE_LIMITED</code></td><td>429</td><td>请求过于频繁（每 IP 每分钟 60 次）</td></tr>
+<tr><td><code>NOT_FOUND</code></td><td>404</td><td>公司不存在</td></tr>
+<tr><td><code>INVALID_PARAM</code></td><td>400</td><td>参数不合法</td></tr>
+<tr><td><code>DB_ERROR</code></td><td>500</td><td>后端数据库异常</td></tr>
+</table>
+
+<h2>接口列表</h2>
+
+<div class="ep">
+<span class="badge">GET</span><code>/api/market</code> — 全市场快照
+<p>参数：<code>name</code>（可选，按公司名模糊查询，最多50家）</p>
+<pre>curl "https://api.nb-channel.top/api/market"
+curl "https://api.nb-channel.top/api/market?name=NB"</pre>
+</div>
+
+<div class="ep">
+<span class="badge">GET</span><code>/api/market/&lt;company_id&gt;</code> — 单家公司市值
+<pre>curl "https://api.nb-channel.top/api/market/1"</pre>
+</div>
+
+<div class="ep">
+<span class="badge">GET</span><code>/api/market/&lt;company_id&gt;/history</code> — 历史K线（市值走势点）
+<p>参数：<code>days</code>（可选，默认 7，范围 1~30）</p>
+<pre>curl "https://api.nb-channel.top/api/market/1/history?days=7"</pre>
+</div>
+
+<div class="ep">
+<span class="badge">GET</span><code>/api/docs</code> — 本文档
+</div>
+
+<h2>响应示例（全市场）</h2>
+<pre>{
+  "success": true,
+  "code": "OK",
+  "as_of": "2026-08-19T12:00:00+00:00",
+  "total_market_value": 1234567,
+  "count": 54,
+  "companies": [
+    {"id": 1, "name": "NB频道", "market_value": 148467, "owner": "NB搞事局"}
+  ]
+}</pre>
+
+<h2>响应示例（历史K线）</h2>
+<pre>{
+  "success": true,
+  "code": "OK",
+  "as_of": "2026-08-19T12:00:00+00:00",
+  "company_id": 1,
+  "name": "NB频道",
+  "days": 7,
+  "points_count": 900,
+  "points": [
+    {"t": "2026-08-19T03:55:00+00:00", "v": 148467}
+  ]
+}</pre>
+
+<h2>字段说明</h2>
+<table>
+<tr><th>字段</th><th>说明</th></tr>
+<tr><td><code>as_of</code></td><td>数据生成时间（UTC ISO8601），调用方可判断数据新旧</td></tr>
+<tr><td><code>market_value</code></td><td>公司当前市值（NB币）</td></tr>
+<tr><td><code>t / v</code></td><td>K线采样时间 / 该时刻市值</td></tr>
+<tr><td><code>owner</code></td><td>公司归属用户名</td></tr>
+</table>
+
+<h2>限制与说明</h2>
+<ul>
+<li>限流：每 IP 每分钟最多 60 次，响应头 <code>X-RateLimit-Limit</code> / <code>X-RateLimit-Remaining</code> 可查剩余</li>
+<li>数据只读，请勿用于批量爬取；如需更高额度可联系站长</li>
+<li>别名：<code>/api/virtual-market-value</code>、<code>/api/Virtual market value</code> 与 <code>/api/market</code> 等价</li>
+</ul>
+
+<div class="footer">© 2026 NB频道 · 如有问题请联系 nbchannel@163.com</div>
+</body>
+</html>"""
 
 
 # ==================== 网站本体（静态文件服务） ====================
