@@ -15,6 +15,8 @@ NB频道 - PythonAnywhere 一体化 Flask 应用
 """
 import os
 import re
+import io
+import csv
 import uuid
 import hmac
 import hashlib
@@ -571,6 +573,65 @@ def api_market_history(company_id):
     return _ok({'as_of': _now_iso(), 'company_id': c['id'], 'name': c['company_name'],
                 'days': days, 'points_count': len(points), 'points': points})
 
+@app.route('/api/comments')
+def api_comments():
+    """只读评论接口：支持 page/limit/page_path 参数。"""
+    denied = _guard()
+    if denied:
+        return denied
+    try:
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 20))
+    except ValueError:
+        return _err('INVALID_PARAM', 'page/limit 必须是数字', 400)
+    if page < 1 or limit < 1 or limit > 50:
+        return _err('INVALID_PARAM', 'page 需>=1，limit 需在 1~50 之间', 400)
+    q = supabase.table('comments') \
+        .select('id, page_path, content, created_at, parent_id, profiles(username)') \
+        .order('created_at', desc=True) \
+        .range((page - 1) * limit, page * limit - 1)
+    page_path = (request.args.get('page_path') or '').strip()
+    if page_path:
+        q = q.eq('page_path', page_path)
+    try:
+        rows = _exec_rows(q)
+    except Exception as e:
+        return _err('DB_ERROR', '后端数据库连接失败: %s' % e), 500
+    comments = [{
+        'id': r['id'],
+        'username': _parse_owner(r),
+        'content': r['content'],
+        'created_at': r['created_at'],
+        'parent_id': r.get('parent_id'),
+        'page_path': r.get('page_path'),
+    } for r in rows]
+    return _ok({'as_of': _now_iso(), 'page': page, 'limit': limit,
+                'count': len(comments), 'comments': comments})
+
+
+@app.route('/api/market/export')
+def api_market_export():
+    """全市场快照导出（CSV）。"""
+    denied = _guard()
+    if denied:
+        return denied
+    fmt = (request.args.get('format') or 'csv').lower()
+    if fmt != 'csv':
+        return _err('INVALID_PARAM', '仅支持 format=csv', 400)
+    data, db_err = _fetch_market()
+    if db_err:
+        return _err('DB_ERROR', '后端数据库连接失败: %s' % db_err), 500
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(['id', 'name', 'market_value', 'owner'])
+    for c in data['companies']:
+        writer.writerow([c['id'], c['name'], c['market_value'], c['owner'] or ''])
+    resp = Response(buf.getvalue(), mimetype='text/csv; charset=utf-8')
+    fname = 'market_%s.csv' % datetime.datetime.now().strftime('%Y%m%d')
+    resp.headers['Content-Disposition'] = 'attachment; filename="%s"' % fname
+    return resp
+
+
 @app.route('/api/docs')
 def api_docs():
     """接口文档页。"""
@@ -632,6 +693,18 @@ curl "https://api.nb-channel.top/api/market?name=NB"</pre>
 <span class="badge">GET</span><code>/api/market/&lt;company_id&gt;/history</code> — 历史K线（市值走势点）
 <p>参数：<code>days</code>（可选，默认 7，范围 1~30）</p>
 <pre>curl "https://api.nb-channel.top/api/market/1/history?days=7"</pre>
+</div>
+
+<div class="ep">
+<span class="badge">GET</span><code>/api/market/export?format=csv</code> — 全市场快照导出（CSV 文件下载）
+<pre>curl "https://api.nb-channel.top/api/market/export?format=csv" -o market.csv</pre>
+</div>
+
+<div class="ep">
+<span class="badge">GET</span><code>/api/comments</code> — 最新评论（只读）
+<p>参数：<code>page</code>（默认 1）、<code>limit</code>（默认 20，最大 50）、<code>page_path</code>（可选，按页面筛选，如 comments-beta.html）</p>
+<pre>curl "https://api.nb-channel.top/api/comments?page=1&limit=20"
+curl "https://api.nb-channel.top/api/comments?page_path=comments-beta.html"</pre>
 </div>
 
 <div class="ep">
