@@ -104,12 +104,12 @@ def get_user_id():
     if not uid:
         return None, '缺少 X-User-Id 请求头'
     try:
-        res = supabase.table('profiles').select('id').eq('id', uid).maybe_single().execute()
+        rows = _exec_rows(supabase.table('profiles').select('id').eq('id', uid).limit(1))
     except Exception as e:
         return None, '后端数据库连接失败: %s' % e
-    if not res.data:
+    if not rows:
         return None, '用户不存在或登录已失效'
-    return res.data['id'], None
+    return rows[0]['id'], None
 
 
 def safe_filename(original_name):
@@ -233,19 +233,22 @@ def download():
 
     # 1. 查产品信息（价格/作者/文件地址）
     try:
-        prod = supabase.table('products').select('id, price, author_id, file_url, status') \
-            .eq('id', product_id).maybe_single().execute()
+        prod_rows = _exec_rows(
+            supabase.table('products').select('id, price, author_id, file_url, status') \
+            .eq('id', product_id).limit(1)
+        )
     except Exception as e:
         return jsonify({'success': False, 'message': '后端数据库连接失败: %s' % e}), 500
-    if not prod.data or prod.data.get('status') != 'active':
+    prod = prod_rows[0] if prod_rows else None
+    if not prod or prod.get('status') != 'active':
         return jsonify({'success': False, 'message': '作品不存在或已下架'}), 404
 
-    price = prod.data['price'] or 0
-    author_id = prod.data['author_id']
+    price = prod['price'] or 0
+    author_id = prod['author_id']
 
     # 2. 作者本人：直接返回下载地址（不扣费）
     if str(author_id) == str(user_id):
-        return jsonify({'success': True, 'file_url': prod.data['file_url'], 'message': '你的作品，直接下载'})
+        return jsonify({'success': True, 'file_url': prod['file_url'], 'message': '你的作品，直接下载'})
 
     # 3. 免费作品：走 download_product（记录下载次数）
     if price == 0:
@@ -258,12 +261,14 @@ def download():
 
     # 4. 付费作品：先查是否已购买（避免重复扣费）
     try:
-        pur = supabase.table('product_purchases').select('id') \
-            .eq('product_id', product_id).eq('buyer_id', user_id).maybe_single().execute()
+        pur_rows = _exec_rows(
+            supabase.table('product_purchases').select('id') \
+            .eq('product_id', product_id).eq('buyer_id', user_id).limit(1)
+        )
     except Exception as e:
         return jsonify({'success': False, 'message': '后端数据库连接失败: %s' % e}), 500
-    if pur.data:
-        return jsonify({'success': True, 'file_url': prod.data['file_url'], 'message': '已购买，直接下载'})
+    if pur_rows:
+        return jsonify({'success': True, 'file_url': prod['file_url'], 'message': '已购买，直接下载'})
 
     # 5. 未购买：走 purchase_product（扣款并返回下载地址）
     data, rpc_err = rpc('purchase_product', {'p_product_id': product_id, 'p_buyer_id': user_id})
@@ -381,6 +386,22 @@ def _check_api_key():
         return '无效或缺失 API Key'
     return None
 
+def _exec_rows(query):
+    """执行查询并返回行列表（兼容不同 supabase-py 版本的返回形态）。"""
+    try:
+        res = query.execute()
+    except Exception:
+        raise
+    if res is None:
+        return []
+    if isinstance(res, dict):
+        return [res]
+    data = getattr(res, 'data', None)
+    if data is None:
+        return []
+    if isinstance(data, list):
+        return data
+    return [data]
 def _now_iso():
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
@@ -427,15 +448,16 @@ def _fetch_market():
     if _market_cache['data'] and now - _market_cache['ts'] < 5:
         return _market_cache['data'], None
     try:
-        res = supabase.table('user_companies') \
+        rows = _exec_rows(
+            supabase.table('user_companies') \
             .select('id, company_name, market_value, user_id, profiles(username)') \
-            .order('market_value', desc=True) \
-            .execute()
+            .order('market_value', desc=True)
+        )
     except Exception as e:
         return None, str(e)
     companies = []
     total = 0
-    for c in res.data or []:
+    for c in rows:
         companies.append({
             'id': c['id'],
             'name': c['company_name'],
@@ -450,14 +472,18 @@ def _fetch_market():
     return data, None
 
 def _fetch_company(company_id):
-    """查单家公司，返回 (company dict, error)。"""
+    """查单家公司，返回 (company dict, error)；不存在返回 (None, None)。"""
     try:
-        res = supabase.table('user_companies') \
+        rows = _exec_rows(
+            supabase.table('user_companies') \
             .select('id, company_name, market_value, user_id, profiles(username)') \
-            .eq('id', company_id).maybe_single().execute()
+            .eq('id', company_id).limit(1)
+        )
     except Exception as e:
         return None, str(e)
-    return res.data, None
+    if not rows:
+        return None, None
+    return rows[0], None
 
 @app.route('/api/market')
 @app.route('/api/virtual-market-value')
@@ -470,11 +496,12 @@ def api_market():
     if name:
         # 按公司名模糊查询（不缓存，保持实时；limit 保护）
         try:
-            res = supabase.table('user_companies') \
+            rows = _exec_rows(
+                supabase.table('user_companies') \
                 .select('id, company_name, market_value, user_id, profiles(username)') \
                 .ilike('company_name', '%' + name + '%') \
-                .limit(50) \
-                .execute()
+                .limit(50)
+            )
         except Exception as e:
             return _err('DB_ERROR', '后端数据库连接失败: %s' % e, 500)
         companies = [{
@@ -482,7 +509,7 @@ def api_market():
             'name': c['company_name'],
             'market_value': c['market_value'],
             'owner': _parse_owner(c),
-        } for c in res.data or []]
+        } for c in rows]
         total = sum(c['market_value'] or 0 for c in companies)
         return _ok({'as_of': _now_iso(), 'total_market_value': total,
                     'count': len(companies), 'companies': companies})
@@ -524,8 +551,7 @@ def api_market_history(company_id):
         return _err('NOT_FOUND', '公司不存在', 404)
 
     try:
-        res = supabase.rpc('get_company_kline', {'p_company_id': company_id}).execute()
-        rows = res.data or []
+        rows = _exec_rows(supabase.rpc('get_company_kline', {'p_company_id': company_id}))
     except Exception as e:
         return _err('DB_ERROR', 'K线数据读取失败: %s' % e, 500)
 
