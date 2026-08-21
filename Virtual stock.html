@@ -516,7 +516,7 @@
     let currentUserId = null;
     let myCompany = null;
     let allCompanies = [];
-    let autoSupportTimer = null;
+    let autoSupportTimer = null;  // 已废弃：自动支持改为数据库驱动（run_auto_support）
 
     // 图表相关变量
     let currentChart = null;
@@ -1802,7 +1802,6 @@
             await refreshStockDataFromDB();
             await buildChartWithFade(currentChartType);
             startAutoRefreshTimer();
-            startAutoSupportWatcher();
             
             // 默认加载第一个公司的K线
             if (allCompanies && allCompanies.length > 0) {
@@ -1837,11 +1836,6 @@
             await loadFullHistory();
             startAutoRefreshTimer();
         }
-    }
-
-    function startAutoSupportWatcher() {
-        if (autoSupportTimer) clearInterval(autoSupportTimer);
-        autoSupportTimer = setInterval(() => { checkAutoSupportRules(); }, 10000);
     }
 
     function startAutoRefreshTimer() {
@@ -1921,10 +1915,8 @@
     function handleVisibilityChange() {
         if (document.hidden) {
             if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-            if (autoSupportTimer) clearInterval(autoSupportTimer);
         } else {
             if (autoRefreshEnabled) startAutoRefreshTimer();
-            startAutoSupportWatcher();
         }
     }
 
@@ -1994,7 +1986,6 @@
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', () => {
         if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-        if (autoSupportTimer) clearInterval(autoSupportTimer);
         if (countdownInterval) clearInterval(countdownInterval);
     });
     if (typeof window.scrollToTop !== 'function') window.scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
