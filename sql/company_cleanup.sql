@@ -29,7 +29,8 @@ DECLARE
     v_company_ids bigint[];
     v_count integer;
 BEGIN
-    -- 攻击账号 = 公司名含攻击词的主人 + 用户名含攻击词/仿冒风格的用户
+    -- 攻击账号 = 公司名含攻击词的主人 + 用户名含攻击词的账号
+    -- （注意：小NB（NB公司）、小Na（Na公司）为正常用户，不在此列）
     SELECT array_agg(DISTINCT uid) INTO v_ids FROM (
         SELECT c.user_id AS uid
           FROM public.user_companies c
@@ -45,7 +46,6 @@ BEGIN
             OR username LIKE '%瞎78%' OR username LIKE '%瞎几把%'
             OR username LIKE '%瞎鸡巴%' OR username LIKE '%封号%'
             OR username LIKE '%傻福%'
-            OR username IN ('小NB（NB公司）', '小Na（Na公司）')
     ) t;
 
     IF v_ids IS NULL THEN
