@@ -106,6 +106,8 @@ git clone https://github.com/NB-Channel/nb-channel.git
 | `GET /api/market?name=关键词` | 按公司名模糊查询（最多返回 50 家） |
 | `GET /api/market/<company_id>` | 单家公司市值 |
 
+> 别名：`/api/virtual-market-value` 和 `/api/Virtual market value`（空格版，请求时自动编码为 %20）与 `/api/market` 完全等价，任选其一。
+
 **示例**：
 
 ```bash

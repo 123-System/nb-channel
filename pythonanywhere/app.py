@@ -410,6 +410,8 @@ def _fetch_market():
     return data, None
 
 @app.route('/api/market')
+@app.route('/api/virtual-market-value')
+@app.route('/api/Virtual market value')
 def api_market():
     err = _check_api_key()
     if err:
