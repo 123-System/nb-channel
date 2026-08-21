@@ -593,6 +593,22 @@ def api_comments():
     page_path = (request.args.get('page_path') or '').strip()
     if page_path:
         q = q.eq('page_path', page_path)
+
+    # 总评论数（用于调用方计算总页数；查询失败时不阻塞主查询）
+    total = None
+    page_count = None
+    try:
+        cnt_q = supabase.table('comments').select('id', count='exact', head=True)
+        if page_path:
+            cnt_q = cnt_q.eq('page_path', page_path)
+        cnt_res = cnt_q.execute()
+        total = getattr(cnt_res, 'count', None)
+        if total is not None:
+            total = int(total)
+            page_count = (total + limit - 1) // limit
+    except Exception:
+        total = None
+
     try:
         rows = _exec_rows(q)
     except Exception as e:
@@ -606,6 +622,7 @@ def api_comments():
         'page_path': r.get('page_path'),
     } for r in rows]
     return _ok({'as_of': _now_iso(), 'page': page, 'limit': limit,
+                'total': total, 'page_count': page_count,
                 'count': len(comments), 'comments': comments})
 
 
@@ -703,6 +720,7 @@ curl "https://api.nb-channel.top/api/market?name=NB"</pre>
 <div class="ep">
 <span class="badge">GET</span><code>/api/comments</code> — 最新评论（只读）
 <p>参数：<code>page</code>（默认 1）、<code>limit</code>（默认 20，最大 50）、<code>page_path</code>（可选，按页面筛选，如 comments-beta.html）</p>
+<p>响应含 <code>total</code>（总评论数）与 <code>page_count</code>（总页数，按当前 limit 计算）</p>
 <pre>curl "https://api.nb-channel.top/api/comments?page=1&limit=20"
 curl "https://api.nb-channel.top/api/comments?page_path=comments-beta.html"</pre>
 </div>
@@ -736,6 +754,37 @@ curl "https://api.nb-channel.top/api/comments?page_path=comments-beta.html"</pre
     {"t": "2026-08-19T03:55:00+00:00", "v": 148467}
   ]
 }</pre>
+
+<h2>代码示例</h2>
+<p>完整 SDK 示例见仓库 <code>api-sdk/</code> 目录（<code>python_example.py</code> / <code>js_example.js</code>）。</p>
+
+<div class="ep">
+<span class="badge">Python</span> requests
+<pre>from python_example import NBMarket
+
+nb = NBMarket()   # 或 NBMarket(base_url="https://nbchannel.pythonanywhere.com")
+
+market = nb.market()                       # 全市场
+print(market["total_market_value"])
+print(nb.market(name="NB"))                # 按名模糊查询
+print(nb.market_by_id(3))                  # 单公司
+print(nb.history(3, days=7))               # 历史K线
+comments = nb.comments(page=1, limit=10)   # 评论（含 total / page_count）
+print(comments["total"], comments["page_count"])</pre>
+</div>
+
+<div class="ep">
+<span class="badge">JavaScript</span> fetch（浏览器 / Node）
+<pre>// 浏览器：&lt;script src="js_example.js"&gt; 后直接用 window.NBMarket
+const market = await NBMarket.market();
+console.log(market.total_market_value);
+
+const one = await NBMarket.marketById(3);
+const kline = await NBMarket.history(3, 7);
+
+const comments = await NBMarket.comments(1, 10);
+console.log('共', comments.total, '条，', comments.page_count, '页');</pre>
+</div>
 
 <h2>字段说明</h2>
 <table>
