@@ -103,6 +103,7 @@ git clone https://github.com/NB-Channel/nb-channel.git
 | 端点 | 说明 |
 |------|------|
 | `GET /api/market` | 全市场快照：公司列表（id/名称/市值/归属）+ 总市值 + 公司数 |
+| `GET /api/market?name=关键词` | 按公司名模糊查询（最多返回 50 家） |
 | `GET /api/market/<company_id>` | 单家公司市值 |
 
 **示例**：
@@ -110,6 +111,9 @@ git clone https://github.com/NB-Channel/nb-channel.git
 ```bash
 # 全市场
 curl "https://nbchannel.pythonanywhere.com/api/market"
+
+# 按名称模糊查询（含"NB"的公司）
+curl "https://nbchannel.pythonanywhere.com/api/market?name=NB"
 
 # 单家公司（ID=1）
 curl "https://nbchannel.pythonanywhere.com/api/market/1"

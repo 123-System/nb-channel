@@ -416,6 +416,26 @@ def api_market():
         return jsonify({'success': False, 'message': err}), 401
     if _rate_limited(request.remote_addr or 'unknown'):
         return jsonify({'success': False, 'message': '请求过于频繁，请稍后再试'}), 429
+    name = (request.args.get('name') or '').strip()
+    if name:
+        # 按公司名模糊查询（不缓存，保持实时；limit 保护）
+        try:
+            res = supabase.table('user_companies') \
+                .select('id, company_name, market_value, user_id, profiles(username)') \
+                .ilike('company_name', '%' + name + '%') \
+                .limit(50) \
+                .execute()
+        except Exception as e:
+            return jsonify({'success': False, 'message': '后端数据库连接失败: %s' % e}), 500
+        companies = [{
+            'id': c['id'],
+            'name': c['company_name'],
+            'market_value': c['market_value'],
+            'owner': _parse_owner(c),
+        } for c in res.data or []]
+        total = sum(c['market_value'] or 0 for c in companies)
+        return jsonify({'success': True, 'total_market_value': total,
+                        'count': len(companies), 'companies': companies})
     data, db_err = _fetch_market()
     if db_err:
         return jsonify({'success': False, 'message': '后端数据库连接失败: %s' % db_err}), 500
