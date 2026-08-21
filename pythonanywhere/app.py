@@ -369,6 +369,27 @@ API_KEY = os.environ.get('API_KEY', '')
 _market_cache = {'ts': 0, 'data': None}
 _rate_buckets = {}  # ip -> [请求时间戳]
 
+# API 用量统计（进程内存；PythonAnywhere Reload 后清零）
+_api_stats = {
+    'since': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    'day': None,           # 统计日期（UTC）
+    'day_total': 0,        # 当日请求总数
+    'by_endpoint': {},     # 当日各端点请求数
+    'rate_limited': 0,     # 被限流的请求数
+}
+
+@app.before_request
+def count_api_requests():
+    if not request.path.startswith('/api/') or request.path == '/api/stats':
+        return
+    today = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
+    if _api_stats['day'] != today:
+        _api_stats['day'] = today
+        _api_stats['day_total'] = 0
+        _api_stats['by_endpoint'] = {}
+    _api_stats['day_total'] += 1
+    _api_stats['by_endpoint'][request.path] = _api_stats['by_endpoint'].get(request.path, 0) + 1
+
 def _rate_limited(ip, limit=60, window=60):
     """返回 (是否受限, 剩余次数)。"""
     now = datetime.datetime.now().timestamp()
@@ -423,6 +444,7 @@ def _guard():
         return _err('UNAUTHORIZED', err, 401)
     limited, remaining = _rate_limited(request.remote_addr or 'unknown')
     if limited:
+        _api_stats['rate_limited'] += 1
         return _err('RATE_LIMITED', '请求过于频繁，请稍后再试', 429)
     # 挂上限流剩余信息（after_request 里统一加头）
     request.environ['_rate_remaining'] = remaining
@@ -649,6 +671,19 @@ def api_market_export():
     return resp
 
 
+@app.route('/api/stats')
+def api_stats():
+    """API 用量统计：当日请求数、各端点分布、限流次数。"""
+    denied = _guard()
+    if denied:
+        return denied
+    return _ok({'date': _api_stats['day'],
+                'day_total_requests': _api_stats['day_total'],
+                'by_endpoint': _api_stats['by_endpoint'],
+                'rate_limited': _api_stats['rate_limited'],
+                'uptime_since': _api_stats['since']})
+
+
 @app.route('/api/docs')
 def api_docs():
     """接口文档页。"""
@@ -723,6 +758,11 @@ curl "https://api.nb-channel.top/api/market?name=NB"</pre>
 <p>响应含 <code>total</code>（总评论数）与 <code>page_count</code>（总页数，按当前 limit 计算）</p>
 <pre>curl "https://api.nb-channel.top/api/comments?page=1&limit=20"
 curl "https://api.nb-channel.top/api/comments?page_path=comments-beta.html"</pre>
+</div>
+
+<div class="ep">
+<span class="badge">GET</span><code>/api/stats</code> — API 用量统计（当日请求数/端点分布/限流次数）
+<pre>curl "https://api.nb-channel.top/api/stats"</pre>
 </div>
 
 <div class="ep">
