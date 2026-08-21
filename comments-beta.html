@@ -1207,29 +1207,31 @@
     async function fetchComments(page) {
         let targetPage = page !== undefined ? page : currentPage;
 
-        verifiedUsernames = await fetchVerifiedUsers();
-        // 确保用户名列表已加载（@高亮按真实用户名匹配，长名优先）
-        await fetchUsernames();
+        // 用户名列表与评论数据并行拉取（互不依赖），缩短首次加载时间
+        [verifiedUsernames] = await Promise.all([fetchVerifiedUsers(), fetchUsernames()]);
         // 评论数据缓存：翻页/切排序不重复拉取（发帖/回复/删除/编辑后失效）
         let data;
         if (commentsCache) {
             data = commentsCache;
         } else {
-            // 分批拉取全部评论（PostgREST 单次最多 1000 条；只取渲染所需列，减小传输量）
+            // 前两批并行拉取（PostgREST 单次上限 1000），超过 2000 条再串行补拉
             const BATCH = 1000;
-            let allData = [];
-            let from = 0;
-            let fetchError = null;
-            while (true) {
-                const { data: batchData, error } = await supabaseClient
-                    .from('comments')
-                    .select('id, content, user_id, parent_id, created_at, page_path, profiles(username)')
-                    .eq('page_path', pagePath)
-                    .order('created_at', { ascending: false })
-                    .range(from, from + BATCH - 1);
-                if (error) { fetchError = error; break; }
-                allData = allData.concat(batchData || []);
-                if (!batchData || batchData.length < BATCH) break;
+            const buildQuery = (from) => supabaseClient
+                .from('comments')
+                .select('id, content, user_id, parent_id, created_at, page_path, profiles(username)')
+                .eq('page_path', pagePath)
+                .order('created_at', { ascending: false })
+                .range(from, from + BATCH - 1);
+            const [r1, r2] = await Promise.all([buildQuery(0), buildQuery(BATCH)]);
+            let allData = [...(r1.data || []), ...(r2.data || [])];
+            let fetchError = r1.error || r2.error;
+            let lastLen = (r2.data || []).length;
+            let from = BATCH * 2;
+            while (!fetchError && lastLen >= BATCH) {
+                const r = await buildQuery(from);
+                if (r.error) { fetchError = r.error; break; }
+                allData = allData.concat(r.data || []);
+                lastLen = (r.data || []).length;
                 from += BATCH;
             }
             if (fetchError) { console.error(fetchError); return; }
