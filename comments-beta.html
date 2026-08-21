@@ -450,7 +450,8 @@
 
     function escapeHtml(str) {
         if (!str) return '';
-        return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;');
+        // 注意：必须同时转义双引号/单引号，否则含引号的评论会截断 data-full 等属性
+        return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
     }
 
     // 转义后把 http(s) 链接变成可点击的超链接
