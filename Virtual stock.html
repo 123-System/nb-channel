@@ -1464,11 +1464,17 @@
         document.getElementById('tradePrice').innerText = formatValue(marketValue);
         document.getElementById('tradeTitle').innerText = mode === 'buy' ? '📈 买入' : '📉 卖出';
 
-        // 我持有的当前价值（新模型：仓位价值 = 本金 × 当前市值/基准市值）
+        // 我持有的当前价值（兼容新旧两版 RPC：新模型=本金×市值比；旧模型=份额×净值）
         let myValue = 0;
         if (window.myHoldingsList) {
             const h = window.myHoldingsList.find(x => x.company_id === companyId);
-            if (h) myValue = parseFloat(h.position_value) || 0;
+            if (h) {
+                if (h.principal !== undefined && h.principal !== null) {
+                    myValue = parseFloat(h.position_value) || 0;
+                } else {
+                    myValue = (parseFloat(h.shares) || 0) * (parseFloat(h.current_price) || 0);
+                }
+            }
         }
         document.getElementById('tradeHolding').innerText = myValue > 0
             ? `${formatValue(Math.round(myValue))} NB币`
@@ -1611,13 +1617,20 @@
         let html = '<table class="data-table" style="font-size:0.85rem;"><thead><tr><th>公司</th><th>投入本金</th><th>当前价值</th><th>浮动盈亏</th><th>占公司比例</th></tr></thead><tbody>';
         let totalCost = 0, totalNow = 0;
         for (const h of window.myHoldingsList) {
-            const principal = parseFloat(h.principal) || 0;
-            const position = parseFloat(h.position_value) || 0;
-            const profit = parseFloat(h.profit) || 0;
-            const pct = h.current_market_value > 0 ? (position / h.current_market_value * 100).toFixed(2) : '0.00';
+            // 兼容新旧两版 RPC 字段（新：principal/position_value；旧：shares/average_price/current_price）
+            const hasNew = h.principal !== undefined && h.principal !== null;
+            const principal = hasNew ? (parseFloat(h.principal) || 0)
+                                     : (parseFloat(h.average_price) || 0) * (parseFloat(h.shares) || 0);
+            const position = hasNew ? (parseFloat(h.position_value) || 0)
+                                    : (parseFloat(h.shares) || 0) * (parseFloat(h.current_price) || 0);
+            const profit = hasNew ? (parseFloat(h.profit) || 0) : position - principal;
+            const profitPct = hasNew ? (h.profit_pct ?? 0)
+                                     : (principal > 0 ? (profit / principal * 100).toFixed(2) : '0.00');
+            const mv = hasNew ? h.current_market_value : h.market_value;
+            const pct = mv > 0 ? (position / mv * 100).toFixed(2) : '0.00';
             totalCost += principal;
             totalNow += position;
-            const profitHtml = `<span style="color:${profit >= 0 ? '#f44336' : '#4caf50'};">${profit >= 0 ? '▲' : '▼'} ${formatValue(Math.abs(Math.round(profit)))} (${profit >= 0 ? '+' : ''}${h.profit_pct ?? 0}%)</span>`;
+            const profitHtml = `<span style="color:${profit >= 0 ? '#f44336' : '#4caf50'};">${profit >= 0 ? '▲' : '▼'} ${formatValue(Math.abs(Math.round(profit)))} (${profit >= 0 ? '+' : ''}${profitPct}%)</span>`;
             html += `<tr>
                 <td><a href="#" class="stock-link" data-id="${h.company_id}" data-name="${escapeHtml(h.company_name)}" style="color:var(--status-border);">${escapeHtml(h.company_name)}</a></td>
                 <td style="font-family:monospace;">${formatValue(Math.round(principal))}</td>
