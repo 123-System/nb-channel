@@ -96,7 +96,44 @@ git clone https://github.com/NB-Channel/nb-channel.git
 - 访问 `https://nbchannel.pythonanywhere.com/webhook`（GET）→ 405（方法不允许，说明端点存在 ✅）
 - 在 GitHub 上 push 一次 → Webhook 投递记录 200 → 等几秒刷新 PythonAnywhere 站，代码已更新
 
-## 五、注意事项
+## 五、股票市值 API（公开只读）
+
+**端点**（Base URL：`https://nbchannel.pythonanywhere.com`）：
+
+| 端点 | 说明 |
+|------|------|
+| `GET /api/market` | 全市场快照：公司列表（id/名称/市值/归属）+ 总市值 + 公司数 |
+| `GET /api/market/<company_id>` | 单家公司市值 |
+
+**示例**：
+
+```bash
+# 全市场
+curl "https://nbchannel.pythonanywhere.com/api/market"
+
+# 单家公司（ID=1）
+curl "https://nbchannel.pythonanywhere.com/api/market/1"
+```
+
+**响应格式**：
+
+```json
+{
+  "success": true,
+  "total_market_value": 1234567,
+  "count": 54,
+  "companies": [
+    {"id": 1, "name": "NB频道", "market_value": 148467, "owner": "NB搞事局"}
+  ]
+}
+```
+
+**说明**：
+- 数据只读、公开（与网站前端看到的市值一致），5 秒缓存、每 IP 每分钟最多 60 次请求
+- **可选鉴权**：在 PythonAnywhere 环境变量里配置 `API_KEY` 后，请求需带 `X-API-Key: <key>` 头或 `?key=<key>` 参数，否则返回 401；不配置则完全公开
+- 配置/更新 `app.py` 后需在 Web 面板 **Reload** 生效
+
+## 六、注意事项
 
 - **自动同步只更新网站代码目录**；本后端（nb_api）更新后需要手动在 Web 面板点 Reload
 - `git pull` 在后台执行（不阻塞 webhook 响应），约 1-3 秒完成

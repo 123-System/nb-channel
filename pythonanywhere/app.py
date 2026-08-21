@@ -345,6 +345,103 @@ def github_webhook():
     return jsonify({'success': True, 'message': '同步已触发'})
 
 
+# ==================== 股票市值 API（公开只读） ====================
+# GET /api/market             全市场快照（公司列表 + 总市值）
+# GET /api/market/<company_id> 单家公司市值
+# 可选保护：环境变量 API_KEY 配置后，需带 X-API-Key 请求头或 ?key= 参数访问；
+#           未配置则完全公开（数据本身对 anon 公开）。
+# 节流：每 IP 每分钟最多 60 次；快照缓存 5 秒，避免刷爆 Supabase 免费额度。
+
+API_KEY = os.environ.get('API_KEY', '')
+
+_market_cache = {'ts': 0, 'data': None}
+_rate_buckets = {}  # ip -> [请求时间戳]
+
+def _rate_limited(ip, limit=60, window=60):
+    now = datetime.datetime.now().timestamp()
+    ts_list = [t for t in _rate_buckets.get(ip, []) if now - t < window]
+    if len(ts_list) >= limit:
+        _rate_buckets[ip] = ts_list
+        return True
+    ts_list.append(now)
+    _rate_buckets[ip] = ts_list
+    return False
+
+def _check_api_key():
+    if not API_KEY:
+        return None
+    key = request.headers.get('X-API-Key', '') or request.args.get('key', '')
+    if key != API_KEY:
+        return '无效或缺失 API Key'
+    return None
+
+def _parse_owner(c):
+    p = c.get('profiles')
+    if isinstance(p, list) and p:
+        return p[0].get('username')
+    if isinstance(p, dict):
+        return p.get('username')
+    return None
+
+def _fetch_market():
+    now = datetime.datetime.now().timestamp()
+    if _market_cache['data'] and now - _market_cache['ts'] < 5:
+        return _market_cache['data'], None
+    try:
+        res = supabase.table('user_companies') \
+            .select('id, company_name, market_value, user_id, profiles(username)') \
+            .order('market_value', desc=True) \
+            .execute()
+    except Exception as e:
+        return None, str(e)
+    companies = []
+    total = 0
+    for c in res.data or []:
+        companies.append({
+            'id': c['id'],
+            'name': c['company_name'],
+            'market_value': c['market_value'],
+            'owner': _parse_owner(c),
+        })
+        total += c['market_value'] or 0
+    data = {'total_market_value': total, 'count': len(companies), 'companies': companies}
+    _market_cache['ts'] = now
+    _market_cache['data'] = data
+    return data, None
+
+@app.route('/api/market')
+def api_market():
+    err = _check_api_key()
+    if err:
+        return jsonify({'success': False, 'message': err}), 401
+    if _rate_limited(request.remote_addr or 'unknown'):
+        return jsonify({'success': False, 'message': '请求过于频繁，请稍后再试'}), 429
+    data, db_err = _fetch_market()
+    if db_err:
+        return jsonify({'success': False, 'message': '后端数据库连接失败: %s' % db_err}), 500
+    return jsonify({'success': True, 'total_market_value': data['total_market_value'],
+                    'count': data['count'], 'companies': data['companies']})
+
+@app.route('/api/market/<int:company_id>')
+def api_market_one(company_id):
+    err = _check_api_key()
+    if err:
+        return jsonify({'success': False, 'message': err}), 401
+    if _rate_limited(request.remote_addr or 'unknown'):
+        return jsonify({'success': False, 'message': '请求过于频繁，请稍后再试'}), 429
+    try:
+        res = supabase.table('user_companies') \
+            .select('id, company_name, market_value, user_id, profiles(username)') \
+            .eq('id', company_id).maybe_single().execute()
+    except Exception as e:
+        return jsonify({'success': False, 'message': '后端数据库连接失败: %s' % e}), 500
+    if not res.data:
+        return jsonify({'success': False, 'message': '公司不存在'}), 404
+    c = res.data
+    return jsonify({'success': True, 'id': c['id'], 'name': c['company_name'],
+                    'market_value': c['market_value'], 'owner': _parse_owner(c)})
+
+
 # ==================== 网站本体（静态文件服务） ====================
 # 注意：此路由放在最后定义，避免吞掉 /upload /download /webhook 等 API 路由
 
