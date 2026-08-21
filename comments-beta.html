@@ -361,6 +361,7 @@
     let commentSort = 'latest';    // 排序方式：latest=最新 hot=最热
     let reactionAgg = {};          // comment_id -> {likes, dislikes}
     let myReactions = {};          // comment_id -> 1|-1（当前用户的选择）
+    let commentsCache = null;      // 评论数据缓存（翻页/切排序不重复拉取，写操作后失效）
 
     // DOM 元素
     const userStatusSpan = document.getElementById('user-status');
@@ -954,6 +955,7 @@
                     replyForm.style.display = 'none';
                     const savedPage = currentPage;
                     // 先重新加载数据，然后强制跳转到保存的页码
+                    commentsCache = null;   // 有新回复，缓存失效
                     await fetchComments();
                     renderCommentsForPage(savedPage);
                 }
@@ -1065,6 +1067,7 @@
                     if (error) { showMessage('错误', error.message); return; }
                     if (!data.success) { showMessage('提示', data.message); return; }
                     const savedPage = currentPage;
+                    commentsCache = null;   // 评论已编辑，缓存失效
                     await fetchComments();
                     renderCommentsForPage(savedPage);
                 };
@@ -1195,6 +1198,7 @@
             showMessage('提示', data.message);
         } else {
             const savedPage = currentPage;
+            commentsCache = null;   // 评论已删除，缓存失效
             await fetchComments();
             renderCommentsForPage(savedPage);
         }
@@ -1206,56 +1210,50 @@
         verifiedUsernames = await fetchVerifiedUsers();
         // 确保用户名列表已加载（@高亮按真实用户名匹配，长名优先）
         await fetchUsernames();
-        // 分批拉取全部评论（PostgREST 单次最多 1000 条）
-        const BATCH = 1000;
-        let allData = [];
-        let from = 0;
-        let fetchError = null;
-        while (true) {
-            const { data, error } = await supabaseClient
-                .from('comments')
-                .select('*, profiles(username)')
-                .eq('page_path', pagePath)
-                .order('created_at', { ascending: false })
-                .range(from, from + BATCH - 1);
-            if (error) { fetchError = error; break; }
-            allData = allData.concat(data || []);
-            if (!data || data.length < BATCH) break;
-            from += BATCH;
-        }
-        if (fetchError) { console.error(fetchError); return; }
-        const data = allData;
-
-        const userIds = [...new Set(data.map(c => c.user_id).filter(id => id))];
-        if (userIds.length > 0) {
-            const { data: companies, error: compError } = await supabaseClient
-                .from('user_companies')
-                .select('user_id, company_name, verified')
-                .in('user_id', userIds);
-            if (!compError && companies) {
-                window.companyMap = new Map(companies.map(c => [c.user_id, c]));
-            } else {
-                window.companyMap = new Map();
-            }
+        // 评论数据缓存：翻页/切排序不重复拉取（发帖/回复/删除/编辑后失效）
+        let data;
+        if (commentsCache) {
+            data = commentsCache;
         } else {
-            window.companyMap = new Map();
+            // 分批拉取全部评论（PostgREST 单次最多 1000 条；只取渲染所需列，减小传输量）
+            const BATCH = 1000;
+            let allData = [];
+            let from = 0;
+            let fetchError = null;
+            while (true) {
+                const { data: batchData, error } = await supabaseClient
+                    .from('comments')
+                    .select('id, content, user_id, parent_id, created_at, page_path, profiles(username)')
+                    .eq('page_path', pagePath)
+                    .order('created_at', { ascending: false })
+                    .range(from, from + BATCH - 1);
+                if (error) { fetchError = error; break; }
+                allData = allData.concat(batchData || []);
+                if (!batchData || batchData.length < BATCH) break;
+                from += BATCH;
+            }
+            if (fetchError) { console.error(fetchError); return; }
+            data = allData;
+            commentsCache = data;
         }
 
         const mainComments = data.filter(c => !c.parent_id);
         const replies = data.filter(c => c.parent_id);
 
-        // 点赞/点踩数据（计数 + 当前用户的选择）
-        reactionAgg = {};
-        myReactions = {};
-        const { data: reactions, error: reactErr } = await supabaseClient
-            .from('comment_reactions')
-            .select('comment_id, reaction, user_id');
-        if (!reactErr && reactions) {
-            for (const r of reactions) {
-                if (!reactionAgg[r.comment_id]) reactionAgg[r.comment_id] = { likes: 0, dislikes: 0 };
-                if (r.reaction === 1) reactionAgg[r.comment_id].likes++;
-                else reactionAgg[r.comment_id].dislikes++;
-                if (currentUser && r.user_id === currentUser.id) myReactions[r.comment_id] = r.reaction;
+        // 点赞/点踩数据：最热排序需要全量热度，最新排序只需当前页
+        if (commentSort === 'hot') {
+            reactionAgg = {};
+            myReactions = {};
+            const { data: reactions, error: reactErr } = await supabaseClient
+                .from('comment_reactions')
+                .select('comment_id, reaction, user_id');
+            if (!reactErr && reactions) {
+                for (const r of reactions) {
+                    if (!reactionAgg[r.comment_id]) reactionAgg[r.comment_id] = { likes: 0, dislikes: 0 };
+                    if (r.reaction === 1) reactionAgg[r.comment_id].likes++;
+                    else reactionAgg[r.comment_id].dislikes++;
+                    if (currentUser && r.user_id === currentUser.id) myReactions[r.comment_id] = r.reaction;
+                }
             }
         }
 
@@ -1280,6 +1278,53 @@
         });
         for (const [parentId, replyList] of repliesMap) {
             replyList.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        }
+
+        // 公司徽章 + 点赞数据：只查当前页显示的主评论及其回复（避免全表大查询和超长 IN 条件）
+        const pageStart = (targetPage - 1) * COMMENTS_PER_PAGE;
+        const pageMainIds = mainComments.slice(pageStart, pageStart + COMMENTS_PER_PAGE);
+        const pageUserIds = new Set();
+        const pageCommentIds = new Set();
+        for (const c of pageMainIds) {
+            pageUserIds.add(c.user_id);
+            pageCommentIds.add(c.id);
+            for (const r of (repliesMap.get(c.id) || [])) {
+                pageUserIds.add(r.user_id);
+                pageCommentIds.add(r.id);
+            }
+        }
+
+        window.companyMap = new Map();
+        const uidArr = [...pageUserIds].filter(id => id);
+        if (uidArr.length > 0) {
+            const { data: companies, error: compError } = await supabaseClient
+                .from('user_companies')
+                .select('user_id, company_name, verified')
+                .in('user_id', uidArr);
+            if (!compError && companies) {
+                window.companyMap = new Map(companies.map(c => [c.user_id, c]));
+            }
+        }
+
+        if (commentSort !== 'hot') {
+            reactionAgg = {};
+            myReactions = {};
+            const cidArr = [...pageCommentIds];
+            // 分块查询，避免 URL 过长（每块最多 100 个 ID）
+            for (let i = 0; i < cidArr.length; i += 100) {
+                const chunk = cidArr.slice(i, i + 100);
+                const { data: reactions, error: reactErr } = await supabaseClient
+                    .from('comment_reactions')
+                    .select('comment_id, reaction, user_id')
+                    .in('comment_id', chunk);
+                if (reactErr) break;
+                for (const r of (reactions || [])) {
+                    if (!reactionAgg[r.comment_id]) reactionAgg[r.comment_id] = { likes: 0, dislikes: 0 };
+                    if (r.reaction === 1) reactionAgg[r.comment_id].likes++;
+                    else reactionAgg[r.comment_id].dislikes++;
+                    if (currentUser && r.user_id === currentUser.id) myReactions[r.comment_id] = r.reaction;
+                }
+            }
         }
 
         allMainComments = mainComments;
@@ -1361,6 +1406,7 @@
         commentText.value = '';
         charCountSpan.innerText = '0';
         const savedPage = currentPage;
+        commentsCache = null;   // 有新评论，缓存失效
         await fetchComments();
         renderCommentsForPage(savedPage);
     }
