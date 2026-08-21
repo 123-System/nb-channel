@@ -208,13 +208,19 @@
         return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
     }
 
+    // 转义后把 http(s) 链接变成可点击的超链接
+    function linkify(str) {
+        if (!str) return '';
+        return str.replace(/(https?:\/\/[^\s<>"']+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#00a1d6; text-decoration:underline;">$1</a>');
+    }
+
     function renderPreview() {
         const text = document.getElementById('announcementText').value;
         const preview = document.getElementById('previewContent');
         if (!text.trim()) {
             preview.innerHTML = '<span class="preview-empty">（暂无公告）</span>';
         } else {
-            preview.innerHTML = '📢 <strong>公告：</strong>' + escapeHtml(text);
+            preview.innerHTML = '📢 <strong>公告：</strong>' + linkify(escapeHtml(text));
         }
         document.getElementById('charCount').innerText = text.length;
     }

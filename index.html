@@ -511,6 +511,11 @@
         if (!str) return '';
         return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
     }
+    // 转义后把 http(s) 链接变成可点击的超链接
+    function linkify(str) {
+        if (!str) return '';
+        return str.replace(/(https?:\/\/[^\s<>"']+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#00a1d6; text-decoration:underline;">$1</a>');
+    }
     async function fetchAnnouncement() {
         try {
             const { data, error } = await lotteryClient
@@ -527,7 +532,7 @@
             }
             const text = '📢 公告：' + data.value.trim();
             // 先放一份用于测量文字宽度
-            track.innerHTML = `<span class="marquee-item">${escapeHtml(text)}</span>`;
+            track.innerHTML = `<span class="marquee-item">${linkify(escapeHtml(text))}</span>`;
             bar.style.display = 'block';
             const item = track.querySelector('.marquee-item');
             const itemW = item.offsetWidth;
@@ -536,7 +541,7 @@
                 const barW = bar.clientWidth;
                 const copies = Math.max(2, Math.ceil(barW / itemW) + 1);
                 let html = '';
-                for (let i = 0; i < copies; i++) html += `<span class="marquee-item">${escapeHtml(text)}</span>`;
+                for (let i = 0; i < copies; i++) html += `<span class="marquee-item">${linkify(escapeHtml(text))}</span>`;
                 track.innerHTML = html;
                 // 位移正好一份的宽度 = 首尾无缝衔接；速度约 45px/s
                 track.style.setProperty('--marquee-shift', `-${itemW}px`);

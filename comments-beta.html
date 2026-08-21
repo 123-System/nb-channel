@@ -452,6 +452,12 @@
         return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;');
     }
 
+    // 转义后把 http(s) 链接变成可点击的超链接
+    function linkify(str) {
+        if (!str) return '';
+        return str.replace(/(https?:\/\/[^\s<>"']+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#00a1d6; text-decoration:underline;">$1</a>');
+    }
+
     function renderContentWithMentions(text) {
         if (!text) return '';
         const escaped = escapeHtml(text);
@@ -1635,7 +1641,7 @@
                 bar.style.display = 'none';
                 return;
             }
-            bar.innerHTML = '📢 <strong>公告：</strong>' + escapeHtml(data.value);
+            bar.innerHTML = '📢 <strong>公告：</strong>' + linkify(escapeHtml(data.value));
             bar.style.display = 'block';
         } catch (e) {
             console.warn('公告加载失败', e);
