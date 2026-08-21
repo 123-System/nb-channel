@@ -1464,18 +1464,13 @@
         document.getElementById('tradePrice').innerText = formatValue(marketValue);
         document.getElementById('tradeTitle').innerText = mode === 'buy' ? '📈 买入' : '📉 卖出';
 
-        // 我持有的当前价值
-        let myValue = 0, myShares = 0, avgPrice = 0, curPrice = 0;
+        // 我持有的当前价值（新模型：仓位价值 = 本金 × 当前市值/基准市值）
+        let myValue = 0;
         if (window.myHoldingsList) {
             const h = window.myHoldingsList.find(x => x.company_id === companyId);
-            if (h) {
-                myShares = parseFloat(h.shares) || 0;
-                myValue = myShares * (parseFloat(h.current_price) || 0);
-                avgPrice = parseFloat(h.average_price) || 0;   // 我的平均成本
-                curPrice = parseFloat(h.current_price) || 0;   // 当前净值
-            }
+            if (h) myValue = parseFloat(h.position_value) || 0;
         }
-        document.getElementById('tradeHolding').innerText = myShares > 0
+        document.getElementById('tradeHolding').innerText = myValue > 0
             ? `${formatValue(Math.round(myValue))} NB币`
             : '暂无持有';
 
@@ -1488,7 +1483,7 @@
         amountInput.value = mode === 'buy' ? 100 : (Math.round(myValue) || 100);
         updateTradePreview();
 
-        tradeState = { companyId, name: companyName, marketValue, mode, myValue, myShares, avgPrice, curPrice };
+        tradeState = { companyId, name: companyName, marketValue, mode, myValue };
         modal.style.display = 'flex';
 
         // 动态事件（防止重复绑定）
@@ -1613,22 +1608,20 @@
 
         const list = document.getElementById('holdingsList');
         const totalValue = document.getElementById('holdingsTotalValue');
-        let html = '<table class="data-table" style="font-size:0.85rem;"><thead><tr><th>公司</th><th>投入成本</th><th>当前价值</th><th>浮动盈亏</th><th>占公司比例</th></tr></thead><tbody>';
+        let html = '<table class="data-table" style="font-size:0.85rem;"><thead><tr><th>公司</th><th>投入本金</th><th>当前价值</th><th>浮动盈亏</th><th>占公司比例</th></tr></thead><tbody>';
         let totalCost = 0, totalNow = 0;
         for (const h of window.myHoldingsList) {
-            const shares = parseFloat(h.shares) || 0;
-            const nav = parseFloat(h.current_price) || 0;
-            const cost = (parseFloat(h.average_price) || 0) * shares;
-            const now = nav * shares;
-            totalCost += cost;
-            totalNow += now;
-            const profit = now - cost;
-            const pct = h.market_value > 0 ? (now / h.market_value * 100).toFixed(2) : '0.00';
-            const profitHtml = `<span style="color:${profit >= 0 ? '#f44336' : '#4caf50'};">${profit >= 0 ? '▲' : '▼'} ${formatValue(Math.abs(Math.round(profit)))}</span>`;
+            const principal = parseFloat(h.principal) || 0;
+            const position = parseFloat(h.position_value) || 0;
+            const profit = parseFloat(h.profit) || 0;
+            const pct = h.current_market_value > 0 ? (position / h.current_market_value * 100).toFixed(2) : '0.00';
+            totalCost += principal;
+            totalNow += position;
+            const profitHtml = `<span style="color:${profit >= 0 ? '#f44336' : '#4caf50'};">${profit >= 0 ? '▲' : '▼'} ${formatValue(Math.abs(Math.round(profit)))} (${profit >= 0 ? '+' : ''}${h.profit_pct ?? 0}%)</span>`;
             html += `<tr>
                 <td><a href="#" class="stock-link" data-id="${h.company_id}" data-name="${escapeHtml(h.company_name)}" style="color:var(--status-border);">${escapeHtml(h.company_name)}</a></td>
-                <td style="font-family:monospace;">${formatValue(Math.round(cost))}</td>
-                <td style="font-family:monospace; color:#00a1d6;">${formatValue(Math.round(now))}</td>
+                <td style="font-family:monospace;">${formatValue(Math.round(principal))}</td>
+                <td style="font-family:monospace; color:#00a1d6;">${formatValue(Math.round(position))}</td>
                 <td>${profitHtml}</td>
                 <td style="font-family:monospace;">${pct}%</td>
             </tr>`;
