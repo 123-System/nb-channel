@@ -198,7 +198,7 @@ AS $$
 BEGIN
     RETURN QUERY
     SELECT h.company_id, uc.company_name, h.principal,
-           h.base_market_value, uc.market_value,
+           h.base_market_value, uc.market_value::numeric,
            round(h.principal * (uc.market_value::numeric / h.base_market_value), 2) AS position_value,
            round(h.principal * (uc.market_value::numeric / h.base_market_value) - h.principal, 2) AS profit,
            round((uc.market_value::numeric / h.base_market_value - 1) * 100, 2) AS profit_pct
