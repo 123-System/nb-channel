@@ -10,9 +10,9 @@ async function checkBannedIP() {
     try {
         // 获取客户端公网 IP（多服务兜底：个别 IP 服务不可用时自动切换，不阻断访问）
         const services = [
-            'https://api.ipify.org?format=text',
             'https://icanhazip.com',
-            'https://ifconfig.me/ip'
+            'https://ifconfig.me/ip',
+            'https://api.ipify.org?format=text'
         ];
         let ip = '';
         for (const url of services) {
