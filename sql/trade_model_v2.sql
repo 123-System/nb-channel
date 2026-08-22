@@ -19,6 +19,11 @@ DELETE FROM public.holdings;
 ALTER TABLE public.holdings ADD COLUMN IF NOT EXISTS principal numeric(18,4) NOT NULL DEFAULT 0;
 ALTER TABLE public.holdings ADD COLUMN IF NOT EXISTS base_market_value numeric(18,4) NOT NULL DEFAULT 0;
 
+-- 旧字段降级：shares / average_price 在新模型中不再使用，
+-- 去掉 NOT NULL，避免新版 buy_stock 插入（不写这些列）时违反约束
+ALTER TABLE public.holdings ALTER COLUMN shares DROP NOT NULL;
+ALTER TABLE public.holdings ALTER COLUMN average_price DROP NOT NULL;
+
 -- ========== 1. 买入（钱不进市值，只记录本金与基准市值） ==========
 CREATE OR REPLACE FUNCTION public.buy_stock(p_user_id uuid, p_company_id bigint, p_amount numeric)
 RETURNS jsonb
