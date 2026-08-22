@@ -1614,7 +1614,7 @@
 
         const list = document.getElementById('holdingsList');
         const totalValue = document.getElementById('holdingsTotalValue');
-        let html = '<table class="data-table" style="font-size:0.85rem;"><thead><tr><th>公司</th><th>投入本金</th><th>当前价值</th><th>浮动盈亏</th><th>占公司比例</th></tr></thead><tbody>';
+        let html = '<table class="data-table" style="font-size:0.85rem;"><thead><tr><th>公司</th><th>投入本金</th><th>当前价值</th><th>浮动盈亏</th><th>占公司比例</th><th>操作</th></tr></thead><tbody>';
         let totalCost = 0, totalNow = 0;
         for (const h of window.myHoldingsList) {
             // 兼容新旧两版 RPC 字段（新：principal/position_value；旧：shares/average_price/current_price）
@@ -1631,12 +1631,20 @@
             totalCost += principal;
             totalNow += position;
             const profitHtml = `<span style="color:${profit >= 0 ? '#f44336' : '#4caf50'};">${profit >= 0 ? '▲' : '▼'} ${formatValue(Math.abs(Math.round(profit)))} (${profit >= 0 ? '+' : ''}${profitPct}%)</span>`;
+            // 操作列：买入/卖出（复用交易弹窗，休市时禁用）
+            const curMv = hasNew ? h.current_market_value : h.market_value;
+            const trading = isTradingHours();
+            const tradeBtns = trading
+                ? `<button class="trade-btn buy" data-id="${h.company_id}" data-name="${escapeHtml(h.company_name)}" data-value="${curMv}" style="background:#f44336; color:white; border:none; border-radius:20px; padding:3px 12px; cursor:pointer; font-size:0.75rem; margin-right:4px;">买入</button>
+                   <button class="trade-btn sell" data-id="${h.company_id}" data-name="${escapeHtml(h.company_name)}" data-value="${curMv}" style="background:#4caf50; color:white; border:none; border-radius:20px; padding:3px 12px; cursor:pointer; font-size:0.75rem;">卖出</button>`
+                : '<span style="color:var(--count-text); font-size:0.75rem;">😴 休市</span>';
             html += `<tr>
                 <td><a href="#" class="stock-link" data-id="${h.company_id}" data-name="${escapeHtml(h.company_name)}" style="color:var(--status-border);">${escapeHtml(h.company_name)}</a></td>
                 <td style="font-family:monospace;">${formatValue(Math.round(principal))}</td>
                 <td style="font-family:monospace; color:#00a1d6;">${formatValue(Math.round(position))}</td>
                 <td>${profitHtml}</td>
                 <td style="font-family:monospace;">${pct}%</td>
+                <td>${tradeBtns}</td>
             </tr>`;
         }
         html += '</tbody></table>';
@@ -1649,6 +1657,18 @@
             link.onclick = (e) => {
                 e.preventDefault();
                 loadKLineData(parseInt(link.dataset.id), link.dataset.name);
+            };
+        });
+
+        // 持仓里的买入/卖出按钮（复用交易弹窗）
+        list.querySelectorAll('.trade-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const companyId = parseInt(btn.dataset.id);
+                const companyName = btn.dataset.name;
+                const marketValue = parseInt(btn.dataset.value) || 0;
+                const mode = btn.classList.contains('buy') ? 'buy' : 'sell';
+                showTradeDialog(companyId, companyName, marketValue, mode);
             };
         });
     }
