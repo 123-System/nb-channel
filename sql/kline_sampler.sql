@@ -73,13 +73,15 @@ BEGIN
     END LOOP;
 
     -- 成交量：按当天交易记录汇总（交易只发生在北京时间8:00-20:00，created_at::date 与北京时间日期一致）
+    -- 注意：必须带 WHERE（Supabase 安全机制禁止 anon 执行无 WHERE 的全表 UPDATE）
     UPDATE public.stock_daily_kline k
        SET volume = COALESCE((
            SELECT SUM(COALESCE(t.total_amount, 0))::integer
              FROM public.transactions t
             WHERE t.company_id = k.company_id
               AND t.created_at::date = k.trade_date
-       ), 0);
+       ), 0)
+     WHERE k.id > 0;
     GET DIAGNOSTICS v_row_count = ROW_COUNT;
 
     RAISE NOTICE 'record_daily_kline: 处理 % 家公司，更新成交量 % 行', v_company_count, v_row_count;
