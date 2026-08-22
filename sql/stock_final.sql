@@ -305,7 +305,8 @@ BEGIN
     DELETE FROM public.user_companies WHERE id = v_company_id;
     DELETE FROM public.verified_users WHERE user_id = p_user_id;
     DELETE FROM public.support_rules WHERE company_id = v_company_id;
-    DELETE FROM public.stock_history_full WHERE snapshot->'names' ? v_company_name;
+    -- 注意：不要删除 stock_history_full！
+    -- 每条快照包含所有公司，按公司名删除 = 删光整张K线历史表（历史bug，已修复）
 
     IF v_reward > 0 THEN
         UPDATE public.profiles SET nb_balance = nb_balance + v_reward WHERE id = p_user_id;

@@ -301,9 +301,8 @@ BEGIN
     -- 4. 删除自动支持规则
     DELETE FROM public.support_rules WHERE company_id = v_company_id;
 
-    -- 5. 从历史快照中移除该公司数据
-    DELETE FROM public.stock_history_full
-     WHERE snapshot->'names' ? v_company_name;
+    -- 5.（已移除）不要从 stock_history_full 删除该公司数据！
+    -- 每条快照包含所有公司，按公司名删除 = 删光整张K线历史表（历史bug，已修复）
 
     -- 6. 发放奖励
     IF v_reward > 0 THEN
