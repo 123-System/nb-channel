@@ -111,10 +111,11 @@ function openVideoPlayer(card) {
     // 先显示弹窗，等布局稳定后再加载播放器（隐藏/未布局容器中初始化会异常）
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+    frame.src = 'about:blank';   // 先重置
     setTimeout(() => {
         // 最小参数加载（autoplay=0 手动播放）；部分环境多余参数会走不同初始化路径
         frame.src = `https://player.bilibili.com/player.html?bvid=${bvid}`;
-    }, 150);
+    }, 300);
 }
 
 function closeVideoPlayer() {
