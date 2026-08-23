@@ -34,35 +34,7 @@
         });
     }
 
-    // 注入界面切换按钮
-    function injectToggle() {
-        if (document.getElementById('uiToggleBtn')) return;
-        var btn = document.createElement('button');
-        btn.id = 'uiToggleBtn';
-        btn.title = getVer() === 'new' ? '当前：新版界面，点击切换回旧版' : '当前：旧版界面，点击切换到新版';
-        btn.textContent = getVer() === 'new' ? '🖥️' : '📄';
-        btn.onclick = function () {
-            var target = getVer() === 'new' ? 'old' : 'new';
-            if (typeof setUIVersion === 'function') setUIVersion(target);
-            // 跳转到对应版本文件（xxx.html <-> xxx-new.html），保留 URL 参数
-            var rawPage = location.pathname.split('/').pop() || '';
-            var lower = rawPage.toLowerCase();
-            var qs = location.search || '';
-            if (lower.indexOf('.html') !== -1) {
-                var isNew = lower.indexOf('-new.html') !== -1;
-                if (target === 'new' && !isNew) {
-                    location.href = rawPage.replace(/\.html$/i, '-new.html') + qs;
-                } else if (target === 'old' && isNew) {
-                    location.href = rawPage.replace(/-new\.html$/i, '.html') + qs;
-                } else {
-                    location.reload();
-                }
-            } else {
-                location.reload();
-            }
-        };
-        document.body.appendChild(btn);
-    }
+    // 注：界面切换按钮已移除，切换入口仅在个人中心"🎨 界面风格"
 
     // 加载 css/premium.css（页面内容级高级感，旧版不加载）
     // -new 文件已在 head 静态加载 css/ui-new.css（含 premium 全部样式），此处跳过
@@ -276,22 +248,9 @@
             /* 滚动渐显 */
             .ui-reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1), transform 0.65s cubic-bezier(0.16,1,0.3,1); }
             .ui-reveal-in { opacity: 1; transform: none; }
-            #uiToggleBtn {
-                position: fixed; bottom: 98px; right: 30px; z-index: 9996;
-                width: 50px; height: 50px; border-radius: 50%;
-                border: 1px solid rgba(0,161,214,0.3);
-                background: rgba(255,255,255,0.8);
-                -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-                color: var(--text-color); font-size: 20px; cursor: pointer;
-                box-shadow: 0 8px 24px -8px rgba(0,161,214,0.35);
-                transition: transform 0.2s;
-            }
-            body.dark-mode #uiToggleBtn { background: rgba(24,26,32,0.8); }
-            #uiToggleBtn:hover { transform: scale(1.08); }
             @media (max-width: 700px) {
                 .top-nav { flex-wrap: wrap; justify-content: space-between; padding: 10px 14px; }
                 .top-nav .nav-menu { order: 3; width: 100%; justify-content: center; }
-                #uiToggleBtn { bottom: 82px; right: 20px; width: 40px; height: 40px; font-size: 17px; }
             }
             /* ===== 全局主体高级感（index-preview 设计语言） ===== */
             .container, .profile-container, .records-container, .ach-container, .register-card { max-width: 1080px; }
@@ -437,7 +396,7 @@
     // 从现有导航 DOM 收集链接 → 渲染新版导航并替换
     function replaceNav() {
         var host = document.querySelector('.nav-container');
-        if (!host) { injectToggle(); return; }
+        if (!host) { return; }
 
         var links = Array.prototype.map.call(host.querySelectorAll('a.nav-btn'), function (a) {
             return { href: a.getAttribute('href') || '', text: (a.textContent || '').trim(), active: a.classList.contains('active') };
@@ -496,7 +455,6 @@
         if (shareBtn && typeof initShareButton === 'function') {
             try { initShareButton(); } catch (e) {}
         }
-        injectToggle();
     }
 
 // ===== 新版首页注入：给原版首页运行时加上官网 hero/数据条/功能卡片 =====
@@ -670,9 +628,9 @@
         setTimeout(injectReveal, 50);
     }
 
-    // 旧版初始化：只需要切换按钮
+    // 旧版初始化：旧版页面无需任何注入
     function initOldUI() {
-        injectToggle();
+        // 切换入口仅在个人中心"🎨 界面风格"
     }
 
     if (getVer() === 'new') {
