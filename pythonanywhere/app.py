@@ -256,6 +256,147 @@ def upload_avatar():
     return jsonify({'success': True, 'avatar_url': avatar_url, 'message': '头像上传成功'})
 
 
+def _storage_key_from_url(file_url):
+    """从 file_url（形如 https://host/files/<key>）提取存储 key。"""
+    if not file_url:
+        return None
+    parts = file_url.rstrip('/').split('/')
+    key = parts[-1]
+    return key if re.match(r'^[a-f0-9]{32}(\.[a-zA-Z0-9]{1,10})?$', key) else None
+
+
+@app.route('/edit-product', methods=['POST'])
+def edit_product():
+    """编辑自己的作品：标题/简介/定价，可选替换文件。"""
+    user_id, err = get_user_id()
+    if err:
+        return jsonify({'success': False, 'message': err}), 401
+
+    try:
+        product_id = int(request.form.get('product_id'))
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'message': '无效的作品 ID'}), 400
+
+    title = (request.form.get('title') or '').strip()
+    description = (request.form.get('description') or '').strip()
+    price_str = (request.form.get('price') or '0').strip()
+
+    if not title:
+        return jsonify({'success': False, 'message': '请输入作品标题'}), 400
+    if len(title) > 100:
+        return jsonify({'success': False, 'message': '标题不能超过100字'}), 400
+    if len(description) > 1000:
+        return jsonify({'success': False, 'message': '简介不能超过1000字'}), 400
+    try:
+        price = int(price_str)
+    except ValueError:
+        return jsonify({'success': False, 'message': '定价必须是数字'}), 400
+    if price < 0 or price > 999999999:
+        return jsonify({'success': False, 'message': '价格需在 0~999999999 之间'}), 400
+
+    # 校验作者身份 + 拿旧文件信息
+    try:
+        rows = _exec_rows(
+            supabase.table('products').select('id, file_url').eq('id', product_id).eq('author_id', user_id).limit(1)
+        )
+    except Exception as e:
+        return jsonify({'success': False, 'message': '后端数据库连接失败: %s' % e}), 500
+    if not rows:
+        return jsonify({'success': False, 'message': '只能修改自己的作品'}), 403
+
+    old_file_url = rows[0].get('file_url')
+    new_file_url = old_file_url
+    new_file_name = None
+    new_file_size = None
+    new_mime = None
+    old_key = None
+
+    file = request.files.get('file')
+    if file and file.filename:
+        file.seek(0, os.SEEK_END)
+        size = file.tell()
+        file.seek(0)
+        if size > MAX_FILE_SIZE:
+            return jsonify({'success': False, 'message': '文件不能超过 50 MB'}), 400
+        key = safe_filename(file.filename)
+        try:
+            supabase.storage.from_('products').upload(key, file.read(), {
+                'content-type': file.mimetype or 'application/octet-stream'
+            })
+        except Exception as e:
+            return jsonify({'success': False, 'message': '新文件上传失败: %s' % e}), 500
+        new_file_url = request.host_url.rstrip('/') + '/files/' + key
+        new_file_name = file.filename
+        new_file_size = size
+        new_mime = file.mimetype or ''
+        old_key = _storage_key_from_url(old_file_url)
+
+    # 更新记录
+    update_data = {'title': title, 'description': description, 'price': price}
+    if new_file_url != old_file_url:
+        update_data['file_url'] = new_file_url
+        update_data['file_name'] = new_file_name
+        update_data['file_size'] = new_file_size
+        update_data['mime_type'] = new_mime
+    try:
+        supabase.table('products').update(update_data).eq('id', product_id).eq('author_id', user_id).execute()
+    except Exception as e:
+        # 记录更新失败时清理已上传的新文件
+        if new_file_url != old_file_url:
+            try:
+                supabase.storage.from_('products').remove([_storage_key_from_url(new_file_url)])
+            except Exception:
+                pass
+        return jsonify({'success': False, 'message': '保存失败: %s' % e}), 500
+
+    # 删除旧文件（替换场景）
+    if old_key and new_file_url != old_file_url:
+        try:
+            supabase.storage.from_('products').remove([old_key])
+        except Exception:
+            pass
+
+    return jsonify({'success': True, 'message': '作品已更新'})
+
+
+@app.route('/delete-product', methods=['POST'])
+def delete_product():
+    """删除自己的作品（记录 + 存储文件 + 购买/下载记录）。"""
+    user_id, err = get_user_id()
+    if err:
+        return jsonify({'success': False, 'message': err}), 401
+
+    body = request.get_json(silent=True) or {}
+    try:
+        product_id = int(body.get('product_id'))
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'message': '无效的作品 ID'}), 400
+
+    try:
+        rows = _exec_rows(
+            supabase.table('products').select('id, file_url').eq('id', product_id).eq('author_id', user_id).limit(1)
+        )
+    except Exception as e:
+        return jsonify({'success': False, 'message': '后端数据库连接失败: %s' % e}), 500
+    if not rows:
+        return jsonify({'success': False, 'message': '只能删除自己的作品'}), 403
+
+    key = _storage_key_from_url(rows[0].get('file_url'))
+    try:
+        supabase.table('products').delete().eq('id', product_id).execute()
+        supabase.table('product_purchases').delete().eq('product_id', product_id).execute()
+        supabase.table('product_downloads').delete().eq('product_id', product_id).execute()
+    except Exception as e:
+        return jsonify({'success': False, 'message': '删除记录失败: %s' % e}), 500
+    if key:
+        try:
+            supabase.storage.from_('products').remove([key])
+        except Exception:
+            pass
+
+    return jsonify({'success': True, 'message': '作品已删除'})
+
+
 @app.route('/download', methods=['POST'])
 def download():
     user_id, err = get_user_id()

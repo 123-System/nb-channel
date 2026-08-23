@@ -133,7 +133,7 @@
         <hr style="margin: 20px 0; border-color: var(--card-border);">
 
         <div id="uploadSection" class="upload-section" style="display:none;">
-            <h3>📤 上传你的作品</h3>
+            <h3 id="uploadSectionTitle">📤 上传你的作品</h3>
             <input type="text" id="productTitle" placeholder="作品标题" maxlength="100">
             <textarea id="productDesc" rows="3" placeholder="作品简介（内容、用途、版本等）" maxlength="1000"></textarea>
             <input type="number" id="productPrice" placeholder="定价（NB币，0为免费）" min="0" max="999999999" value="0">
@@ -142,6 +142,7 @@
                 <span style="font-size:0.8rem; color:var(--count-text);">单个文件不超过 50 MB</span>
             </div>
             <button id="uploadBtn">📤 发布作品</button>
+            <button id="cancelEditBtn" style="display:none; background:#6c757d; color:white; border:none; padding:10px 24px; border-radius:40px; cursor:pointer; margin-left:10px;">取消编辑</button>
             <div id="uploadStatus" style="margin-top:10px; color:var(--status-border);"></div>
         </div>
 
@@ -264,7 +265,11 @@
 
             let actionHtml = '';
             if (isOwner) {
-                actionHtml = `<span class="owner-badge">[你的作品]</span>`;
+                // 作者：可下载 / 编辑 / 删除自己的作品
+                actionHtml = `<span class="owner-badge">[你的作品]</span>
+                    <button class="action-btn download-btn" data-id="${p.id}">📥 下载</button>
+                    <button class="action-btn edit-btn" data-id="${p.id}">✏️ 编辑</button>
+                    <button class="action-btn delete-btn" data-id="${p.id}" style="background:#e74c3c; color:white;">🗑️ 删除</button>`;
             } else if (user) {
                 if (isPurchased && p.price > 0) {
                     actionHtml = `<button class="action-btn download-btn" data-id="${p.id}">📥 已购买，下载</button>`;
@@ -299,9 +304,76 @@
                 purchaseProduct(productId);
             });
         });
+
+        // 编辑 / 删除自己的作品
+        container.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const productId = parseInt(btn.dataset.id);
+                const p = productsData.find(x => x.id === productId);
+                if (p) startEdit(p);
+            });
+        });
+        container.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const productId = parseInt(btn.dataset.id);
+                deleteProduct(productId);
+            });
+        });
     }
 
-    // ========== 上传作品 ==========
+    // ========== 编辑作品 ==========
+    let editingProductId = null;
+
+    function startEdit(p) {
+        editingProductId = p.id;
+        document.getElementById('uploadSectionTitle').innerText = '✏️ 编辑作品（不选文件则保留原文件）';
+        document.getElementById('productTitle').value = p.title || '';
+        document.getElementById('productDesc').value = p.description || '';
+        document.getElementById('productPrice').value = p.price || 0;
+        document.getElementById('productFile').value = '';
+        document.getElementById('uploadBtn').innerText = '💾 保存修改';
+        document.getElementById('cancelEditBtn').style.display = 'inline-block';
+        document.getElementById('uploadStatus').innerText = '';
+        document.getElementById('uploadSection').style.display = 'block';
+        document.getElementById('uploadSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+        editingProductId = null;
+        document.getElementById('uploadSectionTitle').innerText = '📤 上传你的作品';
+        document.getElementById('productTitle').value = '';
+        document.getElementById('productDesc').value = '';
+        document.getElementById('productPrice').value = '0';
+        document.getElementById('productFile').value = '';
+        document.getElementById('uploadBtn').innerText = '📤 发布作品';
+        document.getElementById('cancelEditBtn').style.display = 'none';
+        document.getElementById('uploadStatus').innerText = '';
+    }
+
+    async function deleteProduct(productId) {
+        const user = getCurrentUser();
+        if (!user) { alert('请先登录'); return; }
+        if (!confirm('确定删除这个作品吗？文件将一并删除，且无法恢复！')) return;
+        try {
+            const response = await fetch(`${API_BASE}/delete-product`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-User-Id': user.id },
+                body: JSON.stringify({ product_id: productId })
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert('✅ 作品已删除');
+                if (editingProductId === productId) cancelEdit();
+                await loadProducts();
+            } else {
+                alert(result.message || '删除失败');
+            }
+        } catch (err) {
+            alert('网络错误：' + err.message);
+        }
+    }
+
+    // ========== 上传 / 编辑作品 ==========
     async function uploadProduct() {
         const user = getCurrentUser();
         if (!user) { alert('请先登录'); return; }
@@ -314,31 +386,31 @@
         const statusDiv = document.getElementById('uploadStatus');
 
         if (!title) { alert('请输入作品标题'); return; }
-        if (!file) { alert('请选择要上传的文件'); return; }
         if (price < 0 || price > 999999999) { alert('价格需在 0~999999999 之间'); return; }
-        if (file.size > 50 * 1024 * 1024) { alert('文件不能超过 50 MB'); return; }
+
+        const isEdit = editingProductId !== null;
+        if (!isEdit && !file) { alert('请选择要上传的文件'); return; }
+        if (file && file.size > 50 * 1024 * 1024) { alert('文件不能超过 50 MB'); return; }
 
         const formData = new FormData();
+        if (isEdit) formData.append('product_id', editingProductId);
         formData.append('title', title);
         formData.append('description', desc);
         formData.append('price', price);
-        formData.append('file', file);
+        if (file) formData.append('file', file);
 
-        statusDiv.innerText = '⏳ 上传中...';
+        statusDiv.innerText = isEdit ? '⏳ 保存中...' : '⏳ 上传中...';
 
         try {
-            const response = await fetch(`${API_BASE}/upload`, {
+            const response = await fetch(`${API_BASE}/${isEdit ? 'edit-product' : 'upload'}`, {
                 method: 'POST',
                 headers: { 'X-User-Id': user.id },
                 body: formData
             });
             const result = await response.json();
             if (result.success) {
-                statusDiv.innerText = '✅ 发布成功！';
-                document.getElementById('productTitle').value = '';
-                document.getElementById('productDesc').value = '';
-                document.getElementById('productPrice').value = '0';
-                fileInput.value = '';
+                statusDiv.innerText = isEdit ? '✅ 修改已保存！' : '✅ 发布成功！';
+                cancelEdit();
                 await loadProducts();
                 await updateUserUI();
             } else {
@@ -401,6 +473,7 @@
         await updateUserUI();
         await loadProducts();
         document.getElementById('uploadBtn').addEventListener('click', uploadProduct);
+        document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
         checkBackendHealth();
     }
 
