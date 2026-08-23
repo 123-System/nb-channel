@@ -523,6 +523,7 @@
 <script>
 // ===== 鼠标特效（仅鼠标设备启用，不影响手机触屏） =====
 (function () {
+    window.__uiHomeFxLoaded = true;   // 防与 ui-nav.js 重复注入
     const fine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
     if (!fine) return;
 

@@ -88,7 +88,7 @@
             var ringAnim = ring.animate([
                 { transform: 'translate(-50%,-50%) scale(1)', opacity: 0.9 },
                 { transform: 'translate(-50%,-50%) scale(5.5)', opacity: 0 }
-            ], { duration: 600, easing: 'ease-out' });
+            ], { duration: 600, easing: 'ease-out', fill: 'forwards' });
             ringAnim.onfinish = function () { ring.remove(); };
             setTimeout(function () { if (ring.parentNode) ring.remove(); }, 900);   // 兜底清理，防止残留
 
@@ -104,7 +104,7 @@
                 var anim = p.animate([
                     { transform: 'translate(0,0) scale(1)', opacity: 1 },
                     { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(0.1)', opacity: 0 }
-                ], { duration: dur, easing: 'cubic-bezier(0.15,0.8,0.25,1)' });
+                ], { duration: dur, easing: 'cubic-bezier(0.15,0.8,0.25,1)', fill: 'forwards' });
                 anim.onfinish = function () { p.remove(); };
                 setTimeout(function () { if (p.parentNode) p.remove(); }, dur + 250);   // 兜底清理，防止残留
             }
@@ -507,7 +507,31 @@
             '<a class="feature-card" href="product_share.html"><div class="f-icon">🛍️</div><div class="f-name">作品分享</div><div class="f-desc">上传你的作品，或购买他人作品</div><div class="f-go">去看看 →</div></a>' +
             '<a class="feature-card" href="messages.html"><div class="f-icon">🔔</div><div class="f-name">消息中心</div><div class="f-desc">评论回复、点赞与私信通知</div><div class="f-go">去看看 →</div></a>';
 
-        // 6. 新页脚（隐藏原版页脚文字）
+        // 6. 友商网格（与预览版一致）+ 隐藏原版友商文字卡
+        var friendGrid = document.createElement('div');
+        friendGrid.className = 'friend-grid';
+        friendGrid.innerHTML =
+            '<div class="friend-card"><div><div class="fc-name">Orgent</div><div class="fc-note">已注销 · 仅留念</div></div><a href="https://orgent.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">访问</a></div>' +
+            '<div class="friend-card"><div><div class="fc-name">AWM</div><div class="fc-note">友商官网</div></div><a href="https://45d.cn/AWM/" target="_blank" rel="noopener noreferrer">访问</a></div>' +
+            '<div class="friend-card"><div><div class="fc-name">Fafat</div><div class="fc-note">友商官网</div></div><a href="https://fafat.uuk.pp.ua/" target="_blank" rel="noopener noreferrer">访问</a></div>' +
+            '<div class="friend-card"><div><div class="fc-name">Lemon（齐喜）</div><div class="fc-note">友商官网</div></div><a href="https://nb-qx.top/" target="_blank" rel="noopener noreferrer">访问</a></div>' +
+            '<div class="friend-card"><div><div class="fc-name">GaoHanTu</div><div class="fc-note">友商官网</div></div><a href="https://gaohantu.cn/" target="_blank" rel="noopener noreferrer">访问</a></div>' +
+            '<div class="friend-card"><div><div class="fc-name">Utw</div><div class="fc-note">友商官网</div></div><a href="https://utw.pages.dev" target="_blank" rel="noopener noreferrer">访问</a></div>' +
+            '<div class="friend-card"><div><div class="fc-name">PTC(GoodPTC)</div><div class="fc-note">友商官网</div></div><a href="https://pipetrainingcamp.github.io/" target="_blank" rel="noopener noreferrer">访问</a></div>' +
+            '<div class="friend-card"><div><div class="fc-name">UVS</div><div class="fc-note">友商官网</div></div><a href="https://yoyo-user-awa.github.io/UVS/" target="_blank" rel="noopener noreferrer">访问</a></div>' +
+            '<div class="friend-card"><div><div class="fc-name">UwLS</div><div class="fc-note">友商官网</div></div><a href="https://3f7ceb4e.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">访问</a></div>' +
+            '<div class="friend-card"><div><div class="fc-name">Oganesson</div><div class="fc-note">友商官网</div></div><a href="https://45d.cn/nb-og.top/" target="_blank" rel="noopener noreferrer">访问</a></div>' +
+            '<div class="friend-card"><div><div class="fc-name">SOT</div><div class="fc-note">友商官网</div></div><a href="https://78439049.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">访问</a></div>';
+        var friendTitle = document.createElement('div');
+        friendTitle.className = 'section-title';
+        friendTitle.textContent = '🌐 友商链接';
+        // 隐藏原版友商文字卡（含"友商"文本的 home-card）
+        var cards = container.querySelectorAll('.home-card');
+        Array.prototype.forEach.call(cards, function (card) {
+            if (/友商/.test(card.textContent || '')) card.style.display = 'none';
+        });
+
+        // 7. 新页脚（隐藏原版页脚文字）
         var afterStats = container.querySelectorAll(':scope > .stats-container ~ p');
         Array.prototype.forEach.call(afterStats, function (p) { p.style.display = 'none'; });
         var siteFooter = document.createElement('footer');
@@ -518,21 +542,16 @@
             '<div>制作：<a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">NB搞事局（原NB实验室-作死）</a></div>' +
             '<div style="font-size:0.78rem;">托管：<a href="https://github.com/" target="_blank" rel="noopener noreferrer">Github</a> · <a href="https://www.cloudflare-cn.com/developer-platform/products/pages/" target="_blank" rel="noopener noreferrer">Cloudflare</a> · <a href="https://www.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">PythonAnywhere</a> · 视频托管：<a href="https://imgbed.cn/" target="_blank" rel="noopener noreferrer">图床小镇</a></div>';
 
-        // 7. 插入：导航之后（hero → 数据条 → 功能卡片区）
+        // 7. 插入：导航之后（hero → 数据条 → 功能卡片区 → 友商网格）
         var featTitle = document.createElement('div');
         featTitle.className = 'section-title';
         featTitle.textContent = '🚀 核心功能';
         var navHost = document.querySelector('.top-nav') || document.querySelector('.quick-nav');
-        if (navHost && navHost.nextSibling) {
-            container.insertBefore(hero, navHost.nextSibling);
-            container.insertBefore(statBar, hero.nextSibling);
-            container.insertBefore(featTitle, statBar.nextSibling);
-            container.insertBefore(featureGrid, featTitle.nextSibling);
-        } else {
-            container.insertBefore(hero, container.firstChild);
-            container.insertBefore(statBar, hero.nextSibling);
-            container.insertBefore(featTitle, statBar.nextSibling);
-            container.insertBefore(featureGrid, featTitle.nextSibling);
+        var insertChain = [hero, statBar, featTitle, featureGrid, friendTitle, friendGrid];
+        var ref = navHost && navHost.nextSibling ? navHost.nextSibling : container.firstChild;
+        for (var k = 0; k < insertChain.length; k++) {
+            container.insertBefore(insertChain[k], ref);
+            ref = insertChain[k].nextSibling;
         }
         container.appendChild(siteFooter);
     }

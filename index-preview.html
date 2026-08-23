@@ -525,6 +525,7 @@
 (function () {
     const fine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
     if (!fine) return;
+    window.__uiHomeFxLoaded = true;   // 防与 ui-nav.js 重复注入
 
     // 1. 鼠标跟随光晕（柔和品牌色光圈）
     const glow = document.createElement('div');
