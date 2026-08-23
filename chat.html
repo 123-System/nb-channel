@@ -54,6 +54,15 @@
         .chat-input textarea { flex: 1; padding: 8px 12px; border-radius: 16px; border: 1px solid var(--card-border); background: var(--bg-color); color: var(--text-color); resize: none; font-family: inherit; font-size: 0.9rem; }
         .chat-input button { background: var(--nav-btn-hover-bg); color: white; border: none; border-radius: 16px; padding: 0 20px; cursor: pointer; }
         .back-link { text-align: center; margin-top: 20px; }
+        /* 自定义确认弹窗 */
+        .custom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 10000; }
+        .custom-modal .modal-content { background: var(--card-bg); border-radius: 24px; padding: 24px; max-width: 340px; width: 90%; text-align: center; box-shadow: 0 20px 35px rgba(0,0,0,0.2); }
+        .custom-modal .modal-content h3 { margin: 0 0 10px; color: var(--text-color); }
+        .custom-modal .modal-content p { color: var(--count-text); font-size: 0.9rem; margin: 0 0 18px; line-height: 1.6; }
+        .custom-modal .modal-btns { display: flex; gap: 10px; justify-content: center; }
+        .custom-modal .modal-btns button { border: none; border-radius: 30px; padding: 8px 24px; cursor: pointer; font-size: 0.9rem; }
+        .custom-modal .btn-ok { background: #e74c3c; color: white; }
+        .custom-modal .btn-cancel { background: var(--nav-btn-bg); color: var(--nav-btn-text); }
         @media (max-width: 700px) {
             .chat-container { flex-direction: column; height: auto; max-height: 88vh; }
             .side-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--card-border); max-height: 32vh; }
@@ -112,6 +121,18 @@
     <div class="back-link"><a href="index.html">← 返回首页</a></div>
 </div>
 
+<!-- 自定义确认弹窗 -->
+<div id="confirmModal" class="custom-modal">
+    <div class="modal-content">
+        <h3 id="confirmTitle">确认</h3>
+        <p id="confirmText"></p>
+        <div class="modal-btns">
+            <button class="btn-cancel" id="confirmCancel">取消</button>
+            <button class="btn-ok" id="confirmOk">确定</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
@@ -137,6 +158,24 @@
     function avatarOf(u) { return u && u.avatar_url ? u.avatar_url : DEFAULT_AVATAR; }
     function fmtTime(ts) {
         try { return new Date(ts).toLocaleString('zh-CN', { hour12: false }); } catch { return ''; }
+    }
+
+    // 自定义确认弹窗（返回 Promise<boolean>）
+    function showConfirm(title, text) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('confirmModal');
+            document.getElementById('confirmTitle').innerText = title;
+            document.getElementById('confirmText').innerText = text;
+            modal.style.display = 'flex';
+            const done = (val) => {
+                modal.style.display = 'none';
+                document.getElementById('confirmOk').onclick = null;
+                document.getElementById('confirmCancel').onclick = null;
+                resolve(val);
+            };
+            document.getElementById('confirmOk').onclick = () => done(true);
+            document.getElementById('confirmCancel').onclick = () => done(false);
+        });
     }
 
     async function init() {
@@ -426,7 +465,8 @@
             if (act === 'msg') {
                 await startChatWith(btn.dataset.id, btn.dataset.name, btn.dataset.avatar);
             } else if (act === 'del') {
-                if (!confirm(`确定删除好友 ${btn.dataset.name} 吗？`)) return;
+                const ok = await showConfirm('删除好友', `确定删除好友 ${btn.dataset.name} 吗？删除后需要重新申请才能恢复好友关系。`);
+                if (!ok) return;
                 await supabaseClient.rpc('remove_friend', { p_user_id: currentUser.id, p_other: btn.dataset.id });
                 await loadFriends(); renderSide(); loadConvs();
             } else if (act === 'accept') {
