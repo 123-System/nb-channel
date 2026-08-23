@@ -414,6 +414,12 @@ function fallbackCopy() {
         '<a href="https://www.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">PythonAnywhere</a> · 视频托管：' +
         '<a href="https://imgbed.cn/" target="_blank" rel="noopener noreferrer">图床小镇</a></div>';
 
+    function escapeFooterHtml(str) {
+        return String(str).replace(/[&<>"']/g, function (m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+        });
+    }
+
     function normalizeFooter() {
         if (document.getElementById('unifiedFooter')) return;
         var ps = document.querySelectorAll('p');
@@ -428,11 +434,29 @@ function fallbackCopy() {
             if (cur.nodeType === 1 && cur.tagName === 'P') { nodes.push(cur); cur = cur.nextSibling; }
             else break;
         }
+        // 保留页面特有的致谢行（非通用内容），如视频页的"bilibili 提供视频信息"
+        var GENERIC = ['© 2026', '联系', '邮箱', 'mailto', '制作', '托管', 'github', 'cloudflare',
+                       'pythonanywhere', '图床小镇', '视频托管', 'nb频道官方'];
+        var extras = [];
+        nodes.forEach(function (n) {
+            var t = (n.textContent || '').replace(/\s+/g, ' ').trim();
+            if (!t) return;
+            var isGeneric = GENERIC.some(function (k) { return t.toLowerCase().indexOf(k.toLowerCase()) !== -1; });
+            if (!isGeneric) extras.push(t);
+        });
+        // 隐藏旧页脚，插入统一页脚
         nodes.forEach(function (n) { n.style.display = 'none'; });
         var footer = document.createElement('div');
         footer.id = 'unifiedFooter';
         footer.innerHTML = UNIFIED_FOOTER;
         start.parentNode.insertBefore(footer, start);
+        // 页面特有行追加在统一页脚下方
+        if (extras.length) {
+            var ex = document.createElement('div');
+            ex.style.cssText = 'margin-top:6px; text-align:center; font-size:0.8rem; color:var(--count-text);';
+            ex.innerHTML = extras.map(escapeFooterHtml).join('<br>');
+            start.parentNode.insertBefore(ex, footer.nextSibling);
+        }
     }
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', normalizeFooter);
