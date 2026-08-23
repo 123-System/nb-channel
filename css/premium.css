@@ -254,3 +254,76 @@
     border-radius: 16px !important;
     background: var(--card-bg); padding: 14px 16px !important; margin-bottom: 12px !important;
 }
+
+/* ============================================================
+   新版首页专属区块（ui-nav.js 运行时注入，样式在此定义）
+   ============================================================ */
+.section-title {
+    display: flex; align-items: center; gap: 10px; margin: 28px 0 8px;
+    font-size: 1.25rem; font-weight: 700; color: var(--text-color);
+}
+.section-title::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, #00a1d6, transparent); }
+.hero {
+    background: linear-gradient(135deg, #00a1d6 0%, #0a84c1 45%, #6c5ce7 100%);
+    border-radius: 24px; padding: 48px 32px 40px; text-align: center;
+    color: #fff; margin-bottom: 26px;
+    box-shadow: 0 18px 40px -12px rgba(0,161,214,0.5);
+    position: relative; overflow: hidden;
+}
+.hero::before {
+    content: ''; position: absolute; top: -60px; right: -60px;
+    width: 200px; height: 200px; border-radius: 50%; background: rgba(255,255,255,0.08);
+}
+.hero::after {
+    content: ''; position: absolute; bottom: -80px; left: -40px;
+    width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,0.06);
+}
+.hero-badges { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.hero-badge {
+    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 30px; padding: 4px 14px; font-size: 0.78rem; color: #fff;
+    -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
+.hero h1 { margin: 0 0 6px; font-size: 2.6rem; font-weight: 900; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.2); letter-spacing: 1px; }
+.hero .hero-sub { font-size: 1rem; opacity: 0.92; margin-bottom: 22px; }
+.hero .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 26px; }
+.hero .hero-btn {
+    display: inline-block; background: #fff; color: #00a1d6;
+    border-radius: 40px; padding: 10px 26px; font-weight: 700;
+    text-decoration: none; transition: 0.2s; box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+}
+.hero .hero-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.25); }
+.hero .hero-btn.ghost { background: rgba(255,255,255,0.16); color: #fff; }
+.hero-video { border-radius: 18px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.3); max-width: 720px; margin: 0 auto; border: 3px solid rgba(255,255,255,0.25); }
+.hero-video video { display: block; width: 100%; }
+.stat-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin: -6px 0 26px; }
+.stat-item {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 16px; padding: 16px 10px; text-align: center;
+    box-shadow: 0 4px 14px -8px rgba(0,0,0,0.12);
+}
+.stat-item .num { font-size: 1.5rem; font-weight: 800; color: var(--status-border); }
+.stat-item .label { font-size: 0.78rem; color: var(--count-text); margin-top: 4px; }
+.feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-top: 18px; }
+.feature-card {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 18px; padding: 22px 14px; text-decoration: none;
+    color: var(--text-color); transition: 0.22s;
+}
+.feature-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -10px rgba(0,161,214,0.35); border-color: #00a1d6; }
+.feature-card .f-icon { font-size: 2.2rem; line-height: 1; }
+.feature-card .f-name { font-weight: 700; font-size: 1rem; }
+.feature-card .f-desc { font-size: 0.76rem; color: var(--count-text); text-align: center; min-height: 30px; }
+.feature-card .f-go { font-size: 0.8rem; color: #00a1d6; font-weight: 600; }
+.site-footer {
+    margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--card-border);
+    text-align: center; font-size: 0.85rem; color: var(--count-text); line-height: 2.1;
+}
+.site-footer a { color: var(--status-border); text-decoration: none; }
+.site-footer a:hover { text-decoration: underline; }
+@media (max-width: 600px) {
+    .hero { padding: 32px 16px 26px; }
+    .hero h1 { font-size: 1.9rem; }
+    .stat-bar { grid-template-columns: repeat(2, 1fr); }
+}

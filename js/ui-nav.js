@@ -513,16 +513,21 @@
             '<div>制作：<a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">NB搞事局（原NB实验室-作死）</a></div>' +
             '<div style="font-size:0.78rem;">托管：<a href="https://github.com/" target="_blank" rel="noopener noreferrer">Github</a> · <a href="https://www.cloudflare-cn.com/developer-platform/products/pages/" target="_blank" rel="noopener noreferrer">Cloudflare</a> · <a href="https://www.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">PythonAnywhere</a> · 视频托管：<a href="https://imgbed.cn/" target="_blank" rel="noopener noreferrer">图床小镇</a></div>';
 
-        // 7. 插入：导航之后
+        // 7. 插入：导航之后（hero → 数据条 → 功能卡片区）
+        var featTitle = document.createElement('div');
+        featTitle.className = 'section-title';
+        featTitle.textContent = '🚀 核心功能';
         var navHost = document.querySelector('.top-nav') || document.querySelector('.quick-nav');
         if (navHost && navHost.nextSibling) {
             container.insertBefore(hero, navHost.nextSibling);
             container.insertBefore(statBar, hero.nextSibling);
-            container.insertBefore(featureGrid, statBar.nextSibling);
+            container.insertBefore(featTitle, statBar.nextSibling);
+            container.insertBefore(featureGrid, featTitle.nextSibling);
         } else {
             container.insertBefore(hero, container.firstChild);
             container.insertBefore(statBar, hero.nextSibling);
-            container.insertBefore(featureGrid, statBar.nextSibling);
+            container.insertBefore(featTitle, statBar.nextSibling);
+            container.insertBefore(featureGrid, featTitle.nextSibling);
         }
         container.appendChild(siteFooter);
     }
