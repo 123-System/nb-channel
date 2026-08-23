@@ -131,7 +131,7 @@
     async function loadCurrentUser() {
         const stored = localStorage.getItem('nb_user');
         if (!stored) {
-            window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+            window.location.href = uiHref('login.html?redirect=') + encodeURIComponent(window.location.href);
             return;
         }
         try {
@@ -143,14 +143,14 @@
                 .maybeSingle();
             if (error || !data) {
                 localStorage.removeItem('nb_user');
-                window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+                window.location.href = uiHref('login.html?redirect=') + encodeURIComponent(window.location.href);
                 return;
             }
             currentUser = data;
             document.getElementById('ownerName').innerText = currentUser.username;
         } catch(e) {
             console.error(e);
-            window.location.href = 'login.html';
+            window.location.href = uiHref('login.html');
         }
     }
 
@@ -188,7 +188,7 @@
         } else {
             alert('公司注册成功！');
         }
-        window.location.href = 'Virtual stock.html';
+        window.location.href = uiHref('Virtual stock.html');
     }
 
     loadCurrentUser();

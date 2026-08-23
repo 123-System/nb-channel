@@ -275,7 +275,7 @@
     <div class="messages-container">
         <div class="messages-header">
             <div>
-                <button class="btn-back" onclick="window.location.href='comments-beta.html'">←</button>
+                <button class="btn-back" onclick="window.location.href=uiHref('comments-beta.html')">←</button>
                 <span style="font-weight:600; font-size:1.2rem; margin-left:4px;">消息中心</span>
             </div>
             <div class="header-actions">
@@ -620,7 +620,7 @@
             </div>`).join('');
         container.querySelectorAll('[data-conv]').forEach(el => {
             el.addEventListener('click', () => {
-                window.location.href = 'chat.html?conv=' + el.dataset.conv;
+                window.location.href = uiHref('chat.html?conv=' + el.dataset.conv);
             });
         });
     }

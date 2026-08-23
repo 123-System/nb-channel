@@ -640,7 +640,7 @@
                     window.location.href = `login.html?redirect=${redirect}`;
                 };
                 profileBtn.onclick = () => {
-                    window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+                    window.location.href = uiHref('login.html?redirect=') + encodeURIComponent(window.location.href);
                 };
                 if (checkinSection) checkinSection.style.display = 'none';
                 if (achSection) achSection.style.display = 'none';
@@ -688,7 +688,7 @@
                 location.reload();
             };
             profileBtn.onclick = () => {
-                window.location.href = 'profile.html';
+                window.location.href = uiHref('profile.html');
             };
 
             // 成就检查：新达成条件自动发奖并提示（幂等，不会重复发）

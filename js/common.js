@@ -427,6 +427,30 @@ function setUIVersion(v) {
 }
 
 // ==========================================================
+// uiHref：站内链接转 -new 版本（仅在新版文件内生效，旧版文件原样返回）
+// ==========================================================
+function uiHref(h) {
+    var page = (location.pathname.split('/').pop() || '').toLowerCase();
+    if (page.indexOf('-new.html') === -1) return h;
+    return String(h).replace(/\.html(?=[?#]|$)/, '-new.html');
+}
+
+// 新版文件内：拦截所有站内链接点击，直接跳 -new 版本（消除"先跳旧版再重定向"的闪跳）
+(function () {
+    document.addEventListener('click', function (e) {
+        var page = (location.pathname.split('/').pop() || '').toLowerCase();
+        if (page.indexOf('-new.html') === -1) return;
+        var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+        if (!a || a.onclick) return;   // 有自定义 onclick 的链接交给页面逻辑
+        var href = a.getAttribute('href') || '';
+        if (href.indexOf('.html') === -1 || href.indexOf('http') === 0 ||
+            href.indexOf('#') === 0 || href.indexOf('-new.html') !== -1) return;
+        e.preventDefault();
+        location.href = uiHref(href);
+    });
+})();
+
+// ==========================================================
 // 界面版本自动跳转：后端偏好 new → xxx-new.html；old → xxx.html
 // ==========================================================
 (function () {
