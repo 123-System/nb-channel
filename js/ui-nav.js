@@ -85,10 +85,12 @@
             var ring = document.createElement('div');
             ring.style.cssText = 'position:fixed; left:' + e.clientX + 'px; top:' + e.clientY + 'px; width:12px; height:12px; border:2px solid rgba(0,161,214,0.75); border-radius:50%; pointer-events:none; z-index:9999; transform:translate(-50%,-50%);';
             document.body.appendChild(ring);
-            ring.animate([
+            var ringAnim = ring.animate([
                 { transform: 'translate(-50%,-50%) scale(1)', opacity: 0.9 },
                 { transform: 'translate(-50%,-50%) scale(5.5)', opacity: 0 }
-            ], { duration: 600, easing: 'ease-out' }).onfinish = function () { ring.remove(); };
+            ], { duration: 600, easing: 'ease-out' });
+            ringAnim.onfinish = function () { ring.remove(); };
+            setTimeout(function () { if (ring.parentNode) ring.remove(); }, 900);   // 兜底清理，防止残留
 
             for (var i = 0; i < 8; i++) {
                 var p = document.createElement('div');
@@ -98,10 +100,13 @@
                 p.style.cssText = 'position:fixed; left:' + e.clientX + 'px; top:' + e.clientY + 'px; width:' + size + 'px; height:' + size + 'px; border-radius:50%; background:' + colors[i % colors.length] + '; pointer-events:none; z-index:9999;';
                 document.body.appendChild(p);
                 var dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
-                p.animate([
+                var dur = 500 + Math.random() * 250;
+                var anim = p.animate([
                     { transform: 'translate(0,0) scale(1)', opacity: 1 },
                     { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(0.1)', opacity: 0 }
-                ], { duration: 500 + Math.random() * 250, easing: 'cubic-bezier(0.15,0.8,0.25,1)' }).onfinish = function () { p.remove(); };
+                ], { duration: dur, easing: 'cubic-bezier(0.15,0.8,0.25,1)' });
+                anim.onfinish = function () { p.remove(); };
+                setTimeout(function () { if (p.parentNode) p.remove(); }, dur + 250);   // 兜底清理，防止残留
             }
         });
     }
