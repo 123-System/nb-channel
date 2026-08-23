@@ -106,10 +106,13 @@ function openVideoPlayer(card) {
     const bvid = card.dataset.bvid;
     const title = card.dataset.title || '';
     cap.innerText = title;
-    // 先显示弹窗再加载播放器：隐藏容器中初始化会导致"有声音没画面"
+    // 先显示弹窗，等布局稳定后再加载播放器（隐藏/未布局容器中初始化会"有声无画"）
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
-    frame.src = `https://player.bilibili.com/player.html?bvid=${bvid}&autoplay=1&high_quality=1&danmaku=0`;
+    setTimeout(() => {
+        // autoplay=0：手动点播放，规避自动播放策略导致的画面渲染异常
+        frame.src = `https://player.bilibili.com/player.html?bvid=${bvid}&autoplay=0&high_quality=1&danmaku=0`;
+    }, 100);
 }
 
 function closeVideoPlayer() {
