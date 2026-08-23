@@ -425,110 +425,106 @@
         injectOrbs();
         if (document.querySelector('.nav-container')) {
             replaceNav();
-            injectBanner();
         }
+        injectHomeHero();   // 原版首页：注入官网 hero/数据条/功能卡片（旧版时页面保持原版）
+        injectBanner();     // 其他页面：注入页面横幅（已有 .hero 的页面自动跳过）
         // 滚动渐显：等首屏元素就位后观察
         setTimeout(injectReveal, 50);
     }
 
-    // 旧版初始化：还原旧版导航 + 隐藏新版首页专属区块
+    // 旧版初始化：页面本身是原版，无需任何还原（只加切换按钮）
     function initOldUI() {
-        // 旧版样式：隐藏新版首页专属区块（hero/数据条/功能卡片），恢复旧版观感
-        if (!document.getElementById('uiOldStyle')) {
-            var st = document.createElement('style');
-            st.id = 'uiOldStyle';
-            st.textContent = '.hero, .hero-badges, .hero-video, .stat-bar, .feature-grid, #uiPageBanner { display: none !important; }';
-            document.head.appendChild(st);
-        }
-        // 首页（有 hero 手写新版结构）补充旧版标题
-        if (document.querySelector('.hero') && !document.querySelector('.old-title')) {
-            var h1 = document.createElement('h1');
-            h1.className = 'old-title';
-            h1.style.cssText = 'text-align:center; margin-bottom:20px;';
-            h1.textContent = '📺 NB频道官网';
-            var container = document.querySelector('.container') || document.body;
-            container.insertBefore(h1, container.firstChild);
-
-            // 旧版首页复原：把被 hero 吞掉的元素移出来
-            var containerEl = container;
-            // ① UP主信息（hero 内的 authorInfo）移到标题下
-            var authorInfo = document.getElementById('authorInfo');
-            if (authorInfo && authorInfo.closest('.hero')) {
-                var ai = document.createElement('div');
-                ai.className = 'author-info';
-                ai.id = 'authorInfo';
-                ai.textContent = authorInfo.textContent || 'UP主：NB搞事局';
-                h1.parentNode.insertBefore(ai, h1.nextSibling);
-            }
-            // ② LOGO 视频区（hero 内的 logoVideo）恢复为独立视频区
-            var logoVideo = document.getElementById('logoVideo');
-            if (logoVideo && logoVideo.closest('.hero')) {
-                var vc = document.createElement('div');
-                vc.className = 'video-container';
-                vc.innerHTML = '<p style="text-align:center; margin-top:10px; color:var(--count-text);">🎬 NB频道 LOGO动画</p>';
-                logoVideo.parentNode.removeChild(logoVideo);
-                vc.appendChild(logoVideo);
-                logoVideo.muted = true;
-                var playP = logoVideo.play ? logoVideo.play() : null;
-                if (playP && playP.catch) playP.catch(function () {});
-                var navHost = document.querySelector('.nav-container');
-                if (navHost && navHost.nextSibling) container.insertBefore(vc, navHost.nextSibling);
-                else container.appendChild(vc);
-            }
-        }
-        // 首页等已手写新版导航的页面：还原为旧版导航
-        var topNav = document.querySelector('.top-nav');
-        var quickNav = document.querySelector('.quick-nav');
-        if (topNav) {
-            var links = [];
-            Array.prototype.forEach.call(topNav.querySelectorAll('a.nav-btn'), function (a) {
-                links.push({ href: a.getAttribute('href') || '', text: (a.textContent || '').trim(), active: a.classList.contains('active') });
-            });
-            if (quickNav) {
-                Array.prototype.forEach.call(quickNav.querySelectorAll('a.nav-btn'), function (a) {
-                    links.push({ href: a.getAttribute('href') || '', text: (a.textContent || '').trim(), active: false });
-                });
-            }
-            var shareHtml = '';
-            var shareBtn = (quickNav || topNav).querySelector('.share-btn');
-            if (shareBtn) shareHtml = '<button class="share-btn" id="shareButton">' + (shareBtn.textContent || '📤 分享此频道') + '</button>';
-
-            var mainHrefs = ['index.html', 'videos.html', 'about.html', 'changelog.html', 'product.html', 'APP.html'];
-            var mainLinks = links.filter(function (l) { return mainHrefs.indexOf(l.href) !== -1; });
-            var funcLinks = links.filter(function (l) { return mainHrefs.indexOf(l.href) === -1 && !/^https?:/i.test(l.href); });
-            var extraLinks = links.filter(function (l) { return /^https?:/i.test(l.href); });
-
-            var host = document.createElement('div');
-            host.className = 'nav-container';
-            host.innerHTML =
-                '<div class="nav-links">' +
-                    mainLinks.map(function (l) { return '<a href="' + l.href + '" class="nav-btn' + (l.active ? ' active' : '') + '">' + l.text + '</a>'; }).join('') +
-                '</div>' +
-                '<div class="nav-actions">' +
-                    funcLinks.concat(extraLinks).map(function (l) {
-                        return '<a href="' + l.href + '" class="nav-btn" ' + (/^https?:/i.test(l.href) ? 'target="_blank" rel="noopener noreferrer"' : '') + '>' + l.text + '</a>';
-                    }).join('') +
-                    shareHtml +
-                '</div>';
-            // 登录/个人中心按钮移入旧版导航（保留原绑定）
-            var authArea = topNav.querySelector('.nav-right');
-            if (authArea) {
-                var authBtns = authArea.querySelectorAll('button');
-                Array.prototype.forEach.call(authBtns, function (b) {
-                    if (b.id === 'authButton' || b.id === 'profileBtn') {
-                        b.className = 'share-btn';
-                        host.querySelector('.nav-actions').appendChild(b);
-                    }
-                });
-            }
-            topNav.replaceWith(host);
-            if (quickNav) quickNav.remove();
-            // 还原分享按钮绑定
-            if (shareHtml && typeof initShareButton === 'function') {
-                try { initShareButton(); } catch (e) {}
-            }
-        }
         injectToggle();
+    }
+
+    // ===== 新版首页注入：给原版首页运行时加上官网 hero/数据条/功能卡片 =====
+    function injectHomeHero() {
+        // 仅原版首页（无 .hero 且含 .video-container）
+        if (document.querySelector('.hero')) return;
+        var vc = document.querySelector('.video-container');
+        if (!vc) return;
+        var container = document.querySelector('.container') || document.body;
+
+        // 1. 隐藏原版顶部标题与 UP主信息（内容由 hero 承担）
+        var h1 = container.querySelector(':scope > h1');
+        if (h1) h1.style.display = 'none';
+        var ai = document.getElementById('authorInfo');
+        if (ai) ai.style.display = 'none';
+
+        // 2. 取 LOGO 视频
+        var logoVideo = document.getElementById('logoVideo');
+        if (logoVideo) logoVideo.parentNode.removeChild(logoVideo);
+
+        // 3. Hero
+        var hero = document.createElement('div');
+        hero.className = 'hero';
+        hero.innerHTML =
+            '<div class="hero-badges">' +
+                '<span class="hero-badge">🏢 虚拟公司</span>' +
+                '<span class="hero-badge">📺 10万+粉丝</span>' +
+                '<span class="hero-badge">🧪 化学·物理·作死</span>' +
+            '</div>' +
+            '<h1>📺 NB频道官网</h1>' +
+            '<div class="hero-sub">UP主：NB搞事局 · 热爱理科（和作死）的畜中生 · 虚拟公司 NB圈</div>' +
+            '<div class="hero-btns">' +
+                '<a class="hero-btn" href="videos.html">🎬 看视频</a>' +
+                '<a class="hero-btn" href="comments-beta.html">💬 进评论区</a>' +
+                '<a class="hero-btn ghost" href="Virtual stock.html">📈 虚拟股票</a>' +
+                '<a class="hero-btn ghost" href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">⭐ B站关注</a>' +
+            '</div>' +
+            '<div class="hero-video"></div>';
+        if (logoVideo) {
+            logoVideo.muted = true;
+            hero.querySelector('.hero-video').appendChild(logoVideo);
+            var playP = logoVideo.play ? logoVideo.play() : null;
+            if (playP && playP.catch) playP.catch(function () {});
+        }
+        vc.style.display = 'none';
+
+        // 4. 数据条
+        var days = Math.floor((Date.now() - new Date('2026-02-17').getTime()) / 86400000);
+        var statBar = document.createElement('div');
+        statBar.className = 'stat-bar';
+        statBar.innerHTML =
+            '<div class="stat-item"><div class="num">10w+</div><div class="label">B站粉丝</div></div>' +
+            '<div class="stat-item"><div class="num">11</div><div class="label">友商官网</div></div>' +
+            '<div class="stat-item"><div class="num">' + days + ' 天</div><div class="label">建站天数</div></div>' +
+            '<div class="stat-item"><div class="num">6</div><div class="label">核心功能</div></div>';
+
+        // 5. 功能卡片
+        var featureGrid = document.createElement('div');
+        featureGrid.className = 'feature-grid';
+        featureGrid.innerHTML =
+            '<a class="feature-card" href="videos.html"><div class="f-icon">🎬</div><div class="f-name">视频</div><div class="f-desc">化学实验、物理趣味与日常作死</div><div class="f-go">去看看 →</div></a>' +
+            '<a class="feature-card" href="comments-beta.html"><div class="f-icon">💬</div><div class="f-name">评论区</div><div class="f-desc">和友商交流，支持图片与@提及</div><div class="f-go">去逛逛 →</div></a>' +
+            '<a class="feature-card" href="Virtual stock.html"><div class="f-icon">📈</div><div class="f-name">NB虚拟股票</div><div class="f-desc">NB币炒股，市场 8:00-20:00 自主运转</div><div class="f-go">去炒股 →</div></a>' +
+            '<a class="feature-card" href="chat.html"><div class="f-icon">👥</div><div class="f-name">好友私信</div><div class="f-desc">实时聊天，支持发送图片</div><div class="f-go">去聊天 →</div></a>' +
+            '<a class="feature-card" href="product_share.html"><div class="f-icon">🛍️</div><div class="f-name">作品分享</div><div class="f-desc">上传你的作品，或购买他人作品</div><div class="f-go">去看看 →</div></a>' +
+            '<a class="feature-card" href="messages.html"><div class="f-icon">🔔</div><div class="f-name">消息中心</div><div class="f-desc">评论回复、点赞与私信通知</div><div class="f-go">去看看 →</div></a>';
+
+        // 6. 新页脚（隐藏原版页脚文字）
+        var afterStats = container.querySelectorAll(':scope > .stats-container ~ p');
+        Array.prototype.forEach.call(afterStats, function (p) { p.style.display = 'none'; });
+        var siteFooter = document.createElement('footer');
+        siteFooter.className = 'site-footer';
+        siteFooter.innerHTML =
+            '<div>© 2026 NB频道 · 虚拟公司 · <a href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">nb-channel.top（导航页）</a> · <a href="https://github.nb-channel.top" target="_blank" rel="noopener noreferrer">github站</a> · <a href="https://cloudflare.nb-channel.top" target="_blank" rel="noopener noreferrer">cloudflare站</a> · <a href="https://pythonanywhere.nb-channel.top" target="_blank" rel="noopener noreferrer">pythonanywhere站</a></div>' +
+            '<div>如有任何问题或建议，请联系：<a href="mailto:nbchannel@163.com">nbchannel@163.com</a> 或 <a href="mailto:NBchannel@163.com">NBchannel@163.com</a></div>' +
+            '<div>制作：<a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">NB搞事局（原NB实验室-作死）</a></div>' +
+            '<div style="font-size:0.78rem;">托管：<a href="https://github.com/" target="_blank" rel="noopener noreferrer">Github</a> · <a href="https://www.cloudflare-cn.com/developer-platform/products/pages/" target="_blank" rel="noopener noreferrer">Cloudflare</a> · <a href="https://www.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">PythonAnywhere</a> · 视频托管：<a href="https://imgbed.cn/" target="_blank" rel="noopener noreferrer">图床小镇</a></div>';
+
+        // 7. 插入：导航之后
+        var navHost = document.querySelector('.top-nav') || document.querySelector('.quick-nav');
+        if (navHost && navHost.nextSibling) {
+            container.insertBefore(hero, navHost.nextSibling);
+            container.insertBefore(statBar, hero.nextSibling);
+            container.insertBefore(featureGrid, statBar.nextSibling);
+        } else {
+            container.insertBefore(hero, container.firstChild);
+            container.insertBefore(statBar, hero.nextSibling);
+            container.insertBefore(featureGrid, statBar.nextSibling);
+        }
+        container.appendChild(siteFooter);
     }
 
     if (getVer() === 'new') {

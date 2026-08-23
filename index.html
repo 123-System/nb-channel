@@ -184,265 +184,62 @@
             from { transform: translateX(0); }
             to { transform: translateX(var(--marquee-shift, -200px)); }
         }
-        /* ===== 预览版：官网化样式 ===== */
-        .hero {
-            background: linear-gradient(135deg, #00a1d6 0%, #0a84c1 45%, #6c5ce7 100%);
-            border-radius: 24px;
-            padding: 48px 32px 40px;
-            text-align: center;
-            color: #fff;
-            margin-bottom: 26px;
-            box-shadow: 0 18px 40px -12px rgba(0,161,214,0.5);
-            position: relative;
-            overflow: hidden;
-        }
-        .hero::before {
-            content: ''; position: absolute; top: -60px; right: -60px;
-            width: 200px; height: 200px; border-radius: 50%;
-            background: rgba(255,255,255,0.08);
-        }
-        .hero::after {
-            content: ''; position: absolute; bottom: -80px; left: -40px;
-            width: 220px; height: 220px; border-radius: 50%;
-            background: rgba(255,255,255,0.06);
-        }
-        .hero h1 { margin: 0 0 6px; font-size: 2.2rem; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-        .hero .hero-sub { font-size: 1rem; opacity: 0.92; margin-bottom: 22px; }
-        .hero .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 26px; }
-        .hero .hero-btn {
-            display: inline-block; background: #fff; color: #00a1d6;
-            border-radius: 40px; padding: 10px 26px; font-weight: 700;
-            text-decoration: none; transition: 0.2s; box-shadow: 0 4px 14px rgba(0,0,0,0.18);
-        }
-        .hero .hero-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.25); }
-        .hero .hero-btn.ghost { background: rgba(255,255,255,0.16); color: #fff; }
-        .hero-video { border-radius: 18px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.3); max-width: 720px; margin: 0 auto; border: 3px solid rgba(255,255,255,0.25); }
-        .hero-video video { display: block; width: 100%; }
-        .nav-container { background: var(--card-bg); border-radius: 18px; padding: 14px 16px; box-shadow: 0 6px 20px -8px rgba(0,0,0,0.12); border: 1px solid var(--card-border); margin-bottom: 20px; }
-        .friend-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; margin-top: 18px; }
-        .friend-card {
-            background: var(--count-bg); border: 1px solid var(--card-border); border-radius: 14px;
-            padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
-            transition: 0.2s;
-        }
-        .friend-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.12); border-color: #00a1d6; }
-        .friend-card .fc-name { font-size: 0.92rem; font-weight: 600; color: var(--text-color); }
-        .friend-card .fc-note { font-size: 0.72rem; color: var(--count-text); }
-        .friend-card a {
-            background: #00a1d6; color: #fff; border-radius: 20px; padding: 5px 14px;
-            font-size: 0.8rem; text-decoration: none; white-space: nowrap;
-        }
-        .friend-card a:hover { filter: brightness(0.9); }
-        .section-title {
-            display: flex; align-items: center; gap: 10px; margin: 28px 0 8px;
-            font-size: 1.25rem; font-weight: 700; color: var(--text-color);
-        }
-        .section-title::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, #00a1d6, transparent); }
-        /* ===== 大厂官网风格：通栏置顶导航 ===== */
-        .top-nav {
-            position: sticky; top: 0; z-index: 300;
-            display: flex; align-items: center; gap: 14px;
-            background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 18px; padding: 10px 18px; margin-bottom: 24px;
-            box-shadow: 0 8px 24px -10px rgba(0,0,0,0.14);
-        }
-        .top-nav .nav-logo {
-            font-size: 1.2rem; font-weight: 800; color: var(--status-border);
-            text-decoration: none; white-space: nowrap; letter-spacing: 0.5px;
-        }
-        .top-nav .nav-menu { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; justify-content: center; }
-        .top-nav .nav-menu .nav-btn {
-            padding: 8px 16px; font-size: 0.92rem; border-radius: 30px; text-decoration: none;
-            color: var(--nav-btn-text); background: var(--nav-btn-bg); transition: 0.2s; white-space: nowrap;
-        }
-        .top-nav .nav-menu .nav-btn:hover, .top-nav .nav-menu .nav-btn.active {
-            background: var(--nav-btn-hover-bg); color: white;
-        }
-        .top-nav .nav-right { display: flex; gap: 8px; white-space: nowrap; align-items: center; }
-        @media (max-width: 700px) {
-            .top-nav { flex-wrap: wrap; justify-content: space-between; padding: 10px 14px; }
-            .top-nav .nav-menu { order: 3; width: 100%; justify-content: center; }
-        }
-        /* 快捷入口条（替代原第二排导航） */
-        .quick-nav {
-            display: flex; justify-content: center; align-items: center; flex-wrap: wrap;
-            gap: 8px; margin-bottom: 24px; padding: 12px 14px;
-            background: var(--count-bg); border: 1px solid var(--card-border); border-radius: 16px;
-        }
-        .quick-nav .nav-btn {
-            padding: 7px 15px; font-size: 0.9rem; border-radius: 30px; text-decoration: none;
-            color: var(--nav-btn-text); background: var(--nav-btn-bg); transition: 0.2s; white-space: nowrap;
-        }
-        .quick-nav .nav-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
-        .quick-nav .share-btn {
-            background: var(--nav-btn-bg); color: var(--nav-btn-text);
-            border: none; border-radius: 30px; padding: 7px 15px; font-size: 0.9rem;
-            cursor: pointer; transition: 0.2s; font-weight: 500; white-space: nowrap;
-        }
-        .quick-nav .share-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
-        /* Hero 大字号（大厂 slogan 风格） */
-        .hero h1 { font-size: 3rem; font-weight: 900; letter-spacing: 1px; }
-        .hero .hero-sub { font-size: 1.05rem; }
-        @media (max-width: 600px) {
-            .hero h1 { font-size: 1.9rem; }
-        }
-        /* ===== 官网化增强 ===== */
-        /* Hero 徽章 */
-        .hero-badges { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-        .hero-badge {
-            background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35);
-            border-radius: 30px; padding: 4px 14px; font-size: 0.78rem; color: #fff;
-            backdrop-filter: blur(4px);
-        }
-        /* 数据条 */
-        .stat-bar {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 14px; margin: -6px 0 26px;
-        }
-        .stat-item {
-            background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 16px; padding: 16px 10px; text-align: center;
-            box-shadow: 0 4px 14px -8px rgba(0,0,0,0.12);
-        }
-        .stat-item .num { font-size: 1.5rem; font-weight: 800; color: var(--status-border); }
-        .stat-item .label { font-size: 0.78rem; color: var(--count-text); margin-top: 4px; }
-        /* 功能入口卡片 */
-        .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-top: 18px; }
-        .feature-card {
-            display: flex; flex-direction: column; align-items: center; gap: 6px;
-            background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 18px; padding: 22px 14px; text-decoration: none;
-            color: var(--text-color); transition: 0.22s;
-        }
-        .feature-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -10px rgba(0,161,214,0.35); border-color: #00a1d6; }
-        .feature-card .f-icon { font-size: 2.2rem; line-height: 1; }
-        .feature-card .f-name { font-weight: 700; font-size: 1rem; }
-        .feature-card .f-desc { font-size: 0.76rem; color: var(--count-text); text-align: center; min-height: 30px; }
-        .feature-card .f-go { font-size: 0.8rem; color: #00a1d6; font-weight: 600; }
-        /* 关于卡片微调 */
-        .home-card { border-radius: 18px; box-shadow: 0 10px 28px -14px rgba(0,0,0,0.16); }
-        /* Footer 规范化 */
-        .site-footer {
-            margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--card-border);
-            text-align: center; font-size: 0.85rem; color: var(--count-text); line-height: 2.1;
-        }
-        .site-footer a { color: var(--status-border); text-decoration: none; }
-        .site-footer a:hover { text-decoration: underline; }
-        @media (max-width: 600px) {
-            .hero { padding: 32px 16px 26px; }
-            .hero h1 { font-size: 1.6rem; }
-            .stat-bar { grid-template-columns: repeat(2, 1fr); }
-        }
     </style>
 </head>
 <body>
 <script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
 <div class="container">
-    <!-- 通栏置顶导航（大厂风格：Logo + 菜单 + 登录） -->
-    <nav class="top-nav">
-        <a class="nav-logo" href="index.html">📺 NB频道</a>
-        <div class="nav-menu">
-            <a href="index.html" class="nav-btn active">首页</a>
-            <a href="videos.html" class="nav-btn">视频</a>
-            <a href="about.html" class="nav-btn">关于</a>
-            <a href="changelog.html" class="nav-btn">更新日志</a>
-            <a href="product.html" class="nav-btn">我的产品</a>
-            <a href="APP.html" class="nav-btn">软件/APP下载</a>
-        </div>
-        <div class="nav-right">
-            <div id="authArea">
-                <button id="profileBtn" class="profile-btn">👤 个人中心</button>
-                <button id="authButton" class="auth-btn">登录/注册</button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Hero 区 -->
-    <div class="hero">
-        <div class="hero-badges">
-            <span class="hero-badge">🏢 虚拟公司</span>
-            <span class="hero-badge">📺 10万+粉丝</span>
-            <span class="hero-badge">🧪 化学·物理·作死</span>
-        </div>
-        <h1>📺 NB频道官网</h1>
-        <div class="hero-sub" id="authorInfo">UP主：NB搞事局 · 热爱理科（和作死）的畜中生 · 虚拟公司 NB圈</div>
-        <div class="hero-btns">
-            <a class="hero-btn" href="videos.html">🎬 看视频</a>
-            <a class="hero-btn" href="comments-beta.html">💬 进评论区</a>
-            <a class="hero-btn ghost" href="Virtual stock.html">📈 虚拟股票</a>
-            <a class="hero-btn ghost" href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">⭐ B站关注</a>
-        </div>
-        <div class="hero-video">
-            <video 
-                id="logoVideo"
-                src="https://videos.tuchuangyun.top/autoupload/f/2ybw2nnc3ldHerixYxPOdCfNcKcqEnRmcljopnyJoMs/20260316/5rPu/LOGO%EF%BC%88%E6%9C%80%E7%BB%88%EF%BC%89.mp4" 
-                type="video/mp4" 
-                autoplay 
-                muted 
-                playsinline
-                disablePictureInPicture
-            >
-                您的浏览器不支持 Video 标签。
-            </video>
-        </div>
+    <!-- 右上角按钮区域（增加个人中心） -->
+    <div id="authArea" class="auth-area">
+        <button id="profileBtn" class="profile-btn">👤 个人中心</button>
+        <button id="authButton" class="auth-btn">登录/注册</button>
     </div>
 
-    <!-- 数据条 -->
-    <div class="stat-bar">
-        <div class="stat-item"><div class="num">10w+</div><div class="label">B站粉丝</div></div>
-        <div class="stat-item"><div class="num">11</div><div class="label">友商官网</div></div>
-        <div class="stat-item"><div class="num" id="siteDays">--</div><div class="label">建站天数</div></div>
-        <div class="stat-item"><div class="num">6</div><div class="label">核心功能</div></div>
-    </div>
+    <h1>📺 NB频道官网</h1>
+    <div class="author-info" id="authorInfo">UP主：NB搞事局</div>
 
-    <!-- 快捷入口条（评论区/股票/好友/作品/消息 + 分享） -->
-    <div class="quick-nav">
-        <span style="font-size:0.85rem; color:var(--count-text);">⚡ 快捷入口：</span>
+    <!-- 导航栏 -->
+    <div class="nav-container">
+    <div class="nav-links">
+        <a href="index.html" class="nav-btn active">首页</a>
+        <a href="videos.html" class="nav-btn">视频</a>
+        <a href="about.html" class="nav-btn">关于</a>
+        <a href="changelog.html" class="nav-btn">更新日志</a>
+        <a href="product.html" class="nav-btn">我的产品</a>
+        <a href="APP.html" class="nav-btn">软件/APP下载</a>
+    </div>
+    <div class="nav-actions">
+        <button class="share-btn" id="shareButton">📤 分享此频道</button>
         <a href="comments-beta.html" class="nav-btn">💬 评论区</a>
         <a href="Virtual stock.html" class="nav-btn">📈 NB虚拟股票</a>
         <a href="chat.html" class="nav-btn">👥 好友</a>
         <a href="product_share.html" class="nav-btn">🛍️ 作品分享</a>
         <a href="messages.html" class="nav-btn">🔔 消息</a>
-        <button class="share-btn" id="shareButton">📤 分享此频道</button>
     </div>
+</div>
 
     <!-- 公告栏（内容在 Supabase admin_config 表，key=announcement，管理后台 admin-announcement.html） -->
     <div id="announcementBar" class="announcement-bar" style="display:none;">
         <div class="marquee-track" id="announcementTrack"></div>
     </div>
 
-    <!-- 核心功能入口 -->
-    <div class="section-title">🚀 核心功能</div>
-    <div class="feature-grid">
-        <a class="feature-card" href="videos.html">
-            <div class="f-icon">🎬</div><div class="f-name">视频</div>
-            <div class="f-desc">化学实验、物理趣味与日常作死</div><div class="f-go">去看看 →</div>
-        </a>
-        <a class="feature-card" href="comments-beta.html">
-            <div class="f-icon">💬</div><div class="f-name">评论区</div>
-            <div class="f-desc">和友商交流，支持图片与@提及</div><div class="f-go">去逛逛 →</div>
-        </a>
-        <a class="feature-card" href="Virtual stock.html">
-            <div class="f-icon">📈</div><div class="f-name">NB虚拟股票</div>
-            <div class="f-desc">NB币炒股，市场 8:00-20:00 自主运转</div><div class="f-go">去炒股 →</div>
-        </a>
-        <a class="feature-card" href="chat.html">
-            <div class="f-icon">👥</div><div class="f-name">好友私信</div>
-            <div class="f-desc">实时聊天，支持发送图片</div><div class="f-go">去聊天 →</div>
-        </a>
-        <a class="feature-card" href="product_share.html">
-            <div class="f-icon">🛍️</div><div class="f-name">作品分享</div>
-            <div class="f-desc">上传你的作品，或购买他人作品</div><div class="f-go">去看看 →</div>
-        </a>
-        <a class="feature-card" href="messages.html">
-            <div class="f-icon">🔔</div><div class="f-name">消息中心</div>
-            <div class="f-desc">评论回复、点赞与私信通知</div><div class="f-go">去看看 →</div>
-        </a>
+    <!-- Logo 视频区域 -->
+    <div class="video-container">
+        <p style="text-align:center; margin-top:10px; color:var(--count-text);">🎬 NB频道 LOGO动画</p>
+        <video 
+            id="logoVideo"
+            src="https://videos.tuchuangyun.top/autoupload/f/2ybw2nnc3ldHerixYxPOdCfNcKcqEnRmcljopnyJoMs/20260316/5rPu/LOGO%EF%BC%88%E6%9C%80%E7%BB%88%EF%BC%89.mp4" 
+            type="video/mp4" 
+            autoplay 
+            muted 
+            playsinline
+            disablePictureInPicture
+            style="width:100%; height:auto; aspect-ratio:16/9; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);"
+        >
+            您的浏览器不支持 Video 标签。
+        </video>
     </div>
-
-    <!-- Logo 视频区域已并入上方 Hero（预览版） -->
     
-    <div class="section-title">🏠 关于 NB频道</div>
     <div class="home-row">
         <!-- 左侧卡片 -->
         <div class="home-card">
@@ -486,20 +283,21 @@
         </div>
     </div>
 
-    <!-- 友商链接（卡片网格） -->
-    <div class="section-title">🌐 友商链接</div>
-    <div class="friend-grid">
-        <div class="friend-card"><div><div class="fc-name">Orgent</div><div class="fc-note">已注销 · 仅留念</div></div><a href="https://orgent.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">访问</a></div>
-        <div class="friend-card"><div><div class="fc-name">AWM</div><div class="fc-note">友商官网</div></div><a href="https://45d.cn/AWM/" target="_blank" rel="noopener noreferrer">访问</a></div>
-        <div class="friend-card"><div><div class="fc-name">Fafat</div><div class="fc-note">友商官网</div></div><a href="https://fafat.uuk.pp.ua/" target="_blank" rel="noopener noreferrer">访问</a></div>
-        <div class="friend-card"><div><div class="fc-name">Lemon（齐喜）</div><div class="fc-note">友商官网</div></div><a href="https://nb-qx.top/" target="_blank" rel="noopener noreferrer">访问</a></div>
-        <div class="friend-card"><div><div class="fc-name">GaoHanTu</div><div class="fc-note">友商官网</div></div><a href="https://gaohantu.cn/" target="_blank" rel="noopener noreferrer">访问</a></div>
-        <div class="friend-card"><div><div class="fc-name">Utw</div><div class="fc-note">友商官网</div></div><a href="https://utw.pages.dev" target="_blank" rel="noopener noreferrer">访问</a></div>
-        <div class="friend-card"><div><div class="fc-name">PTC(GoodPTC)</div><div class="fc-note">友商官网</div></div><a href="https://pipetrainingcamp.github.io/" target="_blank" rel="noopener noreferrer">访问</a></div>
-        <div class="friend-card"><div><div class="fc-name">UVS</div><div class="fc-note">友商官网</div></div><a href="https://yoyo-user-awa.github.io/UVS/" target="_blank" rel="noopener noreferrer">访问</a></div>
-        <div class="friend-card"><div><div class="fc-name">UwLS</div><div class="fc-note">友商官网</div></div><a href="https://3f7ceb4e.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">访问</a></div>
-        <div class="friend-card"><div><div class="fc-name">Oganesson</div><div class="fc-note">友商官网</div></div><a href="https://45d.cn/nb-og.top/" target="_blank" rel="noopener noreferrer">访问</a></div>
-        <div class="friend-card"><div><div class="fc-name">SOT</div><div class="fc-note">友商官网</div></div><a href="https://78439049.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">访问</a></div>
+    <!-- 第三张卡片（友商链接） -->
+    <div class="home-card">
+        <p style="color:#00a1d6; margin-top:30px;">什么？你想了解其他虚拟公司的网站？</p>
+        <p>没关系,我这里也有链接↓</p>
+        <p style="margin-top:20px;">🔗 友商Orgentの官网（无法访问，其B站账号已注销，此链接仅留念Orgent）：<a href="https://orgent.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+        <p style="margin-top:20px;">🔗 友商AWMの官网：<a href="https://45d.cn/AWM/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+        <p style="margin-top:20px;">🔗 友商Fafatの官网：<a href="https://fafat.uuk.pp.ua/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+        <p style="margin-top:20px;">🔗 友商Lemon（齐喜）の官网：<a href="https://nb-qx.top/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+        <p style="margin-top:20px;">🔗 友商GaoHanTuの官网：<a href="https://gaohantu.cn/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+        <p style="margin-top:20px;">🔗 友商Utwの官网：<a href="https://utw.pages.dev" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+        <p style="margin-top:20px;">🔗 友商PTC(GoodPTC)の官网：<a href="https://pipetrainingcamp.github.io/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+        <p style="margin-top:20px;">🔗 友商UVSの官网：<a href="https://yoyo-user-awa.github.io/UVS/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+        <p style="margin-top:20px;">🔗 友商UwLSの官网：<a href="https://3f7ceb4e.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+        <p style="margin-top:20px;">🔗 友商Oganessonの官网：<a href="https://45d.cn/nb-og.top/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
+        <p style="margin-top:20px;">🔗 友商SOTの官网：<a href="https://78439049.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">点击访问</a></p>
     </div>
 
     <div class="stats-container">
@@ -508,71 +306,25 @@
     </div>
 </div>
 
-<footer class="site-footer">
-    <div>© 2026 NB频道 · 虚拟公司 · <a href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">nb-channel.top（导航页）</a> · <a href="https://github.nb-channel.top" target="_blank" rel="noopener noreferrer">github站</a> · <a href="https://cloudflare.nb-channel.top" target="_blank" rel="noopener noreferrer">cloudflare站</a> · <a href="https://pythonanywhere.nb-channel.top" target="_blank" rel="noopener noreferrer">pythonanywhere站</a></div>
-    <div>如有任何问题或建议，请联系：<a href="mailto:nbchannel@163.com">nbchannel@163.com</a> 或 <a href="mailto:NBchannel@163.com">NBchannel@163.com</a></div>
-    <div>制作：<a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">NB搞事局（原NB实验室-作死）</a></div>
-    <div style="font-size:0.78rem;">托管：<a href="https://github.com/" target="_blank" rel="noopener noreferrer">Github</a> · <a href="https://www.cloudflare-cn.com/developer-platform/products/pages/" target="_blank" rel="noopener noreferrer">Cloudflare</a> · <a href="https://www.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">PythonAnywhere</a> · 视频托管：<a href="https://imgbed.cn/" target="_blank" rel="noopener noreferrer">图床小镇</a></div>
-</footer>
+<p align="center" style="margin-top:15px;">
+    <strong>
+        © 2026 NB频道 
+        <a href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">nb-channel.top（导航页）</a>，
+        <a href="https://github.nb-channel.top" target="_blank" rel="noopener noreferrer">github.nb-channel.top（github站）</a>，<br>
+        <a href="https://cloudflare.nb-channel.top" target="_blank" rel="noopener noreferrer">cloudflare.nb-channel.top（cloudflare站）</a>，
+        <a href="https://pythonanywhere.nb-channel.top" target="_blank" rel="noopener noreferrer">pythonanywhere.nb-channel.top（pythonanywhere站）</a>
+    </strong>
+</p>
+<p align="center" style="margin-top:15px;">如果您对NB频道有任何问题或建议可以联系我：</p>
+<p align="center" style="margin-top:5px;">邮箱：<a href="mailto:nbchannel@163.com">nbchannel@163.com</a>或<a href="mailto:NBchannel@163.com">NBchannel@163.com</a></p>
+<p align="center" style="margin-top:15px;"><strong>制作：<a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">NB搞事局（原NB实验室-作死）</a></strong></p>
+<p align="center" style="margin-top:15px;"><a href="https://github.com/" target="_blank" rel="noopener noreferrer">Github</a>、<a href="https://www.cloudflare-cn.com/developer-platform/products/pages/" target="_blank" rel="noopener noreferrer">Cloudflare</a>和<a href="https://www.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">pythonanywhere</a>提供网站托管服务</p>
+<p align="center" style="margin-top:15px;"><a href="https://imgbed.cn/" target="_blank" rel="noopener noreferrer">图床小镇</a>提供视频托管服务</p>
 
 <div class="fixed-buttons">
     <button class="theme-toggle-fixed" id="themeToggleFixed" onclick="toggleTheme()">🌙</button>
     <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
 </div>
-
-<script>
-// ===== 鼠标特效（仅鼠标设备启用，不影响手机触屏；旧版界面不启用） =====
-(function () {
-    if (typeof getUIVersion === 'function' && getUIVersion() === 'old') return;
-    const fine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
-    if (!fine) return;
-    window.__uiHomeFxLoaded = true;   // 标记：首页已自带特效，ui-nav.js 不再重复注入
-
-    // 1. 鼠标跟随光晕（柔和品牌色光圈）
-    const glow = document.createElement('div');
-    glow.style.cssText = 'position:fixed; left:-999px; top:-999px; width:240px; height:240px; border-radius:50%; pointer-events:none; z-index:9997; transform:translate(-50%,-50%); background:radial-gradient(circle, rgba(0,161,214,0.20), rgba(108,92,231,0.10) 45%, transparent 65%);';
-    document.body.appendChild(glow);
-    let gx = -999, gy = -999, tx = -999, ty = -999;
-    document.addEventListener('mousemove', (e) => { tx = e.clientX; ty = e.clientY; });
-    document.addEventListener('mouseleave', () => { glow.style.opacity = '0'; });
-    document.addEventListener('mouseenter', () => { glow.style.opacity = '1'; });
-    (function loop() {
-        gx += (tx - gx) * 0.14;
-        gy += (ty - gy) * 0.14;
-        glow.style.left = gx + 'px';
-        glow.style.top = gy + 'px';
-        requestAnimationFrame(loop);
-    })();
-
-    // 2. 点击：彩色粒子绽放 + 扩散波纹
-    const colors = ['#00a1d6', '#6c5ce7', '#ff9800', '#ffd700', '#4caf50'];
-    document.addEventListener('click', (e) => {
-        // 波纹环
-        const ring = document.createElement('div');
-        ring.style.cssText = `position:fixed; left:${e.clientX}px; top:${e.clientY}px; width:12px; height:12px; border:2px solid rgba(0,161,214,0.75); border-radius:50%; pointer-events:none; z-index:9999; transform:translate(-50%,-50%);`;
-        document.body.appendChild(ring);
-        ring.animate([
-            { transform: 'translate(-50%,-50%) scale(1)', opacity: 0.9 },
-            { transform: 'translate(-50%,-50%) scale(5.5)', opacity: 0 }
-        ], { duration: 600, easing: 'ease-out' }).onfinish = () => ring.remove();
-
-        // 粒子
-        for (let i = 0; i < 8; i++) {
-            const p = document.createElement('div');
-            const size = 4 + Math.random() * 6;
-            const ang = Math.random() * Math.PI * 2;
-            const dist = 28 + Math.random() * 52;
-            p.style.cssText = `position:fixed; left:${e.clientX}px; top:${e.clientY}px; width:${size}px; height:${size}px; border-radius:50%; background:${colors[i % colors.length]}; pointer-events:none; z-index:9999;`;
-            document.body.appendChild(p);
-            const dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
-            p.animate([
-                { transform: 'translate(0,0) scale(1)', opacity: 1 },
-                { transform: `translate(${dx}px, ${dy}px) scale(0.1)`, opacity: 0 }
-            ], { duration: 500 + Math.random() * 250, easing: 'cubic-bezier(0.15,0.8,0.25,1)' }).onfinish = () => p.remove();
-        }
-    });
-})();
-</script>
 
 <!-- 自定义模态框 -->
 <div id="customMessageModal" class="custom-modal">
@@ -817,15 +569,6 @@
     if (typeof initShareButton === 'function') {
         initShareButton();
     }
-
-    // 数据条：建站天数（2026-02-17 建站）
-    (function () {
-        const el = document.getElementById('siteDays');
-        if (el) {
-            const days = Math.floor((Date.now() - new Date('2026-02-17').getTime()) / 86400000);
-            el.innerText = days + ' 天';
-        }
-    })();
 
     const logoVideo = document.getElementById('logoVideo');
     if (logoVideo) {
