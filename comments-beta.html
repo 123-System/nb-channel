@@ -626,7 +626,7 @@
         const author = node.profiles?.username || '匿名';
         // 头像：有 avatar_url 用真实头像，否则用内嵌默认头像（灰色人像，无需上传文件）
         const avatarUrl = node.profiles?.avatar_url || 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2744%27%20height=%2744%27%3E%3Crect%20width=%2744%27%20height=%2744%27%20fill=%27%23b0bec5%27/%3E%3Ccircle%20cx=%2722%27%20cy=%2717%27%20r=%278%27%20fill=%27%23eceff1%27/%3E%3Cpath%20d=%27M8%2040c2-8%208-12%2014-12s12%204%2014%2012z%27%20fill=%27%23eceff1%27/%3E%3C/svg%3E';
-        const avatarHtml = `<img src="${avatarUrl}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:6px;" alt="">`;
+        const avatarHtml = `<img src="${avatarUrl}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px;" alt="">`;
         const fullText = node.content;
         const isLong = fullText.length > 50;
         let displayText, toggleButton = '';
