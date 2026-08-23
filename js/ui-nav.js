@@ -9,7 +9,29 @@
 // ============================================================
 (function () {
     function getVer() {
+        // -new 文件本身即新版版式，强制新版（不受本地偏好影响）
+        var page = (location.pathname.split('/').pop() || '').toLowerCase();
+        if (page.indexOf('-new.html') !== -1) return 'new';
         return typeof getUIVersion === 'function' ? getUIVersion() : 'new';
+    }
+
+    // 在新版文件中，站内链接自动指向 -new 版本（避免跳回旧版再被重定向）
+    function newHref(h) {
+        var page = (location.pathname.split('/').pop() || '').toLowerCase();
+        if (page.indexOf('-new.html') !== -1 && h && h.indexOf('.html') !== -1 &&
+            h.indexOf('http') !== 0 && h.indexOf('#') !== 0 && h.indexOf('-new.html') === -1) {
+            return h.replace('.html', '-new.html');
+        }
+        return h;
+    }
+
+    // 批量转换 HTML 字符串内的站内链接为 -new 版本（仅 -new 文件生效）
+    function newHrefHtml(html) {
+        var page = (location.pathname.split('/').pop() || '').toLowerCase();
+        if (page.indexOf('-new.html') === -1) return html;
+        return html.replace(/href="([^"#]+)\.html"/g, function (m, p1) {
+            return 'href="' + p1 + '-new.html"';
+        });
     }
 
     // 注入界面切换按钮
@@ -20,8 +42,23 @@
         btn.title = getVer() === 'new' ? '当前：新版界面，点击切换回旧版' : '当前：旧版界面，点击切换到新版';
         btn.textContent = getVer() === 'new' ? '🖥️' : '📄';
         btn.onclick = function () {
-            if (typeof setUIVersion === 'function') setUIVersion(getVer() === 'new' ? 'old' : 'new');
-            location.reload();
+            var target = getVer() === 'new' ? 'old' : 'new';
+            if (typeof setUIVersion === 'function') setUIVersion(target);
+            // 跳转到对应版本文件（xxx.html <-> xxx-new.html）
+            var rawPage = location.pathname.split('/').pop() || '';
+            var lower = rawPage.toLowerCase();
+            if (lower.indexOf('.html') !== -1) {
+                var isNew = lower.indexOf('-new.html') !== -1;
+                if (target === 'new' && !isNew) {
+                    location.href = rawPage.replace(/\.html$/i, '-new.html');
+                } else if (target === 'old' && isNew) {
+                    location.href = rawPage.replace(/-new\.html$/i, '.html');
+                } else {
+                    location.reload();
+                }
+            } else {
+                location.reload();
+            }
         };
         document.body.appendChild(btn);
     }
@@ -113,11 +150,11 @@
         banner.id = 'uiPageBanner';
         // 标题：取 <title> 去 "- NB频道" 后缀
         var title = (document.title || '').replace(/\s*[-–—]\s*NB频道.*$/, '').trim() || 'NB频道';
-        banner.innerHTML =
+        banner.innerHTML = newHrefHtml(
             '<div style="position:absolute; top:-60px; right:-60px; width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,0.08);"></div>' +
             '<div style="position:absolute; bottom:-80px; left:-40px; width:220px; height:220px; border-radius:50%; background:rgba(255,255,255,0.06);"></div>' +
             '<div style="font-size:1.9rem; font-weight:900; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,0.2);">' + title + '</div>' +
-            '<div style="font-size:0.95rem; opacity:0.92; color:#fff; margin-top:6px;">📺 NB频道 · 虚拟公司 · 官网</div>';
+            '<div style="font-size:0.95rem; opacity:0.92; color:#fff; margin-top:6px;">📺 NB频道 · 虚拟公司 · 官网</div>');
         banner.style.cssText = 'position:relative; overflow:hidden; background:linear-gradient(135deg, #00a1d6 0%, #0a84c1 45%, #6c5ce7 100%); border-radius:24px; padding:36px 28px; text-align:center; margin-bottom:24px; box-shadow:0 18px 40px -12px rgba(0,161,214,0.5);';
         // 插入到导航之后（body 顶部附近）
         var navHost = document.querySelector('.top-nav') || document.querySelector('.quick-nav');
@@ -374,20 +411,26 @@
         var extraLinks = links.filter(function (l) { return /^https?:/i.test(l.href); });
 
         var mainHtml = mainLinks.map(function (l) {
-            return '<a href="' + l.href + '" class="nav-btn' + (l.active ? ' active' : '') + '">' + l.text + '</a>';
+            return '<a href="' + newHref(l.href) + '" class="nav-btn' + (l.active ? ' active' : '') + '">' + l.text + '</a>';
         }).join('');
         var funcHtml = funcLinks.concat(extraLinks).map(function (l) {
-            return '<a href="' + l.href + '" class="nav-btn" ' + (/^https?:/i.test(l.href) ? 'target="_blank" rel="noopener noreferrer"' : '') + '>' + l.text + '</a>';
+            return '<a href="' + newHref(l.href) + '" class="nav-btn" ' + (/^https?:/i.test(l.href) ? 'target="_blank" rel="noopener noreferrer"' : '') + '>' + l.text + '</a>';
         }).join('');
+
+        // 页面已有原版登录胶囊（.auth-area）时，导航内不再渲染重复的登录按钮
+        var hasAuthArea = !!document.querySelector('.auth-area');
+        var authHtml = hasAuthArea
+            ? ''
+            : '<div class="nav-right">' +
+                '<button id="profileBtn" class="profile-btn">👤 个人中心</button>' +
+                '<button id="authButton" class="auth-btn">登录/注册</button>' +
+              '</div>';
 
         var newHtml =
             '<nav class="top-nav">' +
-                '<a class="nav-logo" href="index.html">📺 NB频道</a>' +
+                '<a class="nav-logo" href="' + newHref('index.html') + '">📺 NB频道</a>' +
                 '<div class="nav-menu">' + mainHtml + '</div>' +
-                '<div class="nav-right">' +
-                    '<button id="profileBtn" class="profile-btn">👤 个人中心</button>' +
-                    '<button id="authButton" class="auth-btn">登录/注册</button>' +
-                '</div>' +
+                authHtml +
             '</nav>' +
             '<div class="quick-nav">' +
                 '<span style="font-size:0.85rem; color:var(--count-text);">⚡ 快捷入口：</span>' +
@@ -438,7 +481,7 @@
         // 3. Hero
         var hero = document.createElement('div');
         hero.className = 'hero';
-        hero.innerHTML =
+        hero.innerHTML = newHrefHtml(
             '<div class="hero-badges">' +
                 '<span class="hero-badge">🏢 虚拟公司</span>' +
                 '<span class="hero-badge">📺 10万+粉丝</span>' +
@@ -452,7 +495,7 @@
                 '<a class="hero-btn ghost" href="Virtual stock.html">📈 虚拟股票</a>' +
                 '<a class="hero-btn ghost" href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">⭐ B站关注</a>' +
             '</div>' +
-            '<div class="hero-video"></div>';
+            '<div class="hero-video"></div>');
         if (logoVideo) {
             logoVideo.muted = true;
             hero.querySelector('.hero-video').appendChild(logoVideo);
@@ -465,27 +508,27 @@
         var days = Math.floor((Date.now() - new Date('2026-02-17').getTime()) / 86400000);
         var statBar = document.createElement('div');
         statBar.className = 'stat-bar';
-        statBar.innerHTML =
+        statBar.innerHTML = newHrefHtml(
             '<div class="stat-item"><div class="num">10w+</div><div class="label">B站粉丝</div></div>' +
             '<div class="stat-item"><div class="num">11</div><div class="label">友商官网</div></div>' +
             '<div class="stat-item"><div class="num">' + days + ' 天</div><div class="label">建站天数</div></div>' +
-            '<div class="stat-item"><div class="num">6</div><div class="label">核心功能</div></div>';
+            '<div class="stat-item"><div class="num">6</div><div class="label">核心功能</div></div>');
 
         // 5. 功能卡片
         var featureGrid = document.createElement('div');
         featureGrid.className = 'feature-grid';
-        featureGrid.innerHTML =
+        featureGrid.innerHTML = newHrefHtml(
             '<a class="feature-card" href="videos.html"><div class="f-icon">🎬</div><div class="f-name">视频</div><div class="f-desc">化学实验、物理趣味与日常作死</div><div class="f-go">去看看 →</div></a>' +
             '<a class="feature-card" href="comments-beta.html"><div class="f-icon">💬</div><div class="f-name">评论区</div><div class="f-desc">和友商交流，支持图片与@提及</div><div class="f-go">去逛逛 →</div></a>' +
             '<a class="feature-card" href="Virtual stock.html"><div class="f-icon">📈</div><div class="f-name">NB虚拟股票</div><div class="f-desc">NB币炒股，市场 8:00-20:00 自主运转</div><div class="f-go">去炒股 →</div></a>' +
             '<a class="feature-card" href="chat.html"><div class="f-icon">👥</div><div class="f-name">好友私信</div><div class="f-desc">实时聊天，支持发送图片</div><div class="f-go">去聊天 →</div></a>' +
             '<a class="feature-card" href="product_share.html"><div class="f-icon">🛍️</div><div class="f-name">作品分享</div><div class="f-desc">上传你的作品，或购买他人作品</div><div class="f-go">去看看 →</div></a>' +
-            '<a class="feature-card" href="messages.html"><div class="f-icon">🔔</div><div class="f-name">消息中心</div><div class="f-desc">评论回复、点赞与私信通知</div><div class="f-go">去看看 →</div></a>';
+            '<a class="feature-card" href="messages.html"><div class="f-icon">🔔</div><div class="f-name">消息中心</div><div class="f-desc">评论回复、点赞与私信通知</div><div class="f-go">去看看 →</div></a>');
 
         // 6. 友商网格（与预览版一致）+ 隐藏原版友商文字卡
         var friendGrid = document.createElement('div');
         friendGrid.className = 'friend-grid';
-        friendGrid.innerHTML =
+        friendGrid.innerHTML = newHrefHtml(
             '<div class="friend-card"><div><div class="fc-name">Orgent</div><div class="fc-note">已注销 · 仅留念</div></div><a href="https://orgent.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">访问</a></div>' +
             '<div class="friend-card"><div><div class="fc-name">AWM</div><div class="fc-note">友商官网</div></div><a href="https://45d.cn/AWM/" target="_blank" rel="noopener noreferrer">访问</a></div>' +
             '<div class="friend-card"><div><div class="fc-name">Fafat</div><div class="fc-note">友商官网</div></div><a href="https://fafat.uuk.pp.ua/" target="_blank" rel="noopener noreferrer">访问</a></div>' +
@@ -496,7 +539,7 @@
             '<div class="friend-card"><div><div class="fc-name">UVS</div><div class="fc-note">友商官网</div></div><a href="https://yoyo-user-awa.github.io/UVS/" target="_blank" rel="noopener noreferrer">访问</a></div>' +
             '<div class="friend-card"><div><div class="fc-name">UwLS</div><div class="fc-note">友商官网</div></div><a href="https://3f7ceb4e.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">访问</a></div>' +
             '<div class="friend-card"><div><div class="fc-name">Oganesson</div><div class="fc-note">友商官网</div></div><a href="https://45d.cn/nb-og.top/" target="_blank" rel="noopener noreferrer">访问</a></div>' +
-            '<div class="friend-card"><div><div class="fc-name">SOT</div><div class="fc-note">友商官网</div></div><a href="https://78439049.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">访问</a></div>';
+            '<div class="friend-card"><div><div class="fc-name">SOT</div><div class="fc-note">友商官网</div></div><a href="https://78439049.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">访问</a></div>');
         var friendTitle = document.createElement('div');
         friendTitle.className = 'section-title';
         friendTitle.textContent = '🌐 友商链接';
@@ -511,11 +554,11 @@
         Array.prototype.forEach.call(afterStats, function (p) { p.style.display = 'none'; });
         var siteFooter = document.createElement('footer');
         siteFooter.className = 'site-footer';
-        siteFooter.innerHTML =
+        siteFooter.innerHTML = newHrefHtml(
             '<div>© 2026 NB频道 · 虚拟公司 · <a href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">nb-channel.top（导航页）</a> · <a href="https://github.nb-channel.top" target="_blank" rel="noopener noreferrer">github站</a> · <a href="https://cloudflare.nb-channel.top" target="_blank" rel="noopener noreferrer">cloudflare站</a> · <a href="https://pythonanywhere.nb-channel.top" target="_blank" rel="noopener noreferrer">pythonanywhere站</a></div>' +
             '<div>如有任何问题或建议，请联系：<a href="mailto:nbchannel@163.com">nbchannel@163.com</a> 或 <a href="mailto:NBchannel@163.com">NBchannel@163.com</a></div>' +
             '<div>制作：<a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">NB搞事局（原NB实验室-作死）</a></div>' +
-            '<div style="font-size:0.78rem;">托管：<a href="https://github.com/" target="_blank" rel="noopener noreferrer">Github</a> · <a href="https://www.cloudflare-cn.com/developer-platform/products/pages/" target="_blank" rel="noopener noreferrer">Cloudflare</a> · <a href="https://www.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">PythonAnywhere</a> · 视频托管：<a href="https://imgbed.cn/" target="_blank" rel="noopener noreferrer">图床小镇</a></div>';
+            '<div style="font-size:0.78rem;">托管：<a href="https://github.com/" target="_blank" rel="noopener noreferrer">Github</a> · <a href="https://www.cloudflare-cn.com/developer-platform/products/pages/" target="_blank" rel="noopener noreferrer">Cloudflare</a> · <a href="https://www.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">PythonAnywhere</a> · 视频托管：<a href="https://imgbed.cn/" target="_blank" rel="noopener noreferrer">图床小镇</a></div>');
 
         // 7. 插入：导航之后（hero → 数据条 → 功能卡片区 → 友商网格）
         var featTitle = document.createElement('div');

@@ -397,15 +397,70 @@ function fallbackCopy() {
 })();
 
 // ==========================================================
-// 界面版本（新版/旧版）：localStorage 'nb_ui'，默认新版
+// 界面版本（新版/旧版）：后端存储偏好 + 本地缓存，默认新版
 // ==========================================================
 function getUIVersion() {
+    // -new 文件强制新版（页面本身即新版版式）
+    var page = (location.pathname.split('/').pop() || '').toLowerCase();
+    if (page.indexOf('-new.html') !== -1) return 'new';
     return localStorage.getItem('nb_ui') === 'old' ? 'old' : 'new';
 }
 
 function setUIVersion(v) {
-    localStorage.setItem('nb_ui', v === 'old' ? 'old' : 'new');
+    var ver = v === 'old' ? 'old' : 'new';
+    localStorage.setItem('nb_ui', ver);
+    // 登录用户同时写后端（换设备/浏览器也保持偏好）
+    try {
+        var stored = JSON.parse(localStorage.getItem('nb_user'));
+        if (stored && stored.id) {
+            fetch('https://pbaafgjkwdbwcmsikcmg.supabase.co/rest/v1/rpc/set_ui_version', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    apikey: 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg',
+                    Authorization: 'Bearer sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg'
+                },
+                body: JSON.stringify({ p_user_id: stored.id, p_version: ver })
+            }).catch(function () {});
+        }
+    } catch (e) {}
 }
+
+// ==========================================================
+// 界面版本自动跳转：后端偏好 new → xxx-new.html；old → xxx.html
+// ==========================================================
+(function () {
+    var rawPage = location.pathname.split('/').pop() || '';
+    var page = rawPage.toLowerCase();
+    if (page.indexOf('.html') === -1) return;
+    var isNew = page.indexOf('-new.html') !== -1;
+    var base = isNew ? rawPage.replace(/-new\.html$/i, '.html') : rawPage;
+    var known = ['index', 'videos', 'about', 'changelog', 'product', 'app', 'comments-beta',
+                 'virtual stock', 'chat', 'product_share', 'messages', 'profile', 'achievements',
+                 'lottery_records', 'register_company', 'comments', 'login'];
+    if (known.indexOf(base.replace(/\.html$/i, '').toLowerCase()) === -1) return;
+
+    var stored = null;
+    try { stored = JSON.parse(localStorage.getItem('nb_user')); } catch (e) {}
+    if (!stored || !stored.id) return;   // 未登录：留在当前文件
+
+    fetch('https://pbaafgjkwdbwcmsikcmg.supabase.co/rest/v1/profiles?select=ui_version&id=eq.' + stored.id, {
+        headers: {
+            apikey: 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg',
+            Authorization: 'Bearer sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg'
+        }
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (rows) {
+        var pref = (rows && rows[0] && rows[0].ui_version) || 'new';
+        if (pref === 'new' && !isNew) {
+            location.replace(base.replace(/\.html$/i, '-new.html'));
+        } else if (pref === 'old' && isNew) {
+            location.replace(base);
+        }
+    })
+    .catch(function () {});
+})();
 
 // ==========================================================
 // 自动加载新版界面驱动 js/ui-nav.js（全站生效，无需改页面）

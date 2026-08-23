@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作品分享 - NB频道</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/common.js"></script>
+    <script src="js/ui-nav.js"></script>
+    <style>
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 30px;
+        }
+        .product-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 18px;
+            border: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            transition: 0.2s;
+        }
+        .product-card:hover {
+            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+        }
+        .product-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .product-meta {
+            font-size: 0.85rem;
+            color: var(--count-text);
+            margin-bottom: 8px;
+        }
+        .product-desc {
+            flex: 1;
+            margin: 10px 0;
+            word-break: break-word;
+        }
+        .product-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+        }
+        .upload-section {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            border: 1px solid var(--card-border);
+        }
+        .upload-section input, .upload-section textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 30px;
+            border: 1px solid var(--card-border);
+            background: var(--bg-color);
+            color: var(--text-color);
+            margin-bottom: 12px;
+        }
+        .upload-section textarea {
+            border-radius: 16px;
+            resize: vertical;
+        }
+        .upload-section button {
+            background: var(--nav-btn-hover-bg);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+        .upload-section button:hover {
+            filter: brightness(0.9);
+        }
+        .file-input-wrapper {
+            margin-bottom: 12px;
+        }
+        .action-btn {
+            background: var(--nav-btn-bg);
+            color: var(--nav-btn-text);
+            border: none;
+            padding: 6px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .action-btn:hover {
+            background: var(--nav-btn-hover-bg);
+            color: white;
+        }
+        .free-badge { color: #4caf50; font-weight: bold; }
+        .price-tag { font-weight: bold; color: var(--status-border); }
+        .no-data { text-align: center; padding: 40px; color: var(--count-text); }
+        .loading-spinner { text-align: center; padding: 20px; }
+        .owner-badge { font-size: 0.8rem; color: var(--count-text); }
+        /* 分类筛选 */
+        .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .filter-btn {
+            background: var(--nav-btn-bg); color: var(--nav-btn-text);
+            border: 1px solid var(--card-border); border-radius: 30px;
+            padding: 6px 18px; font-size: 0.9rem; cursor: pointer; transition: 0.2s;
+        }
+        .filter-btn.active { background: var(--nav-btn-hover-bg); color: white; }
+        .filter-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
+        /* 支付方式弹窗 */
+        .pay-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .pay-modal { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 24px; width: min(420px, 92vw); max-height: 86vh; overflow-y: auto; }
+        .pay-option { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--card-border); border-radius: 12px; margin: 8px 0; cursor: pointer; transition: 0.15s; }
+        .pay-option:hover { border-color: var(--status-border); }
+        .pay-option.selected { border-color: var(--status-border); background: rgba(0,0,0,0.05); }
+        .pay-option .pay-ico { font-size: 1.4rem; }
+        .pay-company-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; margin-left: 38px; font-size: 0.9rem; cursor: pointer; }
+        .pay-modal .pay-btn { width: 100%; padding: 10px; border: none; border-radius: 40px; background: var(--nav-btn-hover-bg); color: white; cursor: pointer; font-size: 1rem; margin-top: 10px; }
+        .pay-modal .pay-btn:hover { filter: brightness(0.9); }
+        .pay-modal .pay-cancel { width: 100%; padding: 8px; border: none; border-radius: 40px; background: transparent; color: var(--count-text); cursor: pointer; margin-top: 6px; }
+    </style>
+</head>
+<body>
+<script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
+<div class="container">
+    <h1>📺 NB频道官网</h1>
+    <div class="author-info" id="authorInfo">UP主：NB搞事局</div>
+    <div class="nav-container">
+    <div class="nav-links">
+        <a href="index.html" class="nav-btn">首页</a>
+        <a href="videos.html" class="nav-btn">视频</a>
+        <a href="about.html" class="nav-btn">关于</a>
+        <a href="changelog.html" class="nav-btn">更新日志</a>
+        <a href="product.html" class="nav-btn">我的产品</a>
+        <a href="APP.html" class="nav-btn">软件/APP下载</a>
+    </div>
+    <div class="nav-actions">
+        <a href="comments-beta.html" class="nav-btn">💬 评论区</a>
+        <a href="Virtual stock.html" class="nav-btn">📈 NB虚拟股票</a>
+        <a href="chat.html" class="nav-btn">👥 好友</a>
+        <a href="product_share.html" class="nav-btn active">🛍️ 作品分享</a>
+        <a href="messages.html" class="nav-btn">🔔 消息</a>
+    </div>
+</div>
+
+
+
+    <div class="home-card">
+        <div class="user-info" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <span id="userStatusSpan">未登录</span>
+            <span id="balanceDisplay" style="font-weight:bold;">💰 NB币: --</span>
+        </div>
+        <hr style="margin: 20px 0; border-color: var(--card-border);">
+
+        <div id="uploadSection" class="upload-section" style="display:none;">
+            <h3 id="uploadSectionTitle">📤 上传你的作品</h3>
+            <input type="text" id="productTitle" placeholder="作品标题" maxlength="100">
+            <textarea id="productDesc" rows="3" placeholder="作品简介（内容、用途、版本等）" maxlength="1000"></textarea>
+            <input type="number" id="productPrice" placeholder="定价（NB币，0为免费）" min="0" max="999999999" value="0">
+            <div class="file-input-wrapper">
+                <input type="file" id="productFile" accept="*/*">
+                <span style="font-size:0.8rem; color:var(--count-text);">单个文件不超过 50 MB</span>
+            </div>
+            <button id="uploadBtn">📤 发布作品</button>
+            <button id="cancelEditBtn" style="display:none; background:#6c757d; color:white; border:none; padding:10px 24px; border-radius:40px; cursor:pointer; margin-left:10px;">取消编辑</button>
+            <div id="uploadStatus" style="margin-top:10px; color:var(--status-border);"></div>
+        </div>
+
+        <h3>📚 所有作品</h3>
+        <div class="filter-bar">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="owned">已拥有</button>
+            <button class="filter-btn" data-filter="free">免费</button>
+            <button class="filter-btn" data-filter="not_owned">未拥有</button>
+        </div>
+        <div id="productList" class="product-grid">
+            <div class="loading-spinner">⏳ 加载中...</div>
+        </div>
+    </div>
+</div>
+
+<div class="fixed-buttons">
+    <button class="theme-toggle-fixed" id="themeToggleFixed" onclick="toggleTheme()">🌙</button>
+    <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
+</div>
+
+<!-- 支付方式选择弹窗（付费作品） -->
+<div class="pay-modal-overlay" id="payModal">
+    <div class="pay-modal">
+        <h3 style="margin-top:0;">💳 购买作品</h3>
+        <div id="payProductInfo" style="color:var(--count-text); margin-bottom:10px;"></div>
+        <div class="pay-option selected" id="payOptNb" onclick="selectPayType('nb')">
+            <span class="pay-ico">💰</span>
+            <div><div style="font-weight:600;">用 NB币支付</div><div style="font-size:0.8rem; color:var(--count-text);">金额直接给作者</div></div>
+        </div>
+        <div id="payMarketWrap">
+            <div class="pay-option" id="payOptMarket" onclick="selectPayType('market')">
+                <span class="pay-ico">📈</span>
+                <div><div style="font-weight:600;">加市值支持</div><div style="font-size:0.8rem; color:var(--count-text);">金额加到作者的公司市值（帮作者冲榜）</div></div>
+            </div>
+            <div id="payCompanyList" style="display:none;"></div>
+        </div>
+        <button class="pay-btn" id="payConfirmBtn">确认支付</button>
+        <button class="pay-cancel" id="payCancelBtn">取消</button>
+    </div>
+</div>
+
+<script>
+    // ========== 配置 ==========
+    const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
+    // ⚠️ 替换为你的 PythonAnywhere 后端地址
+    const API_BASE = 'https://nbchannel.pythonanywhere.com';  // 例如 https://yourname.pythonanywhere.com
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ========== 辅助函数 ==========
+    function getCurrentUser() {
+        const stored = localStorage.getItem('nb_user');
+        if (!stored) return null;
+        try { return JSON.parse(stored); } catch { return null; }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;');
+    }
+
+    // ========== 用户信息更新 ==========
+    async function fetchUserBalance() {
+        const user = getCurrentUser();
+        if (!user) return 0;
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('nb_balance')
+            .eq('id', user.id)
+            .single();
+        if (error) return 0;
+        return data.nb_balance || 0;
+    }
+
+    async function updateUserUI() {
+        const user = getCurrentUser();
+        const statusSpan = document.getElementById('userStatusSpan');
+        const balanceSpan = document.getElementById('balanceDisplay');
+        const uploadSection = document.getElementById('uploadSection');
+
+        if (user) {
+            statusSpan.innerHTML = `欢迎，${user.username} <button id="logoutBtn" style="background:none;border:none;color:var(--status-border);cursor:pointer;">登出</button>`;
+            document.getElementById('logoutBtn')?.addEventListener('click', () => {
+                localStorage.removeItem('nb_user');
+                window.location.reload();
+            });
+            uploadSection.style.display = 'block';
+            const balance = await fetchUserBalance();
+            balanceSpan.innerHTML = `💰 NB币: ${balance}`;
+        } else {
+            statusSpan.innerHTML = `<a href="login.html?redirect=${encodeURIComponent(window.location.href)}" style="color:var(--status-border);">登录</a> / <a href="login.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="color:var(--status-border);">注册</a>`;
+            balanceSpan.innerHTML = '💰 NB币: --';
+            uploadSection.style.display = 'none';
+        }
+    }
+
+    // ========== 加载作品列表 ==========
+    let productsData = [];
+    let purchasedIdsSet = new Set();   // 当前用户已拥有（购买）的作品ID
+    let currentFilter = 'all';         // 当前分类：all/owned/free/not_owned
+
+    function formatFileSize(bytes) {
+        if (!bytes) return '';
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+    }
+
+    function renderProducts() {
+        const container = document.getElementById('productList');
+        if (!productsData.length) {
+            container.innerHTML = '<div class="no-data">暂无作品，快来上传你的第一个作品吧！</div>';
+            return;
+        }
+        const user = getCurrentUser();
+
+        let filtered = productsData;
+        if (currentFilter === 'owned') {
+            filtered = productsData.filter(p => user && (p.author_id === user.id || purchasedIdsSet.has(p.id)));
+        } else if (currentFilter === 'free') {
+            filtered = productsData.filter(p => p.price === 0);
+        } else if (currentFilter === 'not_owned') {
+            filtered = productsData.filter(p => !user || (p.author_id !== user.id && !purchasedIdsSet.has(p.id)));
+        }
+
+        if (!filtered.length) {
+            container.innerHTML = '<div class="no-data">该分类下暂无作品</div>';
+            return;
+        }
+
+        let html = '';
+        for (const p of filtered) {
+            const isOwner = user && user.id === p.author_id;
+            const isPurchased = purchasedIdsSet.has(p.id);
+            const priceText = p.price === 0 ? '<span class="free-badge">免费</span>' : `<span class="price-tag">${p.price} NB币</span>`;
+            const sizeText = p.file_size ? ` · 📦 ${formatFileSize(p.file_size)}` : (p.file_name ? ` · 📄 ${escapeHtml(p.file_name)}` : '');
+
+            let actionHtml = '';
+            if (isOwner) {
+                actionHtml = `<span class="owner-badge">[你的作品]</span>
+                    <button class="action-btn download-btn" data-id="${p.id}">📥 下载</button>
+                    <button class="action-btn edit-btn" data-id="${p.id}">✏️ 编辑</button>
+                    <button class="action-btn delete-btn" data-id="${p.id}" style="background:#e74c3c; color:white;">🗑️ 删除</button>`;
+            } else if (user) {
+                if (isPurchased && p.price > 0) {
+                    actionHtml = `<button class="action-btn download-btn" data-id="${p.id}">📥 已购买，下载</button>`;
+                } else {
+                    const btnText = p.price === 0 ? '📥 免费下载' : `💳 购买（${p.price} NB币）`;
+                    const btnClass = p.price === 0 ? 'download-btn' : 'buy-btn';
+                    actionHtml = `<button class="action-btn ${btnClass}" data-id="${p.id}">${btnText}</button>`;
+                }
+            } else {
+                actionHtml = `<span style="color:var(--count-text);">请登录后下载</span>`;
+            }
+
+            html += `
+                <div class="product-card">
+                    <div class="product-title">${escapeHtml(p.title)}</div>
+                    <div class="product-meta">👤 ${escapeHtml(p.author_username)} · 📅 ${new Date(p.created_at).toLocaleDateString()} · 📥 ${p.downloads || 0} 次下载${sizeText}</div>
+                    <div class="product-desc">${escapeHtml(p.description || '无简介')}</div>
+                    <div style="margin-top:auto;">
+                        <span>${priceText}</span>
+                        <div class="product-actions">
+                            ${actionHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+
+        container.querySelectorAll('.download-btn, .buy-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const productId = parseInt(btn.dataset.id);
+                const p = productsData.find(x => x.id === productId);
+                // 付费且未购买：弹支付方式选择；免费/已购买：直接下载
+                if (p && p.price > 0 && !purchasedIdsSet.has(productId)) {
+                    openPayModal(productId, p);
+                } else {
+                    purchaseProduct(productId);
+                }
+            });
+        });
+
+        // 编辑 / 删除自己的作品
+        container.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const productId = parseInt(btn.dataset.id);
+                const p = productsData.find(x => x.id === productId);
+                if (p) startEdit(p);
+            });
+        });
+        container.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const productId = parseInt(btn.dataset.id);
+                deleteProduct(productId);
+            });
+        });
+    }
+
+    async function loadProducts() {
+        const container = document.getElementById('productList');
+        container.innerHTML = '<div class="loading-spinner">⏳ 加载中...</div>';
+
+        const { data, error } = await supabaseClient.rpc('get_products');
+        if (error) {
+            console.error('加载失败:', error);
+            container.innerHTML = '<div class="no-data">加载失败，请刷新重试</div>';
+            return;
+        }
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="no-data">暂无作品，快来上传你的第一个作品吧！</div>';
+            return;
+        }
+        productsData = data;
+
+        const user = getCurrentUser();
+
+        // 查询当前用户已购买/已下载过的作品（一次性批量查询，真实表用 buyer_id）
+        purchasedIdsSet = new Set();
+        if (user) {
+            const ids = data.map(p => p.id);
+            const { data: purchases, error: purErr } = await supabaseClient
+                .from('product_purchases')
+                .select('product_id')
+                .in('product_id', ids)
+                .eq('buyer_id', user.id);
+            if (!purErr && purchases) {
+                purchases.forEach(x => purchasedIdsSet.add(x.product_id));
+            }
+        }
+
+        renderProducts();
+    }
+
+    // ========== 分类筛选 ==========
+    function initFilterBar() {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentFilter = btn.dataset.filter;
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b === btn));
+                renderProducts();
+            });
+        });
+    }
+
+    // ========== 编辑作品 ==========
+    let editingProductId = null;
+
+    function startEdit(p) {
+        editingProductId = p.id;
+        document.getElementById('uploadSectionTitle').innerText = '✏️ 编辑作品（不选文件则保留原文件）';
+        document.getElementById('productTitle').value = p.title || '';
+        document.getElementById('productDesc').value = p.description || '';
+        document.getElementById('productPrice').value = p.price || 0;
+        document.getElementById('productFile').value = '';
+        document.getElementById('uploadBtn').innerText = '💾 保存修改';
+        document.getElementById('cancelEditBtn').style.display = 'inline-block';
+        document.getElementById('uploadStatus').innerText = '';
+        document.getElementById('uploadSection').style.display = 'block';
+        document.getElementById('uploadSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+        editingProductId = null;
+        document.getElementById('uploadSectionTitle').innerText = '📤 上传你的作品';
+        document.getElementById('productTitle').value = '';
+        document.getElementById('productDesc').value = '';
+        document.getElementById('productPrice').value = '0';
+        document.getElementById('productFile').value = '';
+        document.getElementById('uploadBtn').innerText = '📤 发布作品';
+        document.getElementById('cancelEditBtn').style.display = 'none';
+        document.getElementById('uploadStatus').innerText = '';
+    }
+
+    async function deleteProduct(productId) {
+        const user = getCurrentUser();
+        if (!user) { alert('请先登录'); return; }
+        if (!confirm('确定删除这个作品吗？文件将一并删除，且无法恢复！')) return;
+        try {
+            const response = await fetch(`${API_BASE}/delete-product`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-User-Id': user.id },
+                body: JSON.stringify({ product_id: productId })
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert('✅ 作品已删除');
+                if (editingProductId === productId) cancelEdit();
+                await loadProducts();
+            } else {
+                alert(result.message || '删除失败');
+            }
+        } catch (err) {
+            alert('网络错误：' + err.message);
+        }
+    }
+
+    // ========== 上传 / 编辑作品 ==========
+    let isUploading = false;   // 防连点：上传中锁定按钮，避免重复发布
+    async function uploadProduct() {
+        if (isUploading) { alert('正在上传中，请稍候...'); return; }
+        const user = getCurrentUser();
+        if (!user) { alert('请先登录'); return; }
+
+        const title = document.getElementById('productTitle').value.trim();
+        const desc = document.getElementById('productDesc').value.trim();
+        const price = parseInt(document.getElementById('productPrice').value) || 0;
+        const fileInput = document.getElementById('productFile');
+        const file = fileInput.files[0];
+        const statusDiv = document.getElementById('uploadStatus');
+
+        if (!title) { alert('请输入作品标题'); return; }
+        if (price < 0 || price > 999999999) { alert('价格需在 0~999999999 之间'); return; }
+
+        const isEdit = editingProductId !== null;
+        if (!isEdit && !file) { alert('请选择要上传的文件'); return; }
+        if (file && file.size > 50 * 1024 * 1024) { alert('文件不能超过 50 MB'); return; }
+
+        const formData = new FormData();
+        if (isEdit) formData.append('product_id', editingProductId);
+        formData.append('title', title);
+        formData.append('description', desc);
+        formData.append('price', price);
+        if (file) formData.append('file', file);
+
+        // 锁定按钮，防止手滑连点产生重复作品
+        isUploading = true;
+        const uploadBtn = document.getElementById('uploadBtn');
+        uploadBtn.disabled = true;
+        statusDiv.innerText = isEdit ? '⏳ 保存中...' : '⏳ 上传中...';
+
+        try {
+            const response = await fetch(`${API_BASE}/${isEdit ? 'edit-product' : 'upload'}`, {
+                method: 'POST',
+                headers: { 'X-User-Id': user.id },
+                body: formData
+            });
+            const result = await response.json();
+            if (result.success) {
+                statusDiv.innerText = isEdit ? '✅ 修改已保存！' : '✅ 发布成功！';
+                cancelEdit();
+                await loadProducts();
+                await updateUserUI();
+            } else {
+                statusDiv.innerText = '❌ ' + result.message;
+            }
+        } catch (err) {
+            console.error(err);
+            statusDiv.innerText = '❌ 网络错误：' + err.message;
+        } finally {
+            isUploading = false;
+            uploadBtn.disabled = false;
+            uploadBtn.innerText = editingProductId !== null ? '💾 保存修改' : '📤 发布作品';
+        }
+    }
+
+    // ========== 购买/下载 ==========
+    // ========== 支付方式选择弹窗 ==========
+    let payState = { productId: null, companies: [], payType: 'nb', companyId: null };
+
+    function selectPayType(t) {
+        payState.payType = t;
+        document.getElementById('payOptNb').classList.toggle('selected', t === 'nb');
+        document.getElementById('payOptMarket').classList.toggle('selected', t === 'market');
+        const list = document.getElementById('payCompanyList');
+        list.style.display = t === 'market' ? 'block' : 'none';
+    }
+
+    function renderPayCompanies() {
+        const list = document.getElementById('payCompanyList');
+        list.innerHTML = payState.companies.map(c => `
+            <label class="pay-company-item">
+                <input type="radio" name="payCompany" value="${c.id}" ${c.id === payState.companyId ? 'checked' : ''}>
+                <span>🏢 ${escapeHtml(c.company_name)}（市值 ${c.market_value}）</span>
+            </label>`).join('');
+        list.querySelectorAll('input[name=payCompany]').forEach(r => {
+            r.onchange = () => { payState.companyId = parseInt(r.value); };
+        });
+    }
+
+    async function openPayModal(productId, p) {
+        payState = { productId, companies: [], payType: 'nb', companyId: null };
+        document.getElementById('payProductInfo').innerText = `《${p.title}》 · 价格 ${p.price} NB币`;
+        const { data, error } = await supabaseClient.rpc('get_author_companies', { p_author_id: p.author_id });
+        payState.companies = data || [];
+        const marketWrap = document.getElementById('payMarketWrap');
+        if (!payState.companies.length) {
+            // 作者无公司：隐藏"加市值"选项，只能选 NB币
+            marketWrap.style.display = 'none';
+        } else {
+            marketWrap.style.display = 'block';
+            payState.companyId = payState.companies[0].id;
+            renderPayCompanies();
+        }
+        selectPayType('nb');
+        document.getElementById('payModal').style.display = 'flex';
+    }
+
+    function closePayModal() {
+        document.getElementById('payModal').style.display = 'none';
+    }
+
+    async function purchaseProduct(productId, payType, companyId) {
+        const user = getCurrentUser();
+        if (!user) { alert('请先登录'); return; }
+
+        try {
+            const response = await fetch(`${API_BASE}/download`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-Id': user.id
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    pay_type: payType || 'nb',
+                    company_id: companyId || null
+                })
+            });
+            const result = await response.json();
+            if (result.success) {
+                if (result.message) alert(result.message);
+                if (result.file_url) window.open(result.file_url, '_blank');
+                await loadProducts();
+                await updateUserUI();
+            } else {
+                alert(result.message || '操作失败');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('网络错误：' + err.message + '\n（如果持续失败，可能是 PythonAnywhere 后端未部署或未配置 CORS）');
+        }
+    }
+
+    // ========== 后端连通性检查 ==========
+    // 若 PythonAnywhere 后端未部署，页面给出明确提示，避免"上传总是失败"无从排查
+    async function checkBackendHealth() {
+        const statusDiv = document.getElementById('uploadStatus');
+        try {
+            const response = await fetch(`${API_BASE}/health`, { method: 'GET' });
+            if (response.ok) {
+                return true;
+            }
+        } catch (e) { /* 后端不可达，走下方提示 */ }
+        if (statusDiv) {
+            statusDiv.style.color = '#ff6b6b';
+            statusDiv.innerText = '⚠️ 上传/下载服务未连接：请确认 PythonAnywhere 后端已部署（见 pythonanywhere/README.md），否则无法上传和下载作品';
+        }
+        return false;
+    }
+
+    // ========== 初始化 ==========
+    async function init() {
+        await updateUserUI();
+        await loadProducts();
+        initFilterBar();
+        document.getElementById('uploadBtn').addEventListener('click', uploadProduct);
+        document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
+        document.getElementById('payConfirmBtn').addEventListener('click', async () => {
+            if (payState.payType === 'market' && !payState.companyId) { alert('请选择要加市值的公司'); return; }
+            const pid = payState.productId;
+            const pType = payState.payType;
+            const cid = payState.companyId;
+            closePayModal();
+            await purchaseProduct(pid, pType, cid);
+        });
+        document.getElementById('payCancelBtn').addEventListener('click', closePayModal);
+        checkBackendHealth();
+    }
+
+    init();
+</script>
+</body>
+</html>
