@@ -416,8 +416,10 @@
                 await refreshAll(); renderSide();
             } else if (act === 'unblock') {
                 if (!confirm(`确定取消拉黑 ${btn.dataset.name} 吗？`)) return;
-                await supabaseClient.rpc('unblock_user', { p_user_id: currentUser.id, p_target: btn.dataset.id });
-                renderBlocks();
+                const res = await supabaseClient.rpc('unblock_user', { p_user_id: currentUser.id, p_target: btn.dataset.id });
+                if (res.data && res.data.message) alert(res.data.message);
+                await refreshAll();
+                renderSide();
             } else if (act === 'accept') {
                 await supabaseClient.rpc('respond_friend_request', { p_request_id: parseInt(btn.dataset.id), p_user_id: currentUser.id, p_accept: true });
                 await refreshAll(); renderSide();

@@ -13,9 +13,11 @@
 CREATE TABLE IF NOT EXISTS public.blocked_users (
     user_id    uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     blocked_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    was_friend boolean NOT NULL DEFAULT false,   -- 拉黑前是否为好友（取消拉黑时恢复用）
     created_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (user_id, blocked_id)
 );
+ALTER TABLE public.blocked_users ADD COLUMN IF NOT EXISTS was_friend boolean NOT NULL DEFAULT false;
 
 -- 好友申请
 CREATE TABLE IF NOT EXISTS public.friend_requests (
@@ -257,12 +259,18 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+    v_was_friend boolean;
 BEGIN
     IF p_user_id = p_target THEN
         RETURN jsonb_build_object('success', false, 'message', '不能拉黑自己');
     END IF;
-    INSERT INTO public.blocked_users (user_id, blocked_id) VALUES (p_user_id, p_target)
-    ON CONFLICT DO NOTHING;
+    -- 记住拉黑前是否为好友（取消拉黑时恢复）
+    SELECT public.is_friend(p_user_id, p_target) INTO v_was_friend;
+    INSERT INTO public.blocked_users (user_id, blocked_id, was_friend)
+    VALUES (p_user_id, p_target, coalesce(v_was_friend, false))
+    ON CONFLICT (user_id, blocked_id) DO UPDATE SET
+        was_friend = blocked_users.was_friend OR EXCLUDED.was_friend;
     -- 拉黑同时删除好友关系、拒绝双方 pending 申请
     DELETE FROM public.friendships
      WHERE (user_a = LEAST(p_user_id, p_target) AND user_b = GREATEST(p_user_id, p_target));
@@ -280,9 +288,20 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+    v_was_friend boolean;
 BEGIN
+    SELECT was_friend INTO v_was_friend
+      FROM public.blocked_users WHERE user_id = p_user_id AND blocked_id = p_target;
+    -- 拉黑前是好友 → 自动恢复好友关系
+    IF coalesce(v_was_friend, false) THEN
+        INSERT INTO public.friendships (user_a, user_b)
+        VALUES (LEAST(p_user_id, p_target), GREATEST(p_user_id, p_target))
+        ON CONFLICT DO NOTHING;
+    END IF;
     DELETE FROM public.blocked_users WHERE user_id = p_user_id AND blocked_id = p_target;
-    RETURN jsonb_build_object('success', true, 'message', '已取消拉黑');
+    RETURN jsonb_build_object('success', true, 'message',
+        '已取消拉黑' || CASE WHEN coalesce(v_was_friend, false) THEN '，好友关系已恢复' ELSE '' END);
 END;
 $$;
 
