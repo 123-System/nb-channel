@@ -238,9 +238,52 @@
             font-size: 1.25rem; font-weight: 700; color: var(--text-color);
         }
         .section-title::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, #00a1d6, transparent); }
+        /* ===== 官网化增强 ===== */
+        /* Hero 徽章 */
+        .hero-badges { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+        .hero-badge {
+            background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35);
+            border-radius: 30px; padding: 4px 14px; font-size: 0.78rem; color: #fff;
+            backdrop-filter: blur(4px);
+        }
+        /* 数据条 */
+        .stat-bar {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 14px; margin: -6px 0 26px;
+        }
+        .stat-item {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 16px; padding: 16px 10px; text-align: center;
+            box-shadow: 0 4px 14px -8px rgba(0,0,0,0.12);
+        }
+        .stat-item .num { font-size: 1.5rem; font-weight: 800; color: var(--status-border); }
+        .stat-item .label { font-size: 0.78rem; color: var(--count-text); margin-top: 4px; }
+        /* 功能入口卡片 */
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-top: 18px; }
+        .feature-card {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 18px; padding: 22px 14px; text-decoration: none;
+            color: var(--text-color); transition: 0.22s;
+        }
+        .feature-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -10px rgba(0,161,214,0.35); border-color: #00a1d6; }
+        .feature-card .f-icon { font-size: 2.2rem; line-height: 1; }
+        .feature-card .f-name { font-weight: 700; font-size: 1rem; }
+        .feature-card .f-desc { font-size: 0.76rem; color: var(--count-text); text-align: center; min-height: 30px; }
+        .feature-card .f-go { font-size: 0.8rem; color: #00a1d6; font-weight: 600; }
+        /* 关于卡片微调 */
+        .home-card { border-radius: 18px; box-shadow: 0 10px 28px -14px rgba(0,0,0,0.16); }
+        /* Footer 规范化 */
+        .site-footer {
+            margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--card-border);
+            text-align: center; font-size: 0.85rem; color: var(--count-text); line-height: 2.1;
+        }
+        .site-footer a { color: var(--status-border); text-decoration: none; }
+        .site-footer a:hover { text-decoration: underline; }
         @media (max-width: 600px) {
             .hero { padding: 32px 16px 26px; }
             .hero h1 { font-size: 1.6rem; }
+            .stat-bar { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -255,6 +298,12 @@
 
     <!-- Hero 区 -->
     <div class="hero">
+        <div class="hero-badges">
+            <span class="hero-badge">🏢 虚拟公司</span>
+            <span class="hero-badge">👨‍🔬 理科UP主</span>
+            <span class="hero-badge">📺 10万+粉丝</span>
+            <span class="hero-badge">🧪 化学·物理·作死</span>
+        </div>
         <h1>📺 NB频道官网</h1>
         <div class="hero-sub" id="authorInfo">UP主：NB搞事局 · 热爱理科（和作死）的畜中生 · 虚拟公司 NB圈</div>
         <div class="hero-btns">
@@ -276,6 +325,14 @@
                 您的浏览器不支持 Video 标签。
             </video>
         </div>
+    </div>
+
+    <!-- 数据条 -->
+    <div class="stat-bar">
+        <div class="stat-item"><div class="num">10w+</div><div class="label">B站粉丝</div></div>
+        <div class="stat-item"><div class="num">11</div><div class="label">友商官网</div></div>
+        <div class="stat-item"><div class="num" id="siteDays">--</div><div class="label">建站天数</div></div>
+        <div class="stat-item"><div class="num">6</div><div class="label">核心功能</div></div>
     </div>
 
     <!-- 导航栏 -->
@@ -301,6 +358,35 @@
     <!-- 公告栏（内容在 Supabase admin_config 表，key=announcement，管理后台 admin-announcement.html） -->
     <div id="announcementBar" class="announcement-bar" style="display:none;">
         <div class="marquee-track" id="announcementTrack"></div>
+    </div>
+
+    <!-- 核心功能入口 -->
+    <div class="section-title">🚀 核心功能</div>
+    <div class="feature-grid">
+        <a class="feature-card" href="videos.html">
+            <div class="f-icon">🎬</div><div class="f-name">视频</div>
+            <div class="f-desc">化学实验、物理趣味与日常作死</div><div class="f-go">去看看 →</div>
+        </a>
+        <a class="feature-card" href="comments-beta.html">
+            <div class="f-icon">💬</div><div class="f-name">评论区</div>
+            <div class="f-desc">和友商交流，支持图片与@提及</div><div class="f-go">去逛逛 →</div>
+        </a>
+        <a class="feature-card" href="Virtual stock.html">
+            <div class="f-icon">📈</div><div class="f-name">NB虚拟股票</div>
+            <div class="f-desc">NB币炒股，市场 8:00-20:00 自主运转</div><div class="f-go">去炒股 →</div>
+        </a>
+        <a class="feature-card" href="chat.html">
+            <div class="f-icon">👥</div><div class="f-name">好友私信</div>
+            <div class="f-desc">实时聊天，支持发送图片</div><div class="f-go">去聊天 →</div>
+        </a>
+        <a class="feature-card" href="product_share.html">
+            <div class="f-icon">🛍️</div><div class="f-name">作品分享</div>
+            <div class="f-desc">上传你的作品，或购买他人作品</div><div class="f-go">去看看 →</div>
+        </a>
+        <a class="feature-card" href="messages.html">
+            <div class="f-icon">🔔</div><div class="f-name">消息中心</div>
+            <div class="f-desc">评论回复、点赞与私信通知</div><div class="f-go">去看看 →</div>
+        </a>
     </div>
 
     <!-- Logo 视频区域已并入上方 Hero（预览版） -->
@@ -371,20 +457,12 @@
     </div>
 </div>
 
-<p align="center" style="margin-top:15px;">
-    <strong>
-        © 2026 NB频道 
-        <a href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">nb-channel.top（导航页）</a>，
-        <a href="https://github.nb-channel.top" target="_blank" rel="noopener noreferrer">github.nb-channel.top（github站）</a>，<br>
-        <a href="https://cloudflare.nb-channel.top" target="_blank" rel="noopener noreferrer">cloudflare.nb-channel.top（cloudflare站）</a>，
-        <a href="https://pythonanywhere.nb-channel.top" target="_blank" rel="noopener noreferrer">pythonanywhere.nb-channel.top（pythonanywhere站）</a>
-    </strong>
-</p>
-<p align="center" style="margin-top:15px;">如果您对NB频道有任何问题或建议可以联系我：</p>
-<p align="center" style="margin-top:5px;">邮箱：<a href="mailto:nbchannel@163.com">nbchannel@163.com</a>或<a href="mailto:NBchannel@163.com">NBchannel@163.com</a></p>
-<p align="center" style="margin-top:15px;"><strong>制作：<a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">NB搞事局（原NB实验室-作死）</a></strong></p>
-<p align="center" style="margin-top:15px;"><a href="https://github.com/" target="_blank" rel="noopener noreferrer">Github</a>、<a href="https://www.cloudflare-cn.com/developer-platform/products/pages/" target="_blank" rel="noopener noreferrer">Cloudflare</a>和<a href="https://www.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">pythonanywhere</a>提供网站托管服务</p>
-<p align="center" style="margin-top:15px;"><a href="https://imgbed.cn/" target="_blank" rel="noopener noreferrer">图床小镇</a>提供视频托管服务</p>
+<footer class="site-footer">
+    <div>© 2026 NB频道 · 虚拟公司 · <a href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">nb-channel.top（导航页）</a> · <a href="https://github.nb-channel.top" target="_blank" rel="noopener noreferrer">github站</a> · <a href="https://cloudflare.nb-channel.top" target="_blank" rel="noopener noreferrer">cloudflare站</a> · <a href="https://pythonanywhere.nb-channel.top" target="_blank" rel="noopener noreferrer">pythonanywhere站</a></div>
+    <div>如有任何问题或建议，请联系：<a href="mailto:nbchannel@163.com">nbchannel@163.com</a> 或 <a href="mailto:NBchannel@163.com">NBchannel@163.com</a></div>
+    <div>制作：<a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">NB搞事局（原NB实验室-作死）</a></div>
+    <div style="font-size:0.78rem;">托管：<a href="https://github.com/" target="_blank" rel="noopener noreferrer">Github</a> · <a href="https://www.cloudflare-cn.com/developer-platform/products/pages/" target="_blank" rel="noopener noreferrer">Cloudflare</a> · <a href="https://www.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">PythonAnywhere</a> · 视频托管：<a href="https://imgbed.cn/" target="_blank" rel="noopener noreferrer">图床小镇</a></div>
+</footer>
 
 <div class="fixed-buttons">
     <button class="theme-toggle-fixed" id="themeToggleFixed" onclick="toggleTheme()">🌙</button>
@@ -634,6 +712,15 @@
     if (typeof initShareButton === 'function') {
         initShareButton();
     }
+
+    // 数据条：建站天数（2026-02-17 建站）
+    (function () {
+        const el = document.getElementById('siteDays');
+        if (el) {
+            const days = Math.floor((Date.now() - new Date('2026-02-17').getTime()) / 86400000);
+            el.innerText = days + ' 天';
+        }
+    })();
 
     const logoVideo = document.getElementById('logoVideo');
     if (logoVideo) {
