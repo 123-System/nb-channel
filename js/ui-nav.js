@@ -435,11 +435,8 @@
         loadPremiumCss();
         injectMouseFx();
         injectOrbs();
-        if (document.querySelector('.nav-container')) {
-            replaceNav();
-        }
-        injectBanner();
-        // 滚动渐显：等首屏元素就位后观察
+        // 注意：新版 = 原版结构 + 视觉升级。不替换导航、不注入横幅，
+        // 经典导航/页面结构保持原样，只叠加毛玻璃/动效/特效。
         setTimeout(injectReveal, 50);
     }
 

@@ -258,6 +258,46 @@
 /* ============================================================
    新版首页专属区块（ui-nav.js 运行时注入，样式在此定义）
    ============================================================ */
+/* 经典导航的新版视觉（毛玻璃 + 胶囊按钮） */
+.nav-container {
+    background: rgba(255,255,255,0.60) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.5);
+    backdrop-filter: blur(16px) saturate(1.5);
+    border: 1px solid rgba(255,255,255,0.55) !important;
+    border-radius: 18px !important;
+    padding: 14px 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 12px 28px -14px rgba(0,161,214,0.22) !important;
+}
+body.dark-mode .nav-container {
+    background: rgba(24,26,32,0.60) !important;
+    border-color: rgba(255,255,255,0.09) !important;
+}
+.nav-links, .nav-actions { gap: 10px; }
+.nav-container .nav-btn, .nav-container .share-btn {
+    border-radius: 30px !important;
+    transition: transform 0.25s, box-shadow 0.25s, background 0.25s !important;
+}
+.nav-container .nav-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px -6px rgba(0,161,214,0.4);
+}
+.nav-container .nav-btn.active {
+    background: linear-gradient(135deg, #00a1d6, #0a84c1) !important;
+    color: #fff !important;
+    box-shadow: 0 6px 16px -6px rgba(0,161,214,0.5);
+}
+/* 右上角登录胶囊玻璃化 */
+.auth-area {
+    background: rgba(255,255,255,0.65) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    backdrop-filter: blur(14px) saturate(1.4);
+    border: 1px solid rgba(255,255,255,0.55) !important;
+    box-shadow: 0 8px 24px -10px rgba(0,0,0,0.15) !important;
+}
+body.dark-mode .auth-area {
+    background: rgba(24,26,32,0.60) !important;
+    border-color: rgba(255,255,255,0.09) !important;
+}
 .section-title {
     display: flex; align-items: center; gap: 10px; margin: 28px 0 8px;
     font-size: 1.25rem; font-weight: 700; color: var(--text-color);
