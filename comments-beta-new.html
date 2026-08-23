@@ -211,7 +211,7 @@
     <h1>📺 NB频道官网</h1>
     <div class="author-info" id="authorInfo">UP主：NB搞事局</div>
     <nav class="top-nav"><a class="nav-logo" href="index-new.html">NB频道</a><div class="nav-menu"><a href="index-new.html" class="nav-btn">首页</a><a href="videos-new.html" class="nav-btn">视频</a><a href="about-new.html" class="nav-btn">关于</a><a href="changelog-new.html" class="nav-btn">更新日志</a><a href="product-new.html" class="nav-btn">我的产品</a><a href="APP-new.html" class="nav-btn">软件/APP下载</a></div><div class="nav-right"><button id="profileBtn" class="profile-btn">个人中心</button><button id="authButton" class="auth-btn">登录/注册</button></div></nav>
-    <div class="quick-nav"><span style="font-size:0.85rem; color:var(--count-text);">快捷入口：</span><a href="comments-beta.html" class="nav-btn">💬 评论区</a><a href="Virtual stock.html" class="nav-btn">📈 NB虚拟股票</a><a href="chat.html" class="nav-btn">👥 好友</a><a href="product_share.html" class="nav-btn">🛍️ 作品分享</a><a href="messages.html" class="nav-btn">🔔 消息</a><a href="tools.html" class="nav-btn">🔬 化学工具</a><button class="account-btn" id="accountBtn">⚙️ 账号设置</button></div>
+    <div class="quick-nav"><span style="font-size:0.85rem; color:var(--count-text);">快捷入口：</span><a href="comments-beta.html" class="nav-btn">💬 评论区</a><a href="Virtual stock.html" class="nav-btn">📈 NB虚拟股票</a><a href="chat.html" class="nav-btn">👥 好友</a><a href="product_share.html" class="nav-btn">🛍️ 作品分享</a><a href="messages.html" class="nav-btn">🔔 消息</a><a href="tools.html" class="nav-btn">🔬 化学工具</a></div>
 
 <div class="hero">
     <div class="hero-badges">
@@ -282,27 +282,6 @@
         <div id="register-error" class="error"></div>
         <button id="do-register">注册</button>
         <button id="close-register">取消</button>
-    </div>
-</div>
-
-<div id="account-modal" class="modal">
-    <div class="modal-content">
-        <h3>账号设置</h3>
-        <div id="account-error" class="error"></div>
-        <div style="margin-bottom:20px;">
-            <h4>修改用户名</h4>
-            <input type="text" id="new-username" placeholder="新用户名（1-20字）" maxlength="20">
-            <input type="password" id="old-password-for-username" placeholder="当前密码">
-            <button id="do-update-username">修改用户名</button>
-        </div>
-        <div>
-            <h4>修改密码</h4>
-            <input type="password" id="old-password" placeholder="旧密码">
-            <input type="password" id="new-password" placeholder="新密码">
-            <input type="password" id="new-password2" placeholder="确认新密码">
-            <button id="do-update-password">修改密码</button>
-        </div>
-        <button id="close-account" style="margin-top:20px;">关闭</button>
     </div>
 </div>
 
@@ -1656,14 +1635,7 @@
     // 弹窗绑定
     const loginModal = document.getElementById('login-modal');
     const registerModal = document.getElementById('register-modal');
-    const accountModal = document.getElementById('account-modal');
-    const closeAccount = document.getElementById('close-account');
 
-    document.getElementById('accountBtn').onclick = () => {
-        if (!currentUser) { showMessage('提示', '请先登录'); return; }
-        accountModal.style.display = 'flex';
-    };
-    closeAccount.onclick = () => accountModal.style.display = 'none';
     // 登录/注册弹窗的"取消"按钮关闭弹窗
     document.getElementById('close-login').onclick = () => { loginModal.style.display = 'none'; };
     document.getElementById('close-register').onclick = () => { registerModal.style.display = 'none'; };
@@ -1701,47 +1673,6 @@
             await register(username, password, password2);
             registerModal.style.display = 'none';
             showMessage('提示', '注册成功！请登录');
-        } catch (err) {
-            errorDiv.innerText = err.message;
-        }
-    };
-
-    document.getElementById('do-update-username').onclick = async () => {
-        const newUsername = document.getElementById('new-username').value.trim();
-        const oldPassword = document.getElementById('old-password-for-username').value;
-        const errorDiv = document.getElementById('account-error');
-        if (!newUsername) {
-            errorDiv.innerText = '请输入新用户名';
-            return;
-        }
-        if (!/^[\u4e00-\u9fa5a-zA-Z0-9]+$/.test(newUsername)) {
-            errorDiv.innerText = '用户名只能包含中文、字母和数字';
-            return;
-        }
-        try {
-            await updateUsername(newUsername, oldPassword);
-            errorDiv.innerText = '';
-            showMessage('成功', '用户名已修改，请重新登录', () => {
-                localStorage.removeItem('nb_user');
-                location.reload();
-            });
-        } catch (err) {
-            errorDiv.innerText = err.message;
-        }
-    };
-
-    document.getElementById('do-update-password').onclick = async () => {
-        const oldPassword = document.getElementById('old-password').value;
-        const newPassword = document.getElementById('new-password').value;
-        const newPassword2 = document.getElementById('new-password2').value;
-        const errorDiv = document.getElementById('account-error');
-        try {
-            await updatePassword(oldPassword, newPassword, newPassword2);
-            errorDiv.innerText = '';
-            showMessage('成功', '密码已修改，请重新登录', () => {
-                localStorage.removeItem('nb_user');
-                location.reload();
-            });
         } catch (err) {
             errorDiv.innerText = err.message;
         }

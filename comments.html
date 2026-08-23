@@ -136,7 +136,6 @@
             <a href="https://github.nb-channel.top/comments.html" class="nav-btn" target="_blank">Github评论（内容不同）</a>
             <a href="product_share.html" class="nav-btn">🛍️ 作品分享</a>
             <a href="tools.html" class="nav-btn">🔬 化学工具</a>
-            <button class="account-btn" id="accountBtn">⚙️ 账号设置</button>
         </div>
     </div>
 
@@ -181,28 +180,6 @@
         <div id="register-error" class="error"></div>
         <button id="do-register">注册</button>
         <button id="close-register">取消</button>
-    </div>
-</div>
-
-<!-- 账号设置弹窗 -->
-<div id="account-modal" class="modal">
-    <div class="modal-content">
-        <h3>账号设置</h3>
-        <div id="account-error" class="error"></div>
-        <div style="margin-bottom:20px;">
-            <h4>修改用户名</h4>
-            <input type="text" id="new-username" placeholder="新用户名">
-            <input type="password" id="old-password-for-username" placeholder="当前密码">
-            <button id="do-update-username">修改用户名</button>
-        </div>
-        <div>
-            <h4>修改密码</h4>
-            <input type="password" id="old-password" placeholder="旧密码">
-            <input type="password" id="new-password" placeholder="新密码">
-            <input type="password" id="new-password2" placeholder="确认新密码">
-            <button id="do-update-password">修改密码</button>
-        </div>
-        <button id="close-account" style="margin-top:20px;">关闭</button>
     </div>
 </div>
 
@@ -660,18 +637,11 @@
     // 弹窗绑定
     const loginModal = document.getElementById('login-modal');
     const registerModal = document.getElementById('register-modal');
-    const accountModal = document.getElementById('account-modal');
-    const closeAccount = document.getElementById('close-account');
 
     document.getElementById('show-login').onclick = () => loginModal.style.display = 'flex';
     document.getElementById('close-login').onclick = () => loginModal.style.display = 'none';
     document.getElementById('show-register').onclick = () => registerModal.style.display = 'flex';
     document.getElementById('close-register').onclick = () => registerModal.style.display = 'none';
-    document.getElementById('accountBtn').onclick = () => {
-        if (!currentUser) { showMessage('提示', '请先登录'); return; }
-        accountModal.style.display = 'flex';
-    };
-    closeAccount.onclick = () => accountModal.style.display = 'none';
 
     document.getElementById('do-login').onclick = async () => {
         const username = document.getElementById('login-username').value.trim();
@@ -700,43 +670,6 @@
             await register(username, password, password2);
             registerModal.style.display = 'none';
             showMessage('提示', '注册成功！请登录');
-        } catch (err) {
-            errorDiv.innerText = err.message;
-        }
-    };
-
-    document.getElementById('do-update-username').onclick = async () => {
-        const newUsername = document.getElementById('new-username').value.trim();
-        const oldPassword = document.getElementById('old-password-for-username').value;
-        const errorDiv = document.getElementById('account-error');
-        if (!newUsername) {
-            errorDiv.innerText = '请输入新用户名';
-            return;
-        }
-        try {
-            await updateUsername(newUsername, oldPassword);
-            errorDiv.innerText = '';
-            showMessage('成功', '用户名已修改，请重新登录', () => {
-                localStorage.removeItem('nb_user');
-                location.reload();
-            });
-        } catch (err) {
-            errorDiv.innerText = err.message;
-        }
-    };
-
-    document.getElementById('do-update-password').onclick = async () => {
-        const oldPassword = document.getElementById('old-password').value;
-        const newPassword = document.getElementById('new-password').value;
-        const newPassword2 = document.getElementById('new-password2').value;
-        const errorDiv = document.getElementById('account-error');
-        try {
-            await updatePassword(oldPassword, newPassword, newPassword2);
-            errorDiv.innerText = '';
-            showMessage('成功', '密码已修改，请重新登录', () => {
-                localStorage.removeItem('nb_user');
-                location.reload();
-            });
         } catch (err) {
             errorDiv.innerText = err.message;
         }
