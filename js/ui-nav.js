@@ -64,8 +64,10 @@
     }
 
     // 加载 css/premium.css（页面内容级高级感，旧版不加载）
+    // -new 文件已在 head 静态加载 css/ui-new.css（含 premium 全部样式），此处跳过
     function loadPremiumCss() {
         if (document.getElementById('uiPremiumCss')) return;
+        if (document.getElementById('uiNewCss')) return;
         var src = '';
         try {
             src = (document.currentScript && document.currentScript.src) || '';
@@ -172,6 +174,7 @@
     // 新版导航样式（内联注入，不依赖 style.css 修改）
     function injectStyle() {
         if (document.getElementById('uiNavStyle')) return;
+        if (document.getElementById('uiNewCss')) return;   // -new 文件已在 head 静态加载，跳过
         var st = document.createElement('style');
         st.id = 'uiNavStyle';
         st.textContent = `
