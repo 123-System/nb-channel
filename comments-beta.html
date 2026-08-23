@@ -507,6 +507,8 @@
     function renderContentWithMentions(text) {
         if (!text) return '';
         let escaped = escapeHtml(text);
+        // http(s) 链接 → 蓝色可点击（必须先于 [img] 替换，避免误伤图片 URL）
+        escaped = linkify(escaped);
         // [img]key[/img] → 图片（公开桶 URL 由前端拼接，点击放大）
         escaped = escaped.replace(/\[img\]([a-zA-Z0-9_.\-]+)\[\/img\]/g, (m, key) =>
             `<img src="${IMG_BASE}${key}" alt="图片" onclick="window.open('${IMG_BASE}${key}','_blank')" style="max-width:260px; max-height:260px; border-radius:10px; margin:6px 0; display:block; cursor:zoom-in;">`);
