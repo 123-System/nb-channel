@@ -13,7 +13,9 @@
             max-width: 960px; margin: 0 auto;
             background: var(--card-bg); border-radius: 24px;
             box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
-            display: flex; min-height: 560px; overflow: hidden;
+            display: flex;
+            height: 640px;          /* 固定高度：消息再多也不撑大，内部滚动 */
+            overflow: hidden;
         }
         /* 左栏 */
         .side-panel { width: 240px; border-right: 1px solid var(--card-border); display: flex; flex-direction: column; }
@@ -53,8 +55,9 @@
         .chat-input button { background: var(--nav-btn-hover-bg); color: white; border: none; border-radius: 16px; padding: 0 20px; cursor: pointer; }
         .back-link { text-align: center; margin-top: 20px; }
         @media (max-width: 700px) {
-            .chat-container { flex-direction: column; min-height: 0; }
-            .side-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--card-border); max-height: 260px; }
+            .chat-container { flex-direction: column; height: auto; max-height: 88vh; }
+            .side-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--card-border); max-height: 32vh; }
+            .main-panel { height: 56vh; }   /* 移动端：聊天区固定高度内部滚动 */
         }
     </style>
 </head>
