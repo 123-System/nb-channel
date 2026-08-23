@@ -504,8 +504,8 @@
         injectToggle();
     }
 
-    injectStyle();   // 只操作 document.head，head 中同步执行安全
     if (getVer() === 'new') {
+        injectStyle();   // 新版样式只在新版界面注入，旧版保持原始外观
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initNewUI);
         } else {
