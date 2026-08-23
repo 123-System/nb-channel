@@ -247,9 +247,51 @@ def upload_avatar():
     # 走 SECURITY DEFINER RPC 更新 profiles（anon 无 UPDATE profiles 权限）
     data, rpc_err = rpc('update_avatar_url', {'p_user_id': user_id, 'p_url': avatar_url})
     if rpc_err or not data or data.get('success') is not True:
+        # 地址保存失败时清理刚上传的文件，避免孤儿文件
+        try:
+            supabase.storage.from_('avatars').remove([key])
+        except Exception:
+            pass
         return jsonify({'success': False, 'message': '头像地址保存失败: %s' % (rpc_err or '未知错误')}), 500
 
+    # 清理该用户的旧头像文件（保留刚上传的；删除策略已配置）
+    try:
+        prefix = 'user_%s' % str(user_id)
+        old_rows = _exec_rows(supabase.storage.from_('avatars').list('', {}))
+        for old in old_rows:
+            old_name = old.get('name') or ''
+            if old_name.startswith(prefix) and old_name != key:
+                supabase.storage.from_('avatars').remove([old_name])
+    except Exception:
+        pass   # 清理失败不影响头像使用
+
     return jsonify({'success': True, 'avatar_url': avatar_url, 'message': '头像上传成功'})
+
+
+@app.route('/remove-avatar', methods=['POST'])
+def remove_avatar():
+    """移除头像：清空 avatar_url，并删除该用户的头像文件。"""
+    user_id, err = get_user_id()
+    if err:
+        return jsonify({'success': False, 'message': err}), 401
+
+    # 清空 avatar_url（走 RPC）
+    data, rpc_err = rpc('update_avatar_url', {'p_user_id': user_id, 'p_url': ''})
+    if rpc_err or not data or data.get('success') is not True:
+        return jsonify({'success': False, 'message': '移除失败: %s' % (rpc_err or '未知错误')}), 500
+
+    # 删除该用户的头像文件（尽力而为）
+    try:
+        prefix = 'user_%s' % str(user_id)
+        old_rows = _exec_rows(supabase.storage.from_('avatars').list('', {}))
+        for old in old_rows:
+            old_name = old.get('name') or ''
+            if old_name.startswith(prefix):
+                supabase.storage.from_('avatars').remove([old_name])
+    except Exception:
+        pass
+
+    return jsonify({'success': True, 'message': '头像已移除'})
 
 
 def _storage_key_from_url(file_url):
