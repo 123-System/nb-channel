@@ -145,6 +145,20 @@
     </div>
 </div>
 
+<!-- NB币转账弹窗 -->
+<div id="transferModal" class="custom-modal">
+    <div class="modal-content">
+        <h3>💸 转账 NB币</h3>
+        <p id="transferTarget" style="color:var(--count-text); font-size:0.9rem; margin:6px 0 12px;"></p>
+        <input type="number" id="transferAmount" min="1" max="100000" placeholder="金额（1~100000）" style="width:100%; padding:10px 14px; border-radius:30px; border:1px solid var(--card-border); background:var(--bg-color); color:var(--text-color); box-sizing:border-box; margin-bottom:8px;">
+        <div id="transferHint" style="font-size:0.75rem; color:var(--count-text); margin-bottom:10px;">仅好友可转 · 每日转出上限 500000</div>
+        <div class="modal-btns">
+            <button class="btn-cancel" id="transferCancel">取消</button>
+            <button class="btn-ok" id="transferOk" style="background:#4caf50;">确认转账</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
@@ -189,6 +203,37 @@
             document.getElementById('confirmOk').onclick = () => done(true);
             document.getElementById('confirmCancel').onclick = () => done(false);
         });
+    }
+
+    // ========== NB币转账 ==========
+    let transferState = null;   // { toId, toName }
+    function openTransferModal(toId, toName) {
+        transferState = { toId, toName };
+        document.getElementById('transferTarget').innerText = `转给：${toName}`;
+        document.getElementById('transferAmount').value = '';
+        document.getElementById('transferModal').style.display = 'flex';
+        setTimeout(() => document.getElementById('transferAmount').focus(), 50);
+    }
+    async function doTransfer() {
+        if (!transferState) return;
+        const amount = parseInt(document.getElementById('transferAmount').value) || 0;
+        if (amount < 1) { alert('请输入有效的转账金额'); return; }
+        if (amount > 100000) { alert('单次转账不能超过100000 NB币'); return; }
+        const ok = await showConfirm('确认转账', `确定转 ${amount} NB币 给 ${transferState.toName} 吗？`);
+        if (!ok) return;
+        const { data, error } = await supabaseClient.rpc('transfer_nb', {
+            p_from: currentUser.id, p_to: transferState.toId, p_amount: amount
+        });
+        document.getElementById('transferModal').style.display = 'none';
+        if (error) { alert('转账失败：' + error.message); return; }
+        if (!data || !data.success) { alert((data && data.message) || '转账失败'); return; }
+        alert(`✅ 已转 ${data.amount} NB币 给 ${transferState.toName}\n今日已转出 ${data.sent_today}/${data.daily_limit}`);
+        // 刷新余额
+        const bal = document.getElementById('myBalance');
+        if (bal) {
+            const { data: prof } = await supabaseClient.from('profiles').select('nb_balance').eq('id', currentUser.id).single();
+            if (prof) bal.innerText = `💰 ${prof.nb_balance} NB币`;
+        }
     }
 
     async function init() {
@@ -263,6 +308,7 @@
                 <div class="side-item" data-act="msg" data-id="${f.user_id}" data-name="${escapeHtml(f.username)}" data-avatar="${f.avatar_url || ''}">
                     <img src="${avatarOf(f)}" alt="">
                     <span class="name">${escapeHtml(f.username)}</span>
+                    <button class="mini-btn" data-act="transfer" data-id="${f.user_id}" data-name="${escapeHtml(f.username)}" title="转账NB币">💸</button>
                     <button class="mini-btn red" data-act="del" data-id="${f.user_id}" data-name="${escapeHtml(f.username)}">✕</button>
                 </div>`).join('');
         } else if (currentTab === 'requests') {
@@ -500,6 +546,8 @@
                 if (!ok) return;
                 await supabaseClient.rpc('remove_friend', { p_user_id: currentUser.id, p_other: btn.dataset.id });
                 await loadFriends(); renderSide(); loadConvs();
+            } else if (act === 'transfer') {
+                openTransferModal(btn.dataset.id, btn.dataset.name);
             } else if (act === 'delconv') {
                 const ok = await showConfirm('删除会话', `确定删除与 ${btn.dataset.name} 的会话吗？聊天记录将从你的列表消失（不影响对方）。`);
                 if (!ok) return;
@@ -524,6 +572,12 @@
             }
         });
         document.getElementById('sendBtn').onclick = sendMsg;
+        // NB币转账弹窗按钮
+        document.getElementById('transferOk').onclick = doTransfer;
+        document.getElementById('transferCancel').onclick = () => { document.getElementById('transferModal').style.display = 'none'; };
+        document.getElementById('transferAmount').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); doTransfer(); }
+        });
         // 发图片：上传到 images 公开桶 → 直接发送图片消息
         document.getElementById('imgBtn').onclick = () => document.getElementById('imgInput').click();
         document.getElementById('imgInput').addEventListener('change', async () => {
