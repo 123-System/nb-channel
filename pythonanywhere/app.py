@@ -232,19 +232,16 @@ def upload_avatar():
     if not ext:
         return jsonify({'success': False, 'message': '仅支持 JPG/PNG/GIF/WebP 图片'}), 400
 
-    # 每用户固定文件名（重复上传覆盖旧头像）
-    key = 'user_' + str(user_id) + ext
+    # 每次上传生成唯一文件名（避免覆盖冲突：upload 同 key 会 409、update 会被 RLS 拦）
+    # 格式：user_<id>_<时间戳>.<ext>，新头像上传后更新 avatar_url 指向新文件
+    key = 'user_%s_%d%s' % (str(user_id), int(datetime.datetime.now().timestamp() * 1000), ext)
     file_bytes = file.read()   # supabase-py upload 需要 bytes，不接受文件流
     try:
         supabase.storage.from_('avatars').upload(key, file_bytes, {
             'content-type': mime
         })
     except Exception as e:
-        # 已存在（409）：用 update() 直接覆盖（不要"删了再传"，删除后立即重建会再 409）
-        try:
-            supabase.storage.from_('avatars').update(key, file_bytes, {'content-type': mime})
-        except Exception as e2:
-            return jsonify({'success': False, 'message': '头像上传失败: %s' % e2}), 500
+        return jsonify({'success': False, 'message': '头像上传失败: %s' % e}), 500
 
     avatar_url = SUPABASE_URL.rstrip('/') + '/storage/v1/object/public/avatars/' + key
     # 走 SECURITY DEFINER RPC 更新 profiles（anon 无 UPDATE profiles 权限）
