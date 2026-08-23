@@ -191,6 +191,18 @@
                 <button id="convBtn">换算</button>
             </div>
             <div class="calc-result" id="convResult">👆 输入化学式与质量开始换算</div>
+
+            <h3>🧴 质量分数(%) → 物质的量</h3>
+            <div class="calc-help">输入溶质化学式、溶液质量分数(%) 和溶液质量，求溶质的物质的量；填写密度（g/mL）可同时得到物质的量浓度（mol/L）</div>
+            <div class="calc-row">
+                <input type="text" id="pctFormula" placeholder="溶质化学式" value="NaCl">
+                <input type="number" id="pctW" placeholder="质量分数 (%)" value="10" step="0.01" min="0" max="100">
+                <input type="number" id="pctMass" placeholder="溶液质量 (g)" value="100">
+                <input type="number" id="pctDensity" placeholder="密度 g/mL（可选）">
+                <button id="pctBtn">计算</button>
+            </div>
+            <div class="examples" id="pctExamples"></div>
+            <div class="calc-result" id="pctResult">👆 输入参数开始计算</div>
         </div>
     </div>
 </div>
@@ -482,6 +494,35 @@
         }
     }
 
+    // ========== 质量分数(%) → 物质的量 ==========
+    function doPct() {
+        const out = document.getElementById('pctResult');
+        const f = document.getElementById('pctFormula').value.trim();
+        const w = parseFloat(document.getElementById('pctW').value);
+        const m = parseFloat(document.getElementById('pctMass').value);
+        const d = parseFloat(document.getElementById('pctDensity').value);
+        try {
+            if (!f) throw new Error('请输入溶质化学式');
+            if (isNaN(w) || w <= 0 || w >= 100) throw new Error('质量分数需在 0~100 之间（不含0和100）');
+            if (isNaN(m) || m <= 0) throw new Error('请输入有效的溶液质量');
+            const r = parseFormula(f);
+            const soluteMass = m * w / 100;
+            const n = soluteMass / r.mass;
+            let lines = `🧪 溶质 <strong>${f}</strong> 摩尔质量 = ${r.mass.toFixed(3)} g/mol\n`;
+            lines += `🧂 溶质质量 = ${m} g × ${w}% = ${soluteMass.toFixed(3)} g\n`;
+            lines += `📏 物质的量 n = ${soluteMass.toFixed(3)} g ÷ ${r.mass.toFixed(3)} g/mol = <span class="big">${n.toFixed(4)} mol</span>`;
+            if (!isNaN(d) && d > 0) {
+                const c = 1000 * d * w / 100 / r.mass;
+                lines += `\n🧴 物质的量浓度 c = 1000×ρ×w% ÷ M = 1000 × ${d} × ${w}% ÷ ${r.mass.toFixed(3)} = <span class="big">${c.toFixed(4)} mol/L</span>`;
+            } else {
+                lines += '\n💡 填写密度可同时算出物质的量浓度（mol/L）';
+            }
+            out.innerHTML = lines;
+        } catch (e) {
+            out.innerText = '❌ ' + e.message;
+        }
+    }
+
     // ========== Tab 切换 ==========
     function switchTab(which) {
         document.getElementById('tabPeriodic').classList.toggle('active', which === 'periodic');
@@ -505,8 +546,29 @@
     document.getElementById('calcMassBtn').onclick = calcMass;
     document.getElementById('balanceBtn').onclick = balanceEquation;
     document.getElementById('convBtn').onclick = doConv;
+    document.getElementById('pctBtn').onclick = doPct;
     document.getElementById('formulaInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') calcMass(); });
     document.getElementById('eqInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') balanceEquation(); });
+    document.getElementById('pctFormula').addEventListener('keydown', (e) => { if (e.key === 'Enter') doPct(); });
+
+    // %浓度示例（溶质/质量分数/溶液质量/密度）
+    const pctExamples = [
+        { label: 'NaCl 10% (ρ=1.07)', f: 'NaCl', w: 10, m: 100, d: 1.07 },
+        { label: 'HCl 36.5% (ρ=1.18)', f: 'HCl', w: 36.5, m: 100, d: 1.18 },
+        { label: 'H2SO4 98% (ρ=1.84)', f: 'H2SO4', w: 98, m: 100, d: 1.84 },
+        { label: 'NaOH 40% (ρ=1.43)', f: 'NaOH', w: 40, m: 100, d: 1.43 },
+        { label: 'KMnO4 5% 无密度', f: 'KMnO4', w: 5, m: 200, d: 0 }
+    ];
+    const pe = document.getElementById('pctExamples');
+    pe.innerHTML = pctExamples.map(x => `<button>${x.label}</button>`).join('');
+    pe.querySelectorAll('button').forEach((b, i) => b.onclick = () => {
+        const x = pctExamples[i];
+        document.getElementById('pctFormula').value = x.f;
+        document.getElementById('pctW').value = x.w;
+        document.getElementById('pctMass').value = x.m;
+        document.getElementById('pctDensity').value = x.d || '';
+        doPct();
+    });
 
     // 初始化
     renderPeriodicTable();
