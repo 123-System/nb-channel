@@ -208,6 +208,8 @@ BEGIN
 END $$;
 
 -- 6. 转账记录查询（最近 50 条，含状态）
+-- 注意：旧版返回类型无 status 列，必须先 DROP 再重建
+DROP FUNCTION IF EXISTS public.get_my_transfers(uuid);
 CREATE OR REPLACE FUNCTION public.get_my_transfers(p_user uuid)
 RETURNS TABLE (direction text, other_username text, amount integer,
                status text, created_at timestamptz)
