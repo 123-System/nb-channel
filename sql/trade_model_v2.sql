@@ -41,8 +41,8 @@ BEGIN
     IF p_amount IS NULL OR p_amount <= 0 THEN
         RETURN jsonb_build_object('success', false, 'message', '投入金额必须大于0');
     END IF;
-    IF p_amount > 10000 THEN
-        RETURN jsonb_build_object('success', false, 'message', '单次买入不能超过10000 NB币');
+    IF p_amount > 500000 THEN
+        RETURN jsonb_build_object('success', false, 'message', '单次买入不能超过500000 NB币');
     END IF;
 
     -- 交易时段检查（北京时间 8:00 ~ 20:00）
