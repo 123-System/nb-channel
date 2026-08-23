@@ -448,53 +448,60 @@
                     A[r].push(c < left.length ? v : -v);
                 }
             }
-            // 高斯消元求零空间（增广全0）
-            const M = A.map(row => row.slice());
-            let pivotCol = 0;
-            const freeVars = [];
-            for (let r = 0; r < rows; r++) {
-                let p = -1;
-                for (let c = pivotCol; c < cols; c++) {
-                    if (Math.abs(M[r][c]) > 1e-9) { p = c; break; }
+            // 分数工具（精确有理数运算，避免浮点误差导致系数无法约分）
+            const gcd = (a, b) => b ? gcd(b, a % b) : Math.abs(a);
+            const F = (n, d = 1) => { if (d < 0) { n = -n; d = -d; } const g = gcd(Math.abs(n), Math.abs(d)) || 1; return { n: n / g, d: d / g }; };
+            const Fadd = (a, b) => F(a.n * b.d + b.n * a.d, a.d * b.d);
+            const Fsub = (a, b) => F(a.n * b.d - b.n * a.d, a.d * b.d);
+            const Fmul = (a, b) => F(a.n * b.n, a.d * b.d);
+            const Fdiv = (a, b) => F(a.n * b.d, a.d * b.n);
+            const Fzero = () => F(0, 1);
+            const FisZero = a => a.n === 0;
+            // 列主元高斯-约当消元（允许行交换，主元列严格递增，分数精确）
+            const M = A.map(row => row.map(v => F(v)));
+            const pivots = [];          // [row, pivotCol]
+            let cur = 0;
+            for (let p = 0; p < cols && cur < rows; p++) {
+                let r = -1;
+                for (let rr = cur; rr < rows; rr++) {
+                    if (!FisZero(M[rr][p])) { r = rr; break; }
                 }
-                if (p === -1) continue;
-                if (p !== pivotCol) for (let c = 0; c < cols; c++) { const t = M[r][c]; M[r][c] = M[r][p]; M[r][p] = t; }
-                const inv = 1 / M[r][pivotCol];
-                for (let c = 0; c < cols; c++) M[r][c] *= inv;
+                if (r === -1) continue;
+                if (r !== cur) { const t = M[cur]; M[cur] = M[r]; M[r] = t; }
+                const inv = Fdiv(F(1), M[cur][p]);
+                for (let c = 0; c < cols; c++) M[cur][c] = Fmul(M[cur][c], inv);
                 for (let rr = 0; rr < rows; rr++) {
-                    if (rr !== r && Math.abs(M[rr][pivotCol]) > 1e-9) {
-                        const f = M[rr][pivotCol];
-                        for (let c = 0; c < cols; c++) M[rr][c] -= f * M[r][c];
+                    if (rr !== cur && !FisZero(M[rr][p])) {
+                        const f = M[rr][p];
+                        for (let c = 0; c < cols; c++) M[rr][c] = Fsub(M[rr][c], Fmul(f, M[cur][c]));
                     }
                 }
-                pivotCol++;
-                if (pivotCol >= cols) break;
+                pivots.push([cur, p]);
+                cur++;
             }
-            // 解向量：自由变量取 1，回代
-            const sol = new Array(cols).fill(0);
-            const pivots = [];
-            for (let r = 0; r < Math.min(rows, cols); r++) {
-                let pc = -1;
-                for (let c = 0; c < cols; c++) if (Math.abs(M[r][c]) > 1e-9) { pc = c; break; }
-                if (pc === -1) continue;
-                pivots.push([r, pc]);
-            }
-            const pivotCols = pivots.map(p => p[1]);
-            for (let c = 0; c < cols; c++) if (pivotCols.indexOf(c) === -1) sol[c] = 1;
+            // 解向量：自由变量取 1，回代（RREF 中主元列其他行全 0，非主元列任意）
+            const sol = new Array(cols).fill(Fzero());
+            const pivotCols = pivots.map(x => x[1]);
+            for (let c = 0; c < cols; c++) if (pivotCols.indexOf(c) === -1) sol[c] = F(1);
             for (let k = pivots.length - 1; k >= 0; k--) {
                 const [r, pc] = pivots[k];
-                let s = 0;
-                for (let c = pc + 1; c < cols; c++) s += M[r][c] * sol[c];
-                sol[pc] = -s;
+                let s = Fzero();
+                for (let c = 0; c < cols; c++) {
+                    if (c === pc) continue;
+                    s = Fadd(s, Fmul(M[r][c], sol[c]));
+                }
+                sol[pc] = Fsub(Fzero(), s);
             }
-            // 检查是否有解（所有解必须 > 0 才有意义）
-            const eps = 1e-6;
-            if (sol.some(v => v < -eps)) throw new Error('无法配平：请检查方程式（可能存在多种解或反应不可能）');
-            // 归一化为最小正整数
-            let maxAbs = 0;
-            sol.forEach(v => { const a = Math.abs(v); if (a > maxAbs) maxAbs = a; });
-            const ints = sol.map(v => Math.round(v / maxAbs * 1e6));
-            const gcd = (a, b) => b ? gcd(b, a % b) : Math.abs(a);
+            // 检查是否有解：全部 > 0 才有意义（全负则整体取反）
+            const allNeg = sol.every(v => v.n < 0);
+            if (allNeg) sol.forEach(v => { v.n = -v.n; });
+            if (sol.some(v => v.n < 0) || sol.some(v => v.n === 0))
+                throw new Error('无法配平：请检查方程式（可能存在多种解或反应不可能）');
+            // 归一化为最小正整数：全体分母取 LCM → 整数 → 除以 GCD
+            const lcmOf = (a, b) => Math.abs(a * b) / (gcd(a, b) || 1);
+            let lcm = 1;
+            sol.forEach(v => { lcm = lcmOf(lcm, v.d); });
+            const ints = sol.map(v => v.n * (lcm / v.d));
             let g = ints.reduce((acc, v) => gcd(acc, v), 0);
             if (g === 0) g = 1;
             const final = ints.map(v => v / g);
