@@ -60,11 +60,14 @@
             box-shadow: 0 3px 10px rgba(255, 179, 0, 0.35);
             min-width: 190px; box-sizing: border-box;
         }
+        .redpacket.claimed { background: linear-gradient(135deg, #ffe9b8 0%, #ffd54a 100%); box-shadow: 0 2px 6px rgba(255,179,0,0.2); cursor: default; }
+        .redpacket.refunded { background: linear-gradient(135deg, #e5e5e5 0%, #cfcfcf 100%); box-shadow: none; cursor: default; }
         .redpacket .rp-icon { font-size: 1.6rem; }
         .redpacket .rp-info { display: flex; flex-direction: column; }
         .redpacket .rp-title { font-size: 0.82rem; color: #6d4c00; font-weight: 600; }
         .redpacket .rp-amt { font-size: 1.05rem; color: #5a3e00; font-weight: 700; }
         .redpacket .rp-tip { font-size: 0.72rem; color: #7a5a12; }
+        .redpacket.refunded .rp-title, .redpacket.refunded .rp-amt, .redpacket.refunded .rp-tip { color: #777; }
         .msg.me .redpacket { background: linear-gradient(135deg, #e8e8e8 0%, #cfcfcf 100%); box-shadow: 0 3px 8px rgba(0,0,0,0.12); }
         .msg.me .redpacket .rp-title, .msg.me .redpacket .rp-amt { color: #5c5c5c; }
         .msg.me .redpacket .rp-tip { color: #7f7f7f; }
@@ -173,7 +176,7 @@
         <h3>💸 转账 NB币</h3>
         <p id="transferTarget" style="color:var(--count-text); font-size:0.9rem; margin:6px 0 12px;"></p>
         <input type="number" id="transferAmount" min="1" max="100000" placeholder="金额（1~100000）" style="width:100%; padding:10px 14px; border-radius:30px; border:1px solid var(--card-border); background:var(--bg-color); color:var(--text-color); box-sizing:border-box; margin-bottom:8px;">
-        <div id="transferHint" style="font-size:0.75rem; color:var(--count-text); margin-bottom:10px;">仅好友可转 · 每日转出上限 500000</div>
+        <div id="transferHint" style="font-size:0.75rem; color:var(--count-text); margin-bottom:10px;">仅好友可转 · 每日转出上限 500000 · 以红包形式发送，对方领取后到账</div>
         <div class="modal-btns">
             <button class="btn-cancel" id="transferCancel">取消</button>
             <button class="btn-ok" id="transferOk" style="background:#4caf50;">确认转账</button>
@@ -249,13 +252,13 @@
         document.getElementById('transferModal').style.display = 'none';
         if (error) { alert('转账失败：' + error.message); return; }
         if (!data || !data.success) { alert((data && data.message) || '转账失败'); return; }
-        alert(`✅ 已转 ${data.amount} NB币 给 ${transferState.toName}\n今日已转出 ${data.sent_today}/${data.daily_limit}\n对方私信里已出现红包提醒`);
+        alert(`✅ 已发出红包 ${data.amount} NB币 给 ${transferState.toName}\n今日已转出 ${data.sent_today}/${data.daily_limit}\n对方领取后才能到账`);
         // 若当前正与收款人聊天，本地立即追加红包消息（避免等 Realtime）
         if (currentConvId && currentOther && currentOther.id === transferState.toId) {
             appendLocalMessage({
                 id: -Date.now(),   // 临时 id，Realtime 推送后会按真实 id 去重
                 sender_id: currentUser.id,
-                content: `[redpacket]${data.amount}[/redpacket]`,
+                content: `[redpacket]${data.transfer_id}|${data.amount}[/redpacket]`,
                 created_at: new Date().toISOString()
             });
         }
@@ -469,30 +472,76 @@
         loadingOlder = false;
     }
 
-    // [img]key[/img] → 图片（公开桶 URL 前端拼接）；[redpacket]N[/redpacket] → 红包卡片
+    // [img]key[/img] → 图片（公开桶 URL 前端拼接）
+    // [redpacket]id|金额[/redpacket] → 待领取红包
+    // [redpacket_claimed]id|金额[/redpacket_claimed] → 已领取
+    // [redpacket_refunded]id|金额[/redpacket_refunded] → 已退回
     function renderContentWithImages(content, isMine) {
         let html = escapeHtml(content);
         html = html.replace(/\[img\]([a-zA-Z0-9_.\-]+)\[\/img\]/g, (m, key) =>
             `<img src="${SUPABASE_URL}/storage/v1/object/public/images/${key}" alt="图片" onclick="window.open(this.src,'_blank')" style="max-width:220px; max-height:220px; border-radius:10px; display:block; cursor:zoom-in;">`);
-        html = html.replace(/\[redpacket\](\d+)\[\/redpacket\]/g, (m, amt) =>
-            `<span class="redpacket" onclick="showRedPacket('${amt}', ${isMine ? 'true' : 'false'})">
-                <span class="rp-icon">🧧</span>
-                <span class="rp-info">
-                    <span class="rp-title">${isMine ? '已发出的红包' : 'NB币红包'}</span>
-                    <span class="rp-amt">${amt} NB币</span>
-                    <span class="rp-tip">${isMine ? '等待对方查看' : '点击查看金额'}</span>
-                </span>
-            </span>`);
+        html = html.replace(/\[redpacket\](\d+)\|(\d+)\[\/redpacket\]/g, (m, id, amt) =>
+            renderRedPacket(id, amt, 'pending', isMine));
+        html = html.replace(/\[redpacket_claimed\](\d+)\|(\d+)\[\/redpacket_claimed\]/g, (m, id, amt) =>
+            renderRedPacket(id, amt, 'claimed', isMine));
+        html = html.replace(/\[redpacket_refunded\](\d+)\|(\d+)\[\/redpacket_refunded\]/g, (m, id, amt) =>
+            renderRedPacket(id, amt, 'refunded', isMine));
         return html;
     }
 
-    // 点击红包：展示详情
-    function showRedPacket(amount, isMine) {
-        if (isMine) {
-            alert(`🧧 已发出的红包\n你向 ${currentOther ? currentOther.name : '对方'} 发送了 ${amount} NB币\n金额已实时到账对方的钱包`);
-        } else {
-            alert(`🧧 NB币红包\n${currentOther ? currentOther.name : '对方'} 给你发了 ${amount} NB币\n金额已自动存入你的钱包`);
+    // 红包卡片：pending 待领取 / claimed 已领取 / refunded 已退回
+    function renderRedPacket(id, amt, status, isMine) {
+        if (status === 'claimed') {
+            return `<span class="redpacket claimed">
+                <span class="rp-icon">🧧</span>
+                <span class="rp-info">
+                    <span class="rp-title">${isMine ? '已被对方领取' : '已领取的红包'}</span>
+                    <span class="rp-amt">${amt} NB币</span>
+                    <span class="rp-tip">${isMine ? '对方已存入钱包' : '已存入你的钱包'}</span>
+                </span>
+            </span>`;
         }
+        if (status === 'refunded') {
+            return `<span class="redpacket refunded">
+                <span class="rp-icon">💤</span>
+                <span class="rp-info">
+                    <span class="rp-title">已超时退回</span>
+                    <span class="rp-amt">${amt} NB币</span>
+                    <span class="rp-tip">24小时未领取，已退回给${isMine ? '你' : '对方'}</span>
+                </span>
+            </span>`;
+        }
+        // pending：自己发的是灰色"等待领取"，对方发的是金色可点击领取
+        const clickable = !isMine;
+        return `<span class="redpacket" ${clickable ? `onclick="claimRedPacket('${id}', '${amt}')"` : 'style="cursor:default;"'}>
+            <span class="rp-icon">🧧</span>
+            <span class="rp-info">
+                <span class="rp-title">${isMine ? '已发出的红包' : 'NB币红包'}</span>
+                <span class="rp-amt">${amt} NB币</span>
+                <span class="rp-tip">${isMine ? '等待对方领取' : '点击领取'}</span>
+            </span>
+        </span>`;
+    }
+
+    // 点击红包：领取（仅收款方）
+    async function claimRedPacket(transferId, amount) {
+        if (!currentUser) return;
+        const { data, error } = await supabaseClient.rpc('claim_redpacket', {
+            p_transfer_id: parseInt(transferId), p_user: currentUser.id
+        });
+        if (error || !data || !data.success) {
+            alert((error && error.message) || (data && data.message) || '领取失败');
+            return;
+        }
+        alert(`🎉 领取成功！${amount} NB币已存入你的钱包`);
+        // 刷新余额
+        const bal = document.getElementById('myBalance');
+        if (bal) {
+            const { data: prof } = await supabaseClient.from('profiles').select('nb_balance').eq('id', currentUser.id).single();
+            if (prof) bal.innerText = `💰 ${prof.nb_balance} NB币`;
+        }
+        // 重新加载消息（红包卡片变为已领取样式）
+        if (currentConvId) await loadMessages(currentConvId);
     }
 
     function renderMsg(m) {
@@ -560,6 +609,20 @@
                 // 刷新会话列表与未读
                 loadConvs();
                 updateBadge();
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload) => {
+                const msg = payload.new;
+                // 红包被领取/退回后 content 变化：实时更新气泡（双方都能看到状态变化）
+                if (currentConvId && msg.conversation_id === currentConvId) {
+                    const el = document.querySelector(`#chatBody [data-msgid="${msg.id}"]`);
+                    if (el) {
+                        const div = document.createElement('div');
+                        div.dataset.msgid = msg.id;
+                        div.innerHTML = renderMsg(msg);
+                        el.replaceWith(div);
+                    }
+                }
+                loadConvs();
             })
             .subscribe();
     }
