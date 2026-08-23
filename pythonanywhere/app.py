@@ -5,7 +5,7 @@ NB频道 - PythonAnywhere 一体化 Flask 应用
 功能：
   GET  /                网站本体（静态文件服务，需配置 SITE_DIR）
   POST /upload          上传作品（存 S3，multipart/form-data + 头 X-User-Id）
-  POST /download        下载/购买作品（JSON + 头 X-User-Id）
+  POST /download        下载/购买作品（JSON + 头 X-User-Id；body 可选 pay_type: nb|market、company_id）
   GET  /files/<key>     从 S3 代理下载文件（附件方式）
   POST /webhook         GitHub push 后自动 git pull 同步代码
   GET  /health          健康检查
@@ -488,7 +488,16 @@ def download():
         return jsonify({'success': True, 'file_url': prod['file_url'], 'message': '已购买，直接下载'})
 
     # 5. 未购买：走 purchase_product（扣款并返回下载地址）
-    data, rpc_err = rpc('purchase_product', {'p_product_id': product_id, 'p_buyer_id': user_id})
+    #    支付方式：pay_type = 'nb'（给作者NB币，默认）| 'market'（加作者公司市值，需 company_id）
+    pay_type = (body.get('pay_type') or 'nb').lower()
+    company_id = body.get('company_id')
+    rpc_kwargs = {'p_product_id': product_id, 'p_buyer_id': user_id, 'p_pay_type': pay_type}
+    if company_id:
+        try:
+            rpc_kwargs['p_company_id'] = int(company_id)
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'message': '无效的公司 ID'}), 400
+    data, rpc_err = rpc('purchase_product', rpc_kwargs)
     if rpc_err:
         return jsonify({'success': False, 'message': '后端错误: %s' % rpc_err}), 500
     if not data or data.get('success') is not True:

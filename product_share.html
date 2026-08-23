@@ -108,6 +108,17 @@
         }
         .filter-btn.active { background: var(--nav-btn-hover-bg); color: white; }
         .filter-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
+        /* 支付方式弹窗 */
+        .pay-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .pay-modal { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 24px; width: min(420px, 92vw); max-height: 86vh; overflow-y: auto; }
+        .pay-option { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--card-border); border-radius: 12px; margin: 8px 0; cursor: pointer; transition: 0.15s; }
+        .pay-option:hover { border-color: var(--status-border); }
+        .pay-option.selected { border-color: var(--status-border); background: rgba(0,0,0,0.05); }
+        .pay-option .pay-ico { font-size: 1.4rem; }
+        .pay-company-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; margin-left: 38px; font-size: 0.9rem; cursor: pointer; }
+        .pay-modal .pay-btn { width: 100%; padding: 10px; border: none; border-radius: 40px; background: var(--nav-btn-hover-bg); color: white; cursor: pointer; font-size: 1rem; margin-top: 10px; }
+        .pay-modal .pay-btn:hover { filter: brightness(0.9); }
+        .pay-modal .pay-cancel { width: 100%; padding: 8px; border: none; border-radius: 40px; background: transparent; color: var(--count-text); cursor: pointer; margin-top: 6px; }
     </style>
 </head>
 <body>
@@ -172,6 +183,27 @@
 <div class="fixed-buttons">
     <button class="theme-toggle-fixed" id="themeToggleFixed" onclick="toggleTheme()">🌙</button>
     <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
+</div>
+
+<!-- 支付方式选择弹窗（付费作品） -->
+<div class="pay-modal-overlay" id="payModal">
+    <div class="pay-modal">
+        <h3 style="margin-top:0;">💳 购买作品</h3>
+        <div id="payProductInfo" style="color:var(--count-text); margin-bottom:10px;"></div>
+        <div class="pay-option selected" id="payOptNb" onclick="selectPayType('nb')">
+            <span class="pay-ico">💰</span>
+            <div><div style="font-weight:600;">用 NB币支付</div><div style="font-size:0.8rem; color:var(--count-text);">金额直接给作者</div></div>
+        </div>
+        <div id="payMarketWrap">
+            <div class="pay-option" id="payOptMarket" onclick="selectPayType('market')">
+                <span class="pay-ico">📈</span>
+                <div><div style="font-weight:600;">加市值支持</div><div style="font-size:0.8rem; color:var(--count-text);">金额加到作者的公司市值（帮作者冲榜）</div></div>
+            </div>
+            <div id="payCompanyList" style="display:none;"></div>
+        </div>
+        <button class="pay-btn" id="payConfirmBtn">确认支付</button>
+        <button class="pay-cancel" id="payCancelBtn">取消</button>
+    </div>
 </div>
 
 <script>
@@ -308,7 +340,13 @@
         container.querySelectorAll('.download-btn, .buy-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const productId = parseInt(btn.dataset.id);
-                purchaseProduct(productId);
+                const p = productsData.find(x => x.id === productId);
+                // 付费且未购买：弹支付方式选择；免费/已购买：直接下载
+                if (p && p.price > 0 && !purchasedIdsSet.has(productId)) {
+                    openPayModal(productId, p);
+                } else {
+                    purchaseProduct(productId);
+                }
             });
         });
 
@@ -476,7 +514,52 @@
     }
 
     // ========== 购买/下载 ==========
-    async function purchaseProduct(productId) {
+    // ========== 支付方式选择弹窗 ==========
+    let payState = { productId: null, companies: [], payType: 'nb', companyId: null };
+
+    function selectPayType(t) {
+        payState.payType = t;
+        document.getElementById('payOptNb').classList.toggle('selected', t === 'nb');
+        document.getElementById('payOptMarket').classList.toggle('selected', t === 'market');
+        const list = document.getElementById('payCompanyList');
+        list.style.display = t === 'market' ? 'block' : 'none';
+    }
+
+    function renderPayCompanies() {
+        const list = document.getElementById('payCompanyList');
+        list.innerHTML = payState.companies.map(c => `
+            <label class="pay-company-item">
+                <input type="radio" name="payCompany" value="${c.id}" ${c.id === payState.companyId ? 'checked' : ''}>
+                <span>🏢 ${escapeHtml(c.company_name)}（市值 ${c.market_value}）</span>
+            </label>`).join('');
+        list.querySelectorAll('input[name=payCompany]').forEach(r => {
+            r.onchange = () => { payState.companyId = parseInt(r.value); };
+        });
+    }
+
+    async function openPayModal(productId, p) {
+        payState = { productId, companies: [], payType: 'nb', companyId: null };
+        document.getElementById('payProductInfo').innerText = `《${p.title}》 · 价格 ${p.price} NB币`;
+        const { data, error } = await supabaseClient.rpc('get_author_companies', { p_author_id: p.author_id });
+        payState.companies = data || [];
+        const marketWrap = document.getElementById('payMarketWrap');
+        if (!payState.companies.length) {
+            // 作者无公司：隐藏"加市值"选项，只能选 NB币
+            marketWrap.style.display = 'none';
+        } else {
+            marketWrap.style.display = 'block';
+            payState.companyId = payState.companies[0].id;
+            renderPayCompanies();
+        }
+        selectPayType('nb');
+        document.getElementById('payModal').style.display = 'flex';
+    }
+
+    function closePayModal() {
+        document.getElementById('payModal').style.display = 'none';
+    }
+
+    async function purchaseProduct(productId, payType, companyId) {
         const user = getCurrentUser();
         if (!user) { alert('请先登录'); return; }
 
@@ -487,7 +570,11 @@
                     'Content-Type': 'application/json',
                     'X-User-Id': user.id
                 },
-                body: JSON.stringify({ product_id: productId })
+                body: JSON.stringify({
+                    product_id: productId,
+                    pay_type: payType || 'nb',
+                    company_id: companyId || null
+                })
             });
             const result = await response.json();
             if (result.success) {
@@ -528,6 +615,15 @@
         initFilterBar();
         document.getElementById('uploadBtn').addEventListener('click', uploadProduct);
         document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
+        document.getElementById('payConfirmBtn').addEventListener('click', async () => {
+            if (payState.payType === 'market' && !payState.companyId) { alert('请选择要加市值的公司'); return; }
+            const pid = payState.productId;
+            const pType = payState.payType;
+            const cid = payState.companyId;
+            closePayModal();
+            await purchaseProduct(pid, pType, cid);
+        });
+        document.getElementById('payCancelBtn').addEventListener('click', closePayModal);
         checkBackendHealth();
     }
 
