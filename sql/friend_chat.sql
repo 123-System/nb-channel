@@ -373,8 +373,9 @@ DECLARE
     v_low uuid;
     v_high uuid;
 BEGIN
-    SELECT user_low, user_high INTO v_low, v_high
-      FROM public.conversations WHERE id = p_conversation_id;
+    -- 注意：必须用表别名限定 id（RETURNS TABLE 输出列也叫 id，未限定会 ambiguous）
+    SELECT c.user_low, c.user_high INTO v_low, v_high
+      FROM public.conversations c WHERE c.id = p_conversation_id;
     IF v_low IS NULL OR p_user NOT IN (v_low, v_high) THEN
         RAISE EXCEPTION '不是会话成员';
     END IF;
