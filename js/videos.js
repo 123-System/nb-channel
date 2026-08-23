@@ -92,30 +92,34 @@ function renderVideosByCategory() {
     }).join('');
 }
 
-// ========== B站视频内嵌播放（点击卡片弹窗播放，不跳转） ==========
+// ========== B站视频内嵌播放（点击卡片弹窗，点"加载播放器"后内嵌，规避拦截器/浏览器干预） ==========
 let currentPlayerBvid = null;
 function openVideoPlayer(card) {
     const modal = document.getElementById('videoPlayerModal');
     const frame = document.getElementById('videoPlayerFrame');
     const cap = document.getElementById('videoPlayerTitle');
     if (!modal || !frame) {
-        // 页面没有播放弹窗（旧结构）：退回新窗口打开
         const bvid = card && card.dataset.bvid;
         if (bvid) window.open('https://www.bilibili.com/video/' + bvid, '_blank');
         return;
     }
-    const bvid = card.dataset.bvid;
-    currentPlayerBvid = bvid;
-    const title = card.dataset.title || '';
-    cap.innerText = title;
-    // 先显示弹窗，等布局稳定后再加载播放器（隐藏/未布局容器中初始化会异常）
+    currentPlayerBvid = card.dataset.bvid;
+    cap.innerText = card.dataset.title || '';
+    // 先显示弹窗（不自动加载播放器，显示"点击加载"遮罩）
+    frame.src = 'about:blank';
+    const mask = document.getElementById('playerLoadMask');
+    if (mask) mask.style.display = 'flex';
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
-    frame.src = 'about:blank';   // 先重置
-    setTimeout(() => {
-        // 最小参数加载（autoplay=0 手动播放）；部分环境多余参数会走不同初始化路径
-        frame.src = `https://player.bilibili.com/player.html?bvid=${bvid}`;
-    }, 300);
+}
+
+function loadPlayerIntoFrame() {
+    const frame = document.getElementById('videoPlayerFrame');
+    const mask = document.getElementById('playerLoadMask');
+    if (!frame || !currentPlayerBvid) return;
+    // 用户手势触发的加载（规避 Edge 懒加载干预与广告拦截器对自动 iframe 的拦截）
+    frame.src = `https://player.bilibili.com/player.html?bvid=${currentPlayerBvid}`;
+    if (mask) mask.style.display = 'none';
 }
 
 function closeVideoPlayer() {
@@ -132,6 +136,9 @@ function initVideoPlayerModal() {
     if (!modal) return;
     const closeBtn = document.getElementById('videoPlayerClose');
     if (closeBtn) closeBtn.onclick = closeVideoPlayer;
+    // 用户点击才加载播放器
+    const mask = document.getElementById('playerLoadMask');
+    if (mask) mask.onclick = (e) => { e.stopPropagation(); loadPlayerIntoFrame(); };
     // 兜底：播放器不可用时去B站看
     const openBtn = document.getElementById('videoPlayerOpen');
     if (openBtn) openBtn.onclick = () => {
