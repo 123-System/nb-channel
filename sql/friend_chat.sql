@@ -87,21 +87,6 @@ AS $$
     );
 $$;
 
--- 是否被拉黑（任一方向）
-CREATE OR REPLACE FUNCTION public.is_blocked(p_a uuid, p_b uuid)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-    SELECT EXISTS (
-        SELECT 1 FROM public.blocked_users
-        WHERE (user_id = p_a AND blocked_id = p_b)
-           OR (user_id = p_b AND blocked_id = p_a)
-    );
-$$;
-
 -- ========== 3. 好友 RPC ==========
 
 -- 搜索用户（按用户名模糊，排除自己和已拉黑）
@@ -118,7 +103,6 @@ BEGIN
      WHERE pr.username ILIKE '%' || p_keyword || '%'
        AND pr.id <> p_user_id
        AND NOT pr.is_banned
-       AND NOT public.is_blocked(p_user_id, pr.id)
      ORDER BY pr.username
      LIMIT 20;
 END;
@@ -139,9 +123,6 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = p_to AND NOT is_banned) THEN
         RETURN jsonb_build_object('success', false, 'message', '用户不存在或已封禁');
-    END IF;
-    IF public.is_blocked(p_from, p_to) THEN
-        RETURN jsonb_build_object('success', false, 'message', '无法发送申请');
     END IF;
     IF public.is_friend(p_from, p_to) THEN
         RETURN jsonb_build_object('success', false, 'message', '你们已经是好友了');
@@ -202,9 +183,6 @@ BEGIN
     END IF;
 
     IF p_accept THEN
-        IF public.is_blocked(v_from, v_to) THEN
-            RETURN jsonb_build_object('success', false, 'message', '无法接受（存在拉黑关系）');
-        END IF;
         INSERT INTO public.friendships (user_a, user_b)
         VALUES (LEAST(v_from, v_to), GREATEST(v_from, v_to))
         ON CONFLICT DO NOTHING;
@@ -339,9 +317,6 @@ BEGIN
     IF NOT public.is_friend(p_user_a, p_user_b) THEN
         RAISE EXCEPTION '只能与好友私信';
     END IF;
-    IF public.is_blocked(p_user_a, p_user_b) THEN
-        RAISE EXCEPTION '无法私信';
-    END IF;
     SELECT id INTO v_conv FROM public.conversations WHERE user_low = v_low AND user_high = v_high;
     IF v_conv IS NULL THEN
         INSERT INTO public.conversations (user_low, user_high) VALUES (v_low, v_high)
@@ -384,9 +359,6 @@ BEGIN
     v_other := CASE WHEN v_low = p_sender THEN v_high ELSE v_low END;
     IF NOT public.is_friend(p_sender, v_other) THEN
         RETURN jsonb_build_object('success', false, 'message', '对方已不是你的好友');
-    END IF;
-    IF public.is_blocked(p_sender, v_other) THEN
-        RETURN jsonb_build_object('success', false, 'message', '无法发送消息');
     END IF;
 
     INSERT INTO public.messages (conversation_id, sender_id, content)
@@ -499,9 +471,6 @@ GRANT EXECUTE ON FUNCTION public.get_friend_requests(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION public.respond_friend_request(bigint, uuid, boolean) TO anon;
 GRANT EXECUTE ON FUNCTION public.get_friends(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION public.remove_friend(uuid, uuid) TO anon;
-GRANT EXECUTE ON FUNCTION public.block_user(uuid, uuid) TO anon;
-GRANT EXECUTE ON FUNCTION public.unblock_user(uuid, uuid) TO anon;
-GRANT EXECUTE ON FUNCTION public.get_blocked_users(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION public.get_or_create_conversation(uuid, uuid) TO anon;
 GRANT EXECUTE ON FUNCTION public.send_message(uuid, bigint, text) TO anon;
 GRANT EXECUTE ON FUNCTION public.get_messages(uuid, bigint, bigint, integer) TO anon;
