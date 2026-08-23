@@ -4,10 +4,10 @@
 -- 机制：
 --   前端在随机时间（15~40分钟）、随机页面、随机位置出现一枚金币，
 --   点击时调用 claim_coin 领取随机 NB币。
---   防刷：冷却（默认20分钟/次）+ 每日上限（默认5次/天），
+--   防刷：冷却（默认5分钟/次）+ 每日上限（默认10次/天），
 --   参数在 admin_config 表可调：
---     coin_cooldown_min = 20（冷却分钟）
---     coin_daily_limit  = 5 （每日次数）
+--     coin_cooldown_min = 5 （冷却分钟）
+--     coin_daily_limit  = 10（每日次数）
 --     coin_min / coin_max = 10 / 100（奖励区间，5的倍数）
 -- ============================================================
 
@@ -39,9 +39,9 @@ DECLARE
     v_today        date := (now() AT TIME ZONE 'Asia/Shanghai')::date;
 BEGIN
     SELECT value::integer INTO v_cooldown_min FROM public.admin_config WHERE key = 'coin_cooldown_min';
-    IF v_cooldown_min IS NULL OR v_cooldown_min < 1 THEN v_cooldown_min := 20; END IF;
+    IF v_cooldown_min IS NULL OR v_cooldown_min < 1 THEN v_cooldown_min := 5; END IF;
     SELECT value::integer INTO v_daily_limit FROM public.admin_config WHERE key = 'coin_daily_limit';
-    IF v_daily_limit IS NULL OR v_daily_limit < 1 THEN v_daily_limit := 5; END IF;
+    IF v_daily_limit IS NULL OR v_daily_limit < 1 THEN v_daily_limit := 10; END IF;
 
     SELECT count(*) INTO v_today_count FROM public.coin_claims
      WHERE user_id = p_user_id AND (created_at AT TIME ZONE 'Asia/Shanghai')::date = v_today;
@@ -81,9 +81,9 @@ DECLARE
 BEGIN
     -- 读配置（可调）
     SELECT value::integer INTO v_cooldown_min FROM public.admin_config WHERE key = 'coin_cooldown_min';
-    IF v_cooldown_min IS NULL OR v_cooldown_min < 1 THEN v_cooldown_min := 20; END IF;
+    IF v_cooldown_min IS NULL OR v_cooldown_min < 1 THEN v_cooldown_min := 5; END IF;
     SELECT value::integer INTO v_daily_limit FROM public.admin_config WHERE key = 'coin_daily_limit';
-    IF v_daily_limit IS NULL OR v_daily_limit < 1 THEN v_daily_limit := 5; END IF;
+    IF v_daily_limit IS NULL OR v_daily_limit < 1 THEN v_daily_limit := 10; END IF;
     SELECT value::integer INTO v_min_amount FROM public.admin_config WHERE key = 'coin_min';
     IF v_min_amount IS NULL OR v_min_amount < 1 THEN v_min_amount := 10; END IF;
     SELECT value::integer INTO v_max_amount FROM public.admin_config WHERE key = 'coin_max';

@@ -349,8 +349,8 @@ function fallbackCopy() {
             setTimeout(coinSchedule, 120000);
             return;
         }
-        // 随机 15~40 分钟出现一次
-        const delay = (15 + Math.random() * 25) * 60000;
+        // 随机 5~10 分钟出现一次
+        const delay = (5 + Math.random() * 5) * 60000;
         setTimeout(async () => {
             try {
                 const data = await coinRpc('can_claim_coin', { p_user_id: user.id });
@@ -360,8 +360,8 @@ function fallbackCopy() {
         }, delay);
     }
 
-    // 页面加载 3 秒后启动调度，首次出现随机 8~20 分钟
+    // 页面加载 3 秒后启动调度，首次出现随机 5~10 分钟
     setTimeout(() => {
-        setTimeout(coinSchedule, (8 + Math.random() * 12) * 60000);
+        setTimeout(coinSchedule, (5 + Math.random() * 5) * 60000);
     }, 3000);
 })();
