@@ -409,19 +409,26 @@
     // ========== 方程式配平（高斯消元求最小整数系数） ==========
     function balanceEquation() {
         const out = document.getElementById('balanceResult');
-        const raw = document.getElementById('eqInput').value.replace(/\s+/g, '');
+        // 输入预处理：支持全角等号、箭头、Unicode 下标（₀₁₂…）
+        let raw = document.getElementById('eqInput').value.replace(/\s+/g, '');
+        raw = raw.replace(/＝|→|⇒|=>|⟶/g, '=');
+        raw = raw.replace(/[\u2080-\u2089]/g, ch => String.fromCharCode(48 + ch.charCodeAt(0) - 0x2080));
         try {
             if (!raw) throw new Error('方程式为空');
             const sides = raw.split('=');
-            if (sides.length !== 2) throw new Error('请用 = 连接左右两边');
+            if (sides.length !== 2) throw new Error('请用 = 连接左右两边（支持 → 箭头）');
             const left = sides[0].split('+').filter(x => x);
             const right = sides[1].split('+').filter(x => x);
             if (!left.length || !right.length) throw new Error('方程式格式错误');
-            // 解析每个化合物 → {sym: count}
+            // 解析每个化合物 → {sym: count}（支持前导系数，如 3Br2、2H2O）
             const comps = [];
             const parseC = (t) => {
                 const atoms = {};
                 let i = 0;
+                // 前导系数（化合物前数字，如 3Br2 的 3）
+                let lead = 0;
+                while (i < t.length && /[0-9]/.test(t[i])) { lead = lead * 10 + parseInt(t[i]); i++; }
+                if (lead === 0) lead = 1;
                 const pg = () => {
                     const g = {};
                     while (i < t.length) {
@@ -433,7 +440,9 @@
                     }
                     return g;
                 };
-                return pg();
+                const g = pg();
+                for (const k in g) g[k] *= lead;
+                return g;
             };
             [...left, ...right].forEach(t => comps.push(parseC(t)));
             const allSyms = [];
