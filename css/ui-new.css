@@ -216,6 +216,11 @@
 }
 .changelog-content li { margin-bottom: 8px; }
 .changelog-content p { font-size: 1.05rem; }
+/* 每个版本的列表容器左内边距拉宽：给列表圆点留出空间，避免圆点贴边 */
+.changelog-content ul {
+    padding-left: 2.4em !important;
+    padding-right: 0.8em !important;
+}
 
 /* ---------- 视频页 ---------- */
 .video-count {
