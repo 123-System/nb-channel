@@ -415,28 +415,36 @@
         injectToggle();
     }
 
-    injectStyle();
-    if (getVer() === 'new') {
+    // 新版初始化（必须在 DOM 就绪后执行：injectMouseFx/injectOrbs 需要 document.body）
+    function initNewUI() {
         loadPremiumCss();
         injectMouseFx();
         injectOrbs();
         if (document.querySelector('.nav-container')) {
             replaceNav();
             injectBanner();
-        } else {
-            document.addEventListener('DOMContentLoaded', function () {
-                if (document.querySelector('.nav-container')) replaceNav();
-                injectBanner();
-            });
         }
         // 滚动渐显：等首屏元素就位后观察
+        setTimeout(injectReveal, 50);
+    }
+
+    // 旧版初始化：只需要切换按钮
+    function initOldUI() {
+        injectToggle();
+    }
+
+    injectStyle();   // 只操作 document.head，head 中同步执行安全
+    if (getVer() === 'new') {
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function () { setTimeout(injectReveal, 50); });
+            document.addEventListener('DOMContentLoaded', initNewUI);
         } else {
-            setTimeout(injectReveal, 50);
+            initNewUI();
         }
     } else {
-        // 旧版：保留原导航，只加切换按钮
-        injectToggle();
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initOldUI);
+        } else {
+            initOldUI();
+        }
     }
 })();
