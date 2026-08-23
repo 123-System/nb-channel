@@ -683,6 +683,16 @@
             profileBtn.onclick = () => {
                 window.location.href = 'profile.html';
             };
+
+            // 成就检查：新达成条件自动发奖并提示（幂等，不会重复发）
+            try {
+                const { data: ach, error: achErr } = await supabaseClient.rpc('check_achievements', { p_user_id: user.id });
+                if (!achErr && ach && ach.new_count > 0) {
+                    const lines = (ach.new || []).map(a => `${a.icon} ${a.name} +${a.reward} NB`).join('\n');
+                    await showMessage('🎉 解锁新成就', `${lines}\n\n共获得 ${ach.reward_total} NB币！\n去「个人中心 → 🏆 我的成就」查看全部`);
+                    if (profile) balanceSpan.innerHTML = `💰 NB币: ${(profile.nb_balance || 0) + (ach.reward_total || 0)}`;
+                }
+            } catch (e) { /* 成就检查失败不影响页面 */ }
         }
 
         // 签到操作（使用自定义弹窗）
