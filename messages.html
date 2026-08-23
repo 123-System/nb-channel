@@ -537,7 +537,7 @@
         console.log('标记已读成功:', data);
     }
     
-    window.location.replace(`comments-beta.html?highlight=${commentId}`);
+    window.location.replace(uiHref(`comments-beta.html?highlight=${commentId}`));
 }
 
     async function markAllAsRead() {

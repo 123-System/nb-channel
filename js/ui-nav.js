@@ -44,15 +44,16 @@
         btn.onclick = function () {
             var target = getVer() === 'new' ? 'old' : 'new';
             if (typeof setUIVersion === 'function') setUIVersion(target);
-            // 跳转到对应版本文件（xxx.html <-> xxx-new.html）
+            // 跳转到对应版本文件（xxx.html <-> xxx-new.html），保留 URL 参数
             var rawPage = location.pathname.split('/').pop() || '';
             var lower = rawPage.toLowerCase();
+            var qs = location.search || '';
             if (lower.indexOf('.html') !== -1) {
                 var isNew = lower.indexOf('-new.html') !== -1;
                 if (target === 'new' && !isNew) {
-                    location.href = rawPage.replace(/\.html$/i, '-new.html');
+                    location.href = rawPage.replace(/\.html$/i, '-new.html') + qs;
                 } else if (target === 'old' && isNew) {
-                    location.href = rawPage.replace(/-new\.html$/i, '.html');
+                    location.href = rawPage.replace(/-new\.html$/i, '.html') + qs;
                 } else {
                     location.reload();
                 }
