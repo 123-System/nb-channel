@@ -382,12 +382,10 @@ def delete_product():
         return jsonify({'success': False, 'message': '只能删除自己的作品'}), 403
 
     key = _storage_key_from_url(rows[0].get('file_url'))
-    try:
-        supabase.table('products').delete().eq('id', product_id).execute()
-        supabase.table('product_purchases').delete().eq('product_id', product_id).execute()
-        supabase.table('product_downloads').delete().eq('product_id', product_id).execute()
-    except Exception as e:
-        return jsonify({'success': False, 'message': '删除记录失败: %s' % e}), 500
+    # 走 SECURITY DEFINER RPC 删除记录（anon 无直接 DELETE 权限）
+    data, rpc_err = rpc('delete_product', {'p_product_id': product_id, 'p_user_id': user_id})
+    if rpc_err or not data or data.get('success') is not True:
+        return jsonify({'success': False, 'message': (rpc_err or (data and data.get('message')) or '删除失败')}), 500
     if key:
         try:
             supabase.storage.from_('products').remove([key])
