@@ -482,6 +482,16 @@
             `<img src="${SUPABASE_URL}/storage/v1/object/public/images/${key}" alt="图片" onclick="window.open(this.src,'_blank')" style="max-width:220px; max-height:220px; border-radius:10px; display:block; cursor:zoom-in;">`);
         html = html.replace(/\[redpacket\](\d+)\|(\d+)\[\/redpacket\]/g, (m, id, amt) =>
             renderRedPacket(id, amt, 'pending', isMine));
+        // 旧版格式 [redpacket]金额[/redpacket]（无 id，直接入账的历史红包）→ 已入账样式
+        html = html.replace(/\[redpacket\](\d+)\[\/redpacket\]/g, (m, amt) =>
+            `<span class="redpacket refunded">
+                <span class="rp-icon">🧧</span>
+                <span class="rp-info">
+                    <span class="rp-title">历史红包（已入账）</span>
+                    <span class="rp-amt">${amt} NB币</span>
+                    <span class="rp-tip">旧版转账，金额已直接到账</span>
+                </span>
+            </span>`);
         html = html.replace(/\[redpacket_claimed\](\d+)\|(\d+)\[\/redpacket_claimed\]/g, (m, id, amt) =>
             renderRedPacket(id, amt, 'claimed', isMine));
         html = html.replace(/\[redpacket_refunded\](\d+)\|(\d+)\[\/redpacket_refunded\]/g, (m, id, amt) =>
