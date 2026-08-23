@@ -529,7 +529,7 @@
 
     // 1. 鼠标跟随光晕（柔和品牌色光圈）
     const glow = document.createElement('div');
-    glow.style.cssText = 'position:fixed; left:-999px; top:-999px; width:240px; height:240px; border-radius:50%; pointer-events:none; z-index:9997; transform:translate(-50%,-50%); background:radial-gradient(circle, rgba(0,161,214,0.10), rgba(108,92,231,0.05) 45%, transparent 65%);';
+    glow.style.cssText = 'position:fixed; left:-999px; top:-999px; width:240px; height:240px; border-radius:50%; pointer-events:none; z-index:9997; transform:translate(-50%,-50%); background:radial-gradient(circle, rgba(0,161,214,0.20), rgba(108,92,231,0.10) 45%, transparent 65%);';
     document.body.appendChild(glow);
     let gx = -999, gy = -999, tx = -999, ty = -999;
     document.addEventListener('mousemove', (e) => { tx = e.clientX; ty = e.clientY; });
