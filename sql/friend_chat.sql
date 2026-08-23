@@ -286,6 +286,23 @@ BEGIN
 END;
 $$;
 
+-- 黑名单列表（含用户名头像）
+CREATE OR REPLACE FUNCTION public.get_blocked_users(p_user_id uuid)
+RETURNS TABLE (blocked_id uuid, username text, avatar_url text)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT bu.blocked_id, pr.username, pr.avatar_url
+      FROM public.blocked_users bu
+      JOIN public.profiles pr ON pr.id = bu.blocked_id
+     WHERE bu.user_id = p_user_id
+     ORDER BY pr.username;
+END;
+$$;
+
 -- ========== 4. 私信 RPC ==========
 
 -- 获取或创建会话（仅好友）
@@ -465,6 +482,7 @@ GRANT EXECUTE ON FUNCTION public.get_friends(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION public.remove_friend(uuid, uuid) TO anon;
 GRANT EXECUTE ON FUNCTION public.block_user(uuid, uuid) TO anon;
 GRANT EXECUTE ON FUNCTION public.unblock_user(uuid, uuid) TO anon;
+GRANT EXECUTE ON FUNCTION public.get_blocked_users(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION public.get_or_create_conversation(uuid, uuid) TO anon;
 GRANT EXECUTE ON FUNCTION public.send_message(uuid, bigint, text) TO anon;
 GRANT EXECUTE ON FUNCTION public.get_messages(uuid, bigint, bigint, integer) TO anon;

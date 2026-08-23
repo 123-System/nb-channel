@@ -91,6 +91,7 @@
                 <div class="side-tab active" data-tab="friends">👥 好友</div>
                 <div class="side-tab" data-tab="requests">📨 申请<span id="reqBadge" style="color:#ff4757;"></span></div>
                 <div class="side-tab" data-tab="search">🔍 找人</div>
+                <div class="side-tab" data-tab="blocks">🚫 黑名单</div>
             </div>
             <div class="side-body" id="sideBody"></div>
         </div>
@@ -98,6 +99,9 @@
         <div class="main-panel">
             <div class="conv-list" id="convList"></div>
             <div class="chat-header" id="chatHeader">选择一个好友开始聊天</div>
+        <div class="chat-header-extra" id="chatHeaderExtra" style="display:none; padding:0 16px 10px;">
+            <button class="mini-btn red" id="blockFromChatBtn">🚫 拉黑对方</button>
+        </div>
             <div class="chat-body" id="chatBody"><div class="empty-tip">👈 左侧选择好友或会话</div></div>
             <div class="chat-input" id="chatInputBar" style="display:none;">
                 <textarea id="msgInput" rows="1" placeholder="输入消息，Enter 发送"></textarea>
@@ -201,7 +205,8 @@
                     <img src="${avatarOf(f)}" alt="">
                     <span class="name">${escapeHtml(f.username)}</span>
                     <button class="mini-btn" data-act="msg" data-id="${f.user_id}" data-name="${escapeHtml(f.username)}" data-avatar="${f.avatar_url || ''}">💬</button>
-                    <button class="mini-btn red" data-act="del" data-id="${f.user_id}" data-name="${escapeHtml(f.username)}">✕</button>
+                    <button class="mini-btn" data-act="del" data-id="${f.user_id}" data-name="${escapeHtml(f.username)}">✕</button>
+                    <button class="mini-btn red" data-act="block" data-id="${f.user_id}" data-name="${escapeHtml(f.username)}">🚫</button>
                 </div>`).join('');
         } else if (currentTab === 'requests') {
             if (!window.pendingRequests.length) { body.innerHTML = '<div class="empty-tip">暂无好友申请</div>'; return; }
@@ -217,7 +222,22 @@
                 <input class="search-input" id="searchInput" placeholder="输入用户名搜索..." maxlength="20">
                 <div id="searchResult"></div>`;
             document.getElementById('searchInput').addEventListener('input', debounceSearch);
+        } else if (currentTab === 'blocks') {
+            renderBlocks();
         }
+    }
+
+    // 黑名单列表（可取消拉黑）
+    async function renderBlocks() {
+        const body = document.getElementById('sideBody');
+        const { data, error } = await supabaseClient.rpc('get_blocked_users', { p_user_id: currentUser.id });
+        if (error || !data || !data.length) { body.innerHTML = '<div class="empty-tip">黑名单为空</div>'; return; }
+        body.innerHTML = data.map(b => `
+            <div class="side-item">
+                <img src="${avatarOf(b)}" alt="">
+                <span class="name">${escapeHtml(b.username)}</span>
+                <button class="mini-btn gray" data-act="unblock" data-id="${b.blocked_id}" data-name="${escapeHtml(b.username)}">取消拉黑</button>
+            </div>`).join('');
     }
 
     let searchTimer = null;
@@ -263,6 +283,7 @@
         currentOther = { id: otherId, name: otherName, avatar: otherAvatar };
         document.getElementById('chatHeader').innerText = `💬 ${otherName}`;
         document.getElementById('chatInputBar').style.display = 'flex';
+        document.getElementById('chatHeaderExtra').style.display = 'block';
         renderConvs();
         await loadMessages(convId);
         await supabaseClient.rpc('mark_conversation_read', { p_user: currentUser.id, p_conversation_id: convId });
@@ -389,6 +410,14 @@
                 if (!confirm(`确定删除好友 ${btn.dataset.name} 吗？`)) return;
                 await supabaseClient.rpc('remove_friend', { p_user_id: currentUser.id, p_other: btn.dataset.id });
                 await loadFriends(); renderSide(); loadConvs();
+            } else if (act === 'block') {
+                if (!confirm(`确定拉黑 ${btn.dataset.name} 吗？拉黑后将自动删除好友，对方无法私信你。`)) return;
+                await supabaseClient.rpc('block_user', { p_user_id: currentUser.id, p_target: btn.dataset.id });
+                await refreshAll(); renderSide();
+            } else if (act === 'unblock') {
+                if (!confirm(`确定取消拉黑 ${btn.dataset.name} 吗？`)) return;
+                await supabaseClient.rpc('unblock_user', { p_user_id: currentUser.id, p_target: btn.dataset.id });
+                renderBlocks();
             } else if (act === 'accept') {
                 await supabaseClient.rpc('respond_friend_request', { p_request_id: parseInt(btn.dataset.id), p_user_id: currentUser.id, p_accept: true });
                 await refreshAll(); renderSide();
@@ -401,6 +430,18 @@
             }
         });
         document.getElementById('sendBtn').onclick = sendMsg;
+        document.getElementById('blockFromChatBtn').onclick = async () => {
+            if (!currentOther) return;
+            if (!confirm(`确定拉黑 ${currentOther.name} 吗？拉黑后自动删除好友，对方无法私信你。`)) return;
+            await supabaseClient.rpc('block_user', { p_user_id: currentUser.id, p_target: currentOther.id });
+            alert('已拉黑');
+            currentConvId = null; currentOther = null;
+            document.getElementById('chatHeader').innerText = '选择一个好友开始聊天';
+            document.getElementById('chatInputBar').style.display = 'none';
+            document.getElementById('chatHeaderExtra').style.display = 'none';
+            document.getElementById('chatBody').innerHTML = '<div class="empty-tip">👈 左侧选择好友或会话</div>';
+            await refreshAll(); renderSide();
+        };
         document.getElementById('msgInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
         });
