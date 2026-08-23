@@ -298,6 +298,7 @@
                 <img src="${avatarOf(c)}" alt="">
                 <span class="name">${escapeHtml(c.other_username)}</span>
                 ${c.unread_count > 0 ? `<span class="badge" style="background:#ff4757; color:#fff; border-radius:50%; font-size:0.65rem; min-width:16px; height:16px; line-height:16px; text-align:center; padding:0 4px;">${c.unread_count > 99 ? '99+' : c.unread_count}</span>` : ''}
+                <button class="mini-btn red" data-act="delconv" data-id="${c.conversation_id}" data-name="${escapeHtml(c.other_username)}">✕</button>
             </div>`).join('');
         document.querySelectorAll('#sideBody [data-conv]').forEach(el => {
             el.onclick = () => openConv(parseInt(el.dataset.conv), el.dataset.uid, el.dataset.name, el.dataset.avatar);
@@ -474,6 +475,18 @@
                 if (!ok) return;
                 await supabaseClient.rpc('remove_friend', { p_user_id: currentUser.id, p_other: btn.dataset.id });
                 await loadFriends(); renderSide(); loadConvs();
+            } else if (act === 'delconv') {
+                const ok = await showConfirm('删除会话', `确定删除与 ${btn.dataset.name} 的会话吗？聊天记录将从你的列表消失（不影响对方）。`);
+                if (!ok) return;
+                const res = await supabaseClient.rpc('delete_conversation', { p_user: currentUser.id, p_conversation_id: parseInt(btn.dataset.id) });
+                if (res.error) { alert(res.error.message); return; }
+                if (currentConvId === parseInt(btn.dataset.id)) {
+                    currentConvId = null; currentOther = null;
+                    document.getElementById('chatHeader').innerText = '💬 会话';
+                    document.getElementById('chatBody').innerHTML = '<div class="empty-tip">👈 左侧选择好友或会话</div>';
+                    document.getElementById('chatInputBar').style.display = 'none';
+                }
+                await loadConvs();
             } else if (act === 'accept') {
                 await supabaseClient.rpc('respond_friend_request', { p_request_id: parseInt(btn.dataset.id), p_user_id: currentUser.id, p_accept: true });
                 await refreshAll(); renderSide();

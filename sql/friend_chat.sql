@@ -45,8 +45,13 @@ CREATE TABLE IF NOT EXISTS public.conversations (
     user_high      uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     last_message_at timestamptz NOT NULL DEFAULT now(),
     created_at     timestamptz NOT NULL DEFAULT now(),
+    a_hidden       boolean NOT NULL DEFAULT false,
+    b_hidden       boolean NOT NULL DEFAULT false,
     UNIQUE (user_low, user_high)
 );
+-- 兼容已建好的表（幂等加列）
+ALTER TABLE public.conversations ADD COLUMN IF NOT EXISTS a_hidden boolean NOT NULL DEFAULT false;
+ALTER TABLE public.conversations ADD COLUMN IF NOT EXISTS b_hidden boolean NOT NULL DEFAULT false;
 
 -- 消息
 CREATE TABLE IF NOT EXISTS public.messages (
@@ -321,6 +326,12 @@ BEGIN
     IF v_conv IS NULL THEN
         INSERT INTO public.conversations (user_low, user_high) VALUES (v_low, v_high)
         RETURNING id INTO v_conv;
+    ELSE
+        -- 主动发起聊天 = 恢复自己这侧的会话显示
+        UPDATE public.conversations
+           SET a_hidden = CASE WHEN user_low = p_user_a THEN false ELSE a_hidden END,
+               b_hidden = CASE WHEN user_high = p_user_a THEN false ELSE b_hidden END
+         WHERE id = v_conv;
     END IF;
     RETURN v_conv;
 END;
@@ -364,7 +375,12 @@ BEGIN
     INSERT INTO public.messages (conversation_id, sender_id, content)
     VALUES (p_conversation_id, p_sender, btrim(p_content))
     RETURNING id INTO v_id;
-    UPDATE public.conversations SET last_message_at = now() WHERE id = p_conversation_id;
+    -- 发新消息 = 会话复活（清除自己这侧的隐藏标记，微信同款：对方发消息后会话重新出现）
+    UPDATE public.conversations
+       SET last_message_at = now(),
+           a_hidden = CASE WHEN user_low = p_sender THEN false ELSE a_hidden END,
+           b_hidden = CASE WHEN user_high = p_sender THEN false ELSE b_hidden END
+     WHERE id = p_conversation_id;
 
     RETURN jsonb_build_object('success', true, 'id', v_id);
 END;
@@ -418,7 +434,44 @@ BEGIN
       JOIN public.profiles pr
         ON pr.id = CASE WHEN c.user_low = p_user THEN c.user_high ELSE c.user_low END
      WHERE p_user IN (c.user_low, c.user_high)
+       AND NOT (c.user_low = p_user AND c.a_hidden)
+       AND NOT (c.user_high = p_user AND c.b_hidden)
      ORDER BY c.last_message_at DESC;
+END;
+$$;
+
+-- 删除会话（只隐藏自己这侧；双方都删除后整条会话与消息清理）
+CREATE OR REPLACE FUNCTION public.delete_conversation(p_user uuid, p_conversation_id bigint)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_low uuid;
+    v_high uuid;
+BEGIN
+    SELECT user_low, user_high INTO v_low, v_high
+      FROM public.conversations WHERE id = p_conversation_id;
+    IF v_low IS NULL OR p_user NOT IN (v_low, v_high) THEN
+        RETURN jsonb_build_object('success', false, 'message', '会话不存在');
+    END IF;
+
+    -- 隐藏自己这侧
+    UPDATE public.conversations
+       SET a_hidden = CASE WHEN user_low = p_user THEN true ELSE a_hidden END,
+           b_hidden = CASE WHEN user_high = p_user THEN true ELSE b_hidden END
+     WHERE id = p_conversation_id;
+
+    -- 双方都删除 → 整条会话+消息清理（避免垃圾数据）
+    DELETE FROM public.messages
+     WHERE conversation_id = p_conversation_id
+       AND EXISTS (SELECT 1 FROM public.conversations c2
+                    WHERE c2.id = p_conversation_id AND c2.a_hidden AND c2.b_hidden);
+    DELETE FROM public.conversations
+     WHERE id = p_conversation_id AND a_hidden AND b_hidden;
+
+    RETURN jsonb_build_object('success', true, 'message', '会话已删除');
 END;
 $$;
 
@@ -457,7 +510,9 @@ BEGIN
       FROM public.messages m
       JOIN public.conversations c ON c.id = m.conversation_id
      WHERE m.sender_id <> p_user AND NOT m.is_read
-       AND p_user IN (c.user_low, c.user_high);
+       AND p_user IN (c.user_low, c.user_high)
+       AND NOT (c.user_low = p_user AND c.a_hidden)
+       AND NOT (c.user_high = p_user AND c.b_hidden);
     RETURN jsonb_build_object('count', v_count);
 END;
 $$;
@@ -477,6 +532,7 @@ GRANT EXECUTE ON FUNCTION public.get_messages(uuid, bigint, bigint, integer) TO 
 GRANT EXECUTE ON FUNCTION public.get_conversations(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION public.mark_conversation_read(uuid, bigint) TO anon;
 GRANT EXECUTE ON FUNCTION public.get_unread_messages(uuid) TO anon;
+GRANT EXECUTE ON FUNCTION public.delete_conversation(uuid, bigint) TO anon;
 
 -- ========== 6. Realtime 实时推送 ==========
 DO $$
