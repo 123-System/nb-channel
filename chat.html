@@ -197,6 +197,13 @@
         bindEvents();
         setupRealtime();
         await refreshAll();
+        // 从消息中心跳转：?conv=xxx 自动打开指定会话
+        const convParam = new URLSearchParams(window.location.search).get('conv');
+        if (convParam) {
+            let c = convs.find(x => x.conversation_id === parseInt(convParam));
+            if (!c) { await loadConvs(); c = convs.find(x => x.conversation_id === parseInt(convParam)); }
+            if (c) await openConv(c.conversation_id, c.other_user_id, c.other_username, c.other_avatar);
+        }
         setInterval(refreshAll, 10000);   // 轮询兜底
     }
 

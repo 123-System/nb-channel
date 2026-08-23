@@ -290,6 +290,9 @@
             <button class="tab-btn" data-type="mention" id="tabMention">
                 @ 提及我的 <span class="tab-badge" id="mentionBadge" style="display:none;">0</span>
             </button>
+            <button class="tab-btn" data-type="chat" id="tabChat">
+                💌 私信 <span class="tab-badge" id="chatBadge" style="display:none;">0</span>
+            </button>
         </div>
 
         <div class="toast" id="toast">
@@ -393,6 +396,16 @@
         unreadCounts.reply = data?.find(item => item.type === 'reply')?.count || 0;
         unreadCounts.mention = data?.find(item => item.type === 'mention')?.count || 0;
         updateBadges();
+        // 私信未读数
+        try {
+            const chatRes = await supabaseClient.rpc('get_unread_messages', { p_user: currentUser.id });
+            const chatTotal = (chatRes.data && chatRes.data.count) || 0;
+            const chatBadge = document.getElementById('chatBadge');
+            if (chatBadge) {
+                if (chatTotal > 0) { chatBadge.textContent = chatTotal > 99 ? '99+' : chatTotal; chatBadge.style.display = 'inline-block'; }
+                else chatBadge.style.display = 'none';
+            }
+        } catch (e) { /* 忽略 */ }
     }
 
     async function fetchNotifications(append = false) {
@@ -567,7 +580,48 @@
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.type === type);
         });
-        fetchNotifications(false);
+        if (type === 'chat') {
+            loadChatList();
+        } else {
+            document.getElementById('loadMoreContainer').style.display = 'none';
+            fetchNotifications(false);
+        }
+    }
+
+    // ========== 私信会话列表 ==========
+    async function loadChatList() {
+        const container = document.getElementById('notificationList');
+        if (!currentUser) return;
+        container.innerHTML = '<div class="loading-spinner" style="text-align:center; padding:40px; color:var(--count-text);">加载中...</div>';
+        const { data, error } = await supabaseClient.rpc('get_conversations', { p_user: currentUser.id });
+        if (error) {
+            container.innerHTML = `<div class="empty-state"><p>加载失败: ${escapeHtml(error.message)}</p></div>`;
+            return;
+        }
+        if (!data || !data.length) {
+            container.innerHTML = '<div class="empty-state"><div class="empty-icon">💌</div><p>暂无私信会话</p></div>';
+            return;
+        }
+        const DEFAULT_AVATAR = 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2744%27%20height=%2744%27%3E%3Crect%20width=%2744%27%20height=%2744%27%20fill=%27%23b0bec5%27/%3E%3Ccircle%20cx=%2722%27%20cy=%2717%27%20r=%278%27%20fill=%27%23eceff1%27/%3E%3Cpath%20d=%27M8%2040c2-8%208-12%2014-12s12%204%2014%2012z%27%20fill=%27%23eceff1%27/%3E%3C/svg%3E';
+        container.innerHTML = data.map(c => `
+            <div class="notification-item" data-conv="${c.conversation_id}" style="display:flex; align-items:center; gap:12px; padding:12px 14px; cursor:pointer; border-bottom:1px solid var(--card-border);">
+                <img src="${c.other_avatar || DEFAULT_AVATAR}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; flex-shrink:0;" alt="">
+                <div style="flex:1; min-width:0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:600; color:var(--text-color);">${escapeHtml(c.other_username)}</span>
+                        <span style="font-size:0.72rem; color:var(--count-text);">${c.last_message_at ? timeSince(new Date(c.last_message_at)) : ''}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:3px;">
+                        <span style="font-size:0.82rem; color:var(--count-text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(c.last_message || '开始聊天吧～')}</span>
+                        ${c.unread_count > 0 ? `<span style="background:#ff4757; color:#fff; border-radius:50%; font-size:0.65rem; min-width:16px; height:16px; line-height:16px; text-align:center; padding:0 4px; flex-shrink:0;">${c.unread_count > 99 ? '99+' : c.unread_count}</span>` : ''}
+                    </div>
+                </div>
+            </div>`).join('');
+        container.querySelectorAll('[data-conv]').forEach(el => {
+            el.addEventListener('click', () => {
+                window.location.href = 'chat.html?conv=' + el.dataset.conv;
+            });
+        });
     }
 
     function subscribeNotifications() {
@@ -624,6 +678,7 @@
 
         document.getElementById('tabReply').addEventListener('click', () => switchTab('reply'));
         document.getElementById('tabMention').addEventListener('click', () => switchTab('mention'));
+        document.getElementById('tabChat').addEventListener('click', () => switchTab('chat'));
         document.getElementById('readAllBtn').addEventListener('click', markAllAsRead);
         document.getElementById('deleteReadBtn').addEventListener('click', deleteReadNotifications);
         document.getElementById('loadMoreBtn').addEventListener('click', () => {
