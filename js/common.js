@@ -394,4 +394,11 @@ function fallbackCopy() {
     setTimeout(() => {
         setTimeout(coinSchedule, (5 + Math.random() * 5) * 60000);
     }, 3000);
+
+    // 调试入口：控制台输入 __nbCoinTest.show() 立即唤出金币（点击领取走后端正常校验）
+    window.__nbCoinTest = {
+        show: coinShow,
+        hide: coinHide,
+        schedule: coinSchedule
+    };
 })();
