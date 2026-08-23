@@ -1662,6 +1662,9 @@
         accountModal.style.display = 'flex';
     };
     closeAccount.onclick = () => accountModal.style.display = 'none';
+    // 登录/注册弹窗的"取消"按钮关闭弹窗
+    document.getElementById('close-login').onclick = () => { loginModal.style.display = 'none'; };
+    document.getElementById('close-register').onclick = () => { registerModal.style.display = 'none'; };
 
     document.getElementById('do-login').onclick = async () => {
         const username = document.getElementById('login-username').value.trim();
