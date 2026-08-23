@@ -234,17 +234,29 @@ BEGIN
         UPDATE public.profiles SET nb_balance = nb_balance - v_price WHERE id = p_buyer_id;
         UPDATE public.profiles SET nb_balance = nb_balance + v_price WHERE id = v_author_id;
     END IF;
-    -- 记录购买（动态兼容表结构：seller_id 列存在才写入）
-    SELECT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = 'product_purchases' AND column_name = 'seller_id'
-    ) INTO v_has_seller;
-    IF v_has_seller THEN
-        INSERT INTO public.product_purchases (product_id, buyer_id, seller_id, pay_type)
-        VALUES (p_product_id, p_buyer_id, v_author_id, v_pay_type);
+    -- 记录购买（动态兼容表结构：seller_id / amount_paid 列存在才写入）
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'product_purchases' AND column_name = 'seller_id') THEN
+        IF EXISTS (SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = 'product_purchases' AND column_name = 'amount_paid') THEN
+            EXECUTE 'INSERT INTO public.product_purchases (product_id, buyer_id, seller_id, pay_type, amount_paid)
+                     VALUES ($1, $2, $3, $4, $5)'
+            USING p_product_id, p_buyer_id, v_author_id, v_pay_type, v_price;
+        ELSE
+            EXECUTE 'INSERT INTO public.product_purchases (product_id, buyer_id, seller_id, pay_type)
+                     VALUES ($1, $2, $3, $4)'
+            USING p_product_id, p_buyer_id, v_author_id, v_pay_type;
+        END IF;
     ELSE
-        INSERT INTO public.product_purchases (product_id, buyer_id, pay_type)
-        VALUES (p_product_id, p_buyer_id, v_pay_type);
+        IF EXISTS (SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = 'product_purchases' AND column_name = 'amount_paid') THEN
+            EXECUTE 'INSERT INTO public.product_purchases (product_id, buyer_id, pay_type, amount_paid)
+                     VALUES ($1, $2, $3, $4)'
+            USING p_product_id, p_buyer_id, v_pay_type, v_price;
+        ELSE
+            INSERT INTO public.product_purchases (product_id, buyer_id, pay_type)
+            VALUES (p_product_id, p_buyer_id, v_pay_type);
+        END IF;
     END IF;
     INSERT INTO public.product_downloads (product_id, user_id, paid_amount)
     VALUES (p_product_id, p_buyer_id, v_price);
