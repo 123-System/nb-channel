@@ -97,6 +97,50 @@ updateUnreadBadge();
 // 每 60 秒刷新一次未读数
 setInterval(updateUnreadBadge, 60000);
 
+// ==========================================================
+// 私信未读红点（自动注入到导航栏"👥 好友"按钮上）
+// ==========================================================
+async function updateChatBadge() {
+    const link = document.querySelector('a[href="chat.html"]');
+    if (!link) return;
+    const stored = localStorage.getItem('nb_user');
+    if (!stored) return;
+    try {
+        const user = JSON.parse(stored);
+        const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_unread_messages`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: 'Bearer ' + SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify({ p_user: user.id })
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const total = (data && data.count) || 0;
+
+        let badge = link.querySelector('.nav-badge');
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'nav-badge';
+            badge.style.cssText = 'display:none; background:#ff4757; color:#fff; border-radius:50%; font-size:0.65rem; min-width:16px; height:16px; line-height:16px; text-align:center; padding:0 4px; margin-left:4px; vertical-align:top;';
+            link.appendChild(badge);
+        }
+        if (total > 0) {
+            badge.textContent = total > 99 ? '99+' : total;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    } catch (e) { /* 忽略，不阻断页面 */ }
+}
+updateChatBadge();
+// 每 30 秒刷新一次私信未读
+setInterval(updateChatBadge, 30000);
+
 function toggleTheme() {
     const body = document.body;
     body.classList.toggle('dark-mode');

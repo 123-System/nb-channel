@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>好友与私信 - NB频道</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/common.js"></script>
+    <style>
+        body { padding: 40px 20px; background: var(--bg-color); }
+        .chat-container {
+            max-width: 960px; margin: 0 auto;
+            background: var(--card-bg); border-radius: 24px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
+            display: flex; min-height: 560px; overflow: hidden;
+        }
+        /* 左栏 */
+        .side-panel { width: 240px; border-right: 1px solid var(--card-border); display: flex; flex-direction: column; }
+        .side-tabs { display: flex; border-bottom: 1px solid var(--card-border); }
+        .side-tab { flex: 1; padding: 10px 4px; text-align: center; cursor: pointer; font-size: 0.85rem; color: var(--count-text); border-bottom: 2px solid transparent; }
+        .side-tab.active { color: var(--status-border); border-bottom-color: var(--status-border); font-weight: 600; }
+        .side-body { flex: 1; overflow-y: auto; padding: 10px; }
+        .side-item { padding: 8px 10px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .side-item:hover { background: var(--count-bg); }
+        .side-item img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+        .side-item .name { flex: 1; font-size: 0.9rem; color: var(--text-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .side-item .mini-btn { font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; border: none; cursor: pointer; background: var(--nav-btn-hover-bg); color: white; }
+        .side-item .mini-btn.red { background: #e74c3c; }
+        .side-item .mini-btn.gray { background: #6c757d; }
+        .empty-tip { text-align: center; color: var(--count-text); font-size: 0.85rem; padding: 24px 0; }
+        .search-input { width: 100%; padding: 8px 12px; border-radius: 20px; border: 1px solid var(--card-border); background: var(--bg-color); color: var(--text-color); margin-bottom: 10px; box-sizing: border-box; }
+        /* 右栏 */
+        .main-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        .conv-list { border-bottom: 1px solid var(--card-border); max-height: 180px; overflow-y: auto; }
+        .conv-item { padding: 10px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .conv-item:hover, .conv-item.active { background: var(--count-bg); }
+        .conv-item img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+        .conv-item .info { flex: 1; min-width: 0; }
+        .conv-item .info .n { font-size: 0.9rem; color: var(--text-color); font-weight: 600; }
+        .conv-item .info .p { font-size: 0.75rem; color: var(--count-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .conv-item .badge { background: #ff4757; color: #fff; border-radius: 50%; font-size: 0.65rem; min-width: 16px; height: 16px; line-height: 16px; text-align: center; padding: 0 4px; }
+        .chat-header { padding: 12px 16px; border-bottom: 1px solid var(--card-border); font-weight: 600; color: var(--text-color); }
+        .chat-body { flex: 1; overflow-y: auto; padding: 16px; background: var(--count-bg); }
+        .msg { display: flex; margin-bottom: 10px; }
+        .msg.me { justify-content: flex-end; }
+        .msg .bubble { max-width: 70%; padding: 8px 12px; border-radius: 14px; font-size: 0.9rem; word-break: break-word; white-space: pre-wrap; }
+        .msg.other .bubble { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-color); border-top-left-radius: 4px; }
+        .msg.me .bubble { background: #00a1d6; color: white; border-top-right-radius: 4px; }
+        .msg .time { font-size: 0.65rem; color: var(--count-text); align-self: flex-end; margin: 0 6px; }
+        .chat-input { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--card-border); }
+        .chat-input textarea { flex: 1; padding: 8px 12px; border-radius: 16px; border: 1px solid var(--card-border); background: var(--bg-color); color: var(--text-color); resize: none; font-family: inherit; font-size: 0.9rem; }
+        .chat-input button { background: var(--nav-btn-hover-bg); color: white; border: none; border-radius: 16px; padding: 0 20px; cursor: pointer; }
+        .back-link { text-align: center; margin-top: 20px; }
+        @media (max-width: 700px) {
+            .chat-container { flex-direction: column; min-height: 0; }
+            .side-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--card-border); max-height: 260px; }
+        }
+    </style>
+</head>
+<body>
+<script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
+<div class="container">
+    <h1>💬 好友与私信</h1>
+    <div class="nav-container">
+        <div class="nav-links">
+            <a href="index.html" class="nav-btn">首页</a>
+            <a href="videos.html" class="nav-btn">视频</a>
+            <a href="about.html" class="nav-btn">关于</a>
+            <a href="changelog.html" class="nav-btn">更新日志</a>
+            <a href="product.html" class="nav-btn">我的产品</a>
+            <a href="APP.html" class="nav-btn">软件/APP下载</a>
+        </div>
+        <div class="nav-actions">
+            <a href="comments-beta.html" class="nav-btn">💬 评论区</a>
+            <a href="chat.html" class="nav-btn active">👥 好友</a>
+            <a href="Virtual stock.html" class="nav-btn">📈 NB虚拟股票</a>
+            <a href="messages.html" class="nav-btn">🔔 消息</a>
+        </div>
+    </div>
+
+    <div id="notLoggedIn" style="text-align:center; padding:60px 0; display:none;">
+        <p style="color:var(--count-text); margin-bottom:20px;">请先登录后再使用好友与私信功能</p>
+        <a href="login.html?redirect=" id="loginLink" style="background:var(--nav-btn-hover-bg); color:white; border-radius:30px; padding:10px 30px; text-decoration:none;">去登录</a>
+    </div>
+
+    <div id="chatMain" class="chat-container" style="display:none;">
+        <!-- 左栏 -->
+        <div class="side-panel">
+            <div class="side-tabs">
+                <div class="side-tab active" data-tab="friends">👥 好友</div>
+                <div class="side-tab" data-tab="requests">📨 申请<span id="reqBadge" style="color:#ff4757;"></span></div>
+                <div class="side-tab" data-tab="search">🔍 找人</div>
+            </div>
+            <div class="side-body" id="sideBody"></div>
+        </div>
+        <!-- 右栏 -->
+        <div class="main-panel">
+            <div class="conv-list" id="convList"></div>
+            <div class="chat-header" id="chatHeader">选择一个好友开始聊天</div>
+            <div class="chat-body" id="chatBody"><div class="empty-tip">👈 左侧选择好友或会话</div></div>
+            <div class="chat-input" id="chatInputBar" style="display:none;">
+                <textarea id="msgInput" rows="1" placeholder="输入消息，Enter 发送"></textarea>
+                <button id="sendBtn">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="back-link"><a href="index.html">← 返回首页</a></div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const DEFAULT_AVATAR = 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2744%27%20height=%2744%27%3E%3Crect%20width=%2744%27%20height=%2744%27%20fill=%27%23b0bec5%27/%3E%3Ccircle%20cx=%2722%27%20cy=%2717%27%20r=%278%27%20fill=%27%23eceff1%27/%3E%3Cpath%20d=%27M8%2040c2-8%208-12%2014-12s12%204%2014%2012z%27%20fill=%27%23eceff1%27/%3E%3C/svg%3E';
+
+    let currentUser = null;
+    let currentConvId = null;
+    let currentOther = null;
+    let friendsList = [];
+    let convs = [];
+
+    function getCurrentUser() {
+        const stored = localStorage.getItem('nb_user');
+        if (!stored) return null;
+        try { return JSON.parse(stored); } catch { return null; }
+    }
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
+    }
+    function avatarOf(u) { return u && u.avatar_url ? u.avatar_url : DEFAULT_AVATAR; }
+    function fmtTime(ts) {
+        try { return new Date(ts).toLocaleString('zh-CN', { hour12: false }); } catch { return ''; }
+    }
+
+    async function init() {
+        const user = getCurrentUser();
+        if (!user) {
+            document.getElementById('notLoggedIn').style.display = 'block';
+            document.getElementById('loginLink').href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+            return;
+        }
+        currentUser = user;
+        document.getElementById('chatMain').style.display = 'flex';
+        initTabs();
+        bindEvents();
+        setupRealtime();
+        await refreshAll();
+        setInterval(refreshAll, 10000);   // 轮询兜底
+    }
+
+    async function refreshAll() {
+        await Promise.all([loadFriends(), loadRequests(), loadConvs()]);
+        updateBadge();
+    }
+
+    // ========== 左栏 ==========
+    let currentTab = 'friends';
+    function initTabs() {
+        document.querySelectorAll('.side-tab').forEach(tab => {
+            tab.onclick = () => {
+                currentTab = tab.dataset.tab;
+                document.querySelectorAll('.side-tab').forEach(t => t.classList.toggle('active', t === tab));
+                renderSide();
+            };
+        });
+        document.getElementById('searchInputWrap')?.remove();
+    }
+
+    async function loadFriends() {
+        const { data } = await supabaseClient.rpc('get_friends', { p_user_id: currentUser.id });
+        friendsList = data || [];
+    }
+    async function loadRequests() {
+        const { data } = await supabaseClient.rpc('get_friend_requests', { p_user_id: currentUser.id });
+        window.pendingRequests = data || [];
+        const b = document.getElementById('reqBadge');
+        if (b) b.innerText = window.pendingRequests.length ? ' ' + window.pendingRequests.length : '';
+    }
+    async function loadConvs() {
+        const { data } = await supabaseClient.rpc('get_conversations', { p_user: currentUser.id });
+        convs = data || [];
+        renderConvs();
+    }
+
+    function renderSide() {
+        const body = document.getElementById('sideBody');
+        if (currentTab === 'friends') {
+            if (!friendsList.length) { body.innerHTML = '<div class="empty-tip">还没有好友，去"🔍 找人"添加吧</div>'; return; }
+            body.innerHTML = friendsList.map(f => `
+                <div class="side-item">
+                    <img src="${avatarOf(f)}" alt="">
+                    <span class="name">${escapeHtml(f.username)}</span>
+                    <button class="mini-btn" data-act="msg" data-id="${f.user_id}" data-name="${escapeHtml(f.username)}" data-avatar="${f.avatar_url || ''}">💬</button>
+                    <button class="mini-btn red" data-act="del" data-id="${f.user_id}" data-name="${escapeHtml(f.username)}">✕</button>
+                </div>`).join('');
+        } else if (currentTab === 'requests') {
+            if (!window.pendingRequests.length) { body.innerHTML = '<div class="empty-tip">暂无好友申请</div>'; return; }
+            body.innerHTML = window.pendingRequests.map(r => `
+                <div class="side-item">
+                    <img src="${avatarOf({avatar_url:r.from_avatar})}" alt="">
+                    <span class="name">${escapeHtml(r.from_username)}</span>
+                    <button class="mini-btn" data-act="accept" data-id="${r.id}">同意</button>
+                    <button class="mini-btn gray" data-act="reject" data-id="${r.id}">拒绝</button>
+                </div>`).join('');
+        } else if (currentTab === 'search') {
+            body.innerHTML = `
+                <input class="search-input" id="searchInput" placeholder="输入用户名搜索..." maxlength="20">
+                <div id="searchResult"></div>`;
+            document.getElementById('searchInput').addEventListener('input', debounceSearch);
+        }
+    }
+
+    let searchTimer = null;
+    function debounceSearch() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(doSearch, 400);
+    }
+    async function doSearch() {
+        const kw = document.getElementById('searchInput').value.trim();
+        const box = document.getElementById('searchResult');
+        if (!kw) { box.innerHTML = ''; return; }
+        const { data } = await supabaseClient.rpc('search_users', { p_keyword: kw, p_user_id: currentUser.id });
+        if (!data || !data.length) { box.innerHTML = '<div class="empty-tip">没有找到用户</div>'; return; }
+        box.innerHTML = data.map(u => `
+            <div class="side-item">
+                <img src="${avatarOf(u)}" alt="">
+                <span class="name">${escapeHtml(u.username)}</span>
+                <button class="mini-btn" data-act="add" data-id="${u.id}" data-name="${escapeHtml(u.username)}">加好友</button>
+            </div>`).join('');
+    }
+
+    // ========== 右栏：会话列表 ==========
+    function renderConvs() {
+        const list = document.getElementById('convList');
+        if (!convs.length) { list.innerHTML = '<div class="empty-tip">暂无会话</div>'; return; }
+        list.innerHTML = convs.map(c => `
+            <div class="conv-item ${c.conversation_id === currentConvId ? 'active' : ''}" data-conv="${c.conversation_id}" data-uid="${c.other_user_id}" data-name="${escapeHtml(c.other_username)}" data-avatar="${c.other_avatar || ''}">
+                <img src="${avatarOf(c)}" alt="">
+                <div class="info">
+                    <div class="n">${escapeHtml(c.other_username)}</div>
+                    <div class="p">${escapeHtml(c.last_message || '')}</div>
+                </div>
+                ${c.unread_count > 0 ? `<span class="badge">${c.unread_count > 99 ? '99+' : c.unread_count}</span>` : ''}
+            </div>`).join('');
+        document.querySelectorAll('.conv-item').forEach(el => {
+            el.onclick = () => openConv(parseInt(el.dataset.conv), el.dataset.uid, el.dataset.name, el.dataset.avatar);
+        });
+    }
+
+    // ========== 聊天 ==========
+    async function openConv(convId, otherId, otherName, otherAvatar) {
+        currentConvId = convId;
+        currentOther = { id: otherId, name: otherName, avatar: otherAvatar };
+        document.getElementById('chatHeader').innerText = `💬 ${otherName}`;
+        document.getElementById('chatInputBar').style.display = 'flex';
+        renderConvs();
+        await loadMessages(convId);
+        await supabaseClient.rpc('mark_conversation_read', { p_user: currentUser.id, p_conversation_id: convId });
+        loadConvs();
+    }
+
+    async function startChatWith(otherId, otherName) {
+        const { data: convId, error } = await supabaseClient.rpc('get_or_create_conversation', {
+            p_user_a: currentUser.id, p_user_b: otherId
+        });
+        if (error || !convId) {
+            alert(error ? error.message : '无法发起私信（仅好友可私信）');
+            return;
+        }
+        await openConv(convId, otherId, otherName, '');
+        await loadConvs();
+    }
+
+    async function loadMessages(convId) {
+        const body = document.getElementById('chatBody');
+        body.innerHTML = '<div class="empty-tip">加载中...</div>';
+        const { data, error } = await supabaseClient.rpc('get_messages', {
+            p_user: currentUser.id, p_conversation_id: convId, p_before_id: null, p_limit: 100
+        });
+        if (error) { body.innerHTML = `<div class="empty-tip">加载失败：${escapeHtml(error.message)}</div>`; return; }
+        const msgs = (data || []).reverse();
+        if (!msgs.length) { body.innerHTML = '<div class="empty-tip">还没有消息，说点什么吧～</div>'; }
+        else {
+            body.innerHTML = msgs.map(m => renderMsg(m)).join('');
+        }
+        body.scrollTop = body.scrollHeight;
+    }
+
+    function renderMsg(m) {
+        const me = m.sender_id === currentUser.id;
+        return `<div class="msg ${me ? 'me' : 'other'}">
+            <span class="time">${fmtTime(m.created_at)}</span>
+            <div class="bubble">${escapeHtml(m.content)}</div>
+        </div>`;
+    }
+
+    async function sendMsg() {
+        const input = document.getElementById('msgInput');
+        const content = input.value.trim();
+        if (!content || !currentConvId) return;
+        input.value = '';
+        const { data, error } = await supabaseClient.rpc('send_message', {
+            p_sender: currentUser.id, p_conversation_id: currentConvId, p_content: content
+        });
+        if (error || !data || !data.success) {
+            alert((error && error.message) || (data && data.message) || '发送失败');
+            return;
+        }
+        // 本地追加（Realtime 也会推送，可能重复——用 id 去重）
+        appendLocalMessage({ id: data.id, sender_id: currentUser.id, content: content, created_at: new Date().toISOString() });
+        loadConvs();
+    }
+
+    function appendLocalMessage(m) {
+        const body = document.getElementById('chatBody');
+        if (body.querySelector('.empty-tip')) body.innerHTML = '';
+        // 简单去重：检查是否已有同 id
+        if (body.querySelector(`[data-msgid="${m.id}"]`)) return;
+        const div = document.createElement('div');
+        div.dataset.msgid = m.id;
+        div.innerHTML = renderMsg(m);
+        body.appendChild(div);
+        body.scrollTop = body.scrollHeight;
+    }
+
+    // ========== Realtime ==========
+    function setupRealtime() {
+        supabaseClient
+            .channel('chat-live')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+                const msg = payload.new;
+                if (currentConvId && msg.conversation_id === currentConvId) {
+                    appendLocalMessage(msg);
+                    if (msg.sender_id !== currentUser.id) {
+                        supabaseClient.rpc('mark_conversation_read', { p_user: currentUser.id, p_conversation_id: currentConvId });
+                    }
+                }
+                // 刷新会话列表与未读
+                loadConvs();
+                updateBadge();
+            })
+            .subscribe();
+    }
+
+    // ========== 未读红点（导航） ==========
+    async function updateBadge() {
+        if (!currentUser) return;
+        const { data } = await supabaseClient.rpc('get_unread_messages', { p_user: currentUser.id });
+        const total = (data && data.count) || 0;
+        const link = document.querySelector('a[href="chat.html"]');
+        if (!link) return;
+        let badge = link.querySelector('.nav-badge');
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'nav-badge';
+            badge.style.cssText = 'display:none; background:#ff4757; color:#fff; border-radius:50%; font-size:0.65rem; min-width:16px; height:16px; line-height:16px; text-align:center; padding:0 4px; margin-left:4px; vertical-align:top;';
+            link.appendChild(badge);
+        }
+        if (total > 0) { badge.textContent = total > 99 ? '99+' : total; badge.style.display = 'inline-block'; }
+        else badge.style.display = 'none';
+    }
+
+    // ========== 事件 ==========
+    function bindEvents() {
+        document.getElementById('sideBody').addEventListener('click', async (e) => {
+            const btn = e.target.closest('[data-act]');
+            if (!btn) return;
+            const act = btn.dataset.act;
+            if (act === 'msg') {
+                await startChatWith(btn.dataset.id, btn.dataset.name);
+            } else if (act === 'del') {
+                if (!confirm(`确定删除好友 ${btn.dataset.name} 吗？`)) return;
+                await supabaseClient.rpc('remove_friend', { p_user_id: currentUser.id, p_other: btn.dataset.id });
+                await loadFriends(); renderSide(); loadConvs();
+            } else if (act === 'accept') {
+                await supabaseClient.rpc('respond_friend_request', { p_request_id: parseInt(btn.dataset.id), p_user_id: currentUser.id, p_accept: true });
+                await refreshAll(); renderSide();
+            } else if (act === 'reject') {
+                await supabaseClient.rpc('respond_friend_request', { p_request_id: parseInt(btn.dataset.id), p_user_id: currentUser.id, p_accept: false });
+                await refreshAll(); renderSide();
+            } else if (act === 'add') {
+                const res = await supabaseClient.rpc('send_friend_request', { p_from: currentUser.id, p_to: btn.dataset.id });
+                alert((res.error && res.error.message) || (res.data && res.data.message) || '已发送');
+            }
+        });
+        document.getElementById('sendBtn').onclick = sendMsg;
+        document.getElementById('msgInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+        });
+    }
+
+    init();
+</script>
+</body>
+</html>
