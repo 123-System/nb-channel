@@ -240,15 +240,11 @@ def upload_avatar():
             'content-type': mime
         })
     except Exception as e:
-        # 已存在（409）：先删除旧对象再重传；若删除也失败则尝试 update() 覆盖
+        # 已存在（409）：用 update() 直接覆盖（不要"删了再传"，删除后立即重建会再 409）
         try:
-            supabase.storage.from_('avatars').remove([key])
-            supabase.storage.from_('avatars').upload(key, file_bytes, {'content-type': mime})
+            supabase.storage.from_('avatars').update(key, file_bytes, {'content-type': mime})
         except Exception as e2:
-            try:
-                supabase.storage.from_('avatars').update(key, file_bytes, {'content-type': mime})
-            except Exception as e3:
-                return jsonify({'success': False, 'message': '头像上传失败: %s' % e3}), 500
+            return jsonify({'success': False, 'message': '头像上传失败: %s' % e2}), 500
 
     avatar_url = SUPABASE_URL.rstrip('/') + '/storage/v1/object/public/avatars/' + key
     # 走 SECURITY DEFINER RPC 更新 profiles（anon 无 UPDATE profiles 权限）
