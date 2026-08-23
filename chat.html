@@ -100,7 +100,8 @@
         <!-- 左栏 -->
         <div class="side-panel">
             <div class="side-tabs">
-                <div class="side-tab active" data-tab="friends">👥 好友</div>
+                <div class="side-tab active" data-tab="convs">💬 会话</div>
+                <div class="side-tab" data-tab="friends">👥 好友</div>
                 <div class="side-tab" data-tab="requests">📨 申请<span id="reqBadge" style="color:#ff4757;"></span></div>
                 <div class="side-tab" data-tab="search">🔍 找人</div>
             </div>
@@ -108,7 +109,6 @@
         </div>
         <!-- 右栏 -->
         <div class="main-panel">
-            <div class="conv-list" id="convList"></div>
             <div class="chat-header" id="chatHeader">选择一个好友开始聊天</div>
             <div class="chat-body" id="chatBody"><div class="empty-tip">👈 左侧选择好友或会话</div></div>
             <div class="chat-input" id="chatInputBar" style="display:none;">
@@ -206,7 +206,7 @@
     }
 
     // ========== 左栏 ==========
-    let currentTab = 'friends';
+    let currentTab = 'convs';   // 默认显示会话列表
     function initTabs() {
         document.querySelectorAll('.side-tab').forEach(tab => {
             tab.onclick = () => {
@@ -215,7 +215,6 @@
                 renderSide();
             };
         });
-        document.getElementById('searchInputWrap')?.remove();
     }
 
     async function loadFriends() {
@@ -236,7 +235,9 @@
 
     function renderSide() {
         const body = document.getElementById('sideBody');
-        if (currentTab === 'friends') {
+        if (currentTab === 'convs') {
+            renderConvs();
+        } else if (currentTab === 'friends') {
             if (!friendsList.length) { body.innerHTML = '<div class="empty-tip">还没有好友，去"🔍 找人"添加吧</div>'; return; }
             body.innerHTML = friendsList.map(f => `
                 <div class="side-item">
@@ -281,20 +282,18 @@
             </div>`).join('');
     }
 
-    // ========== 右栏：会话列表 ==========
+    // ========== 会话列表（左侧栏） ==========
     function renderConvs() {
-        const list = document.getElementById('convList');
-        if (!convs.length) { list.innerHTML = '<div class="empty-tip">暂无会话</div>'; return; }
-        list.innerHTML = convs.map(c => `
-            <div class="conv-item ${c.conversation_id === currentConvId ? 'active' : ''}" data-conv="${c.conversation_id}" data-uid="${c.other_user_id}" data-name="${escapeHtml(c.other_username)}" data-avatar="${c.other_avatar || ''}">
+        const body = document.getElementById('sideBody');
+        if (currentTab !== 'convs') return;   // 只有会话 tab 才渲染
+        if (!convs.length) { body.innerHTML = '<div class="empty-tip">暂无会话，去"👥 好友"找人聊天吧</div>'; return; }
+        body.innerHTML = convs.map(c => `
+            <div class="side-item ${c.conversation_id === currentConvId ? 'active' : ''}" data-conv="${c.conversation_id}" data-uid="${c.other_user_id}" data-name="${escapeHtml(c.other_username)}" data-avatar="${c.other_avatar || ''}">
                 <img src="${avatarOf(c)}" alt="">
-                <div class="info">
-                    <div class="n">${escapeHtml(c.other_username)}</div>
-                    <div class="p">${escapeHtml(c.last_message || '')}</div>
-                </div>
-                ${c.unread_count > 0 ? `<span class="badge">${c.unread_count > 99 ? '99+' : c.unread_count}</span>` : ''}
+                <span class="name">${escapeHtml(c.other_username)}</span>
+                ${c.unread_count > 0 ? `<span class="badge" style="background:#ff4757; color:#fff; border-radius:50%; font-size:0.65rem; min-width:16px; height:16px; line-height:16px; text-align:center; padding:0 4px;">${c.unread_count > 99 ? '99+' : c.unread_count}</span>` : ''}
             </div>`).join('');
-        document.querySelectorAll('.conv-item').forEach(el => {
+        document.querySelectorAll('#sideBody [data-conv]').forEach(el => {
             el.onclick = () => openConv(parseInt(el.dataset.conv), el.dataset.uid, el.dataset.name, el.dataset.avatar);
         });
     }
@@ -305,7 +304,7 @@
         currentOther = { id: otherId, name: otherName, avatar: otherAvatar };
         document.getElementById('chatHeader').innerText = `💬 ${otherName}`;
         document.getElementById('chatInputBar').style.display = 'flex';
-        renderConvs();
+        if (currentTab === 'convs') renderConvs();
         await loadMessages(convId);
         await supabaseClient.rpc('mark_conversation_read', { p_user: currentUser.id, p_conversation_id: convId });
         loadConvs();
