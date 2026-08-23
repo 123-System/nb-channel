@@ -444,6 +444,7 @@
         <div style="margin: 14px 0;">
             <label style="font-size:0.85rem;">交易金额（NB币，手续费 5%）：</label>
             <input type="number" id="tradeShares" min="1" max="500000" value="100" style="width:100%; padding:8px; margin:6px 0; border-radius:30px; border:1px solid var(--card-border); background:var(--bg-color); color:var(--text-color);">
+            <div id="tradeCapHint" style="font-size:0.8rem; color:#e67e22; display:none;"></div>
             <div id="tradeAmountPreview" style="font-size:0.85rem; color:var(--count-text); text-align:right;">预计花费：--</div>
         </div>
         <div style="display:flex; gap:10px; margin-top:8px;">
@@ -1482,6 +1483,22 @@
             ? `${formatValue(Math.round(myValue))} NB币`
             : '暂无持有';
 
+        // 买入：显示累计投入上限（=公司市值），超限后端也会拒绝
+        const capHint = document.getElementById('tradeCapHint');
+        let remainCap = null;
+        if (mode === 'buy') {
+            let invested = 0;
+            if (window.myHoldingsList) {
+                const h = window.myHoldingsList.find(x => x.company_id === companyId);
+                if (h && h.principal !== undefined && h.principal !== null) invested = parseFloat(h.principal) || 0;
+            }
+            remainCap = Math.max(marketValue - invested, 0);
+            capHint.style.display = 'block';
+            capHint.innerText = `⛔ 累计投入上限 = 公司市值 ${formatValue(marketValue)} NB币（已投 ${formatValue(Math.round(invested))}，最多再投 ${formatValue(Math.round(remainCap))}）`;
+        } else {
+            capHint.style.display = 'none';
+        }
+
         // 当前余额
         fetchUserBalance().then(balance => {
             document.getElementById('tradeBalance').innerText = formatValue(balance);
@@ -1491,7 +1508,7 @@
         amountInput.value = mode === 'buy' ? 100 : (Math.round(myValue) || 100);
         updateTradePreview();
 
-        tradeState = { companyId, name: companyName, marketValue, mode, myValue };
+        tradeState = { companyId, name: companyName, marketValue, mode, myValue, remainCap };
         modal.style.display = 'flex';
 
         // 动态事件（防止重复绑定）
@@ -1508,6 +1525,10 @@
         const val = parseFloat(document.getElementById('tradeShares').value) || 0;
         const preview = document.getElementById('tradeAmountPreview');
         if (val <= 0) { preview.innerText = '请输入有效金额'; return; }
+        if (tradeState && tradeState.mode === 'buy' && tradeState.remainCap != null && val > tradeState.remainCap + 0.01) {
+            preview.innerText = `⚠️ 超过累计投入上限，最多可投 ${formatValue(Math.round(tradeState.remainCap))} NB币`;
+            return;
+        }
         if (tradeState && tradeState.mode === 'sell' && val > Math.round(tradeState.myValue) + 0.01) {
             preview.innerText = `⚠️ 最多可卖 ${formatValue(Math.round(tradeState.myValue))} NB币（您的当前持仓价值）`;
             return;

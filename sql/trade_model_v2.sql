@@ -37,6 +37,7 @@ DECLARE
     v_owner_id UUID;
     v_fee INTEGER;
     v_total_pay NUMERIC(18,4);
+    v_existing NUMERIC(18,4) := 0;
 BEGIN
     IF p_amount IS NULL OR p_amount <= 0 THEN
         RETURN jsonb_build_object('success', false, 'message', '投入金额必须大于0');
@@ -61,6 +62,16 @@ BEGIN
     -- 禁止买入自己的公司（想托底请用"支持"）
     IF v_owner_id = p_user_id THEN
         RETURN jsonb_build_object('success', false, 'message', '不能买入自己公司的股份（可以用"支持"为自己的公司托底）');
+    END IF;
+
+    -- 累计投入上限：本金总额不能超过公司当前市值
+    -- （否则持仓价值 = 本金×市值/基准市值 会超过公司市值，凭空超发价值，破坏市场平衡）
+    SELECT COALESCE(principal, 0) INTO v_existing
+      FROM public.holdings WHERE user_id = p_user_id AND company_id = p_company_id;
+    IF v_existing + p_amount > v_market_value THEN
+        RETURN jsonb_build_object('success', false, 'message',
+            format('累计投入不能超过公司市值（已投 %s，市值 %s，最多再投 %s NB币）',
+                   v_existing, v_market_value, GREATEST(v_market_value - v_existing, 0)));
     END IF;
 
     -- 手续费 5%（销毁），本金记录为持仓
