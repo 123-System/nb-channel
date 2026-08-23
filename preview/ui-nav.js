@@ -289,7 +289,9 @@
             .records-container, .ach-container, .register-card, .login-card, .comment, .video-card,
             .ach-card, .record-item, .notification-item, .stat-card, .stat-item, .feature-card,
             .balance-card, .my-company-card, .distribution-card, .chart-wrapper, .canvas-container,
-            .data-table-wrapper, .quick-nav, .msg.other .bubble {
+            .data-table-wrapper, .quick-nav, .msg.other .bubble,
+            .toolbar, .stats, .slider-container, .history-chart-container, .histogram-container,
+            .mini-pie-container, .btn-group, .update-badge, .countdown-badge {
                 background: rgba(255,255,255,0.62) !important;
                 -webkit-backdrop-filter: blur(16px) saturate(1.5);
                 backdrop-filter: blur(16px) saturate(1.5);
@@ -304,7 +306,11 @@
             body.dark-mode .notification-item, body.dark-mode .stat-card, body.dark-mode .stat-item,
             body.dark-mode .feature-card, body.dark-mode .balance-card, body.dark-mode .my-company-card,
             body.dark-mode .distribution-card, body.dark-mode .chart-wrapper, body.dark-mode .canvas-container,
-            body.dark-mode .data-table-wrapper, body.dark-mode .quick-nav, body.dark-mode .msg.other .bubble {
+            body.dark-mode .data-table-wrapper, body.dark-mode .quick-nav, body.dark-mode .msg.other .bubble,
+            body.dark-mode .toolbar, body.dark-mode .stats, body.dark-mode .slider-container,
+            body.dark-mode .history-chart-container, body.dark-mode .histogram-container,
+            body.dark-mode .mini-pie-container, body.dark-mode .btn-group, body.dark-mode .update-badge,
+            body.dark-mode .countdown-badge {
                 background: rgba(24,26,32,0.60) !important;
                 border-color: rgba(255,255,255,0.09) !important;
             }
