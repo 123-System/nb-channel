@@ -48,6 +48,7 @@ DECLARE
     v_balance     integer;
     v_pay_type    text := lower(coalesce(p_pay_type, 'nb'));
     v_company_name text;
+    v_company_mv  bigint;
 BEGIN
     -- 1. 产品信息
     SELECT price, file_url, author_id INTO v_price, v_file_url, v_author_id
@@ -75,10 +76,15 @@ BEGIN
     -- 4. 支付
     IF v_pay_type = 'market' THEN
         -- 加市值：目标公司必须属于作者
-        SELECT company_name INTO v_company_name
+        SELECT company_name, market_value INTO v_company_name, v_company_mv
           FROM public.user_companies WHERE id = p_company_id AND user_id = v_author_id;
         IF v_company_name IS NULL THEN
             RETURN jsonb_build_object('success', false, 'message', '选择的公司不存在或不是该作者的公司');
+        END IF;
+        -- 防刷：单次加市值不能超过公司当前市值（防止小市值公司被瞬间翻倍）
+        IF v_price > v_company_mv THEN
+            RETURN jsonb_build_object('success', false, 'message',
+                format('加市值不能超过公司当前市值（当前 %s NB币，最多加 %s）', v_company_mv, v_company_mv));
         END IF;
         UPDATE public.profiles SET nb_balance = nb_balance - v_price WHERE id = p_buyer_id;
         UPDATE public.user_companies SET market_value = market_value + v_price WHERE id = p_company_id;
