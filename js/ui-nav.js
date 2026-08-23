@@ -433,11 +433,11 @@
 
     // 旧版初始化：还原旧版导航 + 隐藏新版首页专属区块
     function initOldUI() {
-        // 旧版样式：隐藏新版首页专属区块（hero/数据条/功能卡片/新footer），恢复旧版观感
+        // 旧版样式：隐藏新版首页专属区块（hero/数据条/功能卡片），恢复旧版观感
         if (!document.getElementById('uiOldStyle')) {
             var st = document.createElement('style');
             st.id = 'uiOldStyle';
-            st.textContent = '.hero, .hero-badges, .hero-video, .stat-bar, .feature-grid, .site-footer, #uiPageBanner { display: none !important; }';
+            st.textContent = '.hero, .hero-badges, .hero-video, .stat-bar, .feature-grid, #uiPageBanner { display: none !important; }';
             document.head.appendChild(st);
         }
         // 首页（有 hero 手写新版结构）补充旧版标题
@@ -448,6 +448,33 @@
             h1.textContent = '📺 NB频道官网';
             var container = document.querySelector('.container') || document.body;
             container.insertBefore(h1, container.firstChild);
+
+            // 旧版首页复原：把被 hero 吞掉的元素移出来
+            var containerEl = container;
+            // ① UP主信息（hero 内的 authorInfo）移到标题下
+            var authorInfo = document.getElementById('authorInfo');
+            if (authorInfo && authorInfo.closest('.hero')) {
+                var ai = document.createElement('div');
+                ai.className = 'author-info';
+                ai.id = 'authorInfo';
+                ai.textContent = authorInfo.textContent || 'UP主：NB搞事局';
+                h1.parentNode.insertBefore(ai, h1.nextSibling);
+            }
+            // ② LOGO 视频区（hero 内的 logoVideo）恢复为独立视频区
+            var logoVideo = document.getElementById('logoVideo');
+            if (logoVideo && logoVideo.closest('.hero')) {
+                var vc = document.createElement('div');
+                vc.className = 'video-container';
+                vc.innerHTML = '<p style="text-align:center; margin-top:10px; color:var(--count-text);">🎬 NB频道 LOGO动画</p>';
+                logoVideo.parentNode.removeChild(logoVideo);
+                vc.appendChild(logoVideo);
+                logoVideo.muted = true;
+                var playP = logoVideo.play ? logoVideo.play() : null;
+                if (playP && playP.catch) playP.catch(function () {});
+                var navHost = document.querySelector('.nav-container');
+                if (navHost && navHost.nextSibling) container.insertBefore(vc, navHost.nextSibling);
+                else container.appendChild(vc);
+            }
         }
         // 首页等已手写新版导航的页面：还原为旧版导航
         var topNav = document.querySelector('.top-nav');
