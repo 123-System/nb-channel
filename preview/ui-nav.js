@@ -30,6 +30,25 @@
         document.body.appendChild(btn);
     }
 
+    // 新版时加载同目录 premium.css（页面内容级高级感，旧版不加载）
+    function loadPremiumCss() {
+        if (document.getElementById('uiPremiumCss')) return;
+        var src = '';
+        try {
+            src = (document.currentScript && document.currentScript.src) || '';
+        } catch (e) {}
+        var base = '';
+        if (src) {
+            var i = src.lastIndexOf('/');
+            if (i !== -1) base = src.substring(0, i + 1);
+        }
+        var link = document.createElement('link');
+        link.id = 'uiPremiumCss';
+        link.rel = 'stylesheet';
+        link.href = base + 'premium.css';
+        document.head.appendChild(link);
+    }
+
     // 鼠标特效（仅鼠标设备）：跟随光晕 + 点击粒子/波纹
     function injectMouseFx() {
         if (document.getElementById('uiMouseFx') || !(window.matchMedia && window.matchMedia('(pointer: fine)').matches)) return;
@@ -273,6 +292,7 @@
 
     injectStyle();
     if (getVer() === 'new') {
+        loadPremiumCss();
         injectMouseFx();
         if (document.querySelector('.nav-container')) {
             replaceNav();
