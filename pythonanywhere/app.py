@@ -176,8 +176,9 @@ def upload():
 
     # ---------- 存储：Supabase Storage（products 私有桶，下载走 /files/<key> 代理） ----------
     key = safe_filename(file.filename)
+    file_bytes = file.read()   # supabase-py upload 需要 bytes，不接受文件流
     try:
-        supabase.storage.from_('products').upload(key, file.stream, {
+        supabase.storage.from_('products').upload(key, file_bytes, {
             'content-type': file.mimetype or 'application/octet-stream'
         })
     except Exception as e:
@@ -233,15 +234,16 @@ def upload_avatar():
 
     # 每用户固定文件名（重复上传覆盖旧头像）
     key = 'user_' + str(user_id) + ext
+    file_bytes = file.read()   # supabase-py upload 需要 bytes，不接受文件流
     try:
-        supabase.storage.from_('avatars').upload(key, file.stream, {
+        supabase.storage.from_('avatars').upload(key, file_bytes, {
             'content-type': mime
         })
     except Exception as e:
         # 已存在则覆盖（supabase-py upload 默认不允许覆盖，先删再传）
         try:
             supabase.storage.from_('avatars').remove([key])
-            supabase.storage.from_('avatars').upload(key, file.stream, {'content-type': mime})
+            supabase.storage.from_('avatars').upload(key, file_bytes, {'content-type': mime})
         except Exception as e2:
             return jsonify({'success': False, 'message': '头像上传失败: %s' % e2}), 500
 
