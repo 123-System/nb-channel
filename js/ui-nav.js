@@ -117,17 +117,23 @@
             requestAnimationFrame(loop);
         })();
 
-        // 点击粒子 + 波纹
+        // 点击粒子 + 波纹（setTimeout 先注册 + try-catch：动画API不支持或onfinish不触发都不会残留）
         var colors = ['#00a1d6', '#6c5ce7', '#ff9800', '#ffd700', '#4caf50'];
         document.addEventListener('click', function (e) {
+            // 波纹环
             var ring = document.createElement('div');
             ring.style.cssText = 'position:fixed; left:' + e.clientX + 'px; top:' + e.clientY + 'px; width:12px; height:12px; border:2px solid rgba(0,161,214,0.75); border-radius:50%; pointer-events:none; z-index:9999; transform:translate(-50%,-50%);';
             document.body.appendChild(ring);
-            ring.animate([
-                { transform: 'translate(-50%,-50%) scale(1)', opacity: 0.9 },
-                { transform: 'translate(-50%,-50%) scale(5.5)', opacity: 0 }
-            ], { duration: 600, easing: 'ease-out' }).onfinish = function () { ring.remove(); };
+            setTimeout(function () { if (ring.parentNode) ring.remove(); }, 900);   // 兜底先注册
+            try {
+                var ringAnim = ring.animate([
+                    { transform: 'translate(-50%,-50%) scale(1)', opacity: 0.9 },
+                    { transform: 'translate(-50%,-50%) scale(5.5)', opacity: 0 }
+                ], { duration: 600, easing: 'ease-out', fill: 'forwards' });
+                ringAnim.onfinish = function () { ring.remove(); };
+            } catch (err) { ring.remove(); }
 
+            // 粒子
             for (var i = 0; i < 8; i++) {
                 var p = document.createElement('div');
                 var size = 4 + Math.random() * 6;
@@ -136,10 +142,19 @@
                 p.style.cssText = 'position:fixed; left:' + e.clientX + 'px; top:' + e.clientY + 'px; width:' + size + 'px; height:' + size + 'px; border-radius:50%; background:' + colors[i % colors.length] + '; pointer-events:none; z-index:9999;';
                 document.body.appendChild(p);
                 var dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
-                p.animate([
-                    { transform: 'translate(0,0) scale(1)', opacity: 1 },
-                    { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(0.1)', opacity: 0 }
-                ], { duration: 500 + Math.random() * 250, easing: 'cubic-bezier(0.15,0.8,0.25,1)' }).onfinish = function () { p.remove(); };
+                var dur = 500 + Math.random() * 250;
+                setTimeout(function (el) {
+                    return function () { if (el.parentNode) el.remove(); };
+                }(p), dur + 250);   // 兜底先注册（闭包捕获元素）
+                try {
+                    var anim = p.animate([
+                        { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                        { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(0.1)', opacity: 0 }
+                    ], { duration: dur, easing: 'cubic-bezier(0.15,0.8,0.25,1)', fill: 'forwards' });
+                    anim.onfinish = function (el) {
+                        return function () { el.remove(); };
+                    }(p);
+                } catch (err) { p.remove(); }
             }
         });
     }
