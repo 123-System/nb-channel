@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>NB频道 - 登录/注册</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/common.js"></script>
+    <script src="ui-nav.js"></script>
+    <style>
+        body { background: var(--bg-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .login-card { max-width: 400px; width: 100%; background: var(--card-bg); border-radius: 24px; padding: 30px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .card-title { text-align: center; margin-bottom: 20px; font-size: 1.5rem; font-weight: 600; color: var(--status-border); }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--card-border); }
+        .tab { padding: 8px 20px; cursor: pointer; background: none; border: none; font-size: 1.1rem; color: var(--text-color); }
+        .tab.active { color: var(--status-border); border-bottom: 2px solid var(--status-border); }
+        .form-group { margin-bottom: 15px; }
+        input { width: 100%; padding: 10px; border-radius: 30px; border: 1px solid var(--card-border); background: var(--bg-color); color: var(--text-color); }
+        button { width: 100%; padding: 10px; border-radius: 30px; background: var(--nav-btn-hover-bg); color: white; border: none; cursor: pointer; }
+        .error { color: #ff6b6b; font-size: 0.85rem; margin-top: 8px; text-align: center; }
+        .back-link { text-align: center; margin-top: 20px; }
+        .back-link a { color: var(--status-border); text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="login-card">
+    <div class="card-title">📺 NB频道登录/注册页面</div>
+    <div class="tabs">
+        <button id="loginTab" class="tab active">登录</button>
+        <button id="registerTab" class="tab">注册</button>
+    </div>
+
+    <!-- 登录表单 -->
+    <div id="loginForm">
+        <div class="form-group">
+            <input type="text" id="loginUsername" placeholder="用户名">
+        </div>
+        <div class="form-group">
+            <input type="password" id="loginPassword" placeholder="密码">
+        </div>
+        <div id="loginError" class="error"></div>
+        <button id="doLogin">登录</button>
+    </div>
+
+    <!-- 注册表单 -->
+    <div id="registerForm" style="display: none;">
+        <div class="form-group">
+            <input type="text" id="regUsername" placeholder="用户名（1-20字）" maxlength="20">
+        </div>
+        <div class="form-group">
+            <input type="password" id="regPassword" placeholder="密码（至少4位）">
+        </div>
+        <div class="form-group">
+            <input type="password" id="regPassword2" placeholder="确认密码">
+        </div>
+        <div id="regError" class="error"></div>
+        <button id="doRegister">注册</button>
+    </div>
+
+    <div class="back-link">
+        <a href="javascript:history.back()">← 返回上一页</a>
+    </div>
+</div>
+
+<script>
+    if (typeof supabase === 'undefined' && typeof window.supabase !== 'undefined') { var supabase = window.supabase; }
+    if (typeof supabase === 'undefined') {
+        document.body.innerHTML = '<div style="color:red; padding:20px; text-align:center;">❌ 无法加载 Supabase 客户端</div>';
+        throw new Error('Supabase not loaded');
+    }
+
+    const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // redirect 白名单校验：只允许站内相对路径，防止开放重定向和伪协议注入
+    function safeRedirect(raw) {
+        if (!raw) return null;
+        if (raw.startsWith('//')) return null;                    // 协议相对 URL
+        if (/^(https?:|javascript:|data:|vbscript:|file:)/i.test(raw)) return null;  // 绝对 URL / 伪协议
+        if (raw.indexOf('\\') !== -1 || /[\r\n]/.test(raw)) return null;
+        if (!/^[a-zA-Z0-9_\-./?&=#%]+$/.test(raw)) return null;  // 只允许普通 URL 字符
+        return raw;
+    }
+    const redirectUrl = safeRedirect(new URLSearchParams(window.location.search).get('redirect'));
+
+    const loginTab = document.getElementById('loginTab');
+    const registerTab = document.getElementById('registerTab');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+
+    loginTab.onclick = () => {
+        loginTab.classList.add('active');
+        registerTab.classList.remove('active');
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+    };
+    registerTab.onclick = () => {
+        registerTab.classList.add('active');
+        loginTab.classList.remove('active');
+        registerForm.style.display = 'block';
+        loginForm.style.display = 'none';
+    };
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('register') === '1') {
+        registerTab.click();
+    }
+
+    async function getClientIP() {
+        const services = ['https://icanhazip.com', 'https://api.ipify.org?format=text'];
+        for (const url of services) {
+            try {
+                const response = await fetch(url);
+                if (response.ok) return (await response.text()).trim();
+            } catch(e) { console.warn(url, e); }
+        }
+        throw new Error('无法获取IP地址');
+    }
+
+    async function register(username, password, password2) {
+        if (password !== password2) throw new Error('两次输入的密码不一致');
+        if (password.length < 4) throw new Error('密码长度至少4位');
+        let ip;
+        try { ip = await getClientIP(); } catch(err) { throw new Error('无法验证注册限制'); }
+        const { data: canReg, error: checkError } = await supabaseClient.rpc('can_register', { ip });
+        if (checkError || !canReg) throw new Error('您的IP今日注册次数已达上限（3次）');
+        const { data: userId, error: regError } = await supabaseClient.rpc('register_user', { input_username: username, input_password: password });
+        if (regError) throw new Error(regError.message);
+        if (!userId) throw new Error('用户名已存在');
+        await supabaseClient.rpc('record_registration', { ip });
+        return userId;
+    }
+
+    async function login(username, password) {
+        const { data: userId, error } = await supabaseClient.rpc('login_user', { input_username: username, input_password: password });
+        if (error) throw new Error(error.message);
+        if (!userId) throw new Error('用户名或密码错误');
+        const { data: profile } = await supabaseClient.from('profiles').select('id, username, is_banned, banned_reason').eq('id', userId).single();
+        if (!profile) throw new Error('用户资料异常');
+        if (profile.is_banned) throw new Error('账号已被封禁，有任何问题请联系管理员');
+        return profile;
+    }
+
+    function onLoginSuccess(user) {
+        localStorage.setItem('nb_user', JSON.stringify({ id: user.id, username: user.username }));
+        if (redirectUrl) {
+            window.location.href = redirectUrl;
+        } else {
+            window.location.href = 'Virtual stock.html';
+        }
+    }
+
+    document.getElementById('doLogin').onclick = async () => {
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const errorDiv = document.getElementById('loginError');
+        try {
+            const user = await login(username, password);
+            onLoginSuccess(user);
+        } catch (err) {
+            errorDiv.innerText = err.message;
+        }
+    };
+
+    document.getElementById('doRegister').onclick = async () => {
+        // 清洗零宽字符（防伪装同名）
+        const rawName = document.getElementById('regUsername').value.trim();
+        const username = rawName.replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF\u00AD]/g, '').trim();
+        // 用户名只能包含中文、字母和数字
+        if (!/^[\u4e00-\u9fa5a-zA-Z0-9]+$/.test(username)) {
+            document.getElementById('regError').innerText = '用户名只能包含中文、字母和数字';
+            return;
+        }
+        const password = document.getElementById('regPassword').value;
+        const password2 = document.getElementById('regPassword2').value;
+        const errorDiv = document.getElementById('regError');
+        try {
+            await register(username, password, password2);
+            const user = await login(username, password);
+            onLoginSuccess(user);
+        } catch (err) {
+            errorDiv.innerText = err.message;
+        }
+    };
+</script>
+</body>
+</html>

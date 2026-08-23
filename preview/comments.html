@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NB频道 - 评论区</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* 基础样式 */
+        .comment-section { max-width:800px; margin:40px auto; padding:20px; background:var(--card-bg); border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+        .auth-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--card-border); }
+        button { background:var(--nav-btn-bg); color:var(--nav-btn-text); border:none; padding:6px 12px; border-radius:20px; cursor:pointer; }
+        button:hover { background:var(--nav-btn-hover-bg); color:white; }
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1000; }
+        .modal-content { background:var(--card-bg); padding:30px; border-radius:12px; max-width:400px; width:90%; }
+        .modal-content input { width:100%; padding:10px; margin:10px 0; border:1px solid var(--card-border); border-radius:8px; background:var(--bg-color); color:var(--text-color); }
+        .comment { border-bottom:1px solid var(--card-border); padding:15px 0; }
+        .comment-meta { display:flex; align-items:center; gap:15px; margin-bottom:8px; }
+        .comment-author { font-weight:bold; }
+        .comment-time { font-size:0.8rem; color:var(--count-text); }
+        .comment-content { margin:8px 0; white-space: pre-wrap; word-break: break-word; }
+        .comment-actions { display:flex; gap:10px; margin-top:8px; }
+        .toggle-btn, .reply-btn { background: none; border: none; color: var(--status-border); cursor: pointer; padding: 0; font-size: 0.85rem; margin-right: 10px; }
+        .toggle-btn:hover, .reply-btn:hover { text-decoration: underline; background: none; color: var(--nav-btn-hover-bg); }
+        .replies { margin-left: 30px; border-left: 2px solid var(--card-border); padding-left: 20px; margin-top: 10px; }
+        .reply-form { margin-top: 10px; margin-bottom: 10px; display: none; }
+        .reply-form textarea { width: 100%; padding: 8px; border: 1px solid var(--card-border); border-radius: 8px; background: var(--bg-color); color: var(--text-color); font-family: inherit; resize: vertical; }
+        .reply-form button { margin-top: 5px; }
+        .error { color:#ff6b6b; font-size:0.9rem; margin-top:5px; }
+        textarea { width:100%; padding:10px; border:1px solid var(--card-border); border-radius:8px; background:var(--bg-color); color:var(--text-color); font-family:inherit; resize: vertical; }
+        .char-counter { text-align: right; font-size: 0.8rem; color: var(--count-text); margin-top: 5px; }
+        .new-comment-area { margin-bottom: 30px; }
+        .account-btn { background: var(--nav-btn-bg); color: var(--nav-btn-text); border: none; border-radius: 30px; padding: 10px 20px; font-size: 1rem; cursor: pointer; }
+        .account-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
+        .toggle-replies-btn { background: none; border: none; color: var(--status-border); cursor: pointer; font-size: 0.85rem; margin-top: 8px; padding: 0; }
+        .toggle-replies-btn:hover { text-decoration: underline; background: none; color: var(--nav-btn-hover-bg); }
+
+        .fixed-buttons {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 100;
+        }
+        .theme-toggle-fixed {
+            background: var(--nav-btn-bg);
+            color: var(--nav-btn-text);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .theme-toggle-fixed:hover {
+            background: var(--nav-btn-hover-bg);
+            color: var(--nav-btn-hover-text);
+        }
+        .back-to-top {
+            background: var(--nav-btn-bg);
+            color: var(--nav-btn-text);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            border: 1px solid var(--card-border);
+            transition: all 0.2s;
+            opacity: 0;
+            visibility: hidden;
+        }
+        .back-to-top.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .back-to-top:hover {
+            background: var(--nav-btn-hover-bg);
+            color: var(--nav-btn-hover-text);
+        }
+        @media (max-width: 600px) {
+            .fixed-buttons {
+                bottom: 20px;
+                right: 20px;
+                gap: 10px;
+            }
+            .theme-toggle-fixed, .back-to-top {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+        }
+        .verified-icon {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            margin-left: 6px;
+            background: url('https://cdn-icons-png.flaticon.com/512/5272/5272895.png') no-repeat center;
+            background-size: contain;
+            vertical-align: middle;
+        }
+        .verified-emoji {
+            margin-left: 4px;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+<script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
+<div class="container">
+    <h1>📺 NB频道官网</h1>
+    <div class="author-info" id="authorInfo">UP主：NB搞事局</div>
+    <div class="nav-container">
+        <div class="nav-links">
+            <a href="index.html" class="nav-btn">首页</a>
+            <a href="videos.html" class="nav-btn">视频</a>
+            <a href="about.html" class="nav-btn">关于</a>
+            <a href="changelog.html" class="nav-btn">更新日志</a>
+            <a href="product.html" class="nav-btn">我的产品</a>
+            <a href="APP.html" class="nav-btn">软件/APP下载</a>
+        </div>
+        <div class="nav-actions">
+            <a href="comments.html" class="nav-btn active">💬 评论</a>
+            <a href="https://cloudflare.nb-channel.top/comments.html" class="nav-btn" target="_blank">Cloudflare评论区（内容不同）</a>
+            <a href="https://github.nb-channel.top/comments.html" class="nav-btn" target="_blank">Github评论（内容不同）</a>
+            <a href="product_share.html" class="nav-btn">🛍️ 作品分享</a>
+            <button class="account-btn" id="accountBtn">⚙️ 账号设置</button>
+        </div>
+    </div>
+
+    <div class="comment-section">
+        <div class="auth-bar">
+            <span id="user-status">未登录</span>
+            <div>
+                <button id="show-login">登录</button>
+                <button id="show-register">注册</button>
+            </div>
+        </div>
+
+        <div id="new-comment-area" class="new-comment-area" style="display: none;">
+            <textarea id="comment-text" rows="3" placeholder="写下你的评论... (最多200字)" maxlength="200"></textarea>
+            <div class="char-counter"><span id="char-count">0</span>/200</div>
+            <button id="submit-comment" style="margin-top:10px;">发布评论</button>
+        </div>
+
+        <div id="comment-list"></div>
+    </div>
+</div>
+
+<!-- 登录弹窗 -->
+<div id="login-modal" class="modal">
+    <div class="modal-content">
+        <h3>登录</h3>
+        <input type="text" id="login-username" placeholder="用户名">
+        <input type="password" id="login-password" placeholder="密码">
+        <div id="login-error" class="error"></div>
+        <button id="do-login">登录</button>
+        <button id="close-login">取消</button>
+    </div>
+</div>
+
+<!-- 注册弹窗（两次密码） -->
+<div id="register-modal" class="modal">
+    <div class="modal-content">
+        <h3>注册</h3>
+        <input type="text" id="reg-username" placeholder="用户名">
+        <input type="password" id="reg-password" placeholder="密码">
+        <input type="password" id="reg-password2" placeholder="确认密码">
+        <div id="register-error" class="error"></div>
+        <button id="do-register">注册</button>
+        <button id="close-register">取消</button>
+    </div>
+</div>
+
+<!-- 账号设置弹窗 -->
+<div id="account-modal" class="modal">
+    <div class="modal-content">
+        <h3>账号设置</h3>
+        <div id="account-error" class="error"></div>
+        <div style="margin-bottom:20px;">
+            <h4>修改用户名</h4>
+            <input type="text" id="new-username" placeholder="新用户名">
+            <input type="password" id="old-password-for-username" placeholder="当前密码">
+            <button id="do-update-username">修改用户名</button>
+        </div>
+        <div>
+            <h4>修改密码</h4>
+            <input type="password" id="old-password" placeholder="旧密码">
+            <input type="password" id="new-password" placeholder="新密码">
+            <input type="password" id="new-password2" placeholder="确认新密码">
+            <button id="do-update-password">修改密码</button>
+        </div>
+        <button id="close-account" style="margin-top:20px;">关闭</button>
+    </div>
+</div>
+
+<!-- 通用消息弹窗 -->
+<div id="message-modal" class="modal message-modal">
+    <div class="modal-content">
+        <h3 id="message-title">提示</h3>
+        <p id="message-text"></p>
+        <button id="message-close">确定</button>
+    </div>
+</div>
+
+<!-- 确认弹窗 -->
+<div id="confirm-modal" class="modal confirm-modal">
+    <div class="modal-content">
+        <h3 id="confirm-title">确认</h3>
+        <p id="confirm-text"></p>
+        <button id="confirm-ok">确定</button>
+        <button id="confirm-cancel">取消</button>
+    </div>
+</div>
+
+<div class="fixed-buttons">
+    <button class="theme-toggle-fixed" id="themeToggleFixed" onclick="toggleTheme()">🌙</button>
+    <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
+</div>
+
+<script src="../data/videos.js"></script>
+<script src="../js/common.js"></script>
+    <script src="ui-nav.js"></script>
+<script>
+    // 公共初始化
+    AUTHOR_NAME = 'NB搞事局';
+    document.getElementById('authorInfo').innerText = `UP主：${AUTHOR_NAME}`;
+    initTheme();
+    updateSiteStats();
+    if (typeof initShareButton === 'function') initShareButton();
+
+    const SUPABASE_URL = 'https://stgdkwnpxdyhghfgywqj.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_CeYSaPxbHXZNImMts166_w_jNTzuAsO';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser = null;
+    const pagePath = window.location.pathname;
+    // 认证用户列表（从后端获取）
+    let verifiedUsernames = [];
+
+    // DOM 元素
+    const userStatusSpan = document.getElementById('user-status');
+    const commentListDiv = document.getElementById('comment-list');
+    const newCommentArea = document.getElementById('new-comment-area');
+    const commentText = document.getElementById('comment-text');
+    const submitCommentBtn = document.getElementById('submit-comment');
+    const charCountSpan = document.getElementById('char-count');
+
+    if (commentText) {
+        commentText.addEventListener('input', () => {
+            charCountSpan.innerText = commentText.value.length;
+        });
+    }
+
+    // 弹窗函数
+    const messageModal = document.getElementById('message-modal');
+    const messageTitle = document.getElementById('message-title');
+    const messageText = document.getElementById('message-text');
+    const messageClose = document.getElementById('message-close');
+    function showMessage(title, msg, callback) {
+        messageTitle.innerText = title;
+        messageText.innerText = msg;
+        messageModal.style.display = 'flex';
+        const closeHandler = () => {
+            messageModal.style.display = 'none';
+            messageClose.removeEventListener('click', closeHandler);
+            if (callback) callback();
+        };
+        messageClose.addEventListener('click', closeHandler);
+    }
+
+    const confirmModal = document.getElementById('confirm-modal');
+    const confirmTitle = document.getElementById('confirm-title');
+    const confirmText = document.getElementById('confirm-text');
+    const confirmOk = document.getElementById('confirm-ok');
+    const confirmCancel = document.getElementById('confirm-cancel');
+    function showConfirm(title, msg, onConfirm, onCancel) {
+        confirmTitle.innerText = title;
+        confirmText.innerText = msg;
+        confirmModal.style.display = 'flex';
+        const okHandler = () => {
+            confirmModal.style.display = 'none';
+            confirmOk.removeEventListener('click', okHandler);
+            confirmCancel.removeEventListener('click', cancelHandler);
+            if (onConfirm) onConfirm();
+        };
+        const cancelHandler = () => {
+            confirmModal.style.display = 'none';
+            confirmOk.removeEventListener('click', okHandler);
+            confirmCancel.removeEventListener('click', cancelHandler);
+            if (onCancel) onCancel();
+        };
+        confirmOk.addEventListener('click', okHandler);
+        confirmCancel.addEventListener('click', cancelHandler);
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;');
+    }
+
+    // ---------- 获取认证用户列表 ----------
+    async function fetchVerifiedUsers() {
+        const { data, error } = await supabaseClient
+            .from('verified_users')
+            .select('username');
+        if (error) {
+            console.error('获取认证用户列表失败', error);
+            return [];
+        }
+        return data.map(item => item.username);
+    }
+
+    // ---------- 评论树构建与渲染 ----------
+    function buildCommentTree(comments) {
+        const map = new Map();
+        const roots = [];
+        comments.forEach(c => {
+            map.set(c.id, { ...c, replies: [] });
+        });
+        comments.forEach(c => {
+            const node = map.get(c.id);
+            if (c.parent_id && map.has(c.parent_id)) {
+                map.get(c.parent_id).replies.push(node);
+            } else {
+                roots.push(node);
+            }
+        });
+        roots.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const setDepth = (node, depth) => {
+            node.depth = depth;
+            node.replies.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            node.replies.forEach(child => setDepth(child, depth + 1));
+        };
+        roots.forEach(node => setDepth(node, 0));
+        return roots;
+    }
+
+    function countDescendants(node) {
+        let count = node.replies.length;
+        for (const child of node.replies) {
+            count += countDescendants(child);
+        }
+        return count;
+    }
+
+    function renderCommentNode(node) {
+        const author = node.profiles?.username || '匿名';
+        const fullText = node.content;
+        const isLong = fullText.length > 50;
+        let displayText, toggleButton = '';
+        if (isLong) {
+            const shortText = fullText.substring(0, 50) + '...';
+            displayText = shortText;
+            toggleButton = `<button class="toggle-btn" data-id="${node.id}" data-state="collapsed">展开</button>`;
+        } else {
+            displayText = fullText;
+        }
+
+        const totalReplies = countDescendants(node);
+        const showReplyBtn = node.depth < 2;
+
+        let repliesHtml = '';
+        let toggleRepliesBtn = '';
+
+        if (totalReplies > 3 && node.replies.length > 0) {
+            const firstReply = node.replies[0];
+            const restReplies = node.replies.slice(1);
+            const firstReplyHtml = renderCommentNode(firstReply);
+            const restHtml = restReplies.map(child => renderCommentNode(child)).join('');
+            repliesHtml = firstReplyHtml;
+            repliesHtml += `<div class="hidden-replies" style="display:none;">${restHtml}</div>`;
+            toggleRepliesBtn = `<button class="toggle-replies-btn" data-id="${node.id}" data-state="collapsed">展开所有回复</button>`;
+        } else if (node.replies.length > 0) {
+            repliesHtml = node.replies.map(child => renderCommentNode(child)).join('');
+        }
+
+        // 认证图标
+        let verifiedBadge = '';
+        if (verifiedUsernames.includes(author)) {
+            verifiedBadge = '<img src="https://s41.ax1x.com/2026/04/05/peNSL5t.png" style="width:24px;height:24px; margin-left:24px;">';
+        }
+
+        return `
+            <div class="comment" data-id="${node.id}" data-depth="${node.depth}">
+                <div class="comment-meta">
+                    <span class="comment-author">${escapeHtml(author)}${verifiedBadge}</span>
+                    <span class="comment-time">${new Date(node.created_at).toLocaleString()}</span>
+                </div>
+                <div class="comment-content" data-full="${escapeHtml(fullText)}" data-short="${escapeHtml(displayText)}">${escapeHtml(displayText)}</div>
+                ${toggleButton ? `<div class="toggle-btn-container">${toggleButton}</div>` : ''}
+                <div class="comment-actions">
+                    ${showReplyBtn ? `<button class="reply-btn" data-id="${node.id}" data-depth="${node.depth}">回复</button>` : ''}
+                    ${currentUser && currentUser.id === node.user_id ? `<button class="delete-btn" data-id="${node.id}">删除</button>` : ''}
+                </div>
+                <div class="reply-form" id="reply-form-${node.id}" style="display:none;">
+                    <textarea rows="2" placeholder="写下你的回复... (最多200字)" maxlength="200"></textarea>
+                    <div class="char-counter"><span>0</span>/200</div>
+                    <button class="submit-reply" data-id="${node.id}">提交回复</button>
+                    <button class="cancel-reply" data-id="${node.id}">取消</button>
+                </div>
+                <div class="replies" id="replies-${node.id}">
+                    ${repliesHtml}
+                    ${toggleRepliesBtn ? `<div class="toggle-replies-btn-container">${toggleRepliesBtn}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderComments(comments) {
+        if (!comments || comments.length === 0) {
+            commentListDiv.innerHTML = '<p>暂无评论，快来抢沙发！</p>';
+            return;
+        }
+        const tree = buildCommentTree(comments);
+        const html = tree.map(node => renderCommentNode(node)).join('');
+        commentListDiv.innerHTML = html;
+
+        // 折叠/展开按钮事件
+        document.querySelectorAll('.toggle-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const commentDiv = btn.closest('.comment');
+                const contentDiv = commentDiv.querySelector('.comment-content');
+                const isCollapsed = btn.dataset.state === 'collapsed';
+                if (isCollapsed) {
+                    contentDiv.innerText = contentDiv.dataset.full;
+                    btn.innerText = '折叠';
+                    btn.dataset.state = 'expanded';
+                } else {
+                    contentDiv.innerText = contentDiv.dataset.short;
+                    btn.innerText = '展开';
+                    btn.dataset.state = 'collapsed';
+                }
+            };
+        });
+
+        document.querySelectorAll('.toggle-replies-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const commentId = btn.dataset.id;
+                const repliesDiv = document.getElementById(`replies-${commentId}`);
+                const hiddenDiv = repliesDiv.querySelector('.hidden-replies');
+                const isCollapsed = btn.dataset.state === 'collapsed';
+                if (isCollapsed) {
+                    if (hiddenDiv) hiddenDiv.style.display = 'block';
+                    btn.innerText = '折叠所有回复';
+                    btn.dataset.state = 'expanded';
+                } else {
+                    if (hiddenDiv) hiddenDiv.style.display = 'none';
+                    btn.innerText = '展开所有回复';
+                    btn.dataset.state = 'collapsed';
+                }
+            };
+        });
+
+        document.querySelectorAll('.reply-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const commentId = btn.dataset.id;
+                const replyForm = document.getElementById(`reply-form-${commentId}`);
+                if (replyForm) {
+                    replyForm.style.display = replyForm.style.display === 'block' ? 'none' : 'block';
+                    const textarea = replyForm.querySelector('textarea');
+                    if (textarea) {
+                        textarea.value = '';
+                        const counter = replyForm.querySelector('.char-counter span');
+                        if (counter) counter.innerText = '0';
+                    }
+                }
+            };
+        });
+
+        document.querySelectorAll('.cancel-reply').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const commentId = btn.dataset.id;
+                const replyForm = document.getElementById(`reply-form-${commentId}`);
+                if (replyForm) replyForm.style.display = 'none';
+            };
+        });
+
+        document.querySelectorAll('.submit-reply').forEach(btn => {
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+                const parentId = btn.dataset.id;
+                const parentDiv = document.querySelector(`.comment[data-id="${parentId}"]`);
+                let parentDepth = -1;
+                if (parentDiv) parentDepth = parseInt(parentDiv.dataset.depth);
+                if (parentDepth >= 2) {
+                    showMessage('提示', '已达到最大回复层数（3层），无法继续回复');
+                    return;
+                }
+                const replyForm = document.getElementById(`reply-form-${parentId}`);
+                const textarea = replyForm.querySelector('textarea');
+                let content = textarea.value.trim();
+                if (!content) { showMessage('提示', '回复内容不能为空'); return; }
+                if (content.length > 200) { showMessage('提示', '回复内容不能超过200字'); return; }
+                if (!currentUser) { showMessage('提示', '请先登录'); return; }
+                const { error } = await supabaseClient
+                    .from('comments')
+                    .insert({ page_path: pagePath, user_id: currentUser.id, content, parent_id: parseInt(parentId) });
+                if (error) {
+                    showMessage('错误', '回复失败');
+                } else {
+                    replyForm.style.display = 'none';
+                    fetchComments();
+                }
+            };
+        });
+
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.onclick = () => {
+                const commentId = btn.dataset.id;
+                showConfirm('确认删除', '确定要删除这条评论吗？', async () => {
+                    await deleteComment(commentId);
+                });
+            };
+        });
+
+        document.querySelectorAll('.reply-form textarea').forEach(textarea => {
+            const counterSpan = textarea.closest('.reply-form').querySelector('.char-counter span');
+            textarea.addEventListener('input', () => {
+                counterSpan.innerText = textarea.value.length;
+            });
+        });
+    }
+
+    async function deleteComment(commentId) {
+        if (!currentUser) return;
+        const { error } = await supabaseClient
+            .from('comments')
+            .delete()
+            .eq('id', commentId)
+            .eq('user_id', currentUser.id);
+        if (error) showMessage('错误', '删除失败');
+        else fetchComments();
+    }
+
+    async function fetchComments() {
+        // 先获取认证用户列表
+        verifiedUsernames = await fetchVerifiedUsers();
+        const { data, error } = await supabaseClient
+            .from('comments')
+            .select('*, profiles(username)')
+            .eq('page_path', pagePath)
+            .order('created_at', { ascending: true });
+        if (error) { console.error(error); return; }
+        renderComments(data);
+    }
+
+    async function postComment() {
+        if (!currentUser) { showMessage('提示', '请先登录'); return; }
+        let content = commentText.value.trim();
+        if (!content) { showMessage('提示', '评论内容不能为空'); return; }
+        if (content.length > 200) { showMessage('提示', '评论内容不能超过200字'); return; }
+        const { error } = await supabaseClient
+            .from('comments')
+            .insert({ page_path: pagePath, user_id: currentUser.id, content, parent_id: null });
+        if (error) showMessage('错误', '发表失败');
+        else {
+            commentText.value = '';
+            charCountSpan.innerText = '0';
+            fetchComments();
+        }
+    }
+
+    // 用户注册、登录等函数
+    async function register(username, password, password2) {
+        if (password !== password2) throw new Error('两次输入的密码不一致');
+        if (password.length < 4) throw new Error('密码长度至少4位');
+        const { data, error } = await supabaseClient.rpc('register_user', {
+            input_username: username,
+            input_password: password
+        });
+        if (error) throw new Error(error.message);
+        if (!data) throw new Error('用户名已存在');
+        return data;
+    }
+
+    async function login(username, password) {
+        const { data, error } = await supabaseClient.rpc('login_user', {
+            input_username: username,
+            input_password: password
+        });
+        if (error) throw new Error(error.message);
+        if (!data) throw new Error('用户名或密码错误');
+        const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('id, username')
+            .eq('id', data)
+            .single();
+        return profile;
+    }
+
+    async function updateUsername(newUsername, oldPassword) {
+        const { data, error } = await supabaseClient.rpc('update_username', {
+            user_id: currentUser.id,
+            new_username: newUsername,
+            old_password: oldPassword
+        });
+        if (error) throw new Error(error.message);
+        if (!data.success) throw new Error(data.message);
+        return data;
+    }
+
+    async function updatePassword(oldPassword, newPassword, newPassword2) {
+        if (newPassword !== newPassword2) throw new Error('新密码两次输入不一致');
+        if (newPassword.length < 4) throw new Error('新密码长度至少4位');
+        const { data, error } = await supabaseClient.rpc('update_password', {
+            user_id: currentUser.id,
+            old_password: oldPassword,
+            new_password: newPassword
+        });
+        if (error) throw new Error(error.message);
+        if (!data.success) throw new Error(data.message);
+        return data;
+    }
+
+    async function loadUser() {
+        const stored = localStorage.getItem('nb_user');
+        if (stored) {
+            try {
+                const user = JSON.parse(stored);
+                const { data } = await supabaseClient
+                    .from('profiles')
+                    .select('id')
+                    .eq('id', user.id)
+                    .single();
+                if (data) {
+                    currentUser = user;
+                    userStatusSpan.innerHTML = `欢迎，${escapeHtml(currentUser.username)} <button id="logout-btn">退出</button>`;
+                    document.getElementById('logout-btn').onclick = () => {
+                        localStorage.removeItem('nb_user');
+                        location.reload();
+                    };
+                    newCommentArea.style.display = 'block';
+                    fetchComments();
+                    return;
+                }
+            } catch(e) {}
+        }
+        currentUser = null;
+        userStatusSpan.innerHTML = '未登录';
+        newCommentArea.style.display = 'none';
+        fetchComments();
+    }
+
+    // 弹窗绑定
+    const loginModal = document.getElementById('login-modal');
+    const registerModal = document.getElementById('register-modal');
+    const accountModal = document.getElementById('account-modal');
+    const closeAccount = document.getElementById('close-account');
+
+    document.getElementById('show-login').onclick = () => loginModal.style.display = 'flex';
+    document.getElementById('close-login').onclick = () => loginModal.style.display = 'none';
+    document.getElementById('show-register').onclick = () => registerModal.style.display = 'flex';
+    document.getElementById('close-register').onclick = () => registerModal.style.display = 'none';
+    document.getElementById('accountBtn').onclick = () => {
+        if (!currentUser) { showMessage('提示', '请先登录'); return; }
+        accountModal.style.display = 'flex';
+    };
+    closeAccount.onclick = () => accountModal.style.display = 'none';
+
+    document.getElementById('do-login').onclick = async () => {
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value;
+        const errorDiv = document.getElementById('login-error');
+        try {
+            const user = await login(username, password);
+            localStorage.setItem('nb_user', JSON.stringify({ id: user.id, username: user.username }));
+            loginModal.style.display = 'none';
+            location.reload();
+        } catch (err) {
+            errorDiv.innerText = err.message;
+        }
+    };
+
+    document.getElementById('do-register').onclick = async () => {
+        const username = document.getElementById('reg-username').value.trim();
+        const password = document.getElementById('reg-password').value;
+        const password2 = document.getElementById('reg-password2').value;
+        const errorDiv = document.getElementById('register-error');
+        if (!username || !password) {
+            errorDiv.innerText = '请填写完整';
+            return;
+        }
+        try {
+            await register(username, password, password2);
+            registerModal.style.display = 'none';
+            showMessage('提示', '注册成功！请登录');
+        } catch (err) {
+            errorDiv.innerText = err.message;
+        }
+    };
+
+    document.getElementById('do-update-username').onclick = async () => {
+        const newUsername = document.getElementById('new-username').value.trim();
+        const oldPassword = document.getElementById('old-password-for-username').value;
+        const errorDiv = document.getElementById('account-error');
+        if (!newUsername) {
+            errorDiv.innerText = '请输入新用户名';
+            return;
+        }
+        try {
+            await updateUsername(newUsername, oldPassword);
+            errorDiv.innerText = '';
+            showMessage('成功', '用户名已修改，请重新登录', () => {
+                localStorage.removeItem('nb_user');
+                location.reload();
+            });
+        } catch (err) {
+            errorDiv.innerText = err.message;
+        }
+    };
+
+    document.getElementById('do-update-password').onclick = async () => {
+        const oldPassword = document.getElementById('old-password').value;
+        const newPassword = document.getElementById('new-password').value;
+        const newPassword2 = document.getElementById('new-password2').value;
+        const errorDiv = document.getElementById('account-error');
+        try {
+            await updatePassword(oldPassword, newPassword, newPassword2);
+            errorDiv.innerText = '';
+            showMessage('成功', '密码已修改，请重新登录', () => {
+                localStorage.removeItem('nb_user');
+                location.reload();
+            });
+        } catch (err) {
+            errorDiv.innerText = err.message;
+        }
+    };
+
+    submitCommentBtn.onclick = postComment;
+    loadUser();
+
+    window.addEventListener('scroll', function() {
+        const backBtn = document.getElementById('backToTop');
+        if (backBtn) {
+            if (window.scrollY > 300) backBtn.classList.add('show');
+            else backBtn.classList.remove('show');
+        }
+    });
+</script>
+</body>
+</html>
