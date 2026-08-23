@@ -469,19 +469,36 @@ def serve_file(filename):
 
 @app.route('/files/<path:key>')
 def serve_s3_file(key):
-    """从 Supabase Storage（products 私有桶）代理下载文件。桶保持私有，下载统一走本端点。"""
+    """下载作品文件（附件方式）。三级兜底：Supabase Storage → S3 → 本地磁盘（兼容历史文件）。"""
     if not re.match(r'^[a-f0-9]{32}(\.[a-zA-Z0-9]{1,10})?$', key):
         return jsonify({'success': False, 'message': '非法文件名'}), 400
+
+    # 1) Supabase Storage（新文件）
     try:
         body = supabase.storage.from_('products').download(key)
         resp = Response(body, mimetype='application/octet-stream')
         resp.headers['Content-Disposition'] = 'attachment; filename="%s"' % key
         return resp
-    except Exception as e:
-        msg = str(e).lower()
-        if '404' in msg or 'not found' in msg or 'does not exist' in msg:
-            return jsonify({'success': False, 'message': '文件不存在或已删除'}), 404
-        return jsonify({'success': False, 'message': '下载失败: %s' % e}), 502
+    except Exception:
+        pass
+
+    # 2) S3（历史文件，若仍配置可用）
+    if s3_client is not None:
+        try:
+            obj = s3_client.get_object(Bucket=S3_BUCKET, Key=key)
+            body = obj['Body'].read()
+            resp = Response(body, mimetype='application/octet-stream')
+            resp.headers['Content-Disposition'] = 'attachment; filename="%s"' % key
+            return resp
+        except Exception:
+            pass
+
+    # 3) 本地磁盘（历史文件）
+    local_path = os.path.join(UPLOAD_DIR, key)
+    if os.path.isfile(local_path):
+        return send_from_directory(UPLOAD_DIR, key, as_attachment=True)
+
+    return jsonify({'success': False, 'message': '文件不存在或已删除'}), 404
 
 
 # ==================== GitHub 自动同步 ====================
