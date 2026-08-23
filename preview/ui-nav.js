@@ -4,8 +4,10 @@
 // 功能：
 //   1. 自动把页面现有的旧版导航（.nav-container）替换为"新版通栏导航"
 //      （Logo + 主菜单 + 登录按钮 + 快捷入口条），页面原有链接全部保留
-//   2. 右下角 🖥️/📄 按钮在"新版/旧版"界面之间切换（localStorage: nb_ui_preview）
-//   3. 旧版 = 保留页面原始导航不动
+//   2. 为每个页面注入官网风格：渐变 Hero 横幅（页面标题）+ 鼠标特效
+//      （跟随光晕 + 点击粒子），已有 .hero 的页面（官网首页）跳过横幅
+//   3. 右下角 🖥️/📄 按钮在"新版/旧版"界面之间切换（localStorage: nb_ui_preview）
+//   4. 旧版 = 保留页面原始导航不动
 // ============================================================
 (function () {
     var VERSION_KEY = 'nb_ui_preview';
@@ -26,6 +28,87 @@
             location.reload();
         };
         document.body.appendChild(btn);
+    }
+
+    // 鼠标特效（仅鼠标设备）：跟随光晕 + 点击粒子/波纹
+    function injectMouseFx() {
+        if (document.getElementById('uiMouseFx') || !(window.matchMedia && window.matchMedia('(pointer: fine)').matches)) return;
+        var st = document.createElement('style');
+        st.id = 'uiMouseFx';
+        st.textContent = `
+            @keyframes uiFxPop { 0%{transform:scale(.4);opacity:0} 60%{transform:scale(1.15);opacity:1} 100%{transform:scale(1);opacity:1} }
+            .ui-fx-burst { position:fixed; z-index:100000; font-weight:700; pointer-events:none; animation:uiFxPop .5s ease-out; }
+        `;
+        document.head.appendChild(st);
+
+        // 跟随光晕
+        var glow = document.createElement('div');
+        glow.style.cssText = 'position:fixed; left:-999px; top:-999px; width:240px; height:240px; border-radius:50%; pointer-events:none; z-index:9997; transform:translate(-50%,-50%); background:radial-gradient(circle, rgba(0,161,214,0.20), rgba(108,92,231,0.10) 45%, transparent 65%);';
+        document.body.appendChild(glow);
+        var gx = -999, gy = -999, tx = -999, ty = -999;
+        document.addEventListener('mousemove', function (e) { tx = e.clientX; ty = e.clientY; });
+        document.addEventListener('mouseleave', function () { glow.style.opacity = '0'; });
+        document.addEventListener('mouseenter', function () { glow.style.opacity = '1'; });
+        (function loop() {
+            gx += (tx - gx) * 0.14;
+            gy += (ty - gy) * 0.14;
+            glow.style.left = gx + 'px';
+            glow.style.top = gy + 'px';
+            requestAnimationFrame(loop);
+        })();
+
+        // 点击粒子 + 波纹
+        var colors = ['#00a1d6', '#6c5ce7', '#ff9800', '#ffd700', '#4caf50'];
+        document.addEventListener('click', function (e) {
+            var ring = document.createElement('div');
+            ring.style.cssText = 'position:fixed; left:' + e.clientX + 'px; top:' + e.clientY + 'px; width:12px; height:12px; border:2px solid rgba(0,161,214,0.75); border-radius:50%; pointer-events:none; z-index:9999; transform:translate(-50%,-50%);';
+            document.body.appendChild(ring);
+            ring.animate([
+                { transform: 'translate(-50%,-50%) scale(1)', opacity: 0.9 },
+                { transform: 'translate(-50%,-50%) scale(5.5)', opacity: 0 }
+            ], { duration: 600, easing: 'ease-out' }).onfinish = function () { ring.remove(); };
+
+            for (var i = 0; i < 8; i++) {
+                var p = document.createElement('div');
+                var size = 4 + Math.random() * 6;
+                var ang = Math.random() * Math.PI * 2;
+                var dist = 28 + Math.random() * 52;
+                p.style.cssText = 'position:fixed; left:' + e.clientX + 'px; top:' + e.clientY + 'px; width:' + size + 'px; height:' + size + 'px; border-radius:50%; background:' + colors[i % colors.length] + '; pointer-events:none; z-index:9999;';
+                document.body.appendChild(p);
+                var dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
+                p.animate([
+                    { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                    { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(0.1)', opacity: 0 }
+                ], { duration: 500 + Math.random() * 250, easing: 'cubic-bezier(0.15,0.8,0.25,1)' }).onfinish = function () { p.remove(); };
+            }
+        });
+    }
+
+    // 页面 Hero 横幅（官网首页已有 .hero 则跳过）
+    function injectBanner() {
+        if (document.getElementById('uiPageBanner')) return;
+        if (document.querySelector('.hero')) return;
+        var banner = document.createElement('div');
+        banner.id = 'uiPageBanner';
+        // 标题：取 <title> 去 "- NB频道" 后缀
+        var title = (document.title || '').replace(/\s*[-–—]\s*NB频道.*$/, '').trim() || 'NB频道';
+        banner.innerHTML =
+            '<div style="position:absolute; top:-60px; right:-60px; width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,0.08);"></div>' +
+            '<div style="position:absolute; bottom:-80px; left:-40px; width:220px; height:220px; border-radius:50%; background:rgba(255,255,255,0.06);"></div>' +
+            '<div style="font-size:1.9rem; font-weight:900; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,0.2);">' + title + '</div>' +
+            '<div style="font-size:0.95rem; opacity:0.92; color:#fff; margin-top:6px;">📺 NB频道 · 虚拟公司 · 官网</div>';
+        banner.style.cssText = 'position:relative; overflow:hidden; background:linear-gradient(135deg, #00a1d6 0%, #0a84c1 45%, #6c5ce7 100%); border-radius:24px; padding:36px 28px; text-align:center; margin-bottom:24px; box-shadow:0 18px 40px -12px rgba(0,161,214,0.5);';
+        // 插入到导航之后（body 顶部附近）
+        var navHost = document.querySelector('.top-nav') || document.querySelector('.quick-nav');
+        var container = document.querySelector('.container') || document.body;
+        if (navHost && navHost.nextSibling) {
+            container.insertBefore(banner, navHost.nextSibling);
+        } else {
+            container.insertBefore(banner, container.firstChild);
+        }
+        // 隐藏页面原本的第一个 h1（避免与横幅重复）
+        var h1 = document.querySelector('h1');
+        if (h1) h1.style.display = 'none';
     }
 
     // 新版导航样式（内联注入，不依赖 style.css 修改）
@@ -159,11 +242,15 @@
 
     injectStyle();
     if (getVer() === 'new') {
-        // 同步执行时若导航已解析则立即替换；否则等 DOM 就绪
+        injectMouseFx();
         if (document.querySelector('.nav-container')) {
             replaceNav();
+            injectBanner();
         } else {
-            document.addEventListener('DOMContentLoaded', replaceNav);
+            document.addEventListener('DOMContentLoaded', function () {
+                if (document.querySelector('.nav-container')) replaceNav();
+                injectBanner();
+            });
         }
     } else {
         // 旧版：保留原导航，只加切换按钮
