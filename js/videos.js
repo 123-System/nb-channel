@@ -70,7 +70,7 @@ function renderVideosByCategory() {
     grid.innerHTML = filteredVideos.map(video => {
         const b23Url = `https://www.bilibili.com/video/${video.bvid}`;
         return `
-            <div class="video-card" onclick="window.open('${b23Url}', '_blank')">
+            <div class="video-card" data-bvid="${video.bvid}" data-title="${video.title.replace(/"/g, '&quot;')}" onclick="openVideoPlayer(this)">
                 <div class="cover-wrapper">
                     <img class="video-cover" 
                          src="${video.cover}" 
@@ -90,6 +90,48 @@ function renderVideosByCategory() {
             </div>
         `;
     }).join('');
+}
+
+// ========== B站视频内嵌播放（点击卡片弹窗播放，不跳转） ==========
+function openVideoPlayer(card) {
+    const modal = document.getElementById('videoPlayerModal');
+    const frame = document.getElementById('videoPlayerFrame');
+    const cap = document.getElementById('videoPlayerTitle');
+    if (!modal || !frame) {
+        // 页面没有播放弹窗（旧结构）：退回新窗口打开
+        const bvid = card && card.dataset.bvid;
+        if (bvid) window.open('https://www.bilibili.com/video/' + bvid, '_blank');
+        return;
+    }
+    const bvid = card.dataset.bvid;
+    const title = card.dataset.title || '';
+    cap.innerText = title;
+    frame.src = `https://player.bilibili.com/player.html?bvid=${bvid}&autoplay=1&high_quality=1&danmaku=0`;
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeVideoPlayer() {
+    const modal = document.getElementById('videoPlayerModal');
+    const frame = document.getElementById('videoPlayerFrame');
+    if (modal) modal.style.display = 'none';
+    if (frame) frame.src = 'about:blank';   // 卸载播放器，停止声音
+    document.body.style.overflow = '';
+}
+
+function initVideoPlayerModal() {
+    const modal = document.getElementById('videoPlayerModal');
+    if (!modal) return;
+    const closeBtn = document.getElementById('videoPlayerClose');
+    if (closeBtn) closeBtn.onclick = closeVideoPlayer;
+    // 点击遮罩关闭
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeVideoPlayer();
+    });
+    // Esc 关闭
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.style.display === 'flex') closeVideoPlayer();
+    });
 }
 
 function initSearchAndSort() {
@@ -131,6 +173,7 @@ function initVideos() {
 
     initCategoryFilter();
     initSearchAndSort();
+    initVideoPlayerModal();
     currentCategoryKey = 'all';
     searchKeyword = '';
     sortBy = 'time';
