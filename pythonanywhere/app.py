@@ -331,23 +331,26 @@ def edit_product():
         new_mime = file.mimetype or ''
         old_key = _storage_key_from_url(old_file_url)
 
-    # 更新记录
-    update_data = {'title': title, 'description': description, 'price': price}
-    if new_file_url != old_file_url:
-        update_data['file_url'] = new_file_url
-        update_data['file_name'] = new_file_name
-        update_data['file_size'] = new_file_size
-        update_data['mime_type'] = new_mime
-    try:
-        supabase.table('products').update(update_data).eq('id', product_id).eq('author_id', user_id).execute()
-    except Exception as e:
+    # 更新记录：走 SECURITY DEFINER RPC（anon 无 UPDATE 权限）
+    data, rpc_err = rpc('edit_product', {
+        'p_product_id': product_id,
+        'p_user_id': user_id,
+        'p_title': title,
+        'p_description': description,
+        'p_price': price,
+        'p_file_url': new_file_url if new_file_url != old_file_url else None,
+        'p_file_name': new_file_name if new_file_url != old_file_url else None,
+        'p_file_size': new_file_size if new_file_url != old_file_url else None,
+        'p_mime_type': new_mime if new_file_url != old_file_url else None,
+    })
+    if rpc_err or not data or data.get('success') is not True:
         # 记录更新失败时清理已上传的新文件
         if new_file_url != old_file_url:
             try:
                 supabase.storage.from_('products').remove([_storage_key_from_url(new_file_url)])
             except Exception:
                 pass
-        return jsonify({'success': False, 'message': '保存失败: %s' % e}), 500
+        return jsonify({'success': False, 'message': (rpc_err or (data and data.get('message')) or '保存失败')}), 500
 
     # 删除旧文件（替换场景）
     if old_key and new_file_url != old_file_url:
