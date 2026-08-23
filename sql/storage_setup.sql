@@ -25,6 +25,15 @@ DROP POLICY IF EXISTS "products_anon_insert" ON storage.objects;
 CREATE POLICY "products_anon_insert" ON storage.objects
     FOR INSERT TO anon WITH CHECK (bucket_id = 'products');
 
+-- ========== 4. 删除权限（覆盖头像/清理作品文件时需要） ==========
+DROP POLICY IF EXISTS "avatars_anon_delete" ON storage.objects;
+CREATE POLICY "avatars_anon_delete" ON storage.objects
+    FOR DELETE TO anon USING (bucket_id = 'avatars');
+
+DROP POLICY IF EXISTS "products_anon_delete" ON storage.objects;
+CREATE POLICY "products_anon_delete" ON storage.objects
+    FOR DELETE TO anon USING (bucket_id = 'products');
+
 -- ========== 4. 说明 ==========
 -- avatars 桶为公开桶：头像直接通过公开 URL 访问
 --   https://<项目>.supabase.co/storage/v1/object/public/avatars/<文件名>

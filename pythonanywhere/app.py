@@ -232,16 +232,23 @@ def upload_avatar():
     if not ext:
         return jsonify({'success': False, 'message': '仅支持 JPG/PNG/GIF/WebP 图片'}), 400
 
-    # 每用户固定文件名（重复上传用 upsert 覆盖旧头像）
+    # 每用户固定文件名（重复上传覆盖旧头像）
     key = 'user_' + str(user_id) + ext
     file_bytes = file.read()   # supabase-py upload 需要 bytes，不接受文件流
     try:
         supabase.storage.from_('avatars').upload(key, file_bytes, {
-            'content-type': mime,
-            'upsert': 'true'
+            'content-type': mime
         })
     except Exception as e:
-        return jsonify({'success': False, 'message': '头像上传失败: %s' % e}), 500
+        # 已存在（409）：先删除旧对象再重传；若删除也失败则尝试 update() 覆盖
+        try:
+            supabase.storage.from_('avatars').remove([key])
+            supabase.storage.from_('avatars').upload(key, file_bytes, {'content-type': mime})
+        except Exception as e2:
+            try:
+                supabase.storage.from_('avatars').update(key, file_bytes, {'content-type': mime})
+            except Exception as e3:
+                return jsonify({'success': False, 'message': '头像上传失败: %s' % e3}), 500
 
     avatar_url = SUPABASE_URL.rstrip('/') + '/storage/v1/object/public/avatars/' + key
     try:
