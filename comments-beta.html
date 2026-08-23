@@ -966,6 +966,7 @@
         document.querySelectorAll('.submit-reply').forEach(btn => {
             btn.onclick = async (e) => {
                 e.stopPropagation();
+                if (isPostingReply) return;
                 const parentId = btn.dataset.id;
                 const parentDiv = document.querySelector(`.comment[data-id="${parentId}"]`);
                 if (!parentDiv) return;
@@ -994,23 +995,28 @@
                     return;
                 }
 
-                const { data, error } = await supabaseClient.rpc('insert_comment', {
-                    p_page_path: pagePath,
-                    p_user_id: currentUser.id,
-                    p_content: content,
-                    p_parent_id: parseInt(parentId)
-                });
-                if (error) {
-                    showMessage('错误', '回复失败: ' + error.message);
-                } else if (!data.success) {
-                    showMessage('错误', data.message);
-                } else {
-                    replyForm.style.display = 'none';
-                    const savedPage = currentPage;
-                    // 先重新加载数据，然后强制跳转到保存的页码
-                    commentsCache = null;   // 有新回复，缓存失效
-                    await fetchComments();
-                    renderCommentsForPage(savedPage);
+                isPostingReply = true;
+                try {
+                    const { data, error } = await supabaseClient.rpc('insert_comment', {
+                        p_page_path: pagePath,
+                        p_user_id: currentUser.id,
+                        p_content: content,
+                        p_parent_id: parseInt(parentId)
+                    });
+                    if (error) {
+                        showMessage('错误', '回复失败: ' + error.message);
+                    } else if (!data.success) {
+                        showMessage('错误', data.message);
+                    } else {
+                        replyForm.style.display = 'none';
+                        const savedPage = currentPage;
+                        // 先重新加载数据，然后强制跳转到保存的页码
+                        commentsCache = null;   // 有新回复，缓存失效
+                        await fetchComments();
+                        renderCommentsForPage(savedPage);
+                    }
+                } finally {
+                    isPostingReply = false;
                 }
             };
         });
@@ -1418,7 +1424,10 @@
         renderCommentsForPage(targetPage);
     }
 
+    let isPostingComment = false;   // 防连点：发布评论中锁定，避免手滑重复发布
+    let isPostingReply = false;     // 防连点：回复提交中锁定
     async function postComment() {
+        if (isPostingComment) return;
         if (!currentUser) { showMessage('提示', '请先登录'); return; }
         let content = commentText.value.trim();
         if (!content) { showMessage('提示', '评论内容不能为空'); return; }
@@ -1442,28 +1451,33 @@
             return;
         }
 
-        const { data, error } = await supabaseClient.rpc('insert_comment', {
-            p_page_path: pagePath,
-            p_user_id: currentUser.id,
-            p_content: content,
-            p_parent_id: null
-        });
+        isPostingComment = true;
+        try {
+            const { data, error } = await supabaseClient.rpc('insert_comment', {
+                p_page_path: pagePath,
+                p_user_id: currentUser.id,
+                p_content: content,
+                p_parent_id: null
+            });
 
-        if (error) {
-            showMessage('错误', '发表失败: ' + error.message);
-            return;
-        }
-        if (!data.success) {
-            showMessage('错误', data.message);
-            return;
-        }
+            if (error) {
+                showMessage('错误', '发表失败: ' + error.message);
+                return;
+            }
+            if (!data.success) {
+                showMessage('错误', data.message);
+                return;
+            }
 
-        commentText.value = '';
-        charCountSpan.innerText = '0';
-        const savedPage = currentPage;
-        commentsCache = null;   // 有新评论，缓存失效
-        await fetchComments();
-        renderCommentsForPage(savedPage);
+            commentText.value = '';
+            charCountSpan.innerText = '0';
+            const savedPage = currentPage;
+            commentsCache = null;   // 有新评论，缓存失效
+            await fetchComments();
+            renderCommentsForPage(savedPage);
+        } finally {
+            isPostingComment = false;
+        }
     }
 
     async function getClientIP() {

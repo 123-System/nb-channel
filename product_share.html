@@ -465,7 +465,9 @@
     }
 
     // ========== 上传 / 编辑作品 ==========
+    let isUploading = false;   // 防连点：上传中锁定按钮，避免重复发布
     async function uploadProduct() {
+        if (isUploading) { alert('正在上传中，请稍候...'); return; }
         const user = getCurrentUser();
         if (!user) { alert('请先登录'); return; }
 
@@ -490,6 +492,10 @@
         formData.append('price', price);
         if (file) formData.append('file', file);
 
+        // 锁定按钮，防止手滑连点产生重复作品
+        isUploading = true;
+        const uploadBtn = document.getElementById('uploadBtn');
+        uploadBtn.disabled = true;
         statusDiv.innerText = isEdit ? '⏳ 保存中...' : '⏳ 上传中...';
 
         try {
@@ -510,6 +516,10 @@
         } catch (err) {
             console.error(err);
             statusDiv.innerText = '❌ 网络错误：' + err.message;
+        } finally {
+            isUploading = false;
+            uploadBtn.disabled = false;
+            uploadBtn.innerText = editingProductId !== null ? '💾 保存修改' : '📤 发布作品';
         }
     }
 

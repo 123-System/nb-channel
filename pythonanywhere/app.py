@@ -40,6 +40,9 @@ SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg'
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 ALLOWED_EXT = re.compile(r'^[a-zA-Z0-9]{1,10}$')  # 扩展名白名单格式
 
+# 防连点：user_id -> 最近一次上传时间戳（进程内，防止手滑连点产生重复作品）
+_upload_guard = {}
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, 'uploads')  # 兼容旧版本地存储（新文件全部走 S3）
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -146,6 +149,13 @@ def upload():
     user_id, err = get_user_id()
     if err:
         return jsonify({'success': False, 'message': err}), 401
+
+    # 防连点兜底：同一用户 10 秒内重复上传直接拒绝（前端已锁按钮，这里是双保险）
+    _now = datetime.datetime.now().timestamp()
+    _last = _upload_guard.get(str(user_id), 0)
+    if _now - _last < 10:
+        return jsonify({'success': False, 'message': '操作太快了，请稍候 10 秒再试'}), 429
+    _upload_guard[str(user_id)] = _now
 
     title = (request.form.get('title') or '').strip()
     description = (request.form.get('description') or '').strip()
