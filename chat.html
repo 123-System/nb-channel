@@ -314,7 +314,42 @@
         else {
             body.innerHTML = msgs.map(m => renderMsg(m)).join('');
         }
-        body.scrollTop = body.scrollHeight;
+        updateOldestId();
+        body.scrollTop = body.scrollHeight;   // 打开会话自动滚到底（微信同款）
+    }
+
+    // ========== 微信同款滚动：历史分页 + 不打断阅读 ==========
+    let loadingOlder = false;
+    let oldestMsgId = null;
+
+    function updateOldestId() {
+        const first = document.querySelector('#chatBody .msg');
+        oldestMsgId = first ? parseInt(first.dataset.msgid) : null;
+    }
+
+    async function loadOlderMessages() {
+        if (loadingOlder || !currentConvId || !oldestMsgId) return;
+        loadingOlder = true;
+        const body = document.getElementById('chatBody');
+        const prevHeight = body.scrollHeight;
+        const { data, error } = await supabaseClient.rpc('get_messages', {
+            p_user: currentUser.id, p_conversation_id: currentConvId,
+            p_before_id: oldestMsgId, p_limit: 50
+        });
+        if (!error && data && data.length) {
+            const msgs = data.reverse();   // 返回倒序，翻转为正序后插到顶部
+            const frag = document.createDocumentFragment();
+            msgs.forEach(m => {
+                const div = document.createElement('div');
+                div.dataset.msgid = m.id;
+                div.innerHTML = renderMsg(m);
+                frag.appendChild(div);
+            });
+            body.insertBefore(frag, body.firstChild);
+            body.scrollTop = body.scrollHeight - prevHeight;   // 保持当前阅读位置
+            updateOldestId();
+        }
+        loadingOlder = false;
     }
 
     function renderMsg(m) {
@@ -326,10 +361,10 @@
         const time = `<span class="time">${fmtTime(m.created_at)}</span>`;
         if (me) {
             // 自己的消息：时间在左，气泡，头像在右
-            return `<div class="msg me">${time}<div class="bubble">${escapeHtml(m.content)}</div>${img}</div>`;
+            return `<div class="msg me" data-msgid="${m.id}">${time}<div class="bubble">${escapeHtml(m.content)}</div>${img}</div>`;
         }
         // 对方的消息：头像在左，气泡，时间在右
-        return `<div class="msg other">${img}<div class="bubble">${escapeHtml(m.content)}</div>${time}</div>`;
+        return `<div class="msg other" data-msgid="${m.id}">${img}<div class="bubble">${escapeHtml(m.content)}</div>${time}</div>`;
     }
 
     async function sendMsg() {
@@ -358,7 +393,9 @@
         div.dataset.msgid = m.id;
         div.innerHTML = renderMsg(m);
         body.appendChild(div);
-        body.scrollTop = body.scrollHeight;
+        // 微信同款：只有贴近底部时才自动滚到底（正在翻历史时不打断）
+        const nearBottom = body.scrollHeight - body.scrollTop - body.clientHeight < 80;
+        if (nearBottom) body.scrollTop = body.scrollHeight;
     }
 
     // ========== Realtime ==========
@@ -432,6 +469,10 @@
             }
         });
         document.getElementById('sendBtn').onclick = sendMsg;
+        // 滚动到顶部自动加载更早消息（微信同款上拉加载历史）
+        document.getElementById('chatBody').addEventListener('scroll', () => {
+            if (document.getElementById('chatBody').scrollTop < 40) loadOlderMessages();
+        });
         document.getElementById('blockFromChatBtn').onclick = async () => {
             if (!currentOther) return;
             if (!confirm(`确定拉黑 ${currentOther.name} 吗？拉黑后自动删除好友，对方无法私信你。`)) return;
