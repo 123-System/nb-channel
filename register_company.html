@@ -6,6 +6,7 @@
     <title>注册虚拟公司 - NB频道</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/common.js"></script>
     <style>
         body {
             background: var(--bg-color);
@@ -90,6 +91,7 @@
     </style>
 </head>
 <body>
+<script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
 <div class="register-card">
     <h2>🏢 注册虚拟公司</h2>
     <div id="formContainer">
@@ -111,6 +113,11 @@
             <a href="Virtual stock.html">← 返回股票页面</a>
         </div>
     </div>
+</div>
+
+<div class="fixed-buttons">
+    <button class="theme-toggle-fixed" id="themeToggleFixed" onclick="toggleTheme()">🌙</button>
+    <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
 </div>
 
 <script>
