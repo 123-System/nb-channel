@@ -175,6 +175,37 @@
                 .top-nav .nav-menu { order: 3; width: 100%; justify-content: center; }
                 #uiToggleBtn { bottom: 82px; right: 20px; width: 40px; height: 40px; font-size: 17px; }
             }
+            /* ===== 全局主体高级感（index-preview 设计语言） ===== */
+            .container, .profile-container, .records-container, .ach-container, .register-card { max-width: 1080px; }
+            .home-card, .about-content, .changelog-content, .comment-section, .product-card,
+            .upload-section, .info-card, .chat-container, .profile-container, .records-container,
+            .ach-container, .register-card, .changelog-content ul, .about-content ul {
+                border-radius: 20px !important;
+                box-shadow: 0 24px 48px -24px rgba(0,0,0,0.22) !important;
+                border: 1px solid var(--card-border) !important;
+            }
+            .home-card { transition: transform 0.25s, box-shadow 0.25s; }
+            .home-card:hover { transform: translateY(-3px); box-shadow: 0 32px 55px -26px rgba(0,0,0,0.28) !important; }
+            .author-info {
+                display: inline-block; margin: 4px auto 22px;
+                background: linear-gradient(135deg, rgba(0,161,214,0.12), rgba(108,92,231,0.10));
+                border: 1px solid rgba(0,161,214,0.28); border-radius: 30px;
+                padding: 7px 20px; font-size: 0.95rem; color: var(--status-border) !important;
+            }
+            h2 {
+                font-weight: 800; color: var(--text-color);
+                letter-spacing: 0.5px;
+            }
+            .comment-content, .home-card p, .about-content p, .changelog-content li { line-height: 1.95; }
+            a { color: var(--status-border); }
+            .comment-author { color: var(--text-color) !important; }
+            table.data-table, table {
+                border-collapse: separate; border-spacing: 0; border-radius: 14px; overflow: hidden;
+            }
+            input, textarea, select { border-radius: 12px !important; }
+            button { border-radius: 30px; }
+            .chat-container { border-radius: 24px !important; }
+            .chat-header { border-radius: 24px 24px 0 0; }
         `;
         document.head.appendChild(st);
     }
