@@ -452,14 +452,23 @@ function setUIVersion(v) {
     })
     .then(function (r) { return r.json(); })
     .then(function (rows) {
-        var pref = (rows && rows[0] && rows[0].ui_version) || 'new';
+        // 优先后端偏好；后端不可用（SQL未执行/查询失败）时回退本地偏好
+        var pref = (rows && rows[0] && rows[0].ui_version) || localStorage.getItem('nb_ui') || 'new';
         if (pref === 'new' && !isNew) {
             location.replace(base.replace(/\.html$/i, '-new.html'));
         } else if (pref === 'old' && isNew) {
             location.replace(base);
         }
     })
-    .catch(function () {});
+    .catch(function () {
+        // 后端查询失败：用本地偏好兜底判断
+        var local = localStorage.getItem('nb_ui');
+        if (local === 'old' && isNew) {
+            location.replace(base);
+        } else if (local === 'new' && !isNew) {
+            location.replace(base.replace(/\.html$/i, '-new.html'));
+        }
+    });
 })();
 
 // ==========================================================
