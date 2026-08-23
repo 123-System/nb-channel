@@ -372,7 +372,7 @@
             const form = new FormData();
             form.append('file', file);
             try {
-                const resp = await fetch('/upload-avatar', {
+                const resp = await fetch('https://nbchannel.pythonanywhere.com/upload-avatar', {
                     method: 'POST',
                     headers: { 'X-User-Id': currentUser.id },
                     body: form
