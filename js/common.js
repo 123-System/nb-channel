@@ -322,9 +322,9 @@ function fallbackCopy() {
         const vw = window.innerWidth, vh = window.innerHeight;
         const x = 20 + Math.random() * Math.max(vw - size - 40, 40);
         const y = 60 + Math.random() * Math.max(vh - size - 100, 40);
-        // 随机方向、随机速度（1.5~3 px/帧）
-        let dx = (Math.random() < 0.5 ? -1 : 1) * (1.5 + Math.random() * 1.5);
-        let dy = (Math.random() < 0.5 ? -1 : 1) * (1.5 + Math.random() * 1.5);
+        // 随机方向、随机速度（0.6~1.2 px/帧，慢悠悠地飘）
+        let dx = (Math.random() < 0.5 ? -1 : 1) * (0.6 + Math.random() * 0.6);
+        let dy = (Math.random() < 0.5 ? -1 : 1) * (0.6 + Math.random() * 0.6);
         coin.style.cssText = `position:fixed; left:${x}px; top:${y}px; font-size:2.4rem; line-height:1; cursor:pointer; z-index:99999; user-select:none; -webkit-user-select:none; animation:nbCoinFloat 2s ease-in-out infinite, nbCoinGlow 1.2s ease-in-out infinite;`;
         document.body.appendChild(coin);
 
