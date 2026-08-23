@@ -174,27 +174,15 @@ def upload():
     if size > MAX_FILE_SIZE:
         return jsonify({'success': False, 'message': '文件不能超过 50 MB'}), 400
 
-    # ---------- 存储：S3 优先，未配置 S3 时退回本地磁盘 ----------
+    # ---------- 存储：Supabase Storage（products 私有桶，下载走 /files/<key> 代理） ----------
     key = safe_filename(file.filename)
-    if s3_client is not None:
-        try:
-            s3_client.put_object(
-                Bucket=S3_BUCKET,
-                Key=key,
-                Body=file.stream,
-                ContentType=file.mimetype or 'application/octet-stream',
-            )
-        except Exception as e:
-            return jsonify({'success': False, 'message': '上传到对象存储失败: %s' % e}), 500
-        # 下载走 PythonAnywhere 代理（/files/<key>），桶保持私有
-        file_url = request.host_url.rstrip('/') + '/files/' + key
-    else:
-        filepath = os.path.join(UPLOAD_DIR, key)
-        try:
-            file.save(filepath)
-        except Exception as e:
-            return jsonify({'success': False, 'message': '文件保存失败: %s' % e}), 500
-        file_url = request.host_url.rstrip('/') + '/uploads/' + key
+    try:
+        supabase.storage.from_('products').upload(key, file.stream, {
+            'content-type': file.mimetype or 'application/octet-stream'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': '上传到存储失败: %s' % e}), 500
+    file_url = request.host_url.rstrip('/') + '/files/' + key
 
     data, rpc_err = rpc('create_product', {
         'p_user_id': user_id,
@@ -209,16 +197,61 @@ def upload():
     if rpc_err or not data or data.get('success') is not True:
         # 数据库写入失败时清理已上传的文件，避免孤儿文件
         try:
-            if s3_client is not None:
-                s3_client.delete_object(Bucket=S3_BUCKET, Key=key)
-            else:
-                os.remove(filepath)
+            supabase.storage.from_('products').remove([key])
         except Exception:
             pass
         msg = (rpc_err or (data and data.get('message')) or '写入数据库失败，请检查 SQL 脚本是否已执行')
         return jsonify({'success': False, 'message': msg}), 500
 
     return jsonify({'success': True, 'message': '发布成功', 'product_id': data.get('id')})
+
+
+@app.route('/upload-avatar', methods=['POST'])
+def upload_avatar():
+    """上传头像：X-User-Id 请求头 + multipart 文件。存 avatars 公开桶，更新 profiles.avatar_url。"""
+    user_id, err = get_user_id()
+    if err:
+        return jsonify({'success': False, 'message': err}), 401
+
+    file = request.files.get('file')
+    if not file or file.filename == '':
+        return jsonify({'success': False, 'message': '请选择图片文件'}), 400
+
+    # 大小限制：头像不超过 2MB
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+    if size > 2 * 1024 * 1024:
+        return jsonify({'success': False, 'message': '头像图片不能超过 2MB'}), 400
+
+    # 只允许常见图片格式
+    mime = (file.mimetype or '').lower()
+    ext_map = {'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp'}
+    ext = ext_map.get(mime)
+    if not ext:
+        return jsonify({'success': False, 'message': '仅支持 JPG/PNG/GIF/WebP 图片'}), 400
+
+    # 每用户固定文件名（重复上传覆盖旧头像）
+    key = 'user_' + str(user_id) + ext
+    try:
+        supabase.storage.from_('avatars').upload(key, file.stream, {
+            'content-type': mime
+        })
+    except Exception as e:
+        # 已存在则覆盖（supabase-py upload 默认不允许覆盖，先删再传）
+        try:
+            supabase.storage.from_('avatars').remove([key])
+            supabase.storage.from_('avatars').upload(key, file.stream, {'content-type': mime})
+        except Exception as e2:
+            return jsonify({'success': False, 'message': '头像上传失败: %s' % e2}), 500
+
+    avatar_url = SUPABASE_URL.rstrip('/') + '/storage/v1/object/public/avatars/' + key
+    try:
+        supabase.table('profiles').update({'avatar_url': avatar_url}).eq('id', user_id).execute()
+    except Exception as e:
+        return jsonify({'success': False, 'message': '头像地址保存失败: %s' % e}), 500
+
+    return jsonify({'success': True, 'avatar_url': avatar_url, 'message': '头像上传成功'})
 
 
 @app.route('/download', methods=['POST'])
@@ -284,7 +317,7 @@ def download():
 
 @app.route('/uploads/<path:filename>')
 def serve_file(filename):
-    """旧版本地存储的文件下载（新文件已走 S3）。"""
+    """旧版本地存储的文件下载（历史遗留，新文件已走 Supabase Storage）。"""
     if not re.match(r'^[a-f0-9]{32}(\.[a-zA-Z0-9]{1,10})?$', filename):
         return jsonify({'success': False, 'message': '非法文件名'}), 400
     return send_from_directory(UPLOAD_DIR, filename, as_attachment=True)
@@ -292,21 +325,18 @@ def serve_file(filename):
 
 @app.route('/files/<path:key>')
 def serve_s3_file(key):
-    """从 S3 代理下载文件（附件方式）。桶保持私有，下载统一走本端点。"""
+    """从 Supabase Storage（products 私有桶）代理下载文件。桶保持私有，下载统一走本端点。"""
     if not re.match(r'^[a-f0-9]{32}(\.[a-zA-Z0-9]{1,10})?$', key):
         return jsonify({'success': False, 'message': '非法文件名'}), 400
-    if s3_client is None:
-        return jsonify({'success': False, 'message': 'S3 未配置（缺少 S3_ACCESS_KEY / S3_SECRET_KEY）'}), 500
     try:
-        obj = s3_client.get_object(Bucket=S3_BUCKET, Key=key)
-        body = obj['Body'].read()
-        resp = Response(body, mimetype=obj.get('ContentType', 'application/octet-stream'))
+        body = supabase.storage.from_('products').download(key)
+        resp = Response(body, mimetype='application/octet-stream')
         resp.headers['Content-Disposition'] = 'attachment; filename="%s"' % key
         return resp
-    except BotoClientError as e:
-        code = e.response.get('ResponseMetadata', {}).get('HTTPStatusCode', 404)
-        return jsonify({'success': False, 'message': '文件不存在或已删除'}), code if code == 404 else 502
     except Exception as e:
+        msg = str(e).lower()
+        if '404' in msg or 'not found' in msg or 'does not exist' in msg:
+            return jsonify({'success': False, 'message': '文件不存在或已删除'}), 404
         return jsonify({'success': False, 'message': '下载失败: %s' % e}), 502
 
 
