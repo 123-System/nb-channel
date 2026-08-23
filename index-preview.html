@@ -238,6 +238,54 @@
             font-size: 1.25rem; font-weight: 700; color: var(--text-color);
         }
         .section-title::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, #00a1d6, transparent); }
+        /* ===== 大厂官网风格：通栏置顶导航 ===== */
+        .top-nav {
+            position: sticky; top: 0; z-index: 300;
+            display: flex; align-items: center; gap: 14px;
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 18px; padding: 10px 18px; margin-bottom: 24px;
+            box-shadow: 0 8px 24px -10px rgba(0,0,0,0.14);
+        }
+        .top-nav .nav-logo {
+            font-size: 1.2rem; font-weight: 800; color: var(--status-border);
+            text-decoration: none; white-space: nowrap; letter-spacing: 0.5px;
+        }
+        .top-nav .nav-menu { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; justify-content: center; }
+        .top-nav .nav-menu .nav-btn {
+            padding: 8px 16px; font-size: 0.92rem; border-radius: 30px; text-decoration: none;
+            color: var(--nav-btn-text); background: var(--nav-btn-bg); transition: 0.2s; white-space: nowrap;
+        }
+        .top-nav .nav-menu .nav-btn:hover, .top-nav .nav-menu .nav-btn.active {
+            background: var(--nav-btn-hover-bg); color: white;
+        }
+        .top-nav .nav-right { display: flex; gap: 8px; white-space: nowrap; align-items: center; }
+        @media (max-width: 700px) {
+            .top-nav { flex-wrap: wrap; justify-content: space-between; padding: 10px 14px; }
+            .top-nav .nav-menu { order: 3; width: 100%; justify-content: center; }
+        }
+        /* 快捷入口条（替代原第二排导航） */
+        .quick-nav {
+            display: flex; justify-content: center; align-items: center; flex-wrap: wrap;
+            gap: 8px; margin-bottom: 24px; padding: 12px 14px;
+            background: var(--count-bg); border: 1px solid var(--card-border); border-radius: 16px;
+        }
+        .quick-nav .nav-btn {
+            padding: 7px 15px; font-size: 0.9rem; border-radius: 30px; text-decoration: none;
+            color: var(--nav-btn-text); background: var(--nav-btn-bg); transition: 0.2s; white-space: nowrap;
+        }
+        .quick-nav .nav-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
+        .quick-nav .share-btn {
+            background: var(--nav-btn-bg); color: var(--nav-btn-text);
+            border: none; border-radius: 30px; padding: 7px 15px; font-size: 0.9rem;
+            cursor: pointer; transition: 0.2s; font-weight: 500; white-space: nowrap;
+        }
+        .quick-nav .share-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
+        /* Hero 大字号（大厂 slogan 风格） */
+        .hero h1 { font-size: 3rem; font-weight: 900; letter-spacing: 1px; }
+        .hero .hero-sub { font-size: 1.05rem; }
+        @media (max-width: 600px) {
+            .hero h1 { font-size: 1.9rem; }
+        }
         /* ===== 官网化增强 ===== */
         /* Hero 徽章 */
         .hero-badges { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -290,11 +338,24 @@
 <body>
 <script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
 <div class="container">
-    <!-- 右上角按钮区域（增加个人中心） -->
-    <div id="authArea" class="auth-area">
-        <button id="profileBtn" class="profile-btn">👤 个人中心</button>
-        <button id="authButton" class="auth-btn">登录/注册</button>
-    </div>
+    <!-- 通栏置顶导航（大厂风格：Logo + 菜单 + 登录） -->
+    <nav class="top-nav">
+        <a class="nav-logo" href="index.html">📺 NB频道</a>
+        <div class="nav-menu">
+            <a href="index.html" class="nav-btn active">首页</a>
+            <a href="videos.html" class="nav-btn">视频</a>
+            <a href="about.html" class="nav-btn">关于</a>
+            <a href="changelog.html" class="nav-btn">更新日志</a>
+            <a href="product.html" class="nav-btn">我的产品</a>
+            <a href="APP.html" class="nav-btn">软件/APP下载</a>
+        </div>
+        <div class="nav-right">
+            <div id="authArea">
+                <button id="profileBtn" class="profile-btn">👤 个人中心</button>
+                <button id="authButton" class="auth-btn">登录/注册</button>
+            </div>
+        </div>
+    </nav>
 
     <!-- Hero 区 -->
     <div class="hero">
@@ -335,25 +396,16 @@
         <div class="stat-item"><div class="num">6</div><div class="label">核心功能</div></div>
     </div>
 
-    <!-- 导航栏 -->
-    <div class="nav-container">
-    <div class="nav-links">
-        <a href="index.html" class="nav-btn active">首页</a>
-        <a href="videos.html" class="nav-btn">视频</a>
-        <a href="about.html" class="nav-btn">关于</a>
-        <a href="changelog.html" class="nav-btn">更新日志</a>
-        <a href="product.html" class="nav-btn">我的产品</a>
-        <a href="APP.html" class="nav-btn">软件/APP下载</a>
-    </div>
-    <div class="nav-actions">
-        <button class="share-btn" id="shareButton">📤 分享此频道</button>
+    <!-- 快捷入口条（评论区/股票/好友/作品/消息 + 分享） -->
+    <div class="quick-nav">
+        <span style="font-size:0.85rem; color:var(--count-text);">⚡ 快捷入口：</span>
         <a href="comments-beta.html" class="nav-btn">💬 评论区</a>
         <a href="Virtual stock.html" class="nav-btn">📈 NB虚拟股票</a>
         <a href="chat.html" class="nav-btn">👥 好友</a>
         <a href="product_share.html" class="nav-btn">🛍️ 作品分享</a>
         <a href="messages.html" class="nav-btn">🔔 消息</a>
+        <button class="share-btn" id="shareButton">📤 分享此频道</button>
     </div>
-</div>
 
     <!-- 公告栏（内容在 Supabase admin_config 表，key=announcement，管理后台 admin-announcement.html） -->
     <div id="announcementBar" class="announcement-bar" style="display:none;">
