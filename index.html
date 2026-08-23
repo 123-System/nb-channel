@@ -275,6 +275,9 @@
                     <button id="lotteryOpenBtn" class="checkin-btn" style="background:#ff9800;">🎰 幸运转盘</button>
                     <a href="lottery_records.html" style="font-size:0.8rem; color:var(--count-text); text-decoration:underline;">📜 我的抽奖记录</a>
                 </div>
+                <div id="achSection" style="display: none; margin-top:12px;">
+                    <a href="achievements.html" style="display:inline-block; background:linear-gradient(135deg,#ffd700,#ff9800); color:#fff; border-radius:30px; padding:8px 20px; text-decoration:none; font-weight:600; box-shadow:0 4px 12px rgba(255,152,0,0.3);">🏆 我的成就</a>
+                </div>
             </div>
         </div>
     </div>
@@ -617,6 +620,7 @@
         const checkinSection = document.getElementById('checkinSection');
         const checkinBtn = document.getElementById('checkinBtn');
         const nextBonusSpan = document.getElementById('nextBonusText');
+        const achSection = document.getElementById('achSection');
         if (!balanceSpan || !authBtn) return;
 
         function getCurrentUser() {
@@ -638,6 +642,7 @@
                     window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
                 };
                 if (checkinSection) checkinSection.style.display = 'none';
+                if (achSection) achSection.style.display = 'none';
                 return;
             }
             // 已登录，获取余额
@@ -674,6 +679,7 @@
                     nextBonusSpan.innerHTML = `✨ 明天签到: +${nextBonus} NB`;
                 }
             }
+            if (achSection) achSection.style.display = 'block';
             
             authBtn.innerHTML = '登出账号';
             authBtn.onclick = () => {
