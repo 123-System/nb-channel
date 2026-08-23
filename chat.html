@@ -240,10 +240,9 @@
         } else if (currentTab === 'friends') {
             if (!friendsList.length) { body.innerHTML = '<div class="empty-tip">还没有好友，去"🔍 找人"添加吧</div>'; return; }
             body.innerHTML = friendsList.map(f => `
-                <div class="side-item">
+                <div class="side-item" data-act="msg" data-id="${f.user_id}" data-name="${escapeHtml(f.username)}" data-avatar="${f.avatar_url || ''}">
                     <img src="${avatarOf(f)}" alt="">
                     <span class="name">${escapeHtml(f.username)}</span>
-                    <button class="mini-btn" data-act="msg" data-id="${f.user_id}" data-name="${escapeHtml(f.username)}" data-avatar="${f.avatar_url || ''}">💬</button>
                     <button class="mini-btn red" data-act="del" data-id="${f.user_id}" data-name="${escapeHtml(f.username)}">✕</button>
                 </div>`).join('');
         } else if (currentTab === 'requests') {
