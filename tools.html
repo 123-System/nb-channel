@@ -190,17 +190,26 @@
             </div>
             <div class="calc-result" id="convResult">👆 输入化学式与质量开始换算</div>
 
-            <h3>🧴 质量分数(%) → 物质的量</h3>
-            <div class="calc-help">输入溶质化学式、溶液质量分数(%) 和溶液质量，求溶质的物质的量；填写密度（g/mL）可同时得到物质的量浓度（mol/L）</div>
-            <div class="calc-row">
+            <h3>🧴 浓度 ↔ 质量分数 互转</h3>
+            <div class="calc-row" style="justify-content:center;">
+                <button id="pctMode1" class="active" style="background:var(--nav-btn-hover-bg); color:white;">① 质量分数 → 物质的量</button>
+                <button id="pctMode2">② mol/L → 质量分数</button>
+            </div>
+            <div id="pctForm1" class="calc-row">
                 <input type="text" id="pctFormula" placeholder="溶质化学式" value="NaCl">
                 <input type="number" id="pctW" placeholder="质量分数 (%)" value="10" step="0.01" min="0" max="100">
                 <input type="number" id="pctMass" placeholder="溶液质量 (g)" value="100">
                 <input type="number" id="pctDensity" placeholder="密度 g/mL（可选）">
                 <button id="pctBtn">计算</button>
             </div>
+            <div id="pctForm2" class="calc-row" style="display:none;">
+                <input type="text" id="revFormula" placeholder="溶质化学式" value="HCl">
+                <input type="number" id="revC" placeholder="浓度 c (mol/L)" value="11.8" step="0.001" min="0">
+                <input type="number" id="revDensity" placeholder="密度 ρ (g/mL)" value="1.18" step="0.001" min="0">
+                <button id="revBtn">计算</button>
+            </div>
             <div class="examples" id="pctExamples"></div>
-            <div class="calc-result" id="pctResult">👆 输入参数开始计算</div>
+            <div class="calc-result" id="pctResult">👆 选择方向并输入参数开始计算</div>
         </div>
     </div>
 </div>
@@ -493,8 +502,21 @@
     }
 
     // ========== 质量分数(%) → 物质的量 ==========
+    let pctMode = 1;
+    function switchPctMode(m) {
+        pctMode = m;
+        document.getElementById('pctMode1').classList.toggle('active', m === 1);
+        document.getElementById('pctMode2').classList.toggle('active', m === 2);
+        document.getElementById('pctMode1').style.background = m === 1 ? 'var(--nav-btn-hover-bg)' : '';
+        document.getElementById('pctMode1').style.color = m === 1 ? 'white' : '';
+        document.getElementById('pctMode2').style.background = m === 2 ? 'var(--nav-btn-hover-bg)' : '';
+        document.getElementById('pctMode2').style.color = m === 2 ? 'white' : '';
+        document.getElementById('pctForm1').style.display = m === 1 ? 'flex' : 'none';
+        document.getElementById('pctForm2').style.display = m === 2 ? 'flex' : 'none';
+    }
     function doPct() {
         const out = document.getElementById('pctResult');
+        if (pctMode === 2) { doPctRev(); return; }
         const f = document.getElementById('pctFormula').value.trim();
         const w = parseFloat(document.getElementById('pctW').value);
         const m = parseFloat(document.getElementById('pctMass').value);
@@ -516,6 +538,30 @@
                 lines += '\n💡 填写密度可同时算出物质的量浓度（mol/L）';
             }
             out.innerHTML = lines;
+        } catch (e) {
+            out.innerText = '❌ ' + e.message;
+        }
+    }
+
+    // ========== mol/L → 质量分数（反向） ==========
+    function doPctRev() {
+        const out = document.getElementById('pctResult');
+        const f = document.getElementById('revFormula').value.trim();
+        const c = parseFloat(document.getElementById('revC').value);
+        const d = parseFloat(document.getElementById('revDensity').value);
+        try {
+            if (!f) throw new Error('请输入溶质化学式');
+            if (isNaN(c) || c <= 0) throw new Error('请输入有效的物质的量浓度');
+            if (isNaN(d) || d <= 0) throw new Error('请输入有效的密度（g/mL）');
+            const r = parseFormula(f);
+            const w = c * r.mass / (10 * d);   // w% = c×M ÷ (10×ρ)
+            const solutePerL = c * r.mass;
+            const per100g = w;
+            out.innerHTML =
+                `🧪 溶质 <strong>${f}</strong> 摩尔质量 = ${r.mass.toFixed(3)} g/mol\n` +
+                `📐 w% = c×M ÷ (10×ρ) = ${c} × ${r.mass.toFixed(3)} ÷ (10 × ${d}) = <span class="big">${w.toFixed(2)}%</span>\n` +
+                `🧂 每升溶液含溶质 = c×M = ${c} × ${r.mass.toFixed(3)} = ${solutePerL.toFixed(2)} g/L\n` +
+                `🧴 每 100 g 溶液中含溶质 ≈ ${per100g.toFixed(2)} g`;
         } catch (e) {
             out.innerText = '❌ ' + e.message;
         }
@@ -545,27 +591,40 @@
     document.getElementById('balanceBtn').onclick = balanceEquation;
     document.getElementById('convBtn').onclick = doConv;
     document.getElementById('pctBtn').onclick = doPct;
+    document.getElementById('revBtn').onclick = doPctRev;
+    document.getElementById('pctMode1').onclick = () => switchPctMode(1);
+    document.getElementById('pctMode2').onclick = () => switchPctMode(2);
     document.getElementById('formulaInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') calcMass(); });
     document.getElementById('eqInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') balanceEquation(); });
     document.getElementById('pctFormula').addEventListener('keydown', (e) => { if (e.key === 'Enter') doPct(); });
+    document.getElementById('revC').addEventListener('keydown', (e) => { if (e.key === 'Enter') doPctRev(); });
 
-    // %浓度示例（溶质/质量分数/溶液质量/密度）
+    // %浓度示例（正反向）
     const pctExamples = [
-        { label: 'NaCl 10% (ρ=1.07)', f: 'NaCl', w: 10, m: 100, d: 1.07 },
-        { label: 'HCl 36.5% (ρ=1.18)', f: 'HCl', w: 36.5, m: 100, d: 1.18 },
-        { label: 'H2SO4 98% (ρ=1.84)', f: 'H2SO4', w: 98, m: 100, d: 1.84 },
-        { label: 'NaOH 40% (ρ=1.43)', f: 'NaOH', w: 40, m: 100, d: 1.43 },
-        { label: 'KMnO4 5% 无密度', f: 'KMnO4', w: 5, m: 200, d: 0 }
+        { label: '① NaCl 10% (ρ=1.07)', f: 'NaCl', w: 10, m: 100, d: 1.07, rev: false },
+        { label: '① HCl 36.5% (ρ=1.18)', f: 'HCl', w: 36.5, m: 100, d: 1.18, rev: false },
+        { label: '① H2SO4 98% (ρ=1.84)', f: 'H2SO4', w: 98, m: 100, d: 1.84, rev: false },
+        { label: '② HCl 11.8 mol/L (ρ=1.18)', f: 'HCl', c: 11.8, d: 1.18, rev: true },
+        { label: '② H2SO4 18.4 mol/L (ρ=1.84)', f: 'H2SO4', c: 18.4, d: 1.84, rev: true },
+        { label: '② NaCl 1.71 mol/L (ρ=1.07)', f: 'NaCl', c: 1.71, d: 1.07, rev: true }
     ];
     const pe = document.getElementById('pctExamples');
     pe.innerHTML = pctExamples.map(x => `<button>${x.label}</button>`).join('');
     pe.querySelectorAll('button').forEach((b, i) => b.onclick = () => {
         const x = pctExamples[i];
-        document.getElementById('pctFormula').value = x.f;
-        document.getElementById('pctW').value = x.w;
-        document.getElementById('pctMass').value = x.m;
-        document.getElementById('pctDensity').value = x.d || '';
-        doPct();
+        switchPctMode(x.rev ? 2 : 1);
+        if (x.rev) {
+            document.getElementById('revFormula').value = x.f;
+            document.getElementById('revC').value = x.c;
+            document.getElementById('revDensity').value = x.d;
+            doPctRev();
+        } else {
+            document.getElementById('pctFormula').value = x.f;
+            document.getElementById('pctW').value = x.w;
+            document.getElementById('pctMass').value = x.m;
+            document.getElementById('pctDensity').value = x.d || '';
+            doPct();
+        }
     });
 
     // 初始化
