@@ -93,6 +93,7 @@ function renderVideosByCategory() {
 }
 
 // ========== B站视频内嵌播放（点击卡片弹窗播放，不跳转） ==========
+let currentPlayerBvid = null;
 function openVideoPlayer(card) {
     const modal = document.getElementById('videoPlayerModal');
     const frame = document.getElementById('videoPlayerFrame');
@@ -104,9 +105,10 @@ function openVideoPlayer(card) {
         return;
     }
     const bvid = card.dataset.bvid;
+    currentPlayerBvid = bvid;
     const title = card.dataset.title || '';
     cap.innerText = title;
-    // 先显示弹窗，等布局稳定后再加载播放器（隐藏/未布局容器中初始化会"有声无画"）
+    // 先显示弹窗，等布局稳定后再加载播放器（隐藏/未布局容器中初始化会异常）
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
     setTimeout(() => {
@@ -121,6 +123,7 @@ function closeVideoPlayer() {
     if (modal) modal.style.display = 'none';
     if (frame) frame.src = 'about:blank';   // 卸载播放器，停止声音
     document.body.style.overflow = '';
+    currentPlayerBvid = null;
 }
 
 function initVideoPlayerModal() {
@@ -128,6 +131,11 @@ function initVideoPlayerModal() {
     if (!modal) return;
     const closeBtn = document.getElementById('videoPlayerClose');
     if (closeBtn) closeBtn.onclick = closeVideoPlayer;
+    // 兜底：播放器不可用时去B站看
+    const openBtn = document.getElementById('videoPlayerOpen');
+    if (openBtn) openBtn.onclick = () => {
+        if (currentPlayerBvid) window.open('https://www.bilibili.com/video/' + currentPlayerBvid, '_blank');
+    };
     // 点击遮罩关闭
     modal.addEventListener('click', (e) => {
         if (e.target === modal) closeVideoPlayer();

@@ -3,7 +3,7 @@
 <head>
     <link rel="icon" href="data:,">
     <meta charset="UTF-8">
-    <meta name="referrer" content="no-referrer">
+    <meta name="referrer" content="no-referrer-when-downgrade">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NB频道官网 - 视频</title>
     <link rel="stylesheet" href="css/style.css">
@@ -88,7 +88,8 @@
             <div style="position:relative; padding-top:56.25%; width:100%;">
                 <iframe id="videoPlayerFrame" style="position:absolute; inset:0; width:100%; height:100%; border:none; border-radius:10px;" src="about:blank" referrerpolicy="no-referrer-when-downgrade" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture"></iframe>
             </div>
-            <div style="text-align:center; margin-top:12px;">
+            <div style="text-align:center; margin-top:12px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+                <button id="videoPlayerOpen" style="background:#00a1d6; color:white; border:none; border-radius:30px; padding:8px 24px; cursor:pointer; font-size:0.9rem;">🎬 在B站打开</button>
                 <button id="videoPlayerClose" style="background:#e74c3c; color:white; border:none; border-radius:30px; padding:8px 28px; cursor:pointer; font-size:0.95rem;">关闭</button>
             </div>
         </div>
