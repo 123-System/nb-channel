@@ -250,3 +250,118 @@ function fallbackCopy() {
     document.body.removeChild(input);
     alert('链接已复制到剪贴板！');
 }
+
+// ==========================================================
+// 🪙 随机金币彩蛋：随机时间出现在页面随机位置，点击领 NB币
+// 后端防刷：冷却 20 分钟/次 + 每日 5 次（admin_config 可调）
+// ==========================================================
+(function () {
+    if (window.__nbCoinLoaded) return;
+    window.__nbCoinLoaded = true;
+
+    const C_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
+    const C_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
+
+    function coinGetUser() {
+        try { return JSON.parse(localStorage.getItem('nb_user')); } catch (e) { return null; }
+    }
+
+    async function coinRpc(name, body) {
+        const res = await fetch(`${C_URL}/rest/v1/rpc/${name}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                apikey: C_KEY,
+                Authorization: 'Bearer ' + C_KEY
+            },
+            body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error('coin rpc ' + res.status);
+        return res.json();
+    }
+
+    // 注入动画样式（一次性）
+    if (!document.getElementById('nbCoinStyle')) {
+        const st = document.createElement('style');
+        st.id = 'nbCoinStyle';
+        st.textContent = `
+            @keyframes nbCoinFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+            @keyframes nbCoinGlow { 0%,100%{filter:drop-shadow(0 0 6px rgba(255,215,0,.7))} 50%{filter:drop-shadow(0 0 18px rgba(255,215,0,1))} }
+            @keyframes nbCoinPop { 0%{transform:scale(.4);opacity:0} 60%{transform:scale(1.15);opacity:1} 100%{transform:scale(1);opacity:1} }
+            .nb-coin-burst { position:fixed; z-index:100000; font-weight:700; font-size:1.1rem; color:#ff9800; text-shadow:0 0 6px rgba(255,215,0,.8); pointer-events:none; animation:nbCoinPop .5s ease-out; }
+        `;
+        document.head.appendChild(st);
+    }
+
+    function coinHide() {
+        const c = document.getElementById('nbCoin');
+        if (!c) return;
+        c.style.transition = 'opacity .5s, transform .5s';
+        c.style.opacity = '0';
+        c.style.transform = 'scale(.2)';
+        setTimeout(() => c.remove(), 600);
+    }
+
+    function coinBurst(x, y, text) {
+        const el = document.createElement('div');
+        el.className = 'nb-coin-burst';
+        el.textContent = text;
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1200);
+    }
+
+    function coinShow() {
+        if (document.getElementById('nbCoin')) return;
+        const coin = document.createElement('div');
+        coin.id = 'nbCoin';
+        coin.title = '🪙 点击领取 NB币！';
+        coin.textContent = '🪙';
+        const vw = window.innerWidth, vh = window.innerHeight;
+        const x = 20 + Math.random() * Math.max(vw - 120, 40);
+        const y = 60 + Math.random() * Math.max(vh - 220, 40);
+        coin.style.cssText = `position:fixed; left:${x}px; top:${y}px; font-size:2.4rem; line-height:1; cursor:pointer; z-index:99999; user-select:none; -webkit-user-select:none; animation:nbCoinFloat 2s ease-in-out infinite, nbCoinGlow 1.2s ease-in-out infinite;`;
+        coin.onclick = async (e) => {
+            e.stopPropagation();
+            coin.onclick = null;
+            try {
+                const user = coinGetUser();
+                if (!user) { coinHide(); return; }
+                const data = await coinRpc('claim_coin', { p_user_id: user.id });
+                if (data && data.success) {
+                    coinBurst(x, y - 40, `+${data.amount} NB 🎉`);
+                } else {
+                    coinBurst(x, y - 40, '⏳ 下次再来~');
+                }
+                coinHide();
+            } catch (err) { coinHide(); }
+        };
+        document.body.appendChild(coin);
+        // 45 秒内没人点就消失
+        setTimeout(coinHide, 45000);
+    }
+
+    function coinSchedule() {
+        const user = coinGetUser();
+        if (!user) {
+            // 未登录：2 分钟后再看（用户可能刚登录）
+            setTimeout(coinSchedule, 120000);
+            return;
+        }
+        // 随机 15~40 分钟出现一次
+        const delay = (15 + Math.random() * 25) * 60000;
+        setTimeout(async () => {
+            try {
+                const data = await coinRpc('can_claim_coin', { p_user_id: user.id });
+                if (data && data.can) coinShow();
+            } catch (e) { /* 忽略 */ }
+            coinSchedule();
+        }, delay);
+    }
+
+    // 页面加载 3 秒后启动调度，首次出现随机 8~20 分钟
+    setTimeout(() => {
+        setTimeout(coinSchedule, (8 + Math.random() * 12) * 60000);
+    }, 3000);
+})();
