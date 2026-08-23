@@ -155,8 +155,8 @@
 
         <div id="uploadSection" class="upload-section" style="display:none;">
             <h3 id="uploadSectionTitle">📤 上传你的作品</h3>
-            <input type="text" id="productTitle" placeholder="作品标题" maxlength="100">
-            <textarea id="productDesc" rows="3" placeholder="作品简介（内容、用途、版本等）" maxlength="1000"></textarea>
+            <input type="text" id="productTitle" placeholder="作品标题（最多20字）" maxlength="20">
+            <textarea id="productDesc" rows="3" placeholder="作品简介（最多100字、10行）" maxlength="100"></textarea>
             <input type="number" id="productPrice" placeholder="定价（NB币，0为免费）" min="0" max="999999999" value="0">
             <div class="file-input-wrapper">
                 <input type="file" id="productFile" accept="*/*">
@@ -466,6 +466,16 @@
 
     // ========== 上传 / 编辑作品 ==========
     let isUploading = false;   // 防连点：上传中锁定按钮，避免重复发布
+    const PRODUCT_BAD_WORDS = ['操你妈','傻逼','垃圾','废物','脑残','智障','滚','去死','sb','nmsl',
+        '他妈','特么','尼玛','妈逼','操蛋','王八蛋','混蛋','杂种','狗日的','法克','fuck','shit','bitch',
+        '黑鬼','白皮猪','支那','台巴子','回子','圣母婊','娘炮','人妖','五毛','美分','带节奏','洗地',
+        '脑残粉','水军','喷子','网暴','卖淫','嫖娼','约炮','裸聊','毒品','海洛因','办证','加微信',
+        '兼职刷单','返利','垃圾频道','SB频道','脑残UP','gay','Gay','GAY','吃屎','大粪','蟑螂','臭水沟',
+        '呕吐物','引战','造谣','无家可归','乱封号'];
+    function containsBadWords(text) {
+        const low = text.toLowerCase();
+        return PRODUCT_BAD_WORDS.some(w => low.includes(w.toLowerCase()));
+    }
     async function uploadProduct() {
         if (isUploading) { alert('正在上传中，请稍候...'); return; }
         const user = getCurrentUser();
@@ -479,6 +489,11 @@
         const statusDiv = document.getElementById('uploadStatus');
 
         if (!title) { alert('请输入作品标题'); return; }
+        if (title.length > 20) { alert('标题不能超过20字'); return; }
+        if (title.split('\n').length > 2) { alert('标题最多2行'); return; }
+        if (desc.length > 100) { alert('简介不能超过100字'); return; }
+        if (desc.split('\n').length > 10) { alert('简介最多10行'); return; }
+        if (containsBadWords(title) || containsBadWords(desc)) { alert('标题或简介包含违禁词，禁止发布'); return; }
         if (price < 0 || price > 999999999) { alert('价格需在 0~999999999 之间'); return; }
 
         const isEdit = editingProductId !== null;

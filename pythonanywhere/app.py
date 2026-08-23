@@ -137,6 +137,29 @@ def rpc(name, params):
         return None, str(e)
 
 
+# 作品标题/简介违禁词（与数据库 bad_words 词库一致，防绕过前端）
+_BAD_WORDS = [
+    '操你妈', '傻逼', '废物', '脑残', '智障', 'nmsl', '吃屎', '大粪',
+    '蟑螂', '臭水沟', '屁水', '呕吐物', '全家肉沫', '强酸', '甲醇',
+    '放射性', '寄生虫', '尿液', '引战', '造谣', '骂给', '当给',
+    '无家可归', '乱封号', 'gay', 'fuck', 'shit', 'bitch',
+    '支那', '黑鬼', '白皮猪', '台巴子', '网暴', '喷子', '垃圾', '去死',
+    '他妈', '尼玛', '妈逼', '操蛋', '王八蛋', '混蛋', '杂种', '狗日的',
+    '法克', '卖淫', '嫖娼', '约炮', '裸聊', '毒品', '海洛因', '办证',
+    '加微信', '兼职刷单', '返利', '垃圾频道', 'SB频道', '脑残UP',
+]
+
+def _has_bad_words(text):
+    """检测文本是否含违禁词（大小写不敏感）。"""
+    if not text:
+        return False
+    low = text.lower()
+    for w in _BAD_WORDS:
+        if w.lower() in low:
+            return True
+    return False
+
+
 # ==================== 接口 ====================
 
 @app.route('/health')
@@ -164,10 +187,16 @@ def upload():
 
     if not title:
         return jsonify({'success': False, 'message': '请输入作品标题'}), 400
-    if len(title) > 100:
-        return jsonify({'success': False, 'message': '标题不能超过100字'}), 400
-    if len(description) > 1000:
-        return jsonify({'success': False, 'message': '简介不能超过1000字'}), 400
+    if len(title) > 20:
+        return jsonify({'success': False, 'message': '标题不能超过20字'}), 400
+    if title.count('\n') >= 2:
+        return jsonify({'success': False, 'message': '标题最多2行'}), 400
+    if len(description) > 100:
+        return jsonify({'success': False, 'message': '简介不能超过100字'}), 400
+    if description.count('\n') >= 10:
+        return jsonify({'success': False, 'message': '简介最多10行'}), 400
+    if _has_bad_words(title) or _has_bad_words(description):
+        return jsonify({'success': False, 'message': '标题或简介包含违禁词，禁止发布'}), 400
     if not file or file.filename == '':
         return jsonify({'success': False, 'message': '请选择要上传的文件'}), 400
 
@@ -370,10 +399,16 @@ def edit_product():
 
     if not title:
         return jsonify({'success': False, 'message': '请输入作品标题'}), 400
-    if len(title) > 100:
-        return jsonify({'success': False, 'message': '标题不能超过100字'}), 400
-    if len(description) > 1000:
-        return jsonify({'success': False, 'message': '简介不能超过1000字'}), 400
+    if len(title) > 20:
+        return jsonify({'success': False, 'message': '标题不能超过20字'}), 400
+    if title.count('\n') >= 2:
+        return jsonify({'success': False, 'message': '标题最多2行'}), 400
+    if len(description) > 100:
+        return jsonify({'success': False, 'message': '简介不能超过100字'}), 400
+    if description.count('\n') >= 10:
+        return jsonify({'success': False, 'message': '简介最多10行'}), 400
+    if _has_bad_words(title) or _has_bad_words(description):
+        return jsonify({'success': False, 'message': '标题或简介包含违禁词，禁止发布'}), 400
     try:
         price = int(price_str)
     except ValueError:
