@@ -251,10 +251,10 @@ def upload_avatar():
                 return jsonify({'success': False, 'message': '头像上传失败: %s' % e3}), 500
 
     avatar_url = SUPABASE_URL.rstrip('/') + '/storage/v1/object/public/avatars/' + key
-    try:
-        supabase.table('profiles').update({'avatar_url': avatar_url}).eq('id', user_id).execute()
-    except Exception as e:
-        return jsonify({'success': False, 'message': '头像地址保存失败: %s' % e}), 500
+    # 走 SECURITY DEFINER RPC 更新 profiles（anon 无 UPDATE profiles 权限）
+    data, rpc_err = rpc('update_avatar_url', {'p_user_id': user_id, 'p_url': avatar_url})
+    if rpc_err or not data or data.get('success') is not True:
+        return jsonify({'success': False, 'message': '头像地址保存失败: %s' % (rpc_err or '未知错误')}), 500
 
     return jsonify({'success': True, 'avatar_url': avatar_url, 'message': '头像上传成功'})
 
