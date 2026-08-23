@@ -172,6 +172,13 @@
         </div>
     </div>
 
+    <h2>🎨 界面风格</h2>
+    <div class="form-group" style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button id="uiStyleNew" style="flex:1; min-width:120px;">🆕 新版界面</button>
+        <button id="uiStyleOld" style="flex:1; min-width:120px; background:#6c757d;">📄 旧版界面</button>
+        <div style="width:100%; font-size:0.8rem; color:var(--count-text);" id="uiStyleHint"></div>
+    </div>
+
     <h2>修改用户名</h2>
     <div class="form-group">
         <input type="text" id="newUsername" placeholder="新用户名（1-20字）" maxlength="20">
@@ -678,6 +685,22 @@
 
     document.getElementById('updateUsernameBtn').addEventListener('click', updateUsername);
     document.getElementById('updatePasswordBtn').addEventListener('click', updatePassword);
+
+    // 界面风格设置（新版/旧版）
+    function refreshUiStyleBtns() {
+        const cur = (typeof getUIVersion === 'function' ? getUIVersion() : 'new');
+        const hint = document.getElementById('uiStyleHint');
+        const newBtn = document.getElementById('uiStyleNew');
+        const oldBtn = document.getElementById('uiStyleOld');
+        if (newBtn) newBtn.style.outline = cur === 'new' ? '3px solid #00a1d6' : 'none';
+        if (oldBtn) oldBtn.style.outline = cur === 'old' ? '3px solid #00a1d6' : 'none';
+        if (hint) hint.innerText = cur === 'new' ? '当前使用：新版界面（毛玻璃官网风）' : '当前使用：旧版界面（经典卡片风）';
+    }
+    const uiNewBtn = document.getElementById('uiStyleNew');
+    const uiOldBtn = document.getElementById('uiStyleOld');
+    if (uiNewBtn) uiNewBtn.onclick = () => { if (typeof setUIVersion === 'function') setUIVersion('new'); location.reload(); };
+    if (uiOldBtn) uiOldBtn.onclick = () => { if (typeof setUIVersion === 'function') setUIVersion('old'); location.reload(); };
+    refreshUiStyleBtns();
     loadUserInfo();
 </script>
 

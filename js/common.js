@@ -395,3 +395,40 @@ function fallbackCopy() {
         setTimeout(coinSchedule, (5 + Math.random() * 5) * 60000);
     }, 3000);
 })();
+
+// ==========================================================
+// 界面版本（新版/旧版）：localStorage 'nb_ui'，默认新版
+// ==========================================================
+function getUIVersion() {
+    return localStorage.getItem('nb_ui') === 'old' ? 'old' : 'new';
+}
+
+function setUIVersion(v) {
+    localStorage.setItem('nb_ui', v === 'old' ? 'old' : 'new');
+}
+
+// ==========================================================
+// 自动加载新版界面驱动 js/ui-nav.js（全站生效，无需改页面）
+// 用 currentScript 定位 js/ 目录，兼容任意目录下的页面
+// ==========================================================
+(function () {
+    if (window.__uiNavLoaded) return;
+    window.__uiNavLoaded = true;
+    var src = '';
+    try {
+        src = (document.currentScript && document.currentScript.src) || '';
+    } catch (e) {}
+    var scriptPath = 'js/ui-nav.js';
+    if (src) {
+        var i = src.lastIndexOf('/');
+        if (i !== -1) {
+            var dir = src.substring(0, i);
+            var j = dir.lastIndexOf('/');
+            scriptPath = (j !== -1 ? dir.substring(0, j + 1) : dir + '/') + 'js/ui-nav.js';
+        }
+    }
+    var s = document.createElement('script');
+    s.src = scriptPath;
+    s.async = false;   // 保持顺序执行
+    document.head.appendChild(s);
+})();

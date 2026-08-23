@@ -1,0 +1,256 @@
+/* ============================================================
+   preview/premium.css — 全站页面内容级高级感（预览专用）
+   由 preview/ui-nav.js 在新版界面下自动加载（与 ui-nav.js 同目录）
+   设计语言与 index-preview.html 一致：大圆角 / 柔和阴影 / hover 动效 / 品牌蓝
+   ============================================================ */
+
+/* ---------- 通用：内容页（关于/产品/APP/更新日志） ---------- */
+.about-content, .changelog-content {
+    padding: 28px !important;
+    line-height: 1.95;
+}
+.about-content a, .changelog-content a, .about-content strong {
+    color: var(--status-border);
+}
+.site-stats {
+    display: inline-block; margin-top: 14px;
+    background: linear-gradient(135deg, rgba(0,161,214,0.10), rgba(108,92,231,0.08));
+    border: 1px solid rgba(0,161,214,0.25);
+    border-radius: 30px; padding: 6px 18px;
+    font-size: 0.88rem; color: var(--count-text);
+}
+.changelog-content li { margin-bottom: 8px; }
+.changelog-content p { font-size: 1.05rem; }
+
+/* ---------- 视频页 ---------- */
+.video-count {
+    display: inline-block; margin-bottom: 12px;
+    background: linear-gradient(135deg, rgba(0,161,214,0.12), rgba(108,92,231,0.10));
+    border: 1px solid rgba(0,161,214,0.25); border-radius: 30px;
+    padding: 5px 16px; font-size: 0.85rem; color: var(--status-border) !important;
+}
+.category-filter { margin-bottom: 14px; }
+.category-filter button, .sort-buttons .sort-btn {
+    border-radius: 30px !important; padding: 7px 18px !important;
+    border: 1px solid var(--card-border) !important;
+    background: var(--nav-btn-bg) !important; color: var(--nav-btn-text) !important;
+    transition: 0.2s;
+}
+.category-filter button:hover, .sort-buttons .sort-btn:hover,
+.category-filter button.active, .sort-buttons .sort-btn.active {
+    background: var(--nav-btn-hover-bg) !important; color: #fff !important;
+    box-shadow: 0 4px 12px rgba(0,161,214,0.3);
+}
+.search-box {
+    border-radius: 30px !important; border: 1px solid var(--card-border) !important;
+    padding: 9px 18px !important;
+}
+.search-hint { color: var(--count-text); font-size: 0.8rem; }
+.video-card {
+    border-radius: 18px !important; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 14px 30px -16px rgba(0,0,0,0.25) !important;
+    border: 1px solid var(--card-border) !important;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+.video-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 24px 44px -18px rgba(0,161,214,0.35) !important;
+    border-color: #00a1d6 !important;
+}
+.video-card img { border-radius: 18px 18px 0 0 !important; }
+.status-note {
+    background: var(--count-bg); border: 1px dashed var(--card-border);
+    border-radius: 14px; padding: 10px 16px; font-size: 0.85rem; color: var(--count-text);
+}
+
+/* ---------- 评论区 ---------- */
+.comment-section { padding: 24px !important; }
+.auth-bar { border-bottom-color: var(--card-border); }
+.new-comment-area textarea, .reply-form textarea {
+    border-radius: 14px !important; border: 1px solid var(--card-border) !important;
+    background: var(--bg-color); color: var(--text-color); padding: 12px 14px !important;
+}
+.comment {
+    border: 1px solid var(--card-border) !important;
+    border-radius: 16px !important;
+    background: var(--card-bg);
+    padding: 14px 16px !important;
+    margin-bottom: 12px !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03), 0 10px 24px -14px rgba(0,0,0,0.15);
+    transition: box-shadow 0.3s, transform 0.3s;
+}
+.comment:hover { box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 16px 32px -14px rgba(0,161,214,0.25); transform: translateY(-1px); }
+.comment img, .comment-meta img { border-radius: 50%; }
+.comment-author { font-weight: 700; }
+.comment-time { font-size: 0.78rem; }
+.comment-actions button, .comment-reactions button, .sort-btn, .toggle-btn, .report-btn, .reply-btn, .delete-btn, .apology-btn {
+    border-radius: 30px !important; padding: 4px 14px !important;
+}
+.reply-form {
+    background: var(--count-bg); border-radius: 14px; padding: 12px;
+    border: 1px solid var(--card-border);
+}
+.replies { margin-left: 18px; }
+.toolbar-label { color: var(--count-text); }
+
+/* ---------- 聊天页 ---------- */
+.side-item { border-radius: 14px !important; }
+.side-item:hover { background: linear-gradient(135deg, rgba(0,161,214,0.08), transparent) !important; }
+.side-item.active { background: linear-gradient(135deg, rgba(0,161,214,0.14), rgba(108,92,231,0.08)) !important; }
+.side-tab { border-radius: 12px 12px 0 0; }
+.side-tab.active { background: rgba(0,161,214,0.08); }
+.msg .bubble {
+    box-shadow: 0 4px 12px -6px rgba(0,0,0,0.18);
+    border-radius: 16px !important;
+}
+.chat-input { border-radius: 0 0 24px 24px; }
+.chat-input textarea { border-radius: 20px !important; }
+.chat-header { font-size: 1rem; }
+.search-input { border-radius: 20px !important; }
+
+/* ---------- 股票页 ---------- */
+.balance-card, .my-company-card, .distribution-card {
+    border-radius: 20px !important;
+    box-shadow: 0 18px 38px -20px rgba(0,0,0,0.22) !important;
+    border: 1px solid var(--card-border) !important;
+}
+.balance-card .stat-value, .stat-value {
+    font-weight: 800; font-size: 1.35rem; color: var(--status-border);
+}
+.chart-wrapper, .canvas-container, .history-chart-container, .histogram-container, .mini-pie-container {
+    border-radius: 18px !important;
+    box-shadow: 0 14px 30px -18px rgba(0,0,0,0.2) !important;
+    border: 1px solid var(--card-border) !important;
+    background: var(--card-bg);
+}
+.chart-btn, .btn-group button, .toolbar button, .refresh-btn, .pause-btn, .reset-btn, .toggle-table-btn {
+    border-radius: 30px !important;
+}
+.data-table-wrapper { border-radius: 16px; overflow: hidden; border: 1px solid var(--card-border); box-shadow: 0 12px 26px -18px rgba(0,0,0,0.2); }
+.data-table thead th {
+    background: linear-gradient(135deg, rgba(0,161,214,0.12), rgba(108,92,231,0.08));
+    color: var(--text-color); font-weight: 700;
+}
+.data-table tbody tr:hover { background: rgba(0,161,214,0.05); }
+.trade-btn { border-radius: 20px !important; }
+.stats { border-radius: 16px !important; }
+.stock-link { color: var(--status-border) !important; }
+
+/* ---------- 作品分享页 ---------- */
+.product-card {
+    border-radius: 20px !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 16px 34px -20px rgba(0,0,0,0.22) !important;
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+}
+.product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 24px 46px -20px rgba(0,161,214,0.35) !important;
+    border-color: #00a1d6 !important;
+}
+.product-title { font-weight: 800; font-size: 1.15rem; }
+.product-meta { font-size: 0.8rem; }
+.filter-btn { border-radius: 30px !important; }
+.upload-section { border-radius: 20px !important; box-shadow: 0 16px 34px -20px rgba(0,0,0,0.2) !important; }
+.user-info { font-size: 0.95rem; }
+
+/* ---------- 消息中心 ---------- */
+.messages-container {
+    border-radius: 24px !important; overflow: hidden;
+    box-shadow: 0 24px 48px -24px rgba(0,0,0,0.25) !important;
+    border: 1px solid var(--card-border) !important;
+}
+.messages-header { padding: 16px 20px; }
+.tabs .tab-btn {
+    border-radius: 30px !important; padding: 8px 18px !important;
+    border: 1px solid var(--card-border) !important;
+    background: var(--nav-btn-bg) !important; color: var(--nav-btn-text) !important;
+    transition: 0.2s;
+}
+.tabs .tab-btn.active { background: var(--nav-btn-hover-bg) !important; color: #fff !important; }
+.notification-item {
+    border-radius: 14px !important; margin: 6px 10px !important;
+    border: 1px solid var(--card-border) !important;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+.notification-item:hover { box-shadow: 0 10px 22px -12px rgba(0,0,0,0.2); transform: translateX(2px); }
+.notification-item.unread {
+    background: linear-gradient(135deg, rgba(0,161,214,0.08), transparent) !important;
+    border-left: 3px solid #00a1d6 !important;
+}
+.notification-avatar { border-radius: 50% !important; }
+.btn-back, .btn-read-all { border-radius: 30px !important; }
+.toast { border-radius: 30px !important; }
+
+/* ---------- 个人中心 ---------- */
+.avatar-box { border-radius: 22px !important; }
+.avatar-box img { border-radius: 50% !important; border: 3px solid var(--card-border); }
+.avatar-actions button { border-radius: 30px !important; }
+.info-item { padding: 14px 0 !important; }
+.info-label { font-weight: 700; }
+.info-value { color: var(--status-border); }
+.data-table { border-radius: 14px; overflow: hidden; }
+.rule-actions button { border-radius: 20px !important; }
+
+/* ---------- 成就页 ---------- */
+.stat-card {
+    border-radius: 18px !important;
+    box-shadow: 0 12px 26px -16px rgba(0,0,0,0.2) !important;
+    border: 1px solid var(--card-border) !important;
+}
+.ach-card {
+    box-shadow: 0 12px 26px -16px rgba(0,0,0,0.18) !important;
+    transition: transform 0.25s, box-shadow 0.25s;
+}
+.ach-card:hover { transform: translateY(-3px); box-shadow: 0 20px 36px -16px rgba(255,215,0,0.35) !important; }
+.top-actions a, .top-actions button { border-radius: 30px !important; }
+
+/* ---------- 抽奖记录 ---------- */
+.record-item {
+    border-radius: 14px !important; margin-bottom: 6px;
+    background: var(--count-bg); border: 1px solid transparent;
+    transition: 0.2s;
+}
+.record-item:hover { border-color: var(--card-border); background: var(--card-bg); }
+.record-result { font-weight: 700; }
+.record-amount { font-weight: 800; }
+
+/* ---------- 登录页 ---------- */
+.login-card {
+    border-radius: 24px !important;
+    box-shadow: 0 28px 60px -28px rgba(0,161,214,0.45) !important;
+    border: 1px solid var(--card-border) !important;
+    overflow: hidden;
+}
+.login-card .card-title {
+    background: linear-gradient(135deg, #00a1d6 0%, #0a84c1 45%, #6c5ce7 100%);
+    color: #fff; margin: 0; padding: 20px; font-weight: 800; letter-spacing: 1px;
+}
+.login-card .tabs .tab {
+    border-radius: 30px !important; padding: 8px 22px !important;
+    background: var(--nav-btn-bg) !important; color: var(--nav-btn-text) !important;
+    border: 1px solid var(--card-border) !important;
+}
+.login-card .tabs .tab.active { background: var(--nav-btn-hover-bg) !important; color: #fff !important; }
+.login-card input { border-radius: 30px !important; padding: 11px 18px !important; }
+.login-card button { border-radius: 30px !important; }
+
+/* ---------- 注册公司页 ---------- */
+.register-card {
+    border-radius: 24px !important;
+    box-shadow: 0 28px 60px -28px rgba(0,161,214,0.45) !important;
+    border: 1px solid var(--card-border) !important;
+    position: relative; overflow: hidden;
+}
+.register-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+    background: linear-gradient(90deg, #00a1d6, #6c5ce7);
+}
+.register-card input { border-radius: 30px !important; }
+.register-card .checkbox-group { border-radius: 14px; background: var(--count-bg); padding: 12px 14px; }
+
+/* ---------- 旧版评论区（comments.html） ---------- */
+.comment-section .comment {
+    border: 1px solid var(--card-border) !important;
+    border-radius: 16px !important;
+    background: var(--card-bg); padding: 14px 16px !important; margin-bottom: 12px !important;
+}
