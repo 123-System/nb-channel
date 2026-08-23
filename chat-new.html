@@ -52,6 +52,22 @@
         .msg.other .bubble { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-color); border-top-left-radius: 4px; }
         .msg.me .bubble { background: #00a1d6; color: white; border-top-right-radius: 4px; }
         .msg .time { font-size: 0.65rem; color: var(--count-text); align-self: flex-end; margin: 0 6px; }
+        /* NB币红包卡片 */
+        .redpacket {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: linear-gradient(135deg, #ffd54a 0%, #ffb300 60%, #ff8f00 100%);
+            border-radius: 12px; padding: 10px 16px; cursor: pointer;
+            box-shadow: 0 3px 10px rgba(255, 179, 0, 0.35);
+            min-width: 190px; box-sizing: border-box;
+        }
+        .redpacket .rp-icon { font-size: 1.6rem; }
+        .redpacket .rp-info { display: flex; flex-direction: column; }
+        .redpacket .rp-title { font-size: 0.82rem; color: #6d4c00; font-weight: 600; }
+        .redpacket .rp-amt { font-size: 1.05rem; color: #5a3e00; font-weight: 700; }
+        .redpacket .rp-tip { font-size: 0.72rem; color: #7a5a12; }
+        .msg.me .redpacket { background: linear-gradient(135deg, #e8e8e8 0%, #cfcfcf 100%); box-shadow: 0 3px 8px rgba(0,0,0,0.12); }
+        .msg.me .redpacket .rp-title, .msg.me .redpacket .rp-amt { color: #5c5c5c; }
+        .msg.me .redpacket .rp-tip { color: #7f7f7f; }
         .chat-input { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--card-border); }
         .chat-input textarea { flex: 1; padding: 8px 12px; border-radius: 16px; border: 1px solid var(--card-border); background: var(--bg-color); color: var(--text-color); resize: none; font-family: inherit; font-size: 0.9rem; }
         .chat-input button { background: var(--nav-btn-hover-bg); color: white; border: none; border-radius: 16px; padding: 0 20px; cursor: pointer; }
@@ -233,7 +249,16 @@
         document.getElementById('transferModal').style.display = 'none';
         if (error) { alert('转账失败：' + error.message); return; }
         if (!data || !data.success) { alert((data && data.message) || '转账失败'); return; }
-        alert(`✅ 已转 ${data.amount} NB币 给 ${transferState.toName}\n今日已转出 ${data.sent_today}/${data.daily_limit}`);
+        alert(`✅ 已转 ${data.amount} NB币 给 ${transferState.toName}\n今日已转出 ${data.sent_today}/${data.daily_limit}\n对方私信里已出现红包提醒`);
+        // 若当前正与收款人聊天，本地立即追加红包消息（避免等 Realtime）
+        if (currentConvId && currentOther && currentOther.id === transferState.toId) {
+            appendLocalMessage({
+                id: -Date.now(),   // 临时 id，Realtime 推送后会按真实 id 去重
+                sender_id: currentUser.id,
+                content: `[redpacket]${data.amount}[/redpacket]`,
+                created_at: new Date().toISOString()
+            });
+        }
         // 刷新余额
         const bal = document.getElementById('myBalance');
         if (bal) {
@@ -444,12 +469,30 @@
         loadingOlder = false;
     }
 
-    // [img]key[/img] → 图片（公开桶 URL 前端拼接）
-    function renderContentWithImages(content) {
+    // [img]key[/img] → 图片（公开桶 URL 前端拼接）；[redpacket]N[/redpacket] → 红包卡片
+    function renderContentWithImages(content, isMine) {
         let html = escapeHtml(content);
         html = html.replace(/\[img\]([a-zA-Z0-9_.\-]+)\[\/img\]/g, (m, key) =>
             `<img src="${SUPABASE_URL}/storage/v1/object/public/images/${key}" alt="图片" onclick="window.open(this.src,'_blank')" style="max-width:220px; max-height:220px; border-radius:10px; display:block; cursor:zoom-in;">`);
+        html = html.replace(/\[redpacket\](\d+)\[\/redpacket\]/g, (m, amt) =>
+            `<span class="redpacket" onclick="showRedPacket('${amt}', ${isMine ? 'true' : 'false'})">
+                <span class="rp-icon">🧧</span>
+                <span class="rp-info">
+                    <span class="rp-title">${isMine ? '已发出的红包' : 'NB币红包'}</span>
+                    <span class="rp-amt">${amt} NB币</span>
+                    <span class="rp-tip">${isMine ? '等待对方查看' : '点击查看金额'}</span>
+                </span>
+            </span>`);
         return html;
+    }
+
+    // 点击红包：展示详情
+    function showRedPacket(amount, isMine) {
+        if (isMine) {
+            alert(`🧧 已发出的红包\n你向 ${currentOther ? currentOther.name : '对方'} 发送了 ${amount} NB币\n金额已实时到账对方的钱包`);
+        } else {
+            alert(`🧧 NB币红包\n${currentOther ? currentOther.name : '对方'} 给你发了 ${amount} NB币\n金额已自动存入你的钱包`);
+        }
     }
 
     function renderMsg(m) {
@@ -461,10 +504,10 @@
         const time = `<span class="time">${fmtTime(m.created_at)}</span>`;
         if (me) {
             // 自己的消息：时间在左，气泡，头像在右
-            return `<div class="msg me" data-msgid="${m.id}">${time}<div class="bubble">${renderContentWithImages(m.content)}</div>${img}</div>`;
+            return `<div class="msg me" data-msgid="${m.id}">${time}<div class="bubble">${renderContentWithImages(m.content, true)}</div>${img}</div>`;
         }
         // 对方的消息：头像在左，气泡，时间在右
-        return `<div class="msg other" data-msgid="${m.id}">${img}<div class="bubble">${renderContentWithImages(m.content)}</div>${time}</div>`;
+        return `<div class="msg other" data-msgid="${m.id}">${img}<div class="bubble">${renderContentWithImages(m.content, false)}</div>${time}</div>`;
     }
 
     async function sendMsg() {

@@ -6,6 +6,8 @@
 --   2) 单次最低 1、最高 100000
 --   3) 每日转出上限 500000（北京时间算天）
 --   4) 记录留痕（transfers 表），防刷
+--   5) 转账成功后自动在双方私信会话插入一条"红包"提醒消息
+--      （content 为 [redpacket]金额[/redpacket]，前端渲染成红包卡片）
 -- ============================================================
 
 -- 1. 转账记录表
@@ -33,6 +35,7 @@ DECLARE
     v_daily_limit constant integer := 500000;
     v_today       date := (now() AT TIME ZONE 'Asia/Shanghai')::date;
     v_sent_today  bigint;
+    v_conv        bigint;
 BEGIN
     IF p_from IS NULL OR p_to IS NULL THEN
         RETURN jsonb_build_object('success', false, 'message', '参数错误');
@@ -72,6 +75,27 @@ BEGIN
 
     INSERT INTO public.transfers (from_user, to_user, amount)
     VALUES (p_from, p_to, p_amount);
+
+    -- 3. 红包提醒：找到或自动创建双方会话，插入红包消息
+    SELECT id INTO v_conv
+      FROM public.conversations
+     WHERE user_low = LEAST(p_from, p_to)
+       AND user_high = GREATEST(p_from, p_to);
+    IF v_conv IS NULL THEN
+        INSERT INTO public.conversations (user_low, user_high)
+        VALUES (LEAST(p_from, p_to), GREATEST(p_from, p_to))
+        RETURNING id INTO v_conv;
+    END IF;
+
+    INSERT INTO public.messages (conversation_id, sender_id, content)
+    VALUES (v_conv, p_from, '[redpacket]' || p_amount || '[/redpacket]');
+
+    -- 会话复活：双方都可见（微信同款）
+    UPDATE public.conversations
+       SET last_message_at = now(),
+           a_hidden = false,
+           b_hidden = false
+     WHERE id = v_conv;
 
     RETURN jsonb_build_object('success', true, 'amount', p_amount,
         'sent_today', v_sent_today + p_amount, 'daily_limit', v_daily_limit);
