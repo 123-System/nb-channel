@@ -76,7 +76,7 @@ function renderVideosByCategory() {
                          src="${video.cover}" 
                          alt="${video.title}"
                          loading="lazy"
-                         onerror="this.onerror=null; this.src='https://via.placeholder.com/640x360?text=封面加载失败';">
+                         onerror="this.onerror=null; this.src='data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27640%27 height=%27360%27%3E%3Crect width=%27640%27 height=%27360%27 fill=%27%23e0e0e0%27/%3E%3Ctext x=%27320%27 y=%27185%27 font-size=%2724%27 fill=%27%23999%27 text-anchor=%27middle%27%3E封面加载失败%3C/text%3E%3C/svg%3E';">&nbsp;
                     <span class="duration-badge">${video.duration || '--:--'}</span>
                 </div>
                 <div class="video-info">
