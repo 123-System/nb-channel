@@ -417,7 +417,18 @@
                 }
             });
         }, { threshold: 0.06, rootMargin: '0px 0px -30px 0px' });
-        els.forEach(function (el) { el.classList.add('ui-reveal'); io.observe(el); });
+        els.forEach(function (el) {
+            // 首屏已可见的元素直接显示，不依赖 observer（防止回调异常导致内容永久隐藏）
+            var rect = el.getBoundingClientRect();
+            var vh = window.innerHeight || document.documentElement.clientHeight;
+            if (rect.top < vh && rect.bottom > 0) return;
+            el.classList.add('ui-reveal');
+            io.observe(el);
+        });
+        // 兜底：3 秒后强制显示所有仍未显示的（任何异常都不允许内容隐藏）
+        setTimeout(function () {
+            els.forEach(function (el) { el.classList.add('ui-reveal-in'); });
+        }, 3000);
     }
 
     var MAIN_HREFS = ['index.html', 'videos.html', 'about.html', 'changelog.html', 'product.html', 'APP.html'];
