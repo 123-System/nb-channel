@@ -301,7 +301,7 @@
         const avatar = me
             ? (currentUser.avatar_url || DEFAULT_AVATAR)
             : ((currentOther && currentOther.avatar) || DEFAULT_AVATAR);
-        const img = `<img src="${avatar}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt="">`;
+        const img = `<img src="${avatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt="">`;
         const time = `<span class="time">${fmtTime(m.created_at)}</span>`;
         if (me) {
             // 自己的消息：时间在左，气泡，头像在右
