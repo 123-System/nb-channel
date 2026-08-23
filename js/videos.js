@@ -112,9 +112,9 @@ function openVideoPlayer(card) {
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
     setTimeout(() => {
-        // autoplay=0：手动点播放，规避自动播放策略导致的画面渲染异常
-        frame.src = `https://player.bilibili.com/player.html?bvid=${bvid}&autoplay=0&high_quality=1&danmaku=0`;
-    }, 100);
+        // 最小参数加载（autoplay=0 手动播放）；部分环境多余参数会走不同初始化路径
+        frame.src = `https://player.bilibili.com/player.html?bvid=${bvid}`;
+    }, 150);
 }
 
 function closeVideoPlayer() {
