@@ -613,11 +613,54 @@
         container.appendChild(siteFooter);
     }
 
+    // 给导航登录/个人中心按钮绑定行为（页面自身已绑定的不覆盖）
+    // 未登录：登录/注册 → 跳登录页；个人中心 → 跳登录页
+    // 已登录：登出账号 → 清除登录；个人中心 → 跳个人中心
+    function bindNavAuth() {
+        var ab = document.getElementById('authButton');
+        var pb = document.getElementById('profileBtn');
+        var getStored = function () {
+            try { return JSON.parse(localStorage.getItem('nb_user')); } catch (e) { return null; }
+        };
+        if (ab && !ab.onclick) {
+            var renderAuth = function () {
+                var u = getStored();
+                if (u && u.id) {
+                    ab.textContent = '登出账号';
+                    ab.onclick = function () {
+                        localStorage.removeItem('nb_user');
+                        location.reload();
+                    };
+                } else {
+                    ab.textContent = '登录/注册';
+                    ab.onclick = function () {
+                        location.href = uiHref('login.html?redirect=') + encodeURIComponent(location.href);
+                    };
+                }
+            };
+            renderAuth();
+            window.addEventListener('storage', function (e) {
+                if (e.key === 'nb_user') renderAuth();
+            });
+        }
+        if (pb && !pb.onclick) {
+            pb.onclick = function () {
+                var u = getStored();
+                if (u && u.id) {
+                    location.href = uiHref('profile.html');
+                } else {
+                    location.href = uiHref('login.html?redirect=') + encodeURIComponent(location.href);
+                }
+            };
+        }
+    }
+
     // 新版初始化（必须在 DOM 就绪后执行：injectMouseFx/injectOrbs 需要 document.body）
     function initNewUI() {
         loadPremiumCss();
         injectMouseFx();
         injectOrbs();
+        bindNavAuth();   // 导航登录/个人中心按钮绑定（页面未绑定时生效）
         if (document.querySelector('.nav-container')) {
             replaceNav();
         }
