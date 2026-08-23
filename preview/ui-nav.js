@@ -136,14 +136,25 @@
         var st = document.createElement('style');
         st.id = 'uiNavStyle';
         st.textContent = `
-            .nav-container { margin-bottom: 30px; }
+            /* ===== 极致高级感：字体渲染 / 滚动条 / 选区 ===== */
+            body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+            ::selection { background: rgba(0,161,214,0.25); }
+            ::-webkit-scrollbar { width: 10px; height: 10px; }
+            ::-webkit-scrollbar-thumb { background: rgba(0,161,214,0.35); border-radius: 10px; }
+            ::-webkit-scrollbar-thumb:hover { background: rgba(0,161,214,0.55); }
+            ::-webkit-scrollbar-track { background: transparent; }
+            /* 玻璃拟态导航（滚动吸顶时半透明毛玻璃） */
             .top-nav {
                 position: sticky; top: 0; z-index: 300;
                 display: flex; align-items: center; gap: 14px;
-                background: var(--card-bg); border: 1px solid var(--card-border);
+                background: rgba(255,255,255,0.78);
+                -webkit-backdrop-filter: blur(16px) saturate(1.4);
+                backdrop-filter: blur(16px) saturate(1.4);
+                border: 1px solid rgba(0,161,214,0.14);
                 border-radius: 18px; padding: 10px 18px; margin-bottom: 24px;
-                box-shadow: 0 8px 24px -10px rgba(0,0,0,0.14);
+                box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 12px 30px -12px rgba(0,161,214,0.18);
             }
+            body.dark-mode .top-nav { background: rgba(24,26,32,0.78); border-color: rgba(0,161,214,0.22); }
             .top-nav .nav-logo {
                 font-size: 1.2rem; font-weight: 800; color: var(--status-border);
                 text-decoration: none; white-space: nowrap; letter-spacing: 0.5px;
@@ -151,44 +162,74 @@
             .top-nav .nav-menu { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; justify-content: center; }
             .top-nav .nav-menu .nav-btn {
                 padding: 8px 16px; font-size: 0.92rem; border-radius: 30px; text-decoration: none;
-                color: var(--nav-btn-text); background: var(--nav-btn-bg); transition: 0.2s; white-space: nowrap;
+                color: var(--nav-btn-text); background: transparent; transition: all 0.25s; white-space: nowrap;
             }
-            .top-nav .nav-menu .nav-btn:hover, .top-nav .nav-menu .nav-btn.active {
-                background: var(--nav-btn-hover-bg); color: white;
+            .top-nav .nav-menu .nav-btn:hover {
+                background: rgba(0,161,214,0.12); color: var(--status-border);
+            }
+            .top-nav .nav-menu .nav-btn.active {
+                background: linear-gradient(135deg, #00a1d6, #0a84c1); color: #fff;
+                box-shadow: 0 6px 16px -6px rgba(0,161,214,0.5);
             }
             .top-nav .nav-right { display: flex; gap: 8px; white-space: nowrap; align-items: center; }
             .top-nav .auth-btn, .top-nav .profile-btn {
-                background: var(--nav-btn-bg); color: var(--nav-btn-text);
-                border: none; border-radius: 30px; padding: 8px 16px; font-size: 0.88rem;
-                cursor: pointer; transition: 0.2s;
+                background: transparent; color: var(--text-color);
+                border: 1px solid var(--card-border); border-radius: 30px; padding: 7px 16px; font-size: 0.88rem;
+                cursor: pointer; transition: all 0.25s;
             }
             .top-nav .auth-btn:hover, .top-nav .profile-btn:hover {
-                background: var(--nav-btn-hover-bg); color: white;
+                border-color: #00a1d6; color: var(--status-border);
+                background: rgba(0,161,214,0.08);
             }
             .quick-nav {
                 display: flex; justify-content: center; align-items: center; flex-wrap: wrap;
-                gap: 8px; margin-bottom: 24px; padding: 12px 14px;
-                background: var(--count-bg); border: 1px solid var(--card-border); border-radius: 16px;
+                gap: 8px; margin-bottom: 24px; padding: 10px 14px;
+                background: transparent; border: 1px solid var(--card-border);
+                border-radius: 16px;
             }
             .quick-nav .nav-btn {
-                padding: 7px 15px; font-size: 0.9rem; border-radius: 30px; text-decoration: none;
-                color: var(--nav-btn-text); background: var(--nav-btn-bg); transition: 0.2s; white-space: nowrap;
+                padding: 6px 14px; font-size: 0.88rem; border-radius: 30px; text-decoration: none;
+                color: var(--count-text); background: transparent; transition: all 0.25s; white-space: nowrap;
             }
-            .quick-nav .nav-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
+            .quick-nav .nav-btn:hover { color: var(--status-border); background: rgba(0,161,214,0.08); }
             .quick-nav .share-btn {
-                background: var(--nav-btn-bg); color: var(--nav-btn-text);
-                border: none; border-radius: 30px; padding: 7px 15px; font-size: 0.9rem;
-                cursor: pointer; transition: 0.2s; font-weight: 500; white-space: nowrap;
+                background: linear-gradient(135deg, #00a1d6, #0a84c1); color: #fff;
+                border: none; border-radius: 30px; padding: 6px 14px; font-size: 0.88rem;
+                cursor: pointer; transition: all 0.25s; font-weight: 500; white-space: nowrap;
+                box-shadow: 0 6px 16px -6px rgba(0,161,214,0.5);
             }
-            .quick-nav .share-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
+            .quick-nav .share-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+            /* 页面 Hero 横幅：光斑 + 细字重副标题 + 入场动画 */
+            @keyframes uiHeroIn { from { opacity: 0; transform: translateY(18px) scale(0.99); } to { opacity: 1; transform: none; } }
+            #uiPageBanner, .hero { animation: uiHeroIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+            #uiPageBanner { position: relative; overflow: hidden; }
+            #uiPageBanner::before {
+                content: ''; position: absolute; inset: 0;
+                background:
+                    radial-gradient(600px 220px at 12% 0%, rgba(255,255,255,0.14), transparent 60%),
+                    radial-gradient(500px 200px at 88% 100%, rgba(255,255,255,0.10), transparent 60%);
+                pointer-events: none;
+            }
+            #uiPageBanner > div { position: relative; }
+            /* 首屏错峰入场 */
+            @keyframes uiFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+            .top-nav { animation: uiFadeUp 0.5s ease both; }
+            .quick-nav { animation: uiFadeUp 0.5s 0.08s ease both; }
+            /* 滚动渐显 */
+            .ui-reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1), transform 0.65s cubic-bezier(0.16,1,0.3,1); }
+            .ui-reveal-in { opacity: 1; transform: none; }
             #uiToggleBtn {
                 position: fixed; bottom: 98px; right: 30px; z-index: 9996;
                 width: 50px; height: 50px; border-radius: 50%;
-                border: 1px solid var(--card-border);
-                background: var(--nav-btn-bg); color: var(--nav-btn-text);
-                font-size: 20px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                border: 1px solid rgba(0,161,214,0.3);
+                background: rgba(255,255,255,0.8);
+                -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+                color: var(--text-color); font-size: 20px; cursor: pointer;
+                box-shadow: 0 8px 24px -8px rgba(0,161,214,0.35);
+                transition: transform 0.2s;
             }
-            #uiToggleBtn:hover { background: var(--nav-btn-hover-bg); color: white; }
+            body.dark-mode #uiToggleBtn { background: rgba(24,26,32,0.8); }
+            #uiToggleBtn:hover { transform: scale(1.08); }
             @media (max-width: 700px) {
                 .top-nav { flex-wrap: wrap; justify-content: space-between; padding: 10px 14px; }
                 .top-nav .nav-menu { order: 3; width: 100%; justify-content: center; }
@@ -200,11 +241,11 @@
             .upload-section, .info-card, .chat-container, .profile-container, .records-container,
             .ach-container, .register-card, .changelog-content ul, .about-content ul {
                 border-radius: 20px !important;
-                box-shadow: 0 24px 48px -24px rgba(0,0,0,0.22) !important;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 16px 32px -18px rgba(0,0,0,0.25) !important;
                 border: 1px solid var(--card-border) !important;
             }
-            .home-card { transition: transform 0.25s, box-shadow 0.25s; }
-            .home-card:hover { transform: translateY(-3px); box-shadow: 0 32px 55px -26px rgba(0,0,0,0.28) !important; }
+            .home-card { transition: transform 0.3s, box-shadow 0.3s; }
+            .home-card:hover { transform: translateY(-3px); box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 28px 48px -24px rgba(0,161,214,0.3) !important; }
             .author-info {
                 display: inline-block; margin: 4px auto 22px;
                 background: linear-gradient(135deg, rgba(0,161,214,0.12), rgba(108,92,231,0.10));
@@ -227,6 +268,28 @@
             .chat-header { border-radius: 24px 24px 0 0; }
         `;
         document.head.appendChild(st);
+    }
+
+    // 滚动渐显（IntersectionObserver，卡片进入视口淡入上移）
+    function injectReveal() {
+        if (!('IntersectionObserver' in window)) return;
+        var sel = '.home-card, .video-card, .product-card, .comment, .ach-card, .record-item, ' +
+                  '.notification-item, .feature-card, .stat-item, .friend-card, .info-card, ' +
+                  '.about-content, .changelog-content, .comment-section, .chat-container, ' +
+                  '.messages-container, .upload-section, .balance-card, .my-company-card, ' +
+                  '.data-table-wrapper, .profile-container, .records-container, .ach-container, ' +
+                  '.register-card, .login-card, .distribution-card, .chart-wrapper, .stats';
+        var els = document.querySelectorAll(sel);
+        if (!els.length) return;
+        var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (en) {
+                if (en.isIntersecting) {
+                    en.target.classList.add('ui-reveal-in');
+                    io.unobserve(en.target);
+                }
+            });
+        }, { threshold: 0.06, rootMargin: '0px 0px -30px 0px' });
+        els.forEach(function (el) { el.classList.add('ui-reveal'); io.observe(el); });
     }
 
     var MAIN_HREFS = ['index.html', 'videos.html', 'about.html', 'changelog.html', 'product.html', 'APP.html'];
@@ -302,6 +365,12 @@
                 if (document.querySelector('.nav-container')) replaceNav();
                 injectBanner();
             });
+        }
+        // 滚动渐显：等首屏元素就位后观察
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { setTimeout(injectReveal, 50); });
+        } else {
+            setTimeout(injectReveal, 50);
         }
     } else {
         // 旧版：保留原导航，只加切换按钮
