@@ -5,6 +5,7 @@ NB频道 - PythonAnywhere 一体化 Flask 应用
 功能：
   GET  /                网站本体（静态文件服务，需配置 SITE_DIR）
   POST /upload          上传作品（存 S3，multipart/form-data + 头 X-User-Id）
+  POST /upload-image    上传图片（评论区/私信用，存 images 公开桶）
   POST /download        下载/购买作品（JSON + 头 X-User-Id；body 可选 pay_type: nb|market、company_id）
   GET  /files/<key>     从 S3 代理下载文件（附件方式）
   POST /webhook         GitHub push 后自动 git pull 同步代码
@@ -266,6 +267,44 @@ def upload_avatar():
         pass   # 清理失败不影响头像使用
 
     return jsonify({'success': True, 'avatar_url': avatar_url, 'message': '头像上传成功'})
+
+
+@app.route('/upload-image', methods=['POST'])
+def upload_image():
+    """上传图片（评论区/私信用）：存 images 公开桶，返回 key + 完整 URL。
+    消息/评论中存短标记 [img]<key>[/img]，前端渲染时拼公开 URL。"""
+    user_id, err = get_user_id()
+    if err:
+        return jsonify({'success': False, 'message': err}), 401
+
+    file = request.files.get('file')
+    if not file or file.filename == '':
+        return jsonify({'success': False, 'message': '请选择图片文件'}), 400
+
+    # 大小限制：5MB
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+    if size > 5 * 1024 * 1024:
+        return jsonify({'success': False, 'message': '图片不能超过 5MB'}), 400
+
+    # 只允许常见图片格式
+    mime = (file.mimetype or '').lower()
+    ext_map = {'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp'}
+    ext = ext_map.get(mime)
+    if not ext:
+        return jsonify({'success': False, 'message': '仅支持 JPG/PNG/GIF/WebP 图片'}), 400
+
+    # 唯一短 key：i_<毫秒时间戳>_<8位随机hex>.<ext>（标记存进消息/评论时占字少）
+    key = 'i_%d_%s%s' % (int(datetime.datetime.now().timestamp() * 1000), uuid.uuid4().hex[:8], ext)
+    file_bytes = file.read()   # supabase-py upload 需要 bytes，不接受文件流
+    try:
+        supabase.storage.from_('images').upload(key, file_bytes, {'content-type': mime})
+    except Exception as e:
+        return jsonify({'success': False, 'message': '图片上传失败: %s' % e}), 500
+
+    url = SUPABASE_URL.rstrip('/') + '/storage/v1/object/public/images/' + key
+    return jsonify({'success': True, 'key': key, 'url': url, 'message': '图片上传成功'})
 
 
 @app.route('/remove-avatar', methods=['POST'])

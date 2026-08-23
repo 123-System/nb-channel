@@ -239,9 +239,14 @@
         </div>
 
         <div id="new-comment-area" class="new-comment-area" style="display: none;">
-            <textarea id="comment-text" rows="3" placeholder="写下你的评论... (最多200字)" maxlength="200"></textarea>
+            <textarea id="comment-text" rows="3" placeholder="写下你的评论... (最多200字，图片约占41字)" maxlength="200"></textarea>
             <div class="char-counter"><span id="char-count">0</span>/200</div>
-            <button id="submit-comment" style="margin-top:10px;">发布评论</button>
+            <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+                <button type="button" id="btn-comment-image" title="发图片（JPG/PNG/GIF/WebP，≤5MB）" style="background:none; border:1px solid var(--card-border); border-radius:8px; padding:6px 12px; cursor:pointer; font-size:1.1rem;">📷</button>
+                <span style="font-size:0.8rem; color:var(--count-text);">发图片</span>
+                <button id="submit-comment" style="margin-left:auto;">发布评论</button>
+            </div>
+            <input type="file" id="comment-image-input" accept="image/*" style="display:none;">
         </div>
 
         <!-- 排序工具栏 -->
@@ -342,6 +347,10 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // 图片上传（PythonAnywhere 后端）+ 公开桶 URL
+    const API_BASE = 'https://nbchannel.pythonanywhere.com';
+    const IMG_BASE = SUPABASE_URL + '/storage/v1/object/public/images/';
+
     // 公共初始化
     AUTHOR_NAME = 'NB搞事局';
     document.getElementById('authorInfo').innerText = `UP主：${AUTHOR_NAME}`;
@@ -402,6 +411,40 @@
             }
         });
     }
+    // 发图片：上传到 images 公开桶，在光标处插入 [img]key[/img] 标记
+    const commentImageBtn = document.getElementById('btn-comment-image');
+    const commentImageInput = document.getElementById('comment-image-input');
+    if (commentImageBtn && commentImageInput) {
+        commentImageBtn.addEventListener('click', () => commentImageInput.click());
+        commentImageInput.addEventListener('change', async () => {
+            const file = commentImageInput.files[0];
+            commentImageInput.value = '';
+            if (!file) return;
+            if (!currentUser) { showMessage('提示', '请先登录'); return; }
+            if (file.size > 5 * 1024 * 1024) { showMessage('提示', '图片不能超过 5MB'); return; }
+            const fd = new FormData();
+            fd.append('file', file);
+            try {
+                const resp = await fetch(API_BASE + '/upload-image', {
+                    method: 'POST',
+                    headers: { 'X-User-Id': currentUser.id },
+                    body: fd
+                });
+                const result = await resp.json();
+                if (!result.success) { showMessage('提示', result.message || '图片上传失败'); return; }
+                // 在光标处插入标记
+                const marker = `[img]${result.key}[/img]`;
+                const start = commentText.selectionStart != null ? commentText.selectionStart : commentText.value.length;
+                const end = commentText.selectionEnd != null ? commentText.selectionEnd : start;
+                commentText.value = commentText.value.slice(0, start) + marker + commentText.value.slice(end);
+                commentText.dispatchEvent(new Event('input'));
+                commentText.focus();
+            } catch (e) {
+                showMessage('提示', '图片上传失败：' + e.message + '\n（请确认 PythonAnywhere 后端已 Reload）');
+            }
+        });
+    }
+
     if (reportReason) {
         reportReason.addEventListener('input', () => {
             reportCharCountSpan.innerText = reportReason.value.length;
@@ -464,7 +507,10 @@
 
     function renderContentWithMentions(text) {
         if (!text) return '';
-        const escaped = escapeHtml(text);
+        let escaped = escapeHtml(text);
+        // [img]key[/img] → 图片（公开桶 URL 由前端拼接，点击放大）
+        escaped = escaped.replace(/\[img\]([a-zA-Z0-9_.\-]+)\[\/img\]/g, (m, key) =>
+            `<img src="${IMG_BASE}${key}" alt="图片" onclick="window.open('${IMG_BASE}${key}','_blank')" style="max-width:260px; max-height:260px; border-radius:10px; margin:6px 0; display:block; cursor:zoom-in;">`);
         // 按真实用户名列表匹配高亮：名字长的优先，避免 @AWM 抢走 @AWM（新号）的前缀
         if (!cachedUsernames || cachedUsernames.length === 0) return escaped;
         const names = cachedUsernames.slice().sort((a, b) => b.length - a.length);

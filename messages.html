@@ -612,7 +612,7 @@
                         <span style="font-size:0.72rem; color:var(--count-text);">${c.last_message_at ? timeSince(new Date(c.last_message_at)) : ''}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:3px;">
-                        <span style="font-size:0.82rem; color:var(--count-text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(c.last_message || '开始聊天吧～')}</span>
+                        <span style="font-size:0.82rem; color:var(--count-text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml((c.last_message || '开始聊天吧～').replace(/\[img\][^\]]+\[\/img\]/g, '📷 [图片]'))}</span>
                         ${c.unread_count > 0 ? `<span style="background:#ff4757; color:#fff; border-radius:50%; font-size:0.65rem; min-width:16px; height:16px; line-height:16px; text-align:center; padding:0 4px; flex-shrink:0;">${c.unread_count > 99 ? '99+' : c.unread_count}</span>` : ''}
                     </div>
                 </div>
