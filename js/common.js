@@ -318,28 +318,58 @@ function fallbackCopy() {
         coin.id = 'nbCoin';
         coin.title = '🪙 点击领取 NB币！';
         coin.textContent = '🪙';
+        const size = 46;   // 估算金币尺寸（px）
         const vw = window.innerWidth, vh = window.innerHeight;
-        const x = 20 + Math.random() * Math.max(vw - 120, 40);
-        const y = 60 + Math.random() * Math.max(vh - 220, 40);
+        const x = 20 + Math.random() * Math.max(vw - size - 40, 40);
+        const y = 60 + Math.random() * Math.max(vh - size - 100, 40);
+        // 随机方向、随机速度（1.5~3 px/帧）
+        let dx = (Math.random() < 0.5 ? -1 : 1) * (1.5 + Math.random() * 1.5);
+        let dy = (Math.random() < 0.5 ? -1 : 1) * (1.5 + Math.random() * 1.5);
         coin.style.cssText = `position:fixed; left:${x}px; top:${y}px; font-size:2.4rem; line-height:1; cursor:pointer; z-index:99999; user-select:none; -webkit-user-select:none; animation:nbCoinFloat 2s ease-in-out infinite, nbCoinGlow 1.2s ease-in-out infinite;`;
+        document.body.appendChild(coin);
+
+        // 移动 + 碰到视口边缘反弹（每次取最新视口尺寸，窗口缩放也不跑偏）
+        let raf = null;
+        function step() {
+            const w = coin.offsetWidth || size;
+            const h = coin.offsetHeight || size;
+            const W = window.innerWidth, H = window.innerHeight;
+            let nx = parseFloat(coin.style.left) + dx;
+            let ny = parseFloat(coin.style.top) + dy;
+            if (nx <= 4) { nx = 4; dx = Math.abs(dx); }
+            else if (nx >= W - w - 4) { nx = W - w - 4; dx = -Math.abs(dx); }
+            if (ny <= 4) { ny = 4; dy = Math.abs(dy); }
+            else if (ny >= H - h - 4) { ny = H - h - 4; dy = -Math.abs(dy); }
+            coin.style.left = nx + 'px';
+            coin.style.top = ny + 'px';
+            raf = requestAnimationFrame(step);
+        }
+        raf = requestAnimationFrame(step);
+
+        function stopMove() {
+            if (raf) { cancelAnimationFrame(raf); raf = null; }
+        }
+
         coin.onclick = async (e) => {
             e.stopPropagation();
             coin.onclick = null;
+            stopMove();
+            const rect = coin.getBoundingClientRect();
+            const cx = rect.left, cy = rect.top;
             try {
                 const user = coinGetUser();
                 if (!user) { coinHide(); return; }
                 const data = await coinRpc('claim_coin', { p_user_id: user.id });
                 if (data && data.success) {
-                    coinBurst(x, y - 40, `+${data.amount} NB 🎉`);
+                    coinBurst(cx, cy - 40, `+${data.amount} NB 🎉`);
                 } else {
-                    coinBurst(x, y - 40, '⏳ 下次再来~');
+                    coinBurst(cx, cy - 40, '⏳ 下次再来~');
                 }
                 coinHide();
             } catch (err) { coinHide(); }
         };
-        document.body.appendChild(coin);
         // 45 秒内没人点就消失
-        setTimeout(coinHide, 45000);
+        setTimeout(() => { stopMove(); coinHide(); }, 45000);
     }
 
     function coinSchedule() {
