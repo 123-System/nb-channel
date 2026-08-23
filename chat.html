@@ -302,12 +302,13 @@
             ? (currentUser.avatar_url || DEFAULT_AVATAR)
             : ((currentOther && currentOther.avatar) || DEFAULT_AVATAR);
         const img = `<img src="${avatar}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt="">`;
-        return `<div class="msg ${me ? 'me' : 'other'}">
-            ${me ? '' : img}
-            <span class="time">${fmtTime(m.created_at)}</span>
-            <div class="bubble">${escapeHtml(m.content)}</div>
-            ${me ? img : ''}
-        </div>`;
+        const time = `<span class="time">${fmtTime(m.created_at)}</span>`;
+        if (me) {
+            // 自己的消息：时间在左，气泡，头像在右
+            return `<div class="msg me">${time}<div class="bubble">${escapeHtml(m.content)}</div>${img}</div>`;
+        }
+        // 对方的消息：头像在左，气泡，时间在右
+        return `<div class="msg other">${img}<div class="bubble">${escapeHtml(m.content)}</div>${time}</div>`;
     }
 
     async function sendMsg() {
