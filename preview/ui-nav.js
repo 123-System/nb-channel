@@ -266,8 +266,64 @@
             button { border-radius: 30px; }
             .chat-container { border-radius: 24px !important; }
             .chat-header { border-radius: 24px 24px 0 0; }
+            /* ===== 极致玻璃拟态：背景光斑 + 全卡片毛玻璃 ===== */
+            body::before {
+                content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+                background:
+                    radial-gradient(900px 520px at 6% -8%, rgba(0,161,214,0.16), transparent 62%),
+                    radial-gradient(760px 540px at 96% 12%, rgba(108,92,231,0.14), transparent 62%),
+                    radial-gradient(860px 640px at 50% 112%, rgba(0,161,214,0.12), transparent 65%),
+                    radial-gradient(500px 400px at 82% 60%, rgba(255,152,0,0.08), transparent 60%);
+            }
+            body.dark-mode::before {
+                background:
+                    radial-gradient(900px 520px at 6% -8%, rgba(0,161,214,0.20), transparent 62%),
+                    radial-gradient(760px 540px at 96% 12%, rgba(108,92,231,0.18), transparent 62%),
+                    radial-gradient(860px 640px at 50% 112%, rgba(0,161,214,0.14), transparent 65%);
+            }
+            .ui-orb { position: fixed; border-radius: 50%; filter: blur(70px); opacity: 0.5; z-index: -1; pointer-events: none; }
+            @keyframes uiOrbA { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(45px, -32px) scale(1.15); } }
+            @keyframes uiOrbB { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-38px, 28px) scale(1.1); } }
+            .home-card, .about-content, .changelog-content, .comment-section, .product-card,
+            .upload-section, .info-card, .chat-container, .messages-container, .profile-container,
+            .records-container, .ach-container, .register-card, .login-card, .comment, .video-card,
+            .ach-card, .record-item, .notification-item, .stat-card, .stat-item, .feature-card,
+            .balance-card, .my-company-card, .distribution-card, .chart-wrapper, .canvas-container,
+            .data-table-wrapper, .quick-nav, .msg.other .bubble {
+                background: rgba(255,255,255,0.62) !important;
+                -webkit-backdrop-filter: blur(16px) saturate(1.5);
+                backdrop-filter: blur(16px) saturate(1.5);
+                border-color: rgba(255,255,255,0.55) !important;
+            }
+            body.dark-mode .home-card, body.dark-mode .about-content, body.dark-mode .changelog-content,
+            body.dark-mode .comment-section, body.dark-mode .product-card, body.dark-mode .upload-section,
+            body.dark-mode .info-card, body.dark-mode .chat-container, body.dark-mode .messages-container,
+            body.dark-mode .profile-container, body.dark-mode .records-container, body.dark-mode .ach-container,
+            body.dark-mode .register-card, body.dark-mode .login-card, body.dark-mode .comment,
+            body.dark-mode .video-card, body.dark-mode .ach-card, body.dark-mode .record-item,
+            body.dark-mode .notification-item, body.dark-mode .stat-card, body.dark-mode .stat-item,
+            body.dark-mode .feature-card, body.dark-mode .balance-card, body.dark-mode .my-company-card,
+            body.dark-mode .distribution-card, body.dark-mode .chart-wrapper, body.dark-mode .canvas-container,
+            body.dark-mode .data-table-wrapper, body.dark-mode .quick-nav, body.dark-mode .msg.other .bubble {
+                background: rgba(24,26,32,0.60) !important;
+                border-color: rgba(255,255,255,0.09) !important;
+            }
         `;
         document.head.appendChild(st);
+    }
+
+    // 注入漂浮光斑（毛玻璃的"透出物"）
+    function injectOrbs() {
+        if (document.getElementById('uiOrbA')) return;
+        var mk = function (id, size, left, top, color, anim) {
+            var d = document.createElement('div');
+            d.id = id;
+            d.className = 'ui-orb';
+            d.style.cssText = 'width:' + size + 'px; height:' + size + 'px; left:' + left + '; top:' + top + '; background:' + color + '; animation:' + anim + ' 16s ease-in-out infinite;';
+            document.body.appendChild(d);
+        };
+        mk('uiOrbA', 320, '6%', '14%', 'rgba(0,161,214,0.35)', 'uiOrbA');
+        mk('uiOrbB', 260, '84%', '66%', 'rgba(108,92,231,0.32)', 'uiOrbB');
     }
 
     // 滚动渐显（IntersectionObserver，卡片进入视口淡入上移）
@@ -357,6 +413,7 @@
     if (getVer() === 'new') {
         loadPremiumCss();
         injectMouseFx();
+        injectOrbs();
         if (document.querySelector('.nav-container')) {
             replaceNav();
             injectBanner();
