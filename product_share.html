@@ -99,6 +99,15 @@
         .no-data { text-align: center; padding: 40px; color: var(--count-text); }
         .loading-spinner { text-align: center; padding: 20px; }
         .owner-badge { font-size: 0.8rem; color: var(--count-text); }
+        /* 分类筛选 */
+        .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .filter-btn {
+            background: var(--nav-btn-bg); color: var(--nav-btn-text);
+            border: 1px solid var(--card-border); border-radius: 30px;
+            padding: 6px 18px; font-size: 0.9rem; cursor: pointer; transition: 0.2s;
+        }
+        .filter-btn.active { background: var(--nav-btn-hover-bg); color: white; }
+        .filter-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
     </style>
 </head>
 <body>
@@ -147,6 +156,12 @@
         </div>
 
         <h3>📚 所有作品</h3>
+        <div class="filter-bar">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="owned">已拥有</button>
+            <button class="filter-btn" data-filter="free">免费</button>
+            <button class="filter-btn" data-filter="not_owned">未拥有</button>
+        </div>
         <div id="productList" class="product-grid">
             <div class="loading-spinner">⏳ 加载中...</div>
         </div>
@@ -216,6 +231,8 @@
 
     // ========== 加载作品列表 ==========
     let productsData = [];
+    let purchasedIdsSet = new Set();   // 当前用户已拥有（购买）的作品ID
+    let currentFilter = 'all';         // 当前分类：all/owned/free/not_owned
 
     function formatFileSize(bytes) {
         if (!bytes) return '';
@@ -224,48 +241,37 @@
         return (bytes / 1024 / 1024).toFixed(2) + ' MB';
     }
 
-    async function loadProducts() {
+    function renderProducts() {
         const container = document.getElementById('productList');
-        container.innerHTML = '<div class="loading-spinner">⏳ 加载中...</div>';
-
-        const { data, error } = await supabaseClient.rpc('get_products');
-        if (error) {
-            console.error('加载失败:', error);
-            container.innerHTML = '<div class="no-data">加载失败，请刷新重试</div>';
-            return;
-        }
-        if (!data || data.length === 0) {
+        if (!productsData.length) {
             container.innerHTML = '<div class="no-data">暂无作品，快来上传你的第一个作品吧！</div>';
             return;
         }
-        productsData = data;
-
         const user = getCurrentUser();
 
-        // 查询当前用户已购买/已下载过的作品（一次性批量查询，真实表用 buyer_id）
-        const purchasedIds = new Set();
-        if (user) {
-            const ids = data.map(p => p.id);
-            const { data: purchases, error: purErr } = await supabaseClient
-                .from('product_purchases')
-                .select('product_id')
-                .in('product_id', ids)
-                .eq('buyer_id', user.id);
-            if (!purErr && purchases) {
-                purchases.forEach(x => purchasedIds.add(x.product_id));
-            }
+        let filtered = productsData;
+        if (currentFilter === 'owned') {
+            filtered = productsData.filter(p => user && (p.author_id === user.id || purchasedIdsSet.has(p.id)));
+        } else if (currentFilter === 'free') {
+            filtered = productsData.filter(p => p.price === 0);
+        } else if (currentFilter === 'not_owned') {
+            filtered = productsData.filter(p => !user || (p.author_id !== user.id && !purchasedIdsSet.has(p.id)));
+        }
+
+        if (!filtered.length) {
+            container.innerHTML = '<div class="no-data">该分类下暂无作品</div>';
+            return;
         }
 
         let html = '';
-        for (const p of data) {
+        for (const p of filtered) {
             const isOwner = user && user.id === p.author_id;
-            const isPurchased = purchasedIds.has(p.id);
+            const isPurchased = purchasedIdsSet.has(p.id);
             const priceText = p.price === 0 ? '<span class="free-badge">免费</span>' : `<span class="price-tag">${p.price} NB币</span>`;
             const sizeText = p.file_size ? ` · 📦 ${formatFileSize(p.file_size)}` : (p.file_name ? ` · 📄 ${escapeHtml(p.file_name)}` : '');
 
             let actionHtml = '';
             if (isOwner) {
-                // 作者：可下载 / 编辑 / 删除自己的作品
                 actionHtml = `<span class="owner-badge">[你的作品]</span>
                     <button class="action-btn download-btn" data-id="${p.id}">📥 下载</button>
                     <button class="action-btn edit-btn" data-id="${p.id}">✏️ 编辑</button>
@@ -317,6 +323,52 @@
             btn.addEventListener('click', () => {
                 const productId = parseInt(btn.dataset.id);
                 deleteProduct(productId);
+            });
+        });
+    }
+
+    async function loadProducts() {
+        const container = document.getElementById('productList');
+        container.innerHTML = '<div class="loading-spinner">⏳ 加载中...</div>';
+
+        const { data, error } = await supabaseClient.rpc('get_products');
+        if (error) {
+            console.error('加载失败:', error);
+            container.innerHTML = '<div class="no-data">加载失败，请刷新重试</div>';
+            return;
+        }
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="no-data">暂无作品，快来上传你的第一个作品吧！</div>';
+            return;
+        }
+        productsData = data;
+
+        const user = getCurrentUser();
+
+        // 查询当前用户已购买/已下载过的作品（一次性批量查询，真实表用 buyer_id）
+        purchasedIdsSet = new Set();
+        if (user) {
+            const ids = data.map(p => p.id);
+            const { data: purchases, error: purErr } = await supabaseClient
+                .from('product_purchases')
+                .select('product_id')
+                .in('product_id', ids)
+                .eq('buyer_id', user.id);
+            if (!purErr && purchases) {
+                purchases.forEach(x => purchasedIdsSet.add(x.product_id));
+            }
+        }
+
+        renderProducts();
+    }
+
+    // ========== 分类筛选 ==========
+    function initFilterBar() {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentFilter = btn.dataset.filter;
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b === btn));
+                renderProducts();
             });
         });
     }
@@ -472,6 +524,7 @@
     async function init() {
         await updateUserUI();
         await loadProducts();
+        initFilterBar();
         document.getElementById('uploadBtn').addEventListener('click', uploadProduct);
         document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
         checkBackendHealth();
