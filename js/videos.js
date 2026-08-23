@@ -106,9 +106,10 @@ function openVideoPlayer(card) {
     const bvid = card.dataset.bvid;
     const title = card.dataset.title || '';
     cap.innerText = title;
-    frame.src = `https://player.bilibili.com/player.html?bvid=${bvid}&autoplay=1&high_quality=1&danmaku=0`;
+    // 先显示弹窗再加载播放器：隐藏容器中初始化会导致"有声音没画面"
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+    frame.src = `https://player.bilibili.com/player.html?bvid=${bvid}&autoplay=1&high_quality=1&danmaku=0`;
 }
 
 function closeVideoPlayer() {
