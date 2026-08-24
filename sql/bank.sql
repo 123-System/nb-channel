@@ -208,7 +208,8 @@ BEGIN
         VALUES (p_user_id, 'fixed30_deposit', p_amount, '定期30天存入');
     END IF;
     RETURN jsonb_build_object('success', true, 'message',
-        format('已存入 %s NB币（定期%s天，日利率 %.2f%%）', p_amount, p_days, v_rate * 100));
+        format('已存入 %s NB币（定期%s天，日利率 %s%%）', p_amount, p_days,
+               CASE WHEN p_days = 7 THEN '0.1' ELSE '0.2' END));
 END;
 $$;
 
@@ -399,9 +400,11 @@ BEGIN
     UPDATE public.profiles SET nb_balance = nb_balance + p_amount WHERE id = p_user_id;
     INSERT INTO public.bank_logs (user_id, type, amount, detail)
     VALUES (p_user_id, 'loan_credit', p_amount,
-        format('信用贷 %s 天（利率 %.3f%%/天）', p_days, v_rate * 100));
+        format('信用贷 %s 天（利率 %s%%/天）', p_days,
+               CASE WHEN v_acc.credit_score >= 800 THEN '0.27' ELSE '0.3' END));
     RETURN jsonb_build_object('success', true, 'message',
-        format('信用贷款 %s NB币到账（%s 天，日利率 %.3f%%）', p_amount, p_days, v_rate * 100));
+        format('信用贷款 %s NB币到账（%s 天，日利率 %s%%）', p_amount, p_days,
+               CASE WHEN v_acc.credit_score >= 800 THEN '0.27' ELSE '0.3' END));
 END;
 $$;
 
