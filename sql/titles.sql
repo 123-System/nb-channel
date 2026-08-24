@@ -252,9 +252,13 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '该称号不可购买');
     END IF;
 
-    -- 当前星级与累计花费
-    SELECT coalesce(stars, 0), coalesce(spent, 0) INTO v_cur_stars, v_spent
-      FROM public.user_titles WHERE user_id = p_user_id AND title_key = p_title_key;
+    -- 当前星级与累计花费（注意：SELECT INTO 无结果会把变量置 NULL，
+    -- 所以用子查询 + coalesce 保证无记录时返回 0）
+    SELECT coalesce((SELECT stars FROM public.user_titles
+                      WHERE user_id = p_user_id AND title_key = p_title_key), 0),
+           coalesce((SELECT spent FROM public.user_titles
+                      WHERE user_id = p_user_id AND title_key = p_title_key), 0)
+      INTO v_cur_stars, v_spent;
 
     -- 计算本次花费：1星 = price；2~5星 = star_prices[i-1]
     IF v_cur_stars = 0 THEN
