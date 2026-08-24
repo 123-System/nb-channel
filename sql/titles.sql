@@ -372,6 +372,25 @@ BEGIN
 END;
 $$;
 
+-- 批量获取多个用户的佩戴称号（评论区优化：一次调用替代 N 次单用户查询）
+CREATE OR REPLACE FUNCTION public.get_user_titles_batch(p_user_ids uuid[])
+RETURNS TABLE (user_id uuid, title_key text, name text, image_url text, icon text, stars integer)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT p.id AS user_id, t.key, t.name, t.image_url, t.icon, ut.stars
+      FROM public.profiles p
+      JOIN public.titles t ON t.key = p.equipped_title_id
+      LEFT JOIN public.user_titles ut
+        ON ut.title_key = t.key AND ut.user_id = p.id
+     WHERE p.id = ANY(p_user_ids)
+       AND p.equipped_title_id IS NOT NULL;
+END;
+$$;
+
 -- ========== 12. 权限 ==========
 GRANT EXECUTE ON FUNCTION public.compute_title_stars(uuid, text) TO anon;
 GRANT EXECUTE ON FUNCTION public.compute_title_value(uuid, text) TO anon;
@@ -382,3 +401,4 @@ GRANT EXECUTE ON FUNCTION public.buy_title(uuid, text) TO anon;
 GRANT EXECUTE ON FUNCTION public.admin_grant_title(uuid, text, text) TO anon;
 GRANT EXECUTE ON FUNCTION public.record_balance_count(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION public.get_user_title(uuid) TO anon;
+GRANT EXECUTE ON FUNCTION public.get_user_titles_batch(uuid[]) TO anon;

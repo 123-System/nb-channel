@@ -118,6 +118,7 @@ body.dark-mode .author-info {
     margin-bottom: 30px;
 }
 
+.nav-container .nav-actions + .nav-actions { margin-top: 12px; }
 .nav-links {
     display: flex;
     justify-content: center;
@@ -132,8 +133,7 @@ body.dark-mode .author-info {
     gap: 15px;
     flex-wrap: wrap;
     /* 确保没有绝对定位影响 */
-    position: static;
-}
+    position: static; }
 
 .nav-btn {
     padding: 10px 25px;

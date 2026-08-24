@@ -43,8 +43,8 @@ ALTER TABLE public.bank_accounts ADD COLUMN IF NOT EXISTS frozen_amount bigint N
 ALTER TABLE public.bank_accounts ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.bank_accounts FROM anon;
 
--- 已有账户（旧默认 100）统一调整为满分 1000
-UPDATE public.bank_accounts SET credit_score = 1000 WHERE credit_score = 100;
+-- 已有账户统一调整为满分 1000（含旧默认 100 或异常值）
+UPDATE public.bank_accounts SET credit_score = 1000;
 
 -- ========== 2. 交易日志表 ==========
 CREATE TABLE IF NOT EXISTS public.bank_logs (

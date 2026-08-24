@@ -1642,27 +1642,32 @@
         window.titleMap = new Map();
         const uidArr = [...pageUserIds].filter(id => id);
         if (uidArr.length > 0) {
-            // 公司徽章
-            const compRes = await supabaseClient
-                .from('user_companies')
-                .select('user_id, company_name, verified')
-                .in('user_id', uidArr);
+            // 公司徽章 + 佩戴称号（并行拉取；称号走批量 RPC，一次查询替代逐个查询）
+            const [compRes, titleRes] = await Promise.all([
+                supabaseClient
+                    .from('user_companies')
+                    .select('user_id, company_name, verified')
+                    .in('user_id', uidArr),
+                supabaseClient.rpc('get_user_titles_batch', { p_user_ids: uidArr })
+            ]);
             const companies = compRes.data || [];
             if (compRes.error) console.error(compRes.error);
             window.companyMap = new Map(companies.map(c => [c.user_id, c]));
-            // 称号：逐个用户查询（RPC 单用户）
+            // 称号批量结果
             window.titleMap = new Map();
             const TITLE_BASE = window.location.origin + '/';
-            await Promise.all(uidArr.map(async (uid) => {
-                try {
-                    const { data: t } = await supabaseClient.rpc('get_user_title', { p_user_id: uid });
-                    if (t && t.length > 0) {
-                        const row = t[0];
-                        row._img = /^https?:/.test(row.image_url) ? row.image_url : TITLE_BASE + row.image_url;
-                        window.titleMap.set(uid, row);
-                    }
-                } catch (e) { /* 忽略单用户失败 */ }
-            }));
+            const titles = titleRes.data || [];
+            for (const t of titles) {
+                const row = {
+                    title_key: t.title_key,
+                    name: t.name,
+                    image_url: t.image_url,
+                    icon: t.icon,
+                    stars: t.stars
+                };
+                row._img = /^https?:/.test(row.image_url) ? row.image_url : TITLE_BASE + row.image_url;
+                window.titleMap.set(t.user_id, row);
+            }
         }
 
         if (commentSort !== 'hot') {
