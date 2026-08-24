@@ -114,6 +114,42 @@ BEGIN
 END;
 $$;
 
+-- ========== 4.5 当前进度值（各称号的实时数据量，前端显示"当前做到哪了"） ==========
+CREATE OR REPLACE FUNCTION public.compute_title_value(p_user_id uuid, p_title_key text)
+RETURNS bigint
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_val bigint := 0;
+BEGIN
+    IF p_title_key = 'checkin_god' THEN
+        SELECT count(*) INTO v_val FROM public.check_in_records WHERE user_id = p_user_id;
+    ELSIF p_title_key = 'comment_master' THEN
+        SELECT count(*) INTO v_val FROM public.comments WHERE user_id = p_user_id;
+    ELSIF p_title_key = 'redpacket_hero' THEN
+        SELECT coalesce(sum(amount), 0) INTO v_val FROM public.transfers WHERE from_user = p_user_id;
+    ELSIF p_title_key = 'like_master' THEN
+        SELECT count(*) INTO v_val FROM public.comment_reactions WHERE user_id = p_user_id AND reaction = 1;
+    ELSIF p_title_key = 'boss' THEN
+        SELECT coalesce(max(market_value), 0) INTO v_val FROM public.user_companies WHERE user_id = p_user_id;
+    ELSIF p_title_key = 'chem_maniac' THEN
+        SELECT count(*) INTO v_val FROM public.user_balance_counts WHERE user_id = p_user_id;
+    ELSIF p_title_key = 'product_tycoon' THEN
+        SELECT count(*) INTO v_val FROM public.products WHERE author_id = p_user_id;
+    ELSIF p_title_key = 'achievement_hunter' THEN
+        SELECT count(*) INTO v_val FROM public.user_achievements WHERE user_id = p_user_id;
+    ELSIF p_title_key = 'social_butterfly' THEN
+        SELECT count(*) INTO v_val FROM public.friendships
+         WHERE user_a = p_user_id OR user_b = p_user_id;
+    ELSIF p_title_key = 'lottery_king' THEN
+        SELECT count(*) INTO v_val FROM public.lottery_records WHERE user_id = p_user_id;
+    END IF;
+    RETURN v_val;
+END;
+$$;
+
 -- ========== 5. 同步我的称号（登录时/前端调用：刷新自动称号解锁+星级） ==========
 CREATE OR REPLACE FUNCTION public.sync_my_titles(p_user_id uuid)
 RETURNS jsonb
@@ -139,11 +175,13 @@ BEGIN
 END;
 $$;
 
--- ========== 6. 获取我的称号列表（含星级/是否拥有/是否佩戴/进度/升星要求） ==========
+-- ========== 6. 获取我的称号列表（含星级/是否拥有/是否佩戴/进度/升星要求/当前进度） ==========
+DROP FUNCTION IF EXISTS public.get_my_titles(uuid);
 CREATE OR REPLACE FUNCTION public.get_my_titles(p_user_id uuid)
 RETURNS TABLE (title_key text, name text, icon text, image_url text, acquire_type text,
                acquire_desc text, price bigint, star_prices bigint[], star_thresholds bigint[],
-               stars integer, owned boolean, purchased boolean, equipped boolean, equipped_stars integer)
+               stars integer, owned boolean, purchased boolean, equipped boolean, equipped_stars integer,
+               current_value bigint, spent bigint)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
@@ -159,7 +197,9 @@ BEGIN
            (ut.user_id IS NOT NULL) AS owned,
            coalesce(ut.purchased, false) AS purchased,
            (t.key = v_equipped) AS equipped,
-           CASE WHEN t.key = v_equipped AND ut.stars IS NOT NULL THEN ut.stars ELSE 0 END
+           CASE WHEN t.key = v_equipped AND ut.stars IS NOT NULL THEN ut.stars ELSE 0 END,
+           public.compute_title_value(p_user_id, t.key),
+           coalesce(ut.spent, 0)
       FROM public.titles t
       LEFT JOIN public.user_titles ut ON ut.title_key = t.key AND ut.user_id = p_user_id
      ORDER BY t.display_order;
@@ -325,6 +365,7 @@ $$;
 
 -- ========== 12. 权限 ==========
 GRANT EXECUTE ON FUNCTION public.compute_title_stars(uuid, text) TO anon;
+GRANT EXECUTE ON FUNCTION public.compute_title_value(uuid, text) TO anon;
 GRANT EXECUTE ON FUNCTION public.sync_my_titles(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION public.get_my_titles(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION public.equip_title(uuid, text) TO anon;

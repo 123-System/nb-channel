@@ -305,6 +305,9 @@
                 let reqHtml = '';
                 if (t.acquire_type === 'auto' && t.star_thresholds && t.star_thresholds.length > 0) {
                     let rows = '';
+                    // 当前进度行
+                    const curVal = t.current_value || 0;
+                    rows += `<div class="req-row"><span class="req-star">📊</span><span class="req-val req-now">当前：${fmtBig(curVal)}</span></div>`;
                     t.star_thresholds.forEach((th, i) => {
                         const level = i + 1;
                         let cls = 'req-locked';
@@ -312,12 +315,15 @@
                         if (t.owned && level <= t.stars) { cls = 'req-done'; mark = '✅'; }
                         else if (t.owned && level === t.stars + 1) { cls = 'req-next'; mark = '🎯'; }
                         else if (!t.owned && level === 1) { cls = 'req-next'; mark = '🎯'; }
-                        rows += `<div class="req-row"><span class="req-star">★${level}</span><span class="req-val ${cls}">${mark} ${fmtBig(th)}</span></div>`;
+                        const remain = curVal < th ? `（还差 ${fmtBig(th - curVal)}）` : '';
+                        rows += `<div class="req-row"><span class="req-star">★${level}</span><span class="req-val ${cls}">${mark} ${fmtBig(th)}${remain}</span></div>`;
                     });
                     reqHtml = `<div class="t-req"><div class="req-title">📈 升星要求：</div>${rows}</div>`;
                 } else if (t.acquire_type === 'buy' && t.star_prices && t.star_prices.length > 0) {
                     let rows = '';
                     const allPrices = [t.price, ...t.star_prices];
+                    // 当前进度行（已花费）
+                    rows += `<div class="req-row"><span class="req-star">📊</span><span class="req-val req-now">当前：已花费 ${fmtBig(t.spent || 0)} NB币（★${t.stars || 0}）</span></div>`;
                     allPrices.forEach((p, i) => {
                         const level = i + 1;
                         let cls = 'req-locked';
