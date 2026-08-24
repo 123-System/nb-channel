@@ -250,23 +250,6 @@
             <input type="file" id="comment-cam-input" accept="image/*" capture="environment" style="display:none;">
         </div>
 
-        <!-- 图片来源菜单 -->
-        <div class="ctx-menu" id="commentImgSrcMenu" style="position:fixed; z-index:30000; min-width:170px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,0.3); padding:6px; display:none;">
-            <div class="ctx-item" data-src="album" style="padding:9px 14px; border-radius:8px; cursor:pointer; font-size:0.88rem; color:var(--text-color); white-space:nowrap;">🖼️ 从相册选择</div>
-            <div class="ctx-item" data-src="camera" style="padding:9px 14px; border-radius:8px; cursor:pointer; font-size:0.88rem; color:var(--text-color); white-space:nowrap;">📷 拍照</div>
-        </div>
-        <!-- 拍照弹窗 -->
-        <div class="cam-modal" id="commentCamModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:20000; justify-content:center; align-items:center;">
-            <div class="cam-box" style="background:var(--card-bg); border-radius:20px; padding:20px; width:min(420px,92vw); text-align:center;">
-                <h3 style="margin:0 0 12px; color:var(--text-color);">📷 拍照</h3>
-                <video id="commentCamVideo" autoplay playsinline muted style="width:100%; max-height:52vh; border-radius:12px; background:#000; object-fit:contain;"></video>
-                <div style="display:flex; gap:10px; justify-content:center; margin-top:12px;">
-                    <button id="commentCamShoot" style="border:none; border-radius:30px; padding:10px 26px; cursor:pointer; font-size:0.95rem; background:var(--nav-btn-hover-bg); color:#fff;">📸 拍照</button>
-                    <button id="commentCamClose" class="gray" style="border:none; border-radius:30px; padding:10px 26px; cursor:pointer; font-size:0.95rem; background:var(--nav-btn-bg); color:var(--nav-btn-text);">取消</button>
-                </div>
-            </div>
-        </div>
-
         <!-- 排序工具栏 -->
         <div class="comment-toolbar">
             <span class="toolbar-label">排序：</span>
@@ -280,6 +263,22 @@
 </div>
 
 <!-- 弹窗 -->
+<!-- 图片来源菜单（body 级，避免容器 backdrop-filter 破坏 fixed 定位） -->
+<div class="ctx-menu" id="commentImgSrcMenu" style="position:fixed; z-index:30000; min-width:170px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,0.3); padding:6px; display:none;">
+    <div class="ctx-item" data-src="album" style="padding:9px 14px; border-radius:8px; cursor:pointer; font-size:0.88rem; color:var(--text-color); white-space:nowrap;">🖼️ 从相册选择</div>
+    <div class="ctx-item" data-src="camera" style="padding:9px 14px; border-radius:8px; cursor:pointer; font-size:0.88rem; color:var(--text-color); white-space:nowrap;">📷 拍照</div>
+</div>
+<!-- 拍照弹窗（body 级） -->
+<div class="cam-modal" id="commentCamModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:20000; justify-content:center; align-items:center;">
+    <div class="cam-box" style="background:var(--card-bg); border-radius:20px; padding:20px; width:min(420px,92vw); text-align:center;">
+        <h3 style="margin:0 0 12px; color:var(--text-color);">📷 拍照</h3>
+        <video id="commentCamVideo" autoplay playsinline muted style="width:100%; max-height:52vh; border-radius:12px; background:#000; object-fit:contain;"></video>
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:12px;">
+            <button id="commentCamShoot" style="border:none; border-radius:30px; padding:10px 26px; cursor:pointer; font-size:0.95rem; background:var(--nav-btn-hover-bg); color:#fff;">📸 拍照</button>
+            <button id="commentCamClose" class="gray" style="border:none; border-radius:30px; padding:10px 26px; cursor:pointer; font-size:0.95rem; background:var(--nav-btn-bg); color:var(--nav-btn-text);">取消</button>
+        </div>
+    </div>
+</div>
 <div id="login-modal" class="modal">
     <div class="modal-content">
         <h3>登录</h3>
@@ -304,8 +303,7 @@
 </div>
 
 <div id="message-modal" class="modal message-modal">
-    <div class="modal-content">
-        <h3 id="message-title">提示</h3>
+    <div class="modal-content">        <h3 id="message-title">提示</h3>
         <p id="message-text"></p>
         <button id="message-close">确定</button>
     </div>

@@ -232,22 +232,6 @@
                 <input type="file" id="imgInput" accept="image/*" style="display:none;">
                 <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none;">
             </div>
-            <!-- 图片来源菜单 -->
-            <div class="ctx-menu" id="imgSrcMenu">
-                <div class="ctx-item" data-src="album">🖼️ 从相册选择</div>
-                <div class="ctx-item" data-src="camera">📷 拍照</div>
-            </div>
-            <!-- 拍照弹窗 -->
-            <div class="cam-modal" id="camModal">
-                <div class="cam-box">
-                    <h3>📷 拍照</h3>
-                    <video id="camVideo" autoplay playsinline muted></video>
-                    <div class="cam-btns">
-                        <button class="cam-btn" id="camShoot">📸 拍照</button>
-                        <button class="cam-btn gray" id="camClose">取消</button>
-                    </div>
-                </div>
-            </div>
             <!-- 表情面板 -->
             <div class="emoji-panel" id="emojiPanel"></div>
         </div>
@@ -265,6 +249,23 @@
 <div class="fixed-buttons">
     <button class="theme-toggle-fixed" id="themeToggleFixed" onclick="toggleTheme()">🌙</button>
     <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
+</div>
+
+<!-- 图片来源菜单（body 级，避免容器 backdrop-filter 破坏 fixed 定位） -->
+<div class="ctx-menu" id="imgSrcMenu">
+    <div class="ctx-item" data-src="album">🖼️ 从相册选择</div>
+    <div class="ctx-item" data-src="camera">📷 拍照</div>
+</div>
+<!-- 拍照弹窗（body 级） -->
+<div class="cam-modal" id="camModal">
+    <div class="cam-box">
+        <h3>📷 拍照</h3>
+        <video id="camVideo" autoplay playsinline muted></video>
+        <div class="cam-btns">
+            <button class="cam-btn" id="camShoot">📸 拍照</button>
+            <button class="cam-btn gray" id="camClose">取消</button>
+        </div>
+    </div>
 </div>
 
 <!-- 自定义确认弹窗 -->
