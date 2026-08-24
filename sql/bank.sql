@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS public.bank_accounts (
     loan_until      timestamptz,                      -- 抵押贷到期时间
     loan_credit     bigint NOT NULL DEFAULT 0,        -- 信用贷本金
     loan_credit_until timestamptz,                    -- 信用贷到期时间
-    credit_score    integer NOT NULL DEFAULT 100,     -- 信誉分
+    credit_score    integer NOT NULL DEFAULT 1000,    -- 信誉分（初始满分 1000）
     frozen          boolean NOT NULL DEFAULT false,   -- 存款冻结（抵押贷期间）
     created_at      timestamptz NOT NULL DEFAULT now()
 );
@@ -35,11 +35,14 @@ ALTER TABLE public.bank_accounts ADD COLUMN IF NOT EXISTS loan_principal bigint 
 ALTER TABLE public.bank_accounts ADD COLUMN IF NOT EXISTS loan_until timestamptz;
 ALTER TABLE public.bank_accounts ADD COLUMN IF NOT EXISTS loan_credit bigint NOT NULL DEFAULT 0;
 ALTER TABLE public.bank_accounts ADD COLUMN IF NOT EXISTS loan_credit_until timestamptz;
-ALTER TABLE public.bank_accounts ADD COLUMN IF NOT EXISTS credit_score integer NOT NULL DEFAULT 100;
+ALTER TABLE public.bank_accounts ADD COLUMN IF NOT EXISTS credit_score integer NOT NULL DEFAULT 1000;
 ALTER TABLE public.bank_accounts ADD COLUMN IF NOT EXISTS frozen boolean NOT NULL DEFAULT false;
 
 ALTER TABLE public.bank_accounts ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.bank_accounts FROM anon;
+
+-- 已有账户（旧默认 100）统一调整为满分 1000
+UPDATE public.bank_accounts SET credit_score = 1000 WHERE credit_score = 100;
 
 -- ========== 2. 交易日志表 ==========
 CREATE TABLE IF NOT EXISTS public.bank_logs (
