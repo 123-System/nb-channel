@@ -107,6 +107,9 @@ END;
 $$;
 
 -- 3.5 取消撤回（撤回后 2 分钟内可复原；红包复原 = 重新扣款恢复待领取）
+-- 兼容旧数据：recalled_at 为 NULL（旧版撤回未记录时间）时，
+-- 用 created_at 兜底——撤回必然发生在发送后 2 分钟内，
+-- 故发送时间若距今 ≤2 分钟则撤回也一定在 2 分钟内，允许取消
 CREATE OR REPLACE FUNCTION public.unrecall_message(p_user uuid, p_message_id bigint)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -116,6 +119,7 @@ AS $$
 DECLARE
     v_conv        bigint;
     v_sender      uuid;
+    v_created_at  timestamptz;
     v_recalled_at timestamptz;
     v_status      text;
     v_content     text;
@@ -123,8 +127,8 @@ DECLARE
     v_amount      integer;
     v_t_status    text;
 BEGIN
-    SELECT conversation_id, sender_id, recalled_at, status, content
-      INTO v_conv, v_sender, v_recalled_at, v_status, v_content
+    SELECT conversation_id, sender_id, created_at, recalled_at, status, content
+      INTO v_conv, v_sender, v_created_at, v_recalled_at, v_status, v_content
       FROM public.messages WHERE id = p_message_id;
     IF v_conv IS NULL THEN
         RETURN jsonb_build_object('success', false, 'message', '消息不存在');
@@ -135,7 +139,9 @@ BEGIN
     IF v_status <> 'recalled' THEN
         RETURN jsonb_build_object('success', false, 'message', '消息未被撤回');
     END IF;
-    IF v_recalled_at IS NULL OR v_recalled_at < now() - interval '2 minutes' THEN
+    -- 2 分钟窗口：优先用撤回时间；旧数据（NULL）用创建时间兜底
+    IF (v_recalled_at IS NOT NULL AND v_recalled_at < now() - interval '2 minutes')
+       OR (v_recalled_at IS NULL AND v_created_at < now() - interval '2 minutes') THEN
         RETURN jsonb_build_object('success', false, 'message', '已超过2分钟，无法取消撤回');
     END IF;
 
