@@ -36,6 +36,7 @@
         .overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 24px; }
         .ov-card { background: var(--count-bg); border-radius: 20px; padding: 14px 10px; text-align: center; }
         .ov-card .num { font-size: 1.25rem; font-weight: 700; color: var(--status-border); word-break: break-all; }
+        .ov-card .num.long { font-size: 0.95rem; }
         .ov-card .label { font-size: 0.78rem; color: var(--count-text); margin-top: 4px; }
         .ov-card .tip { font-size: 0.68rem; color: var(--count-text); margin-top: 2px; }
         /* 分区 */
@@ -135,6 +136,11 @@
         if (n >= 10000) return (n / 10000).toFixed(2).replace(/\.?0+$/, '') + '万';
         return String(n);
     }
+    function fmtFull(n) {
+        // 完整数字（千分位分隔），大数字缩小字号自适应
+        n = Number(n) || 0;
+        return n.toLocaleString('zh-CN');
+    }
     function fmtTime(ts) {
         try { return new Date(ts).toLocaleString('zh-CN', { hour12: false }); } catch (e) { return ''; }
     }
@@ -195,11 +201,11 @@
 
             let html = `
                 <div class="overview">
-                    <div class="ov-card"><div class="num">${fmtBig(acc.deposit)}</div><div class="label">活期存款</div><div class="tip">日利率 0.1%</div></div>
-                    <div class="ov-card"><div class="num">${fmtBig(acc.fixed7)}</div><div class="label">定期7天</div><div class="tip">到期2%${acc.fixed7_until ? ' · ' + fmtTime(acc.fixed7_until).slice(5,16) + '到期' : ''}</div></div>
-                    <div class="ov-card"><div class="num">${fmtBig(acc.fixed30)}</div><div class="label">定期30天</div><div class="tip">到期10%${acc.fixed30_until ? ' · ' + fmtTime(acc.fixed30_until).slice(5,16) + '到期' : ''}</div></div>
-                    <div class="ov-card"><div class="num">${fmtBig(acc.loan_principal)}</div><div class="label">抵押贷款</div><div class="tip">到期10%</div></div>
-                    <div class="ov-card"><div class="num">${fmtBig(acc.loan_credit)}</div><div class="label">信用贷款</div><div class="tip">到期${acc.credit_score >= 800 ? '10.8%' : '12%'}</div></div>
+                    <div class="ov-card"><div class="num ${fmtFull(acc.deposit).length > 9 ? 'long' : ''}">${fmtFull(acc.deposit)}</div><div class="label">活期存款</div><div class="tip">日利率 0.1%</div></div>
+                    <div class="ov-card"><div class="num ${fmtFull(acc.fixed7).length > 9 ? 'long' : ''}">${fmtFull(acc.fixed7)}</div><div class="label">定期7天</div><div class="tip">到期2%${acc.fixed7_until ? ' · ' + fmtTime(acc.fixed7_until).slice(5,16) + '到期' : ''}</div></div>
+                    <div class="ov-card"><div class="num ${fmtFull(acc.fixed30).length > 9 ? 'long' : ''}">${fmtFull(acc.fixed30)}</div><div class="label">定期30天</div><div class="tip">到期10%${acc.fixed30_until ? ' · ' + fmtTime(acc.fixed30_until).slice(5,16) + '到期' : ''}</div></div>
+                    <div class="ov-card"><div class="num ${fmtFull(acc.loan_principal).length > 9 ? 'long' : ''}">${fmtFull(acc.loan_principal)}</div><div class="label">抵押贷款</div><div class="tip">到期10%</div></div>
+                    <div class="ov-card"><div class="num ${fmtFull(acc.loan_credit).length > 9 ? 'long' : ''}">${fmtFull(acc.loan_credit)}</div><div class="label">信用贷款</div><div class="tip">到期${acc.credit_score >= 800 ? '10.8%' : '12%'}</div></div>
                 </div>
 
                 <div class="section">
@@ -231,6 +237,7 @@
                         <input type="number" id="depAmt" min="1" placeholder="金额" style="min-width:120px;">
                         <button onclick="doDeposit()">存入活期</button>
                         <button class="gray" onclick="doWithdraw()">取出活期</button>
+                        <button class="gray" onclick="doWithdrawAll()">全部取出</button>
                         ${frozenHint}
                     </div>
                     <div class="bank-row">
@@ -308,6 +315,19 @@
         if (!amt || amt <= 0) { alert('请输入金额'); return; }
         try { const r = await callRpc('bank_withdraw', { p_amount: amt }); showToast('✅ ' + r.message); loadBank(); loadBalance(); }
         catch (e) { alert(e.message); }
+    }
+    // 全部取出活期（可自由取出的部分，冻结期内取新存部分）
+    async function doWithdrawAll() {
+        const user = getUser();
+        if (!user) return;
+        try {
+            const acc = await callRpc('get_bank_account', {});
+            const free = acc.free_deposit || 0;
+            if (free <= 0) { alert('没有可取的活期存款'); return; }
+            if (!confirm(`确认全部取出活期 ${fmtFull(free)} NB币？`)) return;
+            const r = await callRpc('bank_withdraw', { p_amount: free });
+            showToast('✅ ' + r.message); loadBank(); loadBalance();
+        } catch (e) { alert(e.message); }
     }
     async function doFixedDeposit() {
         const amt = parseInt(document.getElementById('fixedAmt').value);
