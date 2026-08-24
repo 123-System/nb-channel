@@ -167,7 +167,7 @@
         if (!user || !el) return;
         try {
             const { data } = await supabaseClient.from('profiles').select('nb_balance').eq('id', user.id).single();
-            if (data) el.innerText = fmtBig(data.nb_balance);
+            if (data) el.innerText = Number(data.nb_balance).toLocaleString('zh-CN');
         } catch (e) { /* 忽略 */ }
     }
 
