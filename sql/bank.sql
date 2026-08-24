@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS public.bank_accounts (
     loan_credit     bigint NOT NULL DEFAULT 0,        -- 信用贷本金
     loan_credit_until timestamptz,                    -- 信用贷到期时间
     credit_score    integer NOT NULL DEFAULT 1000,    -- 信誉分（初始满分 1000）
-    frozen          boolean NOT NULL DEFAULT false,   -- 存款冻结（抵押贷期间）
+    frozen          boolean NOT NULL DEFAULT false,   -- 是否有抵押贷款（冻结标记）
+    frozen_amount   bigint NOT NULL DEFAULT 0,        -- 冻结的活期金额（贷款时点，之后新存的可自由取）
     created_at      timestamptz NOT NULL DEFAULT now()
 );
 -- 幂等加列
@@ -37,6 +38,7 @@ ALTER TABLE public.bank_accounts ADD COLUMN IF NOT EXISTS loan_credit bigint NOT
 ALTER TABLE public.bank_accounts ADD COLUMN IF NOT EXISTS loan_credit_until timestamptz;
 ALTER TABLE public.bank_accounts ADD COLUMN IF NOT EXISTS credit_score integer NOT NULL DEFAULT 1000;
 ALTER TABLE public.bank_accounts ADD COLUMN IF NOT EXISTS frozen boolean NOT NULL DEFAULT false;
+ALTER TABLE public.bank_accounts ADD COLUMN IF NOT EXISTS frozen_amount bigint NOT NULL DEFAULT 0;
 
 ALTER TABLE public.bank_accounts ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.bank_accounts FROM anon;
@@ -107,6 +109,8 @@ BEGIN
         'loan_credit_until', v_acc.loan_credit_until,
         'credit_score', v_acc.credit_score,
         'frozen', v_acc.frozen,
+        'frozen_amount', v_acc.frozen_amount,
+        'free_deposit', GREATEST(v_acc.deposit - v_acc.frozen_amount, 0),
         'collateral_limit', floor((v_acc.deposit + v_acc.fixed7 + v_acc.fixed30) * 0.8),
         'credit_limit', v_credit_limit,
         'credit_rate', v_credit_rate
@@ -215,7 +219,7 @@ $$;
 
 -- ========== 5. 取款 ==========
 
--- 活期取款（冻结期间不能取）
+-- 活期取款（冻结期可取出"新存入的部分"，冻结金额不能取）
 CREATE OR REPLACE FUNCTION public.bank_withdraw(p_user_id uuid, p_amount integer)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -224,16 +228,18 @@ SET search_path = public
 AS $$
 DECLARE
     v_acc record;
+    v_free bigint;
 BEGIN
     SELECT * INTO v_acc FROM public.bank_accounts WHERE user_id = p_user_id;
     IF v_acc.user_id IS NULL OR p_amount IS NULL OR p_amount <= 0 THEN
         RETURN jsonb_build_object('success', false, 'message', '参数错误');
     END IF;
-    IF v_acc.frozen THEN
-        RETURN jsonb_build_object('success', false, 'message', '存款已冻结（有抵押贷款未还清），无法取款');
-    END IF;
-    IF v_acc.deposit < p_amount THEN
-        RETURN jsonb_build_object('success', false, 'message', '活期存款不足');
+    -- 冻结期：只能取"冻结后新存入"的部分（deposit - frozen_amount）
+    v_free := GREATEST(v_acc.deposit - v_acc.frozen_amount, 0);
+    IF p_amount > v_free THEN
+        RETURN jsonb_build_object('success', false, 'message',
+            format('可取金额不足：冻结 %s NB币，可自由取出 %s NB币（冻结后新存入的部分可取）',
+                   v_acc.frozen_amount, v_free));
     END IF;
     UPDATE public.bank_accounts SET deposit = deposit - p_amount WHERE user_id = p_user_id;
     UPDATE public.profiles SET nb_balance = nb_balance + p_amount WHERE id = p_user_id;
@@ -335,10 +341,12 @@ BEGIN
             format('超出抵押额度（当前可贷 %s NB币）', v_limit));
     END IF;
 
+    -- 冻结贷款时点的活期存款；之后新存入的部分可自由取
     UPDATE public.bank_accounts
        SET loan_principal = p_amount,
            loan_until = now() + (p_days || ' days')::interval,
-           frozen = true
+           frozen = true,
+           frozen_amount = v_acc.deposit
      WHERE user_id = p_user_id;
     UPDATE public.profiles SET nb_balance = nb_balance + p_amount WHERE id = p_user_id;
     INSERT INTO public.bank_logs (user_id, type, amount, detail)
@@ -451,7 +459,7 @@ BEGIN
 
     UPDATE public.profiles SET nb_balance = nb_balance - v_total WHERE id = p_user_id;
     UPDATE public.bank_accounts
-       SET loan_principal = 0, loan_until = NULL, frozen = false
+       SET loan_principal = 0, loan_until = NULL, frozen = false, frozen_amount = 0
      WHERE user_id = p_user_id;
     -- 信誉分 +5
     UPDATE public.bank_accounts
@@ -589,7 +597,7 @@ BEGIN
                 UPDATE public.profiles SET nb_balance = nb_balance - v_acc.loan_principal - v_interest
                  WHERE id = v_acc.user_id;
                 UPDATE public.bank_accounts
-                   SET loan_principal = 0, loan_until = NULL, frozen = false
+                   SET loan_principal = 0, loan_until = NULL, frozen = false, frozen_amount = 0
                  WHERE user_id = v_acc.user_id;
                 UPDATE public.bank_accounts
                    SET credit_score = LEAST(credit_score + 5, 1000)
