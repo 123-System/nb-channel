@@ -6,6 +6,7 @@ NB频道 - PythonAnywhere 一体化 Flask 应用
   GET  /                网站本体（静态文件服务，需配置 SITE_DIR）
   POST /upload          上传作品（存 S3，multipart/form-data + 头 X-User-Id）
   POST /upload-image    上传图片（评论区/私信用，存 images 公开桶）
+  POST /upload-video    上传视频（评论区/私信用，存 images 公开桶，≤50MB）
   POST /download        下载/购买作品（JSON + 头 X-User-Id；body 可选 pay_type: nb|market、company_id）
   GET  /files/<key>     从 S3 代理下载文件（附件方式）
   POST /webhook         GitHub push 后自动 git pull 同步代码
@@ -344,6 +345,45 @@ def upload_image():
 
     url = SUPABASE_URL.rstrip('/') + '/storage/v1/object/public/images/' + key
     return jsonify({'success': True, 'key': key, 'url': url, 'message': '图片上传成功'})
+
+
+@app.route('/upload-video', methods=['POST'])
+def upload_video():
+    """上传视频（评论区/私信用）：存 images 公开桶，返回 key + 完整 URL。
+    消息/评论中存短标记 [video]<key>[/video]，前端渲染时拼公开 URL。"""
+    user_id, err = get_user_id()
+    if err:
+        return jsonify({'success': False, 'message': err}), 401
+
+    file = request.files.get('file')
+    if not file or file.filename == '':
+        return jsonify({'success': False, 'message': '请选择视频文件'}), 400
+
+    # 大小限制：50MB（与作品上传一致）
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+    if size > MAX_FILE_SIZE:
+        return jsonify({'success': False, 'message': '视频不能超过 50MB'}), 400
+
+    # 只允许常见视频格式
+    mime = (file.mimetype or '').lower()
+    ext_map = {'video/mp4': '.mp4', 'video/webm': '.webm', 'video/quicktime': '.mov',
+               'video/x-msvideo': '.avi', 'video/x-matroska': '.mkv'}
+    ext = ext_map.get(mime)
+    if not ext:
+        return jsonify({'success': False, 'message': '仅支持 MP4/WebM/MOV/AVI/MKV 视频'}), 400
+
+    # 唯一短 key：v_<毫秒时间戳>_<8位随机hex>.<ext>
+    key = 'v_%d_%s%s' % (int(datetime.datetime.now().timestamp() * 1000), uuid.uuid4().hex[:8], ext)
+    file_bytes = file.read()
+    try:
+        supabase.storage.from_('images').upload(key, file_bytes, {'content-type': mime})
+    except Exception as e:
+        return jsonify({'success': False, 'message': '视频上传失败: %s' % e}), 500
+
+    url = SUPABASE_URL.rstrip('/') + '/storage/v1/object/public/images/' + key
+    return jsonify({'success': True, 'key': key, 'url': url, 'message': '视频上传成功'})
 
 
 @app.route('/remove-avatar', methods=['POST'])

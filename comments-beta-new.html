@@ -267,6 +267,7 @@
 <div class="ctx-menu" id="commentImgSrcMenu" style="position:fixed; z-index:30000; min-width:170px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,0.3); padding:6px; display:none;">
     <div class="ctx-item" data-src="album" style="padding:9px 14px; border-radius:8px; cursor:pointer; font-size:0.88rem; color:var(--text-color); white-space:nowrap;">🖼️ 从相册选择</div>
     <div class="ctx-item" data-src="camera" style="padding:9px 14px; border-radius:8px; cursor:pointer; font-size:0.88rem; color:var(--text-color); white-space:nowrap;">📷 拍照</div>
+    <div class="ctx-item" data-src="video" style="padding:9px 14px; border-radius:8px; cursor:pointer; font-size:0.88rem; color:var(--text-color); white-space:nowrap;">🎥 拍视频</div>
 </div>
 <!-- 拍照弹窗（body 级） -->
 <div class="cam-modal" id="commentCamModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:20000; justify-content:center; align-items:center;">
@@ -279,6 +280,20 @@
         </div>
     </div>
 </div>
+<!-- 录制视频弹窗（body 级） -->
+<div class="cam-modal" id="commentRecModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:20000; justify-content:center; align-items:center;">
+    <div class="cam-box" style="background:var(--card-bg); border-radius:20px; padding:20px; width:min(420px,92vw); text-align:center;">
+        <h3 style="margin:0 0 12px; color:var(--text-color);">🎥 录视频</h3>
+        <video id="commentRecVideo" autoplay playsinline muted style="width:100%; max-height:52vh; border-radius:12px; background:#000; object-fit:contain;"></video>
+        <div style="font-size:1rem; font-weight:700; color:#e74c3c; margin-top:10px; font-variant-numeric:tabular-nums;" id="commentRecTimer">00:00</div>
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:12px;">
+            <button id="commentRecStart" style="border:none; border-radius:30px; padding:10px 26px; cursor:pointer; font-size:0.95rem; background:#e74c3c; color:#fff;">● 开始录制</button>
+            <button id="commentRecSend" style="display:none; border:none; border-radius:30px; padding:10px 26px; cursor:pointer; font-size:0.95rem; background:#4caf50; color:#fff;">📤 发送</button>
+            <button id="commentRecCancel" style="border:none; border-radius:30px; padding:10px 26px; cursor:pointer; font-size:0.95rem; background:var(--nav-btn-bg); color:var(--nav-btn-text);">取消</button>
+        </div>
+    </div>
+</div>
+<input type="file" id="comment-video-input" accept="video/*" style="display:none;">
 <div id="login-modal" class="modal">
     <div class="modal-content">
         <h3>登录</h3>
@@ -477,6 +492,17 @@
                     menu.style.display = 'none';
                     openCommentCamera(uploadCommentImage);
                 }
+            } else if (item.dataset.src === 'video') {
+                // 录视频：不支持 getUserMedia 时 fallback 到视频文件选择
+                const canCam = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+                if (!canCam) {
+                    const vInput = document.getElementById('comment-video-input');
+                    if (vInput) vInput.click();
+                    menu.style.display = 'none';
+                } else {
+                    menu.style.display = 'none';
+                    openCommentVideoRecorder(uploadCommentVideo);
+                }
             }
         });
 
@@ -542,6 +568,146 @@
             }, 'image/jpeg', 0.88);
         };
         closeBtn.onclick = cleanup;
+    }
+
+    // ========== 评论区录制视频（MediaRecorder，带声音） ==========
+    async function openCommentVideoRecorder(onDone) {
+        const modal = document.getElementById('commentRecModal');
+        const video = document.getElementById('commentRecVideo');
+        const startBtn = document.getElementById('commentRecStart');
+        const sendBtn = document.getElementById('commentRecSend');
+        const cancelBtn = document.getElementById('commentRecCancel');
+        const timerEl = document.getElementById('commentRecTimer');
+        let stream = null;
+        let recorder = null;
+        let chunks = [];
+        let timerId = null;
+        let seconds = 0;
+        let recordedBlob = null;
+
+        try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('unsupported');
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: true });
+        } catch (err) {
+            const useNative = confirm('无法调用摄像头/麦克风（可能未授权或设备不可用）。\n是否改用系统相机/文件选择器？');
+            if (useNative) {
+                const vInput = document.getElementById('comment-video-input');
+                if (vInput) vInput.click();
+            }
+            return;
+        }
+
+        modal.style.display = 'flex';
+        video.srcObject = stream;
+        await video.play().catch(() => {});
+
+        const cleanup = () => {
+            if (timerId) { clearInterval(timerId); timerId = null; }
+            if (recorder && recorder.state !== 'inactive') { try { recorder.stop(); } catch (e) {} }
+            if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+            video.srcObject = null;
+            modal.style.display = 'none';
+            startBtn.style.display = '';
+            sendBtn.style.display = 'none';
+            startBtn.innerText = '● 开始录制';
+            timerEl.innerText = '00:00';
+            startBtn.onclick = null;
+            sendBtn.onclick = null;
+            cancelBtn.onclick = null;
+            recorder = null;
+        };
+
+        const pickMime = () => {
+            const candidates = ['video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+            for (const m of candidates) {
+                if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+            }
+            return '';
+        };
+
+        startBtn.onclick = () => {
+            if (!recorder || recorder.state === 'inactive') {
+                chunks = [];
+                seconds = 0;
+                timerEl.innerText = '00:00';
+                const mime = pickMime();
+                try {
+                    recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+                } catch (e) {
+                    recorder = new MediaRecorder(stream);
+                }
+                recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+                recorder.onstop = () => {
+                    const type = (recorder && recorder.mimeType) || 'video/webm';
+                    recordedBlob = new Blob(chunks, { type: type });
+                    startBtn.innerText = '🔁 重新录制';
+                    sendBtn.style.display = '';
+                };
+                recorder.start();
+                startBtn.innerText = '⏹ 停止录制';
+                timerId = setInterval(() => {
+                    seconds++;
+                    const mm = String(Math.floor(seconds / 60)).padStart(2, '0');
+                    const ss = String(seconds % 60).padStart(2, '0');
+                    timerEl.innerText = `${mm}:${ss}`;
+                    if (seconds >= 60 && recorder && recorder.state === 'recording') {
+                        recorder.stop();
+                        clearInterval(timerId);
+                        timerId = null;
+                    }
+                }, 1000);
+            } else {
+                recorder.stop();
+                clearInterval(timerId);
+                timerId = null;
+            }
+        };
+
+        sendBtn.onclick = () => {
+            if (!recordedBlob) return;
+            if (recordedBlob.size > 50 * 1024 * 1024) { showMessage('提示', '视频不能超过 50MB'); return; }
+            const ext = (recordedBlob.type || '').includes('mp4') ? 'mp4' : 'webm';
+            const file = new File([recordedBlob], 'video_' + Date.now() + '.' + ext, { type: recordedBlob.type });
+            cleanup();
+            onDone(file);
+        };
+        cancelBtn.onclick = cleanup;
+    }
+
+    // 评论区视频上传 → 光标处插入 [video]key[/video]
+    async function uploadCommentVideo(file) {
+        if (!file) return;
+        if (!currentUser) { showMessage('提示', '请先登录'); return; }
+        if (file.size > 50 * 1024 * 1024) { showMessage('提示', '视频不能超过 50MB'); return; }
+        const fd = new FormData();
+        fd.append('file', file);
+        try {
+            const resp = await fetch(API_BASE + '/upload-video', {
+                method: 'POST',
+                headers: { 'X-User-Id': currentUser.id },
+                body: fd
+            });
+            const result = await resp.json();
+            if (!result.success) { showMessage('提示', result.message || '视频上传失败'); return; }
+            const marker = `[video]${result.key}[/video]`;
+            const start = commentText.selectionStart != null ? commentText.selectionStart : commentText.value.length;
+            const end = commentText.selectionEnd != null ? commentText.selectionEnd : start;
+            commentText.value = commentText.value.slice(0, start) + marker + commentText.value.slice(end);
+            commentText.dispatchEvent(new Event('input'));
+            commentText.focus();
+        } catch (e) {
+            showMessage('提示', '视频上传失败：' + e.message + '\n（请确认 PythonAnywhere 后端已 Reload）');
+        }
+    }
+
+    // 视频文件选择 fallback
+    const commentVideoInput = document.getElementById('comment-video-input');
+    if (commentVideoInput) {
+        commentVideoInput.addEventListener('change', async () => {
+            const file = commentVideoInput.files[0];
+            commentVideoInput.value = '';
+            await uploadCommentVideo(file);
+        });
     }
 
     if (reportReason) {
@@ -612,6 +778,9 @@
         // [img]key[/img] → 图片（公开桶 URL 由前端拼接，点击放大）
         escaped = escaped.replace(/\[img\]([a-zA-Z0-9_.\-]+)\[\/img\]/g, (m, key) =>
             `<img src="${IMG_BASE}${key}" alt="图片" onclick="window.open('${IMG_BASE}${key}','_blank')" style="max-width:260px; max-height:260px; border-radius:10px; margin:6px 0; display:block; cursor:zoom-in;">`);
+        // [video]key[/video] → 视频播放器
+        escaped = escaped.replace(/\[video\]([a-zA-Z0-9_.\-]+)\[\/video\]/g, (m, key) =>
+            `<video src="${IMG_BASE}${key}" controls preload="metadata" style="max-width:260px; max-height:300px; border-radius:10px; margin:6px 0; display:block; background:#000;"></video>`);
         // 按真实用户名列表匹配高亮：名字长的优先，避免 @AWM 抢走 @AWM（新号）的前缀
         if (!cachedUsernames || cachedUsernames.length === 0) return escaped;
         const names = cachedUsernames.slice().sort((a, b) => b.length - a.length);
