@@ -154,8 +154,10 @@
         .msg .time { font-size: 0.65rem; color: var(--count-text); align-self: flex-end; margin: 0 6px; }
         /* 对方消息：名字 + 称号横幅（图 + 称号名·星级） */
         .msg-title { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin: 0 0 3px 2px; }
+        .msg-title.me { align-items: flex-end; margin: 0 2px 3px 0; }
         .msg-title .msg-name { font-size: 0.72rem; color: var(--count-text); }
         .msg-title .msg-title-badge { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+        .msg-title.me .msg-title-badge { align-items: flex-end; }
         .msg-title .msg-title-img { height: 18px; width: auto; max-width: 130px; border-radius: 4px; display: block; cursor: pointer; }
         .msg-title .msg-title-stars { font-size: 0.6rem; color: #ffb300; letter-spacing: 1px; font-weight: 600; }
         /* NB币红包卡片 */
@@ -576,6 +578,17 @@
                 currentOther.title = null;
             }
         } catch (e) { currentOther.title = null; }
+        // 拉取自己的佩戴称号（自己的消息也显示）
+        try {
+            const { data: mt } = await supabaseClient.rpc('get_user_title', { p_user_id: currentUser.id });
+            if (mt && mt.length > 0) {
+                const row = mt[0];
+                row._img = /^https?:/.test(row.image_url) ? row.image_url : window.location.origin + '/' + row.image_url;
+                currentUser.myTitle = row;
+            } else {
+                currentUser.myTitle = null;
+            }
+        } catch (e) { currentUser.myTitle = null; }
         cancelQuote();
         document.getElementById('chatHeaderTitle').innerText = `💬 ${otherName}`;
         document.getElementById('convMenuBtn').classList.remove('open');
@@ -765,19 +778,25 @@
             : ((currentOther && currentOther.avatar) || DEFAULT_AVATAR);
         const img = `<img src="${avatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt="">`;
         const time = `<span class="time">${fmtTime(m.created_at)}</span>`;
+        // 称号横幅（图 + 称号名·星级），自己和对方都显示
+        const titleInfo = me ? (currentUser.myTitle || null) : (currentOther && currentOther.title);
+        let titleHtml = '';
+        if (titleInfo && titleInfo._img) {
+            titleHtml = `<span class="msg-title-badge"><img class="msg-title-img" src="${titleInfo._img}" alt="${escapeHtml(titleInfo.name)}" title="点击查看称号大全" onclick="location.href=uiHref('titles.html')" onerror="this.style.display='none'"><span class="msg-title-stars">称号：${escapeHtml(titleInfo.name)} · ${'★'.repeat(Math.min(titleInfo.stars || 1, 5))}</span></span>`;
+        }
         if (me) {
             // 自己的消息：时间在左，气泡，头像在右（右键/长按可撤回/删除）
-            return `<div class="msg me" data-msgid="${m.id}" data-created="${m.created_at}">${time}<div class="bubble">${renderContentWithImages(m.content, true)}</div>${img}</div>`;
+            const myTitleBlock = titleHtml
+                ? `<div class="msg-title me"><span class="msg-name">${escapeHtml(currentUser.username || '我')}</span>${titleHtml}</div>`
+                : '';
+            return `<div class="msg me" data-msgid="${m.id}" data-created="${m.created_at}">${time}<div style="display:flex; flex-direction:column; align-items:flex-end; max-width:70%;">${myTitleBlock}<div class="bubble">${renderContentWithImages(m.content, true)}</div></div>${img}</div>`;
         }
-        // 对方的消息：头像在左，气泡，时间在右（名字下方带称号横幅：图 + 称号名·星级）
-        let titleHtml = '';
-        const ot = currentOther && currentOther.title;
-        if (ot && ot._img) {
-            titleHtml = `<div class="msg-title"><span class="msg-name">${escapeHtml(currentOther.name)}</span><span class="msg-title-badge"><img class="msg-title-img" src="${ot._img}" alt="${escapeHtml(ot.name)}" title="点击查看称号大全" onclick="location.href=uiHref('titles.html')" onerror="this.style.display='none'"><span class="msg-title-stars">称号：${escapeHtml(ot.name)} · ${'★'.repeat(Math.min(ot.stars || 1, 5))}</span></span></div>`;
-        } else {
-            titleHtml = `<div class="msg-title"><span class="msg-name">${escapeHtml(currentOther ? currentOther.name : '')}</span></div>`;
-        }
-        return `<div class="msg other" data-msgid="${m.id}">${img}<div style="display:flex; flex-direction:column; align-items:flex-start; max-width:70%;">${titleHtml}<div class="bubble">${renderContentWithImages(m.content, false)}</div></div>${time}</div>`;
+        // 对方的消息：头像在左，气泡，时间在右（名字下方带称号横幅）
+        const otherName = escapeHtml(currentOther ? currentOther.name : '');
+        const otherTitleBlock = titleHtml
+            ? `<div class="msg-title"><span class="msg-name">${otherName}</span>${titleHtml}</div>`
+            : `<div class="msg-title"><span class="msg-name">${otherName}</span></div>`;
+        return `<div class="msg other" data-msgid="${m.id}">${img}<div style="display:flex; flex-direction:column; align-items:flex-start; max-width:70%;">${otherTitleBlock}<div class="bubble">${renderContentWithImages(m.content, false)}</div></div>${time}</div>`;
     }
 
     // ========== 消息操作：右键/长按消息 ==========
