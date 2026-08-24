@@ -160,6 +160,18 @@
         if (n >= 10000) return (n / 10000).toFixed(2).replace(/\.?0+$/, '') + '万';
         return String(n);
     }
+    // 日志金额正负号：按类型区分收支
+    const LOG_OUT_TYPES = new Set(['withdraw', 'fixed7_withdraw', 'fixed30_withdraw', 'repay', 'repay_credit', 'penalty']);
+    function fmtLogAmount(l) {
+        const n = Number(l.amount) || 0;
+        if (l.type === 'credit_change') {
+            return (n > 0 ? '+' : '') + n;
+        }
+        if (LOG_OUT_TYPES.has(l.type)) {
+            return '-' + fmtBig(n);   // 支出
+        }
+        return '+' + fmtBig(n);       // 收入（存入/利息/贷款到账）
+    }
     function fmtFull(n) {
         // 完整数字（千分位分隔），大数字缩小字号自适应
         n = Number(n) || 0;
@@ -314,11 +326,15 @@
                 <div class="section">
                     <div class="section-title">📜 最近记录</div>
                     <div class="log-list">
-                        ${logs.length ? logs.map(l => `
+                        ${logs.length ? logs.map(l => {
+                            const isOut = LOG_OUT_TYPES.has(l.type) || (l.type === 'credit_change' && (Number(l.amount) || 0) < 0);
+                            const color = isOut ? '#e74c3c' : '#4caf50';
+                            return `
                             <div class="log-item">
                                 <span class="ld">${fmtTime(l.created_at)} · ${escapeHtml(l.detail)}</span>
-                                <span class="la">${l.amount > 0 ? '+' : ''}${fmtBig(l.amount)}</span>
-                            </div>`).join('') : '<div class="info-line">暂无记录</div>'}
+                                <span class="la" style="color:${color};">${fmtLogAmount(l)}</span>
+                            </div>`;
+                        }).join('') : '<div class="info-line">暂无记录</div>'}
                     </div>
                 </div>`;
             content.innerHTML = html;
