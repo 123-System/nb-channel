@@ -262,6 +262,11 @@ BEGIN
     ELSIF v_cur_stars >= 5 THEN
         RETURN jsonb_build_object('success', false, 'message', '该称号已满级');
     ELSE
+        -- 数组下标从 1 开始：1星→2星用 [1]，2星→3星用 [2]...
+        IF v_prices IS NULL OR array_length(v_prices, 1) < v_cur_stars THEN
+            RETURN jsonb_build_object('success', false, 'message',
+                format('价格配置错误：star_prices 数组长度不足（需 %s 项）', v_cur_stars));
+        END IF;
         v_price := v_prices[v_cur_stars];
     END IF;
     IF v_price IS NULL OR v_price <= 0 THEN
