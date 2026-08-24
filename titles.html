@@ -115,6 +115,16 @@
             display: inline-block; font-size: 0.7rem; border-radius: 20px;
             padding: 2px 10px; margin-top: 6px; font-weight: 600;
         }
+        /* 升星要求 */
+        .t-req { margin-top: 8px; font-size: 0.72rem; line-height: 1.7; }
+        .t-req .req-row { display: flex; align-items: center; gap: 5px; }
+        .t-req .req-star { color: #ffb300; width: 12px; flex-shrink: 0; text-align: center; }
+        .t-req .req-val { color: var(--text-color); }
+        .t-req .req-now { color: #4caf50; font-weight: 700; }
+        .t-req .req-next { color: #e74c3c; font-weight: 700; }
+        .t-req .req-locked { color: var(--count-text); }
+        .t-req .req-done { color: #4caf50; }
+        .t-req .req-title { color: var(--count-text); font-weight: 600; margin-bottom: 3px; }
         .t-type.auto { background: rgba(76,175,80,0.15); color: #4caf50; }
         .t-type.buy { background: rgba(255,152,0,0.15); color: #ff9800; }
         .t-type.manual { background: rgba(156,39,176,0.15); color: #9c27b0; }
@@ -291,6 +301,37 @@
                     actions = `<button class="t-btn-disabled" disabled>达成条件自动解锁</button>`;
                 }
 
+                // 升星要求展示
+                let reqHtml = '';
+                if (t.acquire_type === 'auto' && t.star_thresholds && t.star_thresholds.length > 0) {
+                    let rows = '';
+                    t.star_thresholds.forEach((th, i) => {
+                        const level = i + 1;
+                        let cls = 'req-locked';
+                        let mark = '🔒';
+                        if (t.owned && level <= t.stars) { cls = 'req-done'; mark = '✅'; }
+                        else if (t.owned && level === t.stars + 1) { cls = 'req-next'; mark = '🎯'; }
+                        else if (!t.owned && level === 1) { cls = 'req-next'; mark = '🎯'; }
+                        rows += `<div class="req-row"><span class="req-star">★${level}</span><span class="req-val ${cls}">${mark} ${fmtBig(th)}</span></div>`;
+                    });
+                    reqHtml = `<div class="t-req"><div class="req-title">📈 升星要求：</div>${rows}</div>`;
+                } else if (t.acquire_type === 'buy' && t.star_prices && t.star_prices.length > 0) {
+                    let rows = '';
+                    const allPrices = [t.price, ...t.star_prices];
+                    allPrices.forEach((p, i) => {
+                        const level = i + 1;
+                        let cls = 'req-locked';
+                        let mark = '🔒';
+                        if (t.owned && level <= t.stars) { cls = 'req-done'; mark = '✅'; }
+                        else if (t.owned && level === t.stars + 1) { cls = 'req-next'; mark = '🎯'; }
+                        else if (!t.owned && level === 1) { cls = 'req-next'; mark = '🎯'; }
+                        rows += `<div class="req-row"><span class="req-star">★${level}</span><span class="req-val ${cls}">${mark} 花费 ${fmtBig(p)} NB币${i > 0 ? '（再花）' : ''}</span></div>`;
+                    });
+                    reqHtml = `<div class="t-req"><div class="req-title">💰 升级价格：</div>${rows}</div>`;
+                } else if (t.acquire_type === 'manual') {
+                    reqHtml = `<div class="t-req"><div class="req-title">👑 获取方式：</div><div class="req-row"><span class="req-val req-locked">去 B 站给 UP 主充电，由管理员颁发（固定 5 星）</span></div></div>`;
+                }
+
                 html += `
                     <div class="title-card ${t.equipped ? 'equipped' : (t.owned ? '' : 'locked')}">
                         <img class="t-img" src="${escapeHtml(t.image_url)}" alt="${escapeHtml(t.name)}" onerror="this.style.display='none'">
@@ -300,6 +341,7 @@
                         </div>
                         <div class="t-desc">📌 ${escapeHtml(t.acquire_desc)}</div>
                         <span class="t-type ${typeCls}">${typeLabel}</span>
+                        ${reqHtml}
                         <div class="t-actions">${actions}</div>
                     </div>`;
             }

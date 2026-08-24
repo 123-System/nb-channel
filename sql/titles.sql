@@ -139,10 +139,10 @@ BEGIN
 END;
 $$;
 
--- ========== 6. 获取我的称号列表（含星级/是否拥有/是否佩戴/进度） ==========
+-- ========== 6. 获取我的称号列表（含星级/是否拥有/是否佩戴/进度/升星要求） ==========
 CREATE OR REPLACE FUNCTION public.get_my_titles(p_user_id uuid)
 RETURNS TABLE (title_key text, name text, icon text, image_url text, acquire_type text,
-               acquire_desc text, price bigint, star_prices bigint[],
+               acquire_desc text, price bigint, star_prices bigint[], star_thresholds bigint[],
                stars integer, owned boolean, purchased boolean, equipped boolean, equipped_stars integer)
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -154,6 +154,7 @@ BEGIN
     SELECT equipped_title_id INTO v_equipped FROM public.profiles WHERE id = p_user_id;
     RETURN QUERY
     SELECT t.key, t.name, t.icon, t.image_url, t.acquire_type, t.acquire_desc, t.price, t.star_prices,
+           t.star_thresholds,
            coalesce(ut.stars, 0),
            (ut.user_id IS NOT NULL) AS owned,
            coalesce(ut.purchased, false) AS purchased,
