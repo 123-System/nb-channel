@@ -195,11 +195,11 @@
 
             let html = `
                 <div class="overview">
-                    <div class="ov-card"><div class="num">${fmtBig(acc.deposit)}</div><div class="label">活期存款</div><div class="tip">日利率 0.05%</div></div>
-                    <div class="ov-card"><div class="num">${fmtBig(acc.fixed7)}</div><div class="label">定期7天</div><div class="tip">日利率 0.1%${acc.fixed7_until ? ' · ' + fmtTime(acc.fixed7_until).slice(5,16) + '到期' : ''}</div></div>
-                    <div class="ov-card"><div class="num">${fmtBig(acc.fixed30)}</div><div class="label">定期30天</div><div class="tip">日利率 0.2%${acc.fixed30_until ? ' · ' + fmtTime(acc.fixed30_until).slice(5,16) + '到期' : ''}</div></div>
-                    <div class="ov-card"><div class="num">${fmtBig(acc.loan_principal)}</div><div class="label">抵押贷款</div><div class="tip">日利率 0.2%</div></div>
-                    <div class="ov-card"><div class="num">${fmtBig(acc.loan_credit)}</div><div class="label">信用贷款</div><div class="tip">日利率 ${acc.credit_score >= 800 ? '0.27%' : '0.3%'}</div></div>
+                    <div class="ov-card"><div class="num">${fmtBig(acc.deposit)}</div><div class="label">活期存款</div><div class="tip">日利率 0.5%</div></div>
+                    <div class="ov-card"><div class="num">${fmtBig(acc.fixed7)}</div><div class="label">定期7天</div><div class="tip">到期3%${acc.fixed7_until ? ' · ' + fmtTime(acc.fixed7_until).slice(5,16) + '到期' : ''}</div></div>
+                    <div class="ov-card"><div class="num">${fmtBig(acc.fixed30)}</div><div class="label">定期30天</div><div class="tip">到期5%${acc.fixed30_until ? ' · ' + fmtTime(acc.fixed30_until).slice(5,16) + '到期' : ''}</div></div>
+                    <div class="ov-card"><div class="num">${fmtBig(acc.loan_principal)}</div><div class="label">抵押贷款</div><div class="tip">到期10%</div></div>
+                    <div class="ov-card"><div class="num">${fmtBig(acc.loan_credit)}</div><div class="label">信用贷款</div><div class="tip">到期${acc.credit_score >= 800 ? '9%' : '10%'}</div></div>
                 </div>
                 ${frozenTip}
 
@@ -214,8 +214,8 @@
                     <div class="bank-row">
                         <input type="number" id="fixedAmt" min="1" placeholder="定期金额">
                         <select id="fixedDays">
-                            <option value="7">定期 7 天（0.1%/天）</option>
-                            <option value="30">定期 30 天（0.2%/天）</option>
+                            <option value="7">定期 7 天（到期 3%）</option>
+                            <option value="30">定期 30 天（到期 5%）</option>
                         </select>
                         <button onclick="doFixedDeposit()">存定期</button>
                         <button class="gray" onclick="doFixedWithdraw()"${frozenFixedBtn}>取出定期</button>
@@ -226,8 +226,8 @@
                 <div class="section">
                     <div class="section-title">🏦 贷款</div>
                     <div class="info-line">
-                        抵押贷额度：<span class="rate-tag">${fmtBig(acc.collateral_limit)} NB币</span>（存款×80%，日利率 0.2%）
-                        &nbsp;信用贷额度：<span class="rate-tag">${fmtBig(lv.limit)} NB币</span>（信誉分×${lv.limit ? (lv.limit / acc.credit_score) : 0}，日利率 ${acc.credit_score >= 800 ? '0.27%' : '0.3%'}）
+                        抵押贷额度：<span class="rate-tag">${fmtBig(acc.collateral_limit)} NB币</span>（存款×80%，到期10%）
+                        &nbsp;信用贷额度：<span class="rate-tag">${fmtBig(lv.limit)} NB币</span>（信誉分×${lv.limit ? (lv.limit / acc.credit_score) : 0}，到期${acc.credit_score >= 800 ? '9%' : '10%'}）
                     </div>
                     <div class="bank-row">
                         <input type="number" id="loanAmt" min="1" placeholder="贷款金额">
@@ -240,7 +240,7 @@
                         <button class="gray" onclick="doRepay('loan')">还抵押贷</button>
                         <button class="gray" onclick="doRepay('credit')">还信用贷</button>
                     </div>
-                    <div class="info-line">💡 到期自动从余额扣本息；余额不足则逾期：每天罚息 0.1% + 信誉 -15，抵押贷期间存款冻结。提前还利息按实际天数算。</div>
+                    <div class="info-line">💡 到期自动从余额扣本息（总利率10%）；余额不足则逾期：每天罚息 0.1% + 信誉 -15，抵押贷期间存款部分冻结。提前还利息按实际天数折算。</div>
                 </div>
 
                 <div class="section">
