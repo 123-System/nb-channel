@@ -156,7 +156,7 @@
         .msg-title { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin: 0 0 3px 2px; }
         .msg-title .msg-name { font-size: 0.72rem; color: var(--count-text); }
         .msg-title .msg-title-badge { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
-        .msg-title .msg-title-img { height: 18px; width: auto; max-width: 130px; border-radius: 4px; display: block; }
+        .msg-title .msg-title-img { height: 18px; width: auto; max-width: 130px; border-radius: 4px; display: block; cursor: pointer; }
         .msg-title .msg-title-stars { font-size: 0.6rem; color: #ffb300; letter-spacing: 1px; font-weight: 600; }
         /* NB币红包卡片 */
         .redpacket {
@@ -773,7 +773,7 @@
         let titleHtml = '';
         const ot = currentOther && currentOther.title;
         if (ot && ot._img) {
-            titleHtml = `<div class="msg-title"><span class="msg-name">${escapeHtml(currentOther.name)}</span><span class="msg-title-badge"><img class="msg-title-img" src="${ot._img}" alt="${escapeHtml(ot.name)}" onerror="this.style.display='none'"><span class="msg-title-stars">称号：${escapeHtml(ot.name)} · ${'★'.repeat(Math.min(ot.stars || 1, 5))}</span></span></div>`;
+            titleHtml = `<div class="msg-title"><span class="msg-name">${escapeHtml(currentOther.name)}</span><span class="msg-title-badge"><img class="msg-title-img" src="${ot._img}" alt="${escapeHtml(ot.name)}" title="点击查看称号大全" onclick="location.href=uiHref('titles.html')" onerror="this.style.display='none'"><span class="msg-title-stars">称号：${escapeHtml(ot.name)} · ${'★'.repeat(Math.min(ot.stars || 1, 5))}</span></span></div>`;
         } else {
             titleHtml = `<div class="msg-title"><span class="msg-name">${escapeHtml(currentOther ? currentOther.name : '')}</span></div>`;
         }
