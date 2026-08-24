@@ -1639,14 +1639,11 @@
         window.titleMap = new Map();
         const uidArr = [...pageUserIds].filter(id => id);
         if (uidArr.length > 0) {
-            // 公司徽章 + 佩戴称号（并行拉取）
-            const [compRes, titleRes] = await Promise.all([
-                supabaseClient
-                    .from('user_companies')
-                    .select('user_id, company_name, verified')
-                    .in('user_id', uidArr),
-                supabaseClient.rpc('get_user_title', { p_user_id: uidArr[0] }).catch(() => null)
-            ]);
+            // 公司徽章
+            const compRes = await supabaseClient
+                .from('user_companies')
+                .select('user_id, company_name, verified')
+                .in('user_id', uidArr);
             const companies = compRes.data || [];
             if (compRes.error) console.error(compRes.error);
             window.companyMap = new Map(companies.map(c => [c.user_id, c]));

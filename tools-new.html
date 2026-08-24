@@ -536,7 +536,8 @@
                 if (u && window.supabaseClient) {
                     const user = JSON.parse(u);
                     if (user && user.id) {
-                        window.supabaseClient.rpc('record_balance_count', { p_user_id: user.id }).catch(() => {});
+                        window.supabaseClient.rpc('record_balance_count', { p_user_id: user.id })
+                            .then(() => {}).catch(() => {});
                     }
                 }
             } catch (e) { /* 忽略 */ }
