@@ -21,11 +21,20 @@ from supabase import create_client
 SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co'
 SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg'
 
-# 12 个称号的文件名（与仓库 images/titles/ 一致）
+# 12 个称号：英文 key -> 中文文件名（Supabase Storage key 不支持中文，用英文 key 做文件名）
 TITLE_FILES = [
-    '签到之神.png', '评论大师.png', '红包豪侠.png', '点赞大师.png',
-    '霸道总裁.png', '化学狂人.png', '作品大亨.png', '成就猎人.png',
-    '人脉达人.png', '抽奖欧皇.png', '现金为王.png', '至尊皇冠.png',
+    ('checkin_god', '签到之神.png'),
+    ('comment_master', '评论大师.png'),
+    ('redpacket_hero', '红包豪侠.png'),
+    ('like_master', '点赞大师.png'),
+    ('boss', '霸道总裁.png'),
+    ('chem_maniac', '化学狂人.png'),
+    ('product_tycoon', '作品大亨.png'),
+    ('achievement_hunter', '成就猎人.png'),
+    ('social_butterfly', '人脉达人.png'),
+    ('lottery_king', '抽奖欧皇.png'),
+    ('cash_king', '现金为王.png'),
+    ('crown', '至尊皇冠.png'),
 ]
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -39,8 +48,8 @@ def main():
     ok_count = 0
     fail_count = 0
     urls = []
-    for name in TITLE_FILES:
-        path = os.path.join(IMAGES_DIR, name)
+    for key_name, file_name in TITLE_FILES:
+        path = os.path.join(IMAGES_DIR, file_name)
         if not os.path.isfile(path):
             print('❌ 文件不存在: %s' % path)
             fail_count += 1
@@ -48,7 +57,7 @@ def main():
         with open(path, 'rb') as f:
             data = f.read()
         size_kb = len(data) / 1024
-        key = 'titles/%s' % name
+        key = 'titles/%s.png' % key_name
         try:
             # upsert=true 覆盖同名文件（URL 不变）
             bucket.upload(key, data, {'content-type': 'image/png', 'upsert': 'true'})
@@ -58,12 +67,12 @@ def main():
                 bucket.remove([key])
                 bucket.upload(key, data, {'content-type': 'image/png'})
             except Exception as e2:
-                print('❌ %s 上传失败: %s' % (name, e2))
+                print('❌ %s 上传失败: %s' % (file_name, e2))
                 fail_count += 1
                 continue
         url = SUPABASE_URL.rstrip('/') + '/storage/v1/object/public/images/' + key
-        urls.append('%s: %s' % (name.replace('.png', ''), url))
-        print('✅ %s (%.0fKB) -> %s' % (name, size_kb, url))
+        urls.append('%s: %s' % (key_name, url))
+        print('✅ %s (%.0fKB) -> %s' % (file_name, size_kb, url))
         ok_count += 1
 
     print('\n==================== 结果 ====================')

@@ -26,20 +26,20 @@ CREATE TABLE IF NOT EXISTS public.titles (
 );
 
 -- 插入 12 个称号（幂等：ON CONFLICT 更新）
--- 图片：图床小镇直链（imgchr.com / s41.ax1x.com）
+-- 图片：Supabase 公开桶 images/titles/<英文key>.png（key 不支持中文）
 INSERT INTO public.titles (key, name, icon, image_url, acquire_type, acquire_desc, price, star_prices, star_thresholds, display_order) VALUES
-('checkin_god',    '签到之神', '📅', 'https://s41.ax1x.com/2026/08/24/pnSgzDO.png', 'auto',   '首次签到即可获得', 0, '{}', '{7,30,100,200,365}', 1),
-('comment_master', '评论大师', '💬', 'https://s41.ax1x.com/2026/08/24/pnSgxKK.png', 'auto',   '累计发布 10 条评论', 0, '{}', '{10,50,200,800,1000}', 2),
-('redpacket_hero', '红包豪侠', '🧧', 'https://s41.ax1x.com/2026/08/24/pnSgb59.png', 'auto',   '累计发出红包 1000 NB币', 0, '{}', '{1000,10000,100000,500000,1000000}', 3),
-('like_master',    '点赞大师', '👍', 'https://s41.ax1x.com/2026/08/24/pnSgLCR.png', 'auto',   '累计点赞 10 次', 0, '{}', '{10,50,100,200,500}', 4),
-('boss',           '霸道总裁', '🏢', 'https://s41.ax1x.com/2026/08/24/pnSgXgx.png', 'auto',   '注册一家公司', 0, '{}', '{10000,100000,1000000,10000000,100000000}', 5),
-('chem_maniac',    '化学狂人', '🔬', 'https://s41.ax1x.com/2026/08/24/pnS2SbD.png', 'auto',   '配平成功 20 次', 0, '{}', '{20,100,300,1000,3000}', 6),
-('product_tycoon', '作品大亨', '📦', '', 'auto',   '上传 5 个作品', 0, '{}', '{5,15,50,100,200}', 7),
-('achievement_hunter', '成就猎人', '🏆', 'https://s41.ax1x.com/2026/08/24/pnSgO81.png', 'auto', '获得 5 个成就', 0, '{}', '{5,7,9,10,11}', 8),
-('social_butterfly','人脉达人', '🤝', 'https://s41.ax1x.com/2026/08/24/pnS29Ve.png', 'auto',  '拥有 5 个好友', 0, '{}', '{5,10,25,50,100}', 9),
-('lottery_king',   '抽奖欧皇', '🎰', 'https://s41.ax1x.com/2026/08/24/pnSgjv6.png', 'auto',   '累计抽奖 10 次', 0, '{}', '{10,20,50,200,500}', 10),
-('cash_king',      '现金为王', '💎', '', 'buy',    '购买获得（逐级升级）', 10000, '{100000,1000000,10000000,100000000}', '{}', 11),
-('crown',          '至尊皇冠', '👑', '', 'manual', '去 B 站给 UP 主充电（管理员颁发）', 0, '{}', '{}', 12)
+('checkin_god',    '签到之神', '📅', 'https://pbaafgjkwdbwcmsikcmg.supabase.co/storage/v1/object/public/images/titles/checkin_god.png', 'auto',   '首次签到即可获得', 0, '{}', '{7,30,100,200,365}', 1),
+('comment_master', '评论大师', '💬', 'https://pbaafgjkwdbwcmsikcmg.supabase.co/storage/v1/object/public/images/titles/comment_master.png', 'auto',   '累计发布 10 条评论', 0, '{}', '{10,50,200,800,1000}', 2),
+('redpacket_hero', '红包豪侠', '🧧', 'https://pbaafgjkwdbwcmsikcmg.supabase.co/storage/v1/object/public/images/titles/redpacket_hero.png', 'auto',   '累计发出红包 1000 NB币', 0, '{}', '{1000,10000,100000,500000,1000000}', 3),
+('like_master',    '点赞大师', '👍', 'https://pbaafgjkwdbwcmsikcmg.supabase.co/storage/v1/object/public/images/titles/like_master.png', 'auto',   '累计点赞 10 次', 0, '{}', '{10,50,100,200,500}', 4),
+('boss',           '霸道总裁', '🏢', 'https://pbaafgjkwdbwcmsikcmg.supabase.co/storage/v1/object/public/images/titles/boss.png', 'auto',   '注册一家公司', 0, '{}', '{10000,100000,1000000,10000000,100000000}', 5),
+('chem_maniac',    '化学狂人', '🔬', 'https://pbaafgjkwdbwcmsikcmg.supabase.co/storage/v1/object/public/images/titles/chem_maniac.png', 'auto',   '配平成功 20 次', 0, '{}', '{20,100,300,1000,3000}', 6),
+('product_tycoon', '作品大亨', '📦', 'https://pbaafgjkwdbwcmsikcmg.supabase.co/storage/v1/object/public/images/titles/product_tycoon.png', 'auto',   '上传 5 个作品', 0, '{}', '{5,15,50,100,200}', 7),
+('achievement_hunter', '成就猎人', '🏆', 'https://pbaafgjkwdbwcmsikcmg.supabase.co/storage/v1/object/public/images/titles/achievement_hunter.png', 'auto', '获得 5 个成就', 0, '{}', '{5,7,9,10,11}', 8),
+('social_butterfly','人脉达人', '🤝', 'https://pbaafgjkwdbwcmsikcmg.supabase.co/storage/v1/object/public/images/titles/social_butterfly.png', 'auto',  '拥有 5 个好友', 0, '{}', '{5,10,25,50,100}', 9),
+('lottery_king',   '抽奖欧皇', '🎰', 'https://pbaafgjkwdbwcmsikcmg.supabase.co/storage/v1/object/public/images/titles/lottery_king.png', 'auto',   '累计抽奖 10 次', 0, '{}', '{10,20,50,200,500}', 10),
+('cash_king',      '现金为王', '💎', 'https://pbaafgjkwdbwcmsikcmg.supabase.co/storage/v1/object/public/images/titles/cash_king.png', 'buy',    '购买获得（逐级升级）', 10000, '{100000,1000000,10000000,100000000}', '{}', 11),
+('crown',          '至尊皇冠', '👑', 'https://pbaafgjkwdbwcmsikcmg.supabase.co/storage/v1/object/public/images/titles/crown.png', 'manual', '去 B 站给 UP 主充电（管理员颁发）', 0, '{}', '{}', 12)
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name, icon = EXCLUDED.icon, image_url = EXCLUDED.image_url,
     acquire_type = EXCLUDED.acquire_type, acquire_desc = EXCLUDED.acquire_desc,
