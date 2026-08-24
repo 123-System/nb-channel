@@ -15,6 +15,15 @@
             box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
         }
         h1 { text-align: center; margin: 0 0 6px; color: var(--status-border); }
+        .page-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+        .page-head h1 { margin: 0; flex: 1; }
+        .balance-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: var(--count-bg); border: 1px solid var(--card-border);
+            border-radius: 30px; padding: 6px 16px; font-size: 0.9rem;
+            color: var(--text-color); font-weight: 600; white-space: nowrap;
+        }
+        .balance-chip .bc-num { color: #ff9800; font-weight: 800; }
         .sub-title { text-align: center; color: var(--count-text); font-size: 0.9rem; margin-bottom: 22px; }
         .top-actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
         .top-actions a, .top-actions button {
@@ -78,7 +87,11 @@
 <body>
 <script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
 <div class="bank-container">
-    <h1>🏦 NB银行</h1>
+    <div class="page-head">
+        <span class="balance-chip">💰 NB币: <span class="bc-num" id="balanceDisplay">--</span></span>
+        <h1>🏦 NB银行</h1>
+        <span style="width:120px;"></span>
+    </div>
     <p class="sub-title">存钱有利息 · 贷款救急 · 信誉分决定额度</p>
 
     <div class="top-actions">
@@ -146,6 +159,16 @@
         if (score < 600) return { name: '普通', cls: 'lv-orange', limit: score * 500 };
         if (score < 800) return { name: '良好', cls: 'lv-yellow', limit: score * 1000 };
         return { name: '优秀', cls: 'lv-green', limit: score * 1500 };
+    }
+
+    async function loadBalance() {
+        const user = getUser();
+        const el = document.getElementById('balanceDisplay');
+        if (!user || !el) return;
+        try {
+            const { data } = await supabaseClient.from('profiles').select('nb_balance').eq('id', user.id).single();
+            if (data) el.innerText = fmtBig(data.nb_balance);
+        } catch (e) { /* 忽略 */ }
     }
 
     async function loadBank() {
@@ -246,6 +269,7 @@
                     </div>
                 </div>`;
             content.innerHTML = html;
+            loadBalance();
         } catch (err) {
             content.innerHTML = `<div class="loading">加载失败：${escapeHtml(err.message)}</div>`;
         }
@@ -254,25 +278,25 @@
     async function doDeposit() {
         const amt = parseInt(document.getElementById('depAmt').value);
         if (!amt || amt <= 0) { alert('请输入金额'); return; }
-        try { const r = await callRpc('bank_deposit', { p_amount: amt }); showToast('✅ ' + r.message); loadBank(); }
+        try { const r = await callRpc('bank_deposit', { p_amount: amt }); showToast('✅ ' + r.message); loadBank(); loadBalance(); }
         catch (e) { alert(e.message); }
     }
     async function doWithdraw() {
         const amt = parseInt(document.getElementById('depAmt').value);
         if (!amt || amt <= 0) { alert('请输入金额'); return; }
-        try { const r = await callRpc('bank_withdraw', { p_amount: amt }); showToast('✅ ' + r.message); loadBank(); }
+        try { const r = await callRpc('bank_withdraw', { p_amount: amt }); showToast('✅ ' + r.message); loadBank(); loadBalance(); }
         catch (e) { alert(e.message); }
     }
     async function doFixedDeposit() {
         const amt = parseInt(document.getElementById('fixedAmt').value);
         const days = parseInt(document.getElementById('fixedDays').value);
         if (!amt || amt <= 0) { alert('请输入金额'); return; }
-        try { const r = await callRpc('bank_fixed_deposit', { p_amount: amt, p_days: days }); showToast('✅ ' + r.message); loadBank(); }
+        try { const r = await callRpc('bank_fixed_deposit', { p_amount: amt, p_days: days }); showToast('✅ ' + r.message); loadBank(); loadBalance(); }
         catch (e) { alert(e.message); }
     }
     async function doFixedWithdraw() {
         const days = parseInt(document.getElementById('fixedDays').value);
-        try { const r = await callRpc('bank_fixed_withdraw', { p_days: days }); showToast('✅ ' + r.message); loadBank(); }
+        try { const r = await callRpc('bank_fixed_withdraw', { p_days: days }); showToast('✅ ' + r.message); loadBank(); loadBalance(); }
         catch (e) { alert(e.message); }
     }
     async function doLoan(type) {
@@ -285,7 +309,7 @@
             const r = type === 'loan'
                 ? await callRpc('bank_loan', { p_amount: amt, p_days: days })
                 : await callRpc('bank_credit_loan', { p_amount: amt, p_days: days });
-            showToast('✅ ' + r.message); loadBank();
+            showToast('✅ ' + r.message); loadBank(); loadBalance();
         } catch (e) { alert(e.message); }
     }
     async function doRepay(type) {
@@ -295,7 +319,7 @@
             const r = type === 'loan'
                 ? await callRpc('bank_repay', {})
                 : await callRpc('bank_repay_credit', {});
-            showToast('✅ ' + r.message); loadBank();
+            showToast('✅ ' + r.message); loadBank(); loadBalance();
         } catch (e) { alert(e.message); }
     }
 
