@@ -145,11 +145,12 @@
         .msg.other .bubble { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-color); border-top-left-radius: 4px; }
         .msg.me .bubble { background: #00a1d6; color: white; border-top-right-radius: 4px; }
         .msg .time { font-size: 0.65rem; color: var(--count-text); align-self: flex-end; margin: 0 6px; }
-        /* 对方消息：名字 + 称号横幅 */
-        .msg-title { display: flex; align-items: center; gap: 5px; margin: 0 0 3px 2px; }
+        /* 对方消息：名字 + 称号横幅（图 + 称号名·星级） */
+        .msg-title { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin: 0 0 3px 2px; }
         .msg-title .msg-name { font-size: 0.72rem; color: var(--count-text); }
+        .msg-title .msg-title-badge { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
         .msg-title .msg-title-img { height: 18px; width: auto; max-width: 130px; border-radius: 4px; display: block; }
-        .msg-title .msg-title-stars { font-size: 0.62rem; color: #ffb300; letter-spacing: 1px; }
+        .msg-title .msg-title-stars { font-size: 0.6rem; color: #ffb300; letter-spacing: 1px; font-weight: 600; }
         /* NB币红包卡片 */
         .redpacket {
             display: inline-flex; align-items: center; gap: 10px;
@@ -761,11 +762,11 @@
             // 自己的消息：时间在左，气泡，头像在右（右键/长按可撤回/删除）
             return `<div class="msg me" data-msgid="${m.id}" data-created="${m.created_at}">${time}<div class="bubble">${renderContentWithImages(m.content, true)}</div>${img}</div>`;
         }
-        // 对方的消息：头像在左，气泡，时间在右（名字下方带称号横幅）
+        // 对方的消息：头像在左，气泡，时间在右（名字下方带称号横幅：图 + 称号名·星级）
         let titleHtml = '';
         const ot = currentOther && currentOther.title;
         if (ot && ot._img) {
-            titleHtml = `<div class="msg-title"><span class="msg-name">${escapeHtml(currentOther.name)}</span><img class="msg-title-img" src="${ot._img}" alt="${escapeHtml(ot.name)}" title="${escapeHtml(ot.name)} ${'★'.repeat(Math.min(ot.stars || 1, 5))}" onerror="this.style.display='none'">${'★'.repeat(Math.min(ot.stars || 1, 5)) ? `<span class="msg-title-stars">${'★'.repeat(Math.min(ot.stars || 1, 5))}</span>` : ''}</div>`;
+            titleHtml = `<div class="msg-title"><span class="msg-name">${escapeHtml(currentOther.name)}</span><span class="msg-title-badge"><img class="msg-title-img" src="${ot._img}" alt="${escapeHtml(ot.name)}" onerror="this.style.display='none'"><span class="msg-title-stars">${escapeHtml(ot.name)} · ${'★'.repeat(Math.min(ot.stars || 1, 5))}</span></span></div>`;
         } else {
             titleHtml = `<div class="msg-title"><span class="msg-name">${escapeHtml(currentOther ? currentOther.name : '')}</span></div>`;
         }
