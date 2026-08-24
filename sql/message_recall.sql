@@ -197,8 +197,11 @@ END;
 $$;
 
 -- 5. 重定义消息查询：过滤"已撤回"和"对自己隐藏"的消息
+--    特殊：撤回者本人 2 分钟窗口内的 recalled 消息仍返回（前端显示"取消撤回"提示）
+DROP FUNCTION IF EXISTS public.get_messages(uuid, bigint, bigint, integer);
 CREATE OR REPLACE FUNCTION public.get_messages(p_user uuid, p_conversation_id bigint, p_before_id bigint DEFAULT NULL, p_limit integer DEFAULT 50)
-RETURNS TABLE (id bigint, sender_id uuid, content text, is_read boolean, created_at timestamptz)
+RETURNS TABLE (id bigint, sender_id uuid, content text, is_read boolean, created_at timestamptz,
+               recalled_at timestamptz, status text)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
@@ -214,11 +217,14 @@ BEGIN
         RAISE EXCEPTION '不是会话成员';
     END IF;
     RETURN QUERY
-    SELECT m.id, m.sender_id, m.content, m.is_read, m.created_at
+    SELECT m.id, m.sender_id, m.content, m.is_read, m.created_at, m.recalled_at, m.status
       FROM public.messages m
      WHERE m.conversation_id = p_conversation_id
-       AND m.status <> 'recalled'
        AND NOT (p_user = ANY(m.deleted_for))
+       AND (
+           m.status <> 'recalled'
+           OR (m.sender_id = p_user AND m.recalled_at >= now() - interval '2 minutes')
+       )
        AND (p_before_id IS NULL OR m.id < p_before_id)
      ORDER BY m.id DESC
      LIMIT p_limit;

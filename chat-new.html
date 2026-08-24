@@ -478,6 +478,12 @@
         else {
             body.innerHTML = msgs.map(m => renderMsg(m)).join('');
         }
+        // 刷新/加载后：为窗口内的"取消撤回"提示安排按剩余时间消失
+        body.querySelectorAll('.recall-tip[data-remain]').forEach(tip => {
+            const remain = parseInt(tip.dataset.remain) || 0;
+            if (remain <= 0) { tip.remove(); return; }
+            setTimeout(() => { if (tip.isConnected) tip.remove(); }, remain);
+        });
         updateOldestId();
         body.scrollTop = body.scrollHeight;   // 打开会话自动滚到底（微信同款）
     }
@@ -510,6 +516,12 @@
                 frag.appendChild(div);
             });
             body.insertBefore(frag, body.firstChild);
+            // 分页加载的 recalled 提示也按剩余时间消失
+            body.querySelectorAll('.recall-tip[data-remain]').forEach(tip => {
+                const remain = parseInt(tip.dataset.remain) || 0;
+                if (remain <= 0) { tip.remove(); return; }
+                setTimeout(() => { if (tip.isConnected) tip.remove(); }, remain);
+            });
             body.scrollTop = body.scrollHeight - prevHeight;   // 保持当前阅读位置
             updateOldestId();
         }
@@ -599,6 +611,11 @@
     }
 
     function renderMsg(m) {
+        // 自己撤回的、2分钟窗口内的消息 → 渲染成"取消撤回"提示（刷新后仍显示）
+        if (m.status === 'recalled' && m.sender_id === currentUser.id) {
+            const remain = Math.max(0, new Date(m.recalled_at).getTime() + RECALL_WINDOW_MS - Date.now());
+            return `<div class="recall-tip" data-msgid="${m.id}" data-remain="${remain}">你撤回了一条消息<span class="unrecall-link" data-msgid="${m.id}">取消撤回</span></div>`;
+        }
         const me = m.sender_id === currentUser.id;
         const avatar = me
             ? (currentUser.avatar_url || DEFAULT_AVATAR)
@@ -885,7 +902,9 @@
                         div.innerHTML = renderMsg(msg);
                         el.replaceWith(div);
                     } else {
-                        // 对方取消撤回：消息重新可见 → 重新插入（去重由 appendLocalMessage 处理）
+                        // 消息从 recalled 恢复为 active（取消撤回）：移除提示并重新插入
+                        const tip = document.querySelector(`#chatBody .recall-tip[data-msgid="${msg.id}"]`);
+                        if (tip) tip.remove();
                         appendLocalMessage(msg);
                     }
                 }
