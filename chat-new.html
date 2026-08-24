@@ -47,6 +47,11 @@
         .chat-header { padding: 12px 16px; border-bottom: 1px solid var(--card-border); font-weight: 600; color: var(--text-color); display: flex; align-items: center; justify-content: space-between; }
         .chat-header .conv-menu-btn { background: none; border: none; font-size: 1.3rem; line-height: 1; cursor: pointer; color: var(--count-text); padding: 2px 8px; border-radius: 8px; }
         .chat-header .conv-menu-btn:hover { background: var(--count-bg); color: var(--text-color); }
+        .chat-header .conv-menu-btn { position: relative; width: 42px; height: 30px; padding: 0; }
+        .chat-header .conv-menu-btn .cm-ico { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; line-height: 1; transition: opacity 0.25s ease, transform 0.25s ease; }
+        .chat-header .conv-menu-btn .cm-cross { opacity: 0; transform: rotate(-90deg) scale(0.4); }
+        .chat-header .conv-menu-btn.open .cm-dots { opacity: 0; transform: rotate(90deg) scale(0.4); }
+        .chat-header .conv-menu-btn.open .cm-cross { opacity: 1; transform: rotate(0deg) scale(1); }
         /* 消息操作菜单（右键/长按）与会话菜单 */
         .ctx-menu {
             position: fixed; z-index: 30000; min-width: 170px;
@@ -151,7 +156,7 @@
         <div class="main-panel">
             <div class="chat-header">
                 <span id="chatHeaderTitle">选择一个好友开始聊天</span>
-                <button class="conv-menu-btn" id="convMenuBtn" title="更多" style="display:none;">⋯</button>
+                <button class="conv-menu-btn" id="convMenuBtn" title="更多" style="display:none;"><span class="cm-ico cm-dots">⋯</span><span class="cm-ico cm-cross">✕</span></button>
             </div>
             <div class="chat-body" id="chatBody"><div class="empty-tip">👈 左侧选择好友或会话</div></div>
             <div class="chat-input" id="chatInputBar" style="display:none;">
@@ -430,6 +435,7 @@
         currentConvId = convId;
         currentOther = { id: otherId, name: otherName, avatar: otherAvatar };
         document.getElementById('chatHeaderTitle').innerText = `💬 ${otherName}`;
+        document.getElementById('convMenuBtn').classList.remove('open');
         document.getElementById('convMenuBtn').style.display = 'inline-block';
         document.getElementById('chatInputBar').style.display = 'flex';
         if (currentTab === 'convs') renderConvs();
@@ -630,6 +636,8 @@
     function hideMsgMenu() {
         document.getElementById('msgCtxMenu').style.display = 'none';
         document.getElementById('convCtxMenu').style.display = 'none';
+        const btn = document.getElementById('convMenuBtn');
+        if (btn) btn.classList.remove('open');
     }
 
     // 撤回 / 删除
@@ -738,12 +746,18 @@
             if (msgId) await doMsgAction(act, msgId, msgEl);
         });
 
-        // 会话 ⋯ 菜单
+        // 会话 ⋯ 菜单（新UI：按钮平滑 ⋯ ⇄ ✕）
         document.getElementById('convMenuBtn').addEventListener('click', (e) => {
             e.stopPropagation();
+            const btn = document.getElementById('convMenuBtn');
             const menu = document.getElementById('convCtxMenu');
-            if (menu.style.display === 'block') { hideMsgMenu(); return; }
-            const rect = e.target.getBoundingClientRect();
+            if (menu.style.display === 'block') {
+                btn.classList.remove('open');
+                hideMsgMenu();
+                return;
+            }
+            btn.classList.add('open');
+            const rect = btn.getBoundingClientRect();
             menu.style.display = 'block';
             menu.style.left = Math.max(8, rect.right - 190) + 'px';
             menu.style.top = (rect.bottom + 6) + 'px';
