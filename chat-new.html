@@ -76,6 +76,41 @@
             text-decoration: underline; text-underline-offset: 2px;
         }
         .recall-tip .unrecall-link:hover { filter: brightness(1.2); }
+        /* 引用回复：气泡内的引用块 */
+        .quote-block {
+            background: rgba(0,0,0,0.06); border-left: 3px solid var(--status-border);
+            border-radius: 6px; padding: 5px 9px; margin: 2px 0 6px;
+            font-size: 0.78rem; color: var(--count-text);
+            max-height: 60px; overflow: hidden; display: -webkit-box;
+            -webkit-line-clamp: 3; -webkit-box-orient: vertical; white-space: pre-wrap;
+        }
+        .quote-block .quote-author { font-weight: 600; color: var(--status-border); margin-bottom: 1px; }
+        .msg.me .quote-block { background: rgba(255,255,255,0.18); border-left-color: rgba(255,255,255,0.7); }
+        .msg.me .quote-block .quote-author { color: #fff; }
+        /* 输入框上方引用预览条 */
+        .quote-preview {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 12px; border-top: 1px solid var(--card-border);
+            background: var(--count-bg); font-size: 0.78rem; color: var(--count-text);
+            max-height: 44px; overflow: hidden;
+        }
+        .quote-preview .qp-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .quote-preview .qp-cancel { cursor: pointer; padding: 2px 8px; border-radius: 10px; color: var(--count-text); flex-shrink: 0; }
+        .quote-preview .qp-cancel:hover { background: var(--card-border); color: var(--text-color); }
+        /* 表情面板 */
+        .emoji-panel {
+            display: none; position: absolute; bottom: 56px; left: 12px; z-index: 20000;
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 14px; box-shadow: 0 12px 28px rgba(0,0,0,0.3);
+            padding: 10px; width: 264px; max-height: 200px; overflow-y: auto;
+        }
+        .emoji-panel .em { font-size: 1.25rem; cursor: pointer; padding: 4px; border-radius: 6px; display: inline-block; }
+        .emoji-panel .em:hover { background: var(--count-bg); }
+        /* 会话未读：免打扰只显示小红点 */
+        .conv-item .dot-badge {
+            background: #ff4757; border-radius: 50%;
+            min-width: 8px; height: 8px; flex-shrink: 0;
+        }
         .chat-body { flex: 1; overflow-y: auto; padding: 16px; background: var(--count-bg); }
         .msg { display: flex; align-items: flex-start; margin-bottom: 10px; gap: 6px; }
         .msg.me { justify-content: flex-end; }
@@ -169,12 +204,20 @@
                 <button class="conv-menu-btn" id="convMenuBtn" title="更多" style="display:none;"><span class="cm-ico cm-dots">⋯</span><span class="cm-ico cm-cross">✕</span></button>
             </div>
             <div class="chat-body" id="chatBody"><div class="empty-tip">👈 左侧选择好友或会话</div></div>
+            <!-- 引用预览条 -->
+            <div class="quote-preview" id="quotePreview" style="display:none;">
+                <span class="qp-text" id="quotePreviewText"></span>
+                <span class="qp-cancel" id="quotePreviewCancel">✕</span>
+            </div>
             <div class="chat-input" id="chatInputBar" style="display:none;">
                 <button class="img-btn" id="imgBtn" title="发图片（JPG/PNG/GIF/WebP，≤5MB）">📷 发送图片</button>
+                <button class="img-btn" id="emojiBtn" title="表情">😊</button>
                 <textarea id="msgInput" rows="1" placeholder="输入消息，Enter 发送"></textarea>
                 <button id="sendBtn">发送</button>
                 <input type="file" id="imgInput" accept="image/*" style="display:none;">
             </div>
+            <!-- 表情面板 -->
+            <div class="emoji-panel" id="emojiPanel"></div>
         </div>
     </div>
 
@@ -222,6 +265,7 @@
 <div class="ctx-menu" id="msgCtxMenu"></div>
 <!-- 会话 ⋯ 菜单 -->
 <div class="ctx-menu" id="convCtxMenu">
+    <div class="ctx-item" id="convMuteItem">🔕 消息免打扰</div>
     <div class="ctx-item" id="convClearItem">🗑️ 清空聊天记录</div>
 </div>
 
@@ -329,6 +373,7 @@
         initTabs();
         bindEvents();
         bindMsgContextMenu();
+        buildEmojiPanel();
         setupRealtime();
         await refreshAll();
         // 从消息中心跳转：?conv=xxx 自动打开指定会话
@@ -432,7 +477,10 @@
             <div class="side-item ${c.conversation_id === currentConvId ? 'active' : ''}" data-conv="${c.conversation_id}" data-uid="${c.other_user_id}" data-name="${escapeHtml(c.other_username)}" data-avatar="${c.other_avatar || ''}">
                 <img src="${avatarOf(c)}" alt="">
                 <span class="name">${escapeHtml(c.other_username)}</span>
-                ${c.unread_count > 0 ? `<span class="badge" style="background:#ff4757; color:#fff; border-radius:50%; font-size:0.65rem; min-width:16px; height:16px; line-height:16px; text-align:center; padding:0 4px;">${c.unread_count > 99 ? '99+' : c.unread_count}</span>` : ''}
+                ${c.unread_count > 0 ? (c.muted
+                    ? `<span class="dot-badge" title="${c.unread_count} 条未读"></span>`
+                    : `<span class="badge" style="background:#ff4757; color:#fff; border-radius:50%; font-size:0.65rem; min-width:16px; height:16px; line-height:16px; text-align:center; padding:0 4px;">${c.unread_count > 99 ? '99+' : c.unread_count}</span>`
+                ) : ''}
                 <button class="mini-btn red" data-act="delconv" data-id="${c.conversation_id}" data-name="${escapeHtml(c.other_username)}">✕</button>
             </div>`).join('');
         document.querySelectorAll('#sideBody [data-conv]').forEach(el => {
@@ -444,6 +492,7 @@
     async function openConv(convId, otherId, otherName, otherAvatar) {
         currentConvId = convId;
         currentOther = { id: otherId, name: otherName, avatar: otherAvatar };
+        cancelQuote();
         document.getElementById('chatHeaderTitle').innerText = `💬 ${otherName}`;
         document.getElementById('convMenuBtn').classList.remove('open');
         document.getElementById('convMenuBtn').style.display = 'inline-block';
@@ -532,8 +581,15 @@
     // [redpacket]id|金额[/redpacket] → 待领取红包
     // [redpacket_claimed]id|金额[/redpacket_claimed] → 已领取
     // [redpacket_refunded]id|金额[/redpacket_refunded] → 已退回
+    // [quote]内容[/quote] → 引用块（放在消息开头）
     function renderContentWithImages(content, isMine) {
         let html = escapeHtml(content);
+        // 引用块：提取开头 [quote]...[/quote]
+        let quoteHtml = '';
+        html = html.replace(/^\[quote\]([\s\S]*?)\[\/quote\]/, (m, q) => {
+            quoteHtml = `<div class="quote-block"><div class="quote-author">${isMine ? '我' : (currentOther ? escapeHtml(currentOther.name) : '对方')} 的消息</div>${q}</div>`;
+            return '';
+        });
         html = html.replace(/\[img\]([a-zA-Z0-9_.\-]+)\[\/img\]/g, (m, key) =>
             `<img src="${SUPABASE_URL}/storage/v1/object/public/images/${key}" alt="图片" onclick="window.open(this.src,'_blank')" style="max-width:220px; max-height:220px; border-radius:10px; display:block; cursor:zoom-in;">`);
         html = html.replace(/\[redpacket\](\d+)\|(\d+)\[\/redpacket\]/g, (m, id, amt) =>
@@ -552,7 +608,7 @@
             renderRedPacket(id, amt, 'claimed', isMine));
         html = html.replace(/\[redpacket_refunded\](\d+)\|(\d+)\[\/redpacket_refunded\]/g, (m, id, amt) =>
             renderRedPacket(id, amt, 'refunded', isMine));
-        return html;
+        return quoteHtml + html;
     }
 
     // 红包卡片：pending 待领取 / claimed 已领取 / refunded 已退回
@@ -648,6 +704,8 @@
         if (isMine && withinWindow && !isClaimedRp && !isRefundedRp) {
             items += `<div class="ctx-item" data-act="recall">↩️ 撤回${isRedpacket ? '红包' : '消息'}</div>`;
         }
+        // 引用：自己的和对方的都能引用
+        items += `<div class="ctx-item" data-act="quote">💬 引用</div>`;
         // 删除：自己的和对方的都能删（仅自己视角）
         items += `<div class="ctx-item" data-act="del">🗑️ 删除${isMine ? '' : '（对方消息，仅自己可见）'}</div>`;
         if (!items) return;
@@ -668,7 +726,54 @@
         if (btn) btn.classList.remove('open');
     }
 
-    // 撤回 / 删除
+    // ========== 引用回复状态 ==========
+    let quoteState = null;   // { msgId, text, authorName }
+
+    // 点击"引用"：从消息气泡提取纯文本作为引用内容
+    function startQuote(msgEl, msgId) {
+        if (!msgEl) return;
+        const bubble = msgEl.querySelector('.bubble');
+        let text = bubble ? bubble.textContent.trim() : '';
+        // 去掉换行中的多余空白，限制长度
+        text = text.replace(/\s+/g, ' ').slice(0, 80);
+        if (!text) text = '[图片]';
+        const isMine = msgEl.classList.contains('me');
+        quoteState = { msgId, text, authorName: isMine ? '我' : (currentOther ? currentOther.name : '对方') };
+        const preview = document.getElementById('quotePreview');
+        document.getElementById('quotePreviewText').innerText = `回复 ${quoteState.authorName}：${text}`;
+        preview.style.display = 'flex';
+        document.getElementById('msgInput').focus();
+    }
+
+    function cancelQuote() {
+        quoteState = null;
+        document.getElementById('quotePreview').style.display = 'none';
+    }
+
+    // ========== 表情面板 ==========
+    const EMOJIS = ['😀','😁','😂','🤣','😊','😍','😘','😜','🤪','😎','🥳','😭','😅','😤','😱','🤔','🙄','😴','🤗','😷','👍','👎','👏','🙏','💪','🤝','❤️','🧡','💛','💚','💙','💜','🖤','💯','🔥','✨','🎉','🎊','🌸','🌹','🌈','⭐','☀️','🌙','⚡','🍀','🎁','🧧','💸','💰','🍎','🍉','🍰','☕','🚀','🐱','🐶','🦊','🐼','😺','🙈'];
+
+    function buildEmojiPanel() {
+        const panel = document.getElementById('emojiPanel');
+        panel.innerHTML = EMOJIS.map(e => `<span class="em" data-em="${e}">${e}</span>`).join('');
+    }
+
+    function toggleEmojiPanel() {
+        const panel = document.getElementById('emojiPanel');
+        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function insertEmoji(em) {
+        const ta = document.getElementById('msgInput');
+        const start = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
+        const end = ta.selectionEnd != null ? ta.selectionEnd : ta.value.length;
+        ta.value = ta.value.slice(0, start) + em + ta.value.slice(end);
+        const pos = start + em.length;
+        ta.setSelectionRange(pos, pos);
+        ta.focus();
+    }
+
+    // 撤回 / 删除 / 引用
     async function doMsgAction(act, msgId, msgEl) {
         if (act === 'recall') {
             const isRp = msgEl && !!msgEl.querySelector('.redpacket');
@@ -702,6 +807,8 @@
                 return;
             }
             if (msgEl) msgEl.remove();
+        } else if (act === 'quote') {
+            startQuote(msgEl, msgId);
         }
         loadConvs();
     }
@@ -813,25 +920,61 @@
             if (msgId) await doMsgAction(act, msgId, msgEl);
         });
 
-        // 会话 ⋯ 菜单（新UI：按钮平滑 ⋯ ⇄ ✕）
+        // 会话 ⋯ 菜单
         document.getElementById('convMenuBtn').addEventListener('click', (e) => {
             e.stopPropagation();
-            const btn = document.getElementById('convMenuBtn');
             const menu = document.getElementById('convCtxMenu');
-            if (menu.style.display === 'block') {
-                btn.classList.remove('open');
-                hideMsgMenu();
-                return;
-            }
-            btn.classList.add('open');
-            const rect = btn.getBoundingClientRect();
+            if (menu.style.display === 'block') { hideMsgMenu(); return; }
+            const rect = e.target.getBoundingClientRect();
+            // 打开时更新免打扰菜单项文案
+            const muted = currentConvId && convs.find(c => c.conversation_id === currentConvId);
+            document.getElementById('convMuteItem').innerText = (muted && muted.muted) ? '🔔 取消免打扰' : '🔕 消息免打扰';
             menu.style.display = 'block';
             menu.style.left = Math.max(8, rect.right - 190) + 'px';
             menu.style.top = (rect.bottom + 6) + 'px';
         });
+        // 消息免打扰开关
+        document.getElementById('convMuteItem').addEventListener('click', async () => {
+            hideMsgMenu();
+            if (!currentConvId) return;
+            const cur = convs.find(c => c.conversation_id === currentConvId);
+            const target = cur ? !cur.muted : true;
+            const { data, error } = await supabaseClient.rpc('set_conversation_mute', {
+                p_user: currentUser.id, p_conversation_id: currentConvId, p_muted: target
+            });
+            if (error || !data || !data.success) {
+                alert((error && error.message) || (data && data.message) || '设置失败');
+                return;
+            }
+            // 更新本地状态并刷新会话列表
+            if (cur) cur.muted = target;
+            renderConvs();
+        });
         document.getElementById('convClearItem').addEventListener('click', () => {
             hideMsgMenu();
             doClearConversation();
+        });
+        // 引用预览条：取消
+        document.getElementById('quotePreviewCancel').addEventListener('click', cancelQuote);
+        // 表情面板
+        document.getElementById('emojiBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleEmojiPanel();
+        });
+        document.getElementById('emojiPanel').addEventListener('click', (e) => {
+            const em = e.target.closest('.em');
+            if (!em) return;
+            insertEmoji(em.dataset.em);
+        });
+        document.addEventListener('click', (e) => {
+            const panel = document.getElementById('emojiPanel');
+            if (panel.style.display === 'block' && !e.target.closest('#emojiPanel') && !e.target.closest('#emojiBtn')) {
+                panel.style.display = 'none';
+            }
+        });
+        // 发送图片时也关闭表情面板
+        document.getElementById('msgInput').addEventListener('focus', () => {
+            document.getElementById('emojiPanel').style.display = 'none';
         });
     }
 
@@ -840,7 +983,13 @@
         const content = input.value.trim();
         if (!content || !currentConvId) return;
         input.value = '';
-        await sendContent(content);
+        // 有引用 → 消息前加 [quote]原文[/quote] 标记
+        let final = content;
+        if (quoteState) {
+            final = `[quote]${quoteState.text}[/quote]${content}`;
+            cancelQuote();
+        }
+        await sendContent(final);
     }
 
     async function sendContent(content) {
