@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>NB银行 - NB频道</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/ui-new.css" id="uiNewCss">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/common.js"></script>
+    <script src="js/ui-nav.js"></script>
     <style>
         body { padding: 40px 20px; background: var(--bg-color); }
         .bank-container {
@@ -89,27 +91,24 @@
 <script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
 <div class="container" style="max-width:1080px; margin:0 auto; padding:20px 20px 0;">
     <!-- 导航栏 -->
-    <div class="nav-container">
-        <div class="nav-links">
-            <a href="index.html" class="nav-btn">首页</a>
-            <a href="videos.html" class="nav-btn">视频</a>
-            <a href="about.html" class="nav-btn">关于</a>
-            <a href="changelog.html" class="nav-btn">更新日志</a>
-            <a href="product.html" class="nav-btn">我的产品</a>
-            <a href="APP.html" class="nav-btn">软件/APP下载</a>
-        </div>
-        <div class="nav-actions">
-            <a href="comments-beta.html" class="nav-btn">💬 评论区</a>
-            <a href="Virtual stock.html" class="nav-btn">📈 NB虚拟股票</a>
-            <a href="chat.html" class="nav-btn">👥 好友</a>
-            <a href="product_share.html" class="nav-btn">🛍️ 作品分享</a>
-            <a href="messages.html" class="nav-btn">🔔 消息</a>
-        </div>
-        <div class="nav-actions">
-            <a href="tools.html" class="nav-btn">🔬 化学工具</a>
-            <a href="titles.html" class="nav-btn">🏅 称号</a>
-            <a href="bank.html" class="nav-btn active">🏦 NB银行</a>
-        </div>
+    <nav class="top-nav"><a class="nav-logo" href="index-new.html">NB频道</a><div class="nav-menu"><a href="index-new.html" class="nav-btn">首页</a><a href="videos-new.html" class="nav-btn">视频</a><a href="about-new.html" class="nav-btn">关于</a><a href="changelog-new.html" class="nav-btn">更新日志</a><a href="product-new.html" class="nav-btn">我的产品</a><a href="APP-new.html" class="nav-btn">软件/APP下载</a></div><div class="nav-right"><button id="profileBtn" class="profile-btn">个人中心</button><button id="authButton" class="auth-btn">登录/注册</button></div></nav>
+    <div class="quick-nav"><span style="font-size:0.85rem; color:var(--count-text);">快捷入口：</span><a href="comments-beta.html" class="nav-btn">💬 评论区</a><a href="Virtual stock.html" class="nav-btn">📈 NB虚拟股票</a><a href="chat.html" class="nav-btn">👥 好友</a><a href="product_share.html" class="nav-btn">🛍️ 作品分享</a><a href="messages.html" class="nav-btn">🔔 消息</a><a href="tools.html" class="nav-btn">🔬 化学工具</a><a href="titles.html" class="nav-btn">🏅 称号</a><a href="bank.html" class="nav-btn">🏦 NB银行</a></div>
+
+<div class="hero">
+    <div class="hero-badges">
+        <span class="hero-badge">虚拟公司</span>
+        <span class="hero-badge">10万+粉丝</span>
+        <span class="hero-badge">化学物理作死</span>
+    </div>
+    <h1>NB银行</h1>
+    <div class="hero-sub">NB频道 · 虚拟公司 · 官网</div>
+    <div class="hero-btns">
+        <a class="hero-btn" href="videos-new.html">看视频</a>
+        <a class="hero-btn" href="comments-beta-new.html">进评论区</a>
+        <a class="hero-btn ghost" href="Virtual stock-new.html">虚拟股票</a>
+        <a class="hero-btn ghost" href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">B站关注</a>
+    </div>
+</div>
     </div>
 </div>
 <div class="bank-container">
