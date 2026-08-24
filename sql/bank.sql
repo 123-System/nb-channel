@@ -197,16 +197,19 @@ BEGIN
 
     UPDATE public.profiles SET nb_balance = nb_balance - p_amount WHERE id = p_user_id;
     IF p_days = 7 THEN
+        -- 首次存入才设置到期时间；已有定期则保持原到期时间（避免覆盖旧钱的时间基准）
         UPDATE public.bank_accounts
            SET fixed7 = fixed7 + p_amount,
-               fixed7_until = now() + interval '7 days'
+               fixed7_until = CASE WHEN fixed7 > 0 THEN fixed7_until
+                                   ELSE now() + interval '7 days' END
          WHERE user_id = p_user_id;
         INSERT INTO public.bank_logs (user_id, type, amount, detail)
         VALUES (p_user_id, 'fixed7_deposit', p_amount, '定期7天存入');
     ELSE
         UPDATE public.bank_accounts
            SET fixed30 = fixed30 + p_amount,
-               fixed30_until = now() + interval '30 days'
+               fixed30_until = CASE WHEN fixed30 > 0 THEN fixed30_until
+                                    ELSE now() + interval '30 days' END
          WHERE user_id = p_user_id;
         INSERT INTO public.bank_logs (user_id, type, amount, detail)
         VALUES (p_user_id, 'fixed30_deposit', p_amount, '定期30天存入');
@@ -588,71 +591,95 @@ BEGIN
                 format('定期30天到期（本金 %s + 利息 %s，总利率5%%）', v_acc.fixed30, v_interest));
         END IF;
 
-        -- 4) 抵押贷到期 → 自动扣本息；余额不足 → 逾期罚息 + 信誉-15
+        -- 4) 抵押贷到期 → 自动扣本息（按实际天数折算，7天≈2.33%、30天=10%）；余额不足 → 逾期罚息+信誉-15
         IF v_acc.loan_principal > 0 AND v_acc.loan_until IS NOT NULL
            AND v_acc.loan_until <= now() THEN
-            v_interest := floor(v_acc.loan_principal * 0.10);
-            IF (SELECT nb_balance FROM public.profiles WHERE id = v_acc.user_id) >=
-               v_acc.loan_principal + v_interest THEN
-                UPDATE public.profiles SET nb_balance = nb_balance - v_acc.loan_principal - v_interest
-                 WHERE id = v_acc.user_id;
-                UPDATE public.bank_accounts
-                   SET loan_principal = 0, loan_until = NULL, frozen = false, frozen_amount = 0
-                 WHERE user_id = v_acc.user_id;
-                UPDATE public.bank_accounts
-                   SET credit_score = LEAST(credit_score + 5, 1000)
-                 WHERE user_id = v_acc.user_id;
-                INSERT INTO public.bank_logs (user_id, type, amount, detail)
-                VALUES (v_acc.user_id, 'repay', v_acc.loan_principal + v_interest,
-                    format('抵押贷自动还款（本金 %s + 利息 %s）', v_acc.loan_principal, v_interest));
-                INSERT INTO public.bank_logs (user_id, type, amount, detail)
-                VALUES (v_acc.user_id, 'credit_change', 5, '按时还款 +5');
-            ELSE
-                -- 逾期：罚息 + 信誉-15
-                v_interest := floor(v_acc.loan_principal * 0.001);
-                UPDATE public.bank_accounts
-                   SET credit_score = GREATEST(credit_score - 15, 0),
-                       loan_until = now() + interval '1 day'
-                 WHERE user_id = v_acc.user_id;
-                INSERT INTO public.bank_logs (user_id, type, amount, detail)
-                VALUES (v_acc.user_id, 'penalty', v_interest,
-                    format('抵押贷逾期罚息（本金 %s）', v_acc.loan_principal));
-                INSERT INTO public.bank_logs (user_id, type, amount, detail)
-                VALUES (v_acc.user_id, 'credit_change', -15, '贷款逾期 -15');
-            END IF;
+            DECLARE
+                v_loan_start timestamptz;
+                v_days integer;
+            BEGIN
+                SELECT created_at INTO v_loan_start
+                  FROM public.bank_logs
+                 WHERE user_id = v_acc.user_id AND type = 'loan'
+                 ORDER BY id DESC LIMIT 1;
+                IF v_loan_start IS NULL THEN v_loan_start := now() - interval '1 day'; END IF;
+                v_days := GREATEST(ceil(extract(epoch FROM (now() - v_loan_start)) / 86400), 1);
+                v_interest := floor(v_acc.loan_principal * 0.10 * v_days / 30);
+                IF (SELECT nb_balance FROM public.profiles WHERE id = v_acc.user_id) >=
+                   v_acc.loan_principal + v_interest THEN
+                    UPDATE public.profiles SET nb_balance = nb_balance - v_acc.loan_principal - v_interest
+                     WHERE id = v_acc.user_id;
+                    UPDATE public.bank_accounts
+                       SET loan_principal = 0, loan_until = NULL, frozen = false, frozen_amount = 0
+                     WHERE user_id = v_acc.user_id;
+                    UPDATE public.bank_accounts
+                       SET credit_score = LEAST(credit_score + 5, 1000)
+                     WHERE user_id = v_acc.user_id;
+                    INSERT INTO public.bank_logs (user_id, type, amount, detail)
+                    VALUES (v_acc.user_id, 'repay', v_acc.loan_principal + v_interest,
+                        format('抵押贷自动还款（本金 %s + 利息 %s，%s 天）', v_acc.loan_principal, v_interest, v_days));
+                    INSERT INTO public.bank_logs (user_id, type, amount, detail)
+                    VALUES (v_acc.user_id, 'credit_change', 5, '按时还款 +5');
+                ELSE
+                    -- 逾期：罚息累加到本金（复利滚存）+ 信誉-15 + 顺延一天
+                    v_interest := floor(v_acc.loan_principal * 0.001);
+                    UPDATE public.bank_accounts
+                       SET loan_principal = loan_principal + v_interest,
+                           credit_score = GREATEST(credit_score - 15, 0),
+                           loan_until = now() + interval '1 day'
+                     WHERE user_id = v_acc.user_id;
+                    INSERT INTO public.bank_logs (user_id, type, amount, detail)
+                    VALUES (v_acc.user_id, 'penalty', v_interest,
+                        format('抵押贷逾期罚息（本金 %s，罚息 %s 累加进本金）', v_acc.loan_principal, v_interest));
+                    INSERT INTO public.bank_logs (user_id, type, amount, detail)
+                    VALUES (v_acc.user_id, 'credit_change', -15, '贷款逾期 -15');
+                END IF;
+            END;
         END IF;
 
-        -- 5) 信用贷到期 → 自动扣本息；余额不足 → 逾期罚息 + 信誉-15
+        -- 5) 信用贷到期 → 自动扣本息（按实际天数折算）；余额不足 → 逾期罚息+信誉-15
         IF v_acc.loan_credit > 0 AND v_acc.loan_credit_until IS NOT NULL
            AND v_acc.loan_credit_until <= now() THEN
-            v_interest := floor(v_acc.loan_credit * (CASE WHEN v_acc.credit_score >= 800 THEN 0.09 ELSE 0.10 END));
-            IF (SELECT nb_balance FROM public.profiles WHERE id = v_acc.user_id) >=
-               v_acc.loan_credit + v_interest THEN
-                UPDATE public.profiles SET nb_balance = nb_balance - v_acc.loan_credit - v_interest
-                 WHERE id = v_acc.user_id;
-                UPDATE public.bank_accounts
-                   SET loan_credit = 0, loan_credit_until = NULL
-                 WHERE user_id = v_acc.user_id;
-                UPDATE public.bank_accounts
-                   SET credit_score = LEAST(credit_score + 5, 1000)
-                 WHERE user_id = v_acc.user_id;
-                INSERT INTO public.bank_logs (user_id, type, amount, detail)
-                VALUES (v_acc.user_id, 'repay_credit', v_acc.loan_credit + v_interest,
-                    format('信用贷自动还款（本金 %s + 利息 %s）', v_acc.loan_credit, v_interest));
-                INSERT INTO public.bank_logs (user_id, type, amount, detail)
-                VALUES (v_acc.user_id, 'credit_change', 5, '按时还款 +5');
-            ELSE
-                v_interest := floor(v_acc.loan_credit * 0.001);
-                UPDATE public.bank_accounts
-                   SET credit_score = GREATEST(credit_score - 15, 0),
-                       loan_credit_until = now() + interval '1 day'
-                 WHERE user_id = v_acc.user_id;
-                INSERT INTO public.bank_logs (user_id, type, amount, detail)
-                VALUES (v_acc.user_id, 'penalty', v_interest,
-                    format('信用贷逾期罚息（本金 %s）', v_acc.loan_credit));
-                INSERT INTO public.bank_logs (user_id, type, amount, detail)
-                VALUES (v_acc.user_id, 'credit_change', -15, '贷款逾期 -15');
-            END IF;
+            DECLARE
+                v_loan_start2 timestamptz;
+                v_days2 integer;
+            BEGIN
+                SELECT created_at INTO v_loan_start2
+                  FROM public.bank_logs
+                 WHERE user_id = v_acc.user_id AND type = 'loan_credit'
+                 ORDER BY id DESC LIMIT 1;
+                IF v_loan_start2 IS NULL THEN v_loan_start2 := now() - interval '1 day'; END IF;
+                v_days2 := GREATEST(ceil(extract(epoch FROM (now() - v_loan_start2)) / 86400), 1);
+                v_interest := floor(v_acc.loan_credit * (CASE WHEN v_acc.credit_score >= 800 THEN 0.09 ELSE 0.10 END) * v_days2 / 30);
+                IF (SELECT nb_balance FROM public.profiles WHERE id = v_acc.user_id) >=
+                   v_acc.loan_credit + v_interest THEN
+                    UPDATE public.profiles SET nb_balance = nb_balance - v_acc.loan_credit - v_interest
+                     WHERE id = v_acc.user_id;
+                    UPDATE public.bank_accounts
+                       SET loan_credit = 0, loan_credit_until = NULL
+                     WHERE user_id = v_acc.user_id;
+                    UPDATE public.bank_accounts
+                       SET credit_score = LEAST(credit_score + 5, 1000)
+                     WHERE user_id = v_acc.user_id;
+                    INSERT INTO public.bank_logs (user_id, type, amount, detail)
+                    VALUES (v_acc.user_id, 'repay_credit', v_acc.loan_credit + v_interest,
+                        format('信用贷自动还款（本金 %s + 利息 %s，%s 天）', v_acc.loan_credit, v_interest, v_days2));
+                    INSERT INTO public.bank_logs (user_id, type, amount, detail)
+                    VALUES (v_acc.user_id, 'credit_change', 5, '按时还款 +5');
+                ELSE
+                    v_interest := floor(v_acc.loan_credit * 0.001);
+                    UPDATE public.bank_accounts
+                       SET loan_credit = loan_credit + v_interest,
+                           credit_score = GREATEST(credit_score - 15, 0),
+                           loan_credit_until = now() + interval '1 day'
+                     WHERE user_id = v_acc.user_id;
+                    INSERT INTO public.bank_logs (user_id, type, amount, detail)
+                    VALUES (v_acc.user_id, 'penalty', v_interest,
+                        format('信用贷逾期罚息（本金 %s，罚息 %s 累加进本金）', v_acc.loan_credit, v_interest));
+                    INSERT INTO public.bank_logs (user_id, type, amount, detail)
+                    VALUES (v_acc.user_id, 'credit_change', -15, '贷款逾期 -15');
+                END IF;
+            END;
         END IF;
 
         v_processed := v_processed + 1;
