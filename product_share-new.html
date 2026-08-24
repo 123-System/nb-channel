@@ -350,8 +350,10 @@
             btn.addEventListener('click', () => {
                 const productId = parseInt(btn.dataset.id);
                 const p = productsData.find(x => x.id === productId);
-                // 付费且未购买：弹支付方式选择；免费/已购买：直接下载
-                if (p && p.price > 0 && !purchasedIdsSet.has(productId)) {
+                const isOwner = user && user.id === p.author_id;
+                // 自己的作品：直接下载（不弹付费）
+                // 付费且未购买（非自己）：弹支付方式选择；免费/已购买：直接下载
+                if (!isOwner && p && p.price > 0 && !purchasedIdsSet.has(productId)) {
                     openPayModal(productId, p);
                 } else {
                     purchaseProduct(productId);
