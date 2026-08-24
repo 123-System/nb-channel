@@ -1051,21 +1051,11 @@
         `;
     }
 
-    // 懒加载分页：目标页未加载时先从数据库拉取
-    async function renderCommentsForPage(page) {
-        const start = (page - 1) * COMMENTS_PER_PAGE;
-        const end = start + COMMENTS_PER_PAGE;
-        // 已加载的数据是否覆盖目标页（allMainComments 只存最新加载的一页）
-        const loadedStart = (currentPage - 1) * COMMENTS_PER_PAGE;
-        const loadedEnd = loadedStart + allMainComments.length;
-        if (page !== currentPage && (start < loadedStart || end > loadedEnd)) {
-            currentPage = page;
-            commentListDiv.innerHTML = '<p style="text-align:center; color:var(--count-text);">加载中...</p>';
-            await fetchComments(page);
-            return;   // fetchComments 内部会调用 renderCommentsForPage
-        }
+    function renderCommentsForPage(page) {
         currentPage = page;
-        const pageMainComments = allMainComments;
+        const start = (page - 1) * COMMENTS_PER_PAGE;
+        const end = Math.min(start + COMMENTS_PER_PAGE, allMainComments.length);
+        const pageMainComments = allMainComments.slice(start, end);
 
         const tree = pageMainComments.map((main, idx) => {
             const replies = allRepliesMap.get(main.id) || [];
@@ -1078,7 +1068,7 @@
     }
 
     function renderPagination() {
-        const totalPages = Math.max(1, Math.ceil(totalComments / COMMENTS_PER_PAGE));
+        const totalPages = Math.ceil(allMainComments.length / COMMENTS_PER_PAGE);
         if (totalPages <= 1) {
             const oldPagination = document.querySelector('.pagination-bar');
             if (oldPagination) oldPagination.remove();
@@ -1304,7 +1294,8 @@
                         const savedPage = currentPage;
                         // 先重新加载数据，然后强制跳转到保存的页码
                         commentsCache = null;   // 有新回复，缓存失效
-                        await fetchComments();
+                        await fetchComments();
+                        renderCommentsForPage(savedPage);
                     }
                 } finally {
                     isPostingReply = false;
@@ -1418,11 +1409,12 @@
                     if (!data.success) { showMessage('提示', data.message); return; }
                     const savedPage = currentPage;
                     commentsCache = null;   // 评论已编辑，缓存失效
-                    await fetchComments();
+                    await fetchComments();
+                    renderCommentsForPage(savedPage);
                 };
                 cancelBtn.onclick = () => {
                     const savedPage = currentPage;
-                    fetchComments();
+                    fetchComments().then(() => renderCommentsForPage(savedPage));
                 };
 
                 contentDiv.replaceWith(editForm);
@@ -1548,7 +1540,8 @@
         } else {
             const savedPage = currentPage;
             commentsCache = null;   // 评论已删除，缓存失效
-            await fetchComments();
+            await fetchComments();
+            renderCommentsForPage(savedPage);
         }
     }
 
@@ -1557,48 +1550,38 @@
 
         // 用户名列表与评论数据并行拉取（互不依赖），缩短首次加载时间
         [verifiedUsernames] = await Promise.all([fetchVerifiedUsers(), fetchUsernames()]);
-
-        // ===== 懒加载：只拉目标页的主评论，再拉这些主评论的回复 =====
-        const PAGE = COMMENTS_PER_PAGE;
-        // 先取该页主评论（按最新排序，range 分页）
-        const mainRes = await supabaseClient
-            .from('comments')
-            .select('id, content, user_id, parent_id, created_at, page_path, profiles(username, avatar_url)')
-            .eq('page_path', pagePath)
-            .is('parent_id', null)
-            .order('created_at', { ascending: false })
-            .range((targetPage - 1) * PAGE, targetPage * PAGE - 1);
-        if (mainRes.error) { console.error(mainRes.error); return; }
-        const pageMains = mainRes.data || [];
-
-        // 取这些主评论的全部回复（一次 IN 查询）
-        let pageReplies = [];
-        if (pageMains.length > 0) {
-            const mainIds = pageMains.map(c => c.id);
-            // 分块查询，避免 URL 过长（每块最多 100 个 ID）
-            for (let i = 0; i < mainIds.length; i += 100) {
-                const chunk = mainIds.slice(i, i + 100);
-                const repRes = await supabaseClient
-                    .from('comments')
-                    .select('id, content, user_id, parent_id, created_at, page_path, profiles(username, avatar_url)')
-                    .in('parent_id', chunk)
-                    .order('created_at', { ascending: false });
-                if (repRes.error) break;
-                pageReplies = pageReplies.concat(repRes.data || []);
+        // 评论数据缓存：翻页/切排序不重复拉取（发帖/回复/删除/编辑后失效）
+        let data;
+        if (commentsCache) {
+            data = commentsCache;
+        } else {
+            // 前两批并行拉取（PostgREST 单次上限 1000），超过 2000 条再串行补拉
+            const BATCH = 1000;
+            const buildQuery = (from) => supabaseClient
+                .from('comments')
+                .select('id, content, user_id, parent_id, created_at, page_path, profiles(username, avatar_url)')
+                .eq('page_path', pagePath)
+                .order('created_at', { ascending: false })
+                .range(from, from + BATCH - 1);
+            const [r1, r2] = await Promise.all([buildQuery(0), buildQuery(BATCH)]);
+            let allData = [...(r1.data || []), ...(r2.data || [])];
+            let fetchError = r1.error || r2.error;
+            let lastLen = (r2.data || []).length;
+            let from = BATCH * 2;
+            while (!fetchError && lastLen >= BATCH) {
+                const r = await buildQuery(from);
+                if (r.error) { fetchError = r.error; break; }
+                allData = allData.concat(r.data || []);
+                lastLen = (r.data || []).length;
+                from += BATCH;
             }
+            if (fetchError) { console.error(fetchError); return; }
+            data = allData;
+            commentsCache = data;
         }
 
-        // 评论总数（只查 count，不取数据）
-        const countRes = await supabaseClient
-            .from('comments')
-            .select('id', { count: 'exact', head: true })
-            .eq('page_path', pagePath)
-            .is('parent_id', null);
-        totalComments = (countRes.count != null) ? countRes.count : pageMains.length;
-
-        // 当前页数据
-        const mainComments = pageMains;
-        const replies = pageReplies;
+        const mainComments = data.filter(c => !c.parent_id);
+        const replies = data.filter(c => c.parent_id);
 
         // 点赞/点踩数据：最热排序需要全量热度，最新排序只需当前页
         if (commentSort === 'hot') {
@@ -1640,12 +1623,11 @@
             replyList.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         }
 
-        // 公司徽章 + 点赞数据：只查当前页显示的主评论及其回复（避免全表大查询和超长 IN 条件）
-        const pageStart = (targetPage - 1) * COMMENTS_PER_PAGE;
-        const pageMainIds = mainComments.slice(pageStart, pageStart + COMMENTS_PER_PAGE);
+        // 公司徽章 + 点赞数据：全量查询（数据已全量加载，一次查齐所有作者，
+        // 称号/公司/点赞翻页不再丢失——只查当前页是翻页后称号消失的根源）
         const pageUserIds = new Set();
         const pageCommentIds = new Set();
-        for (const c of pageMainIds) {
+        for (const c of mainComments) {
             pageUserIds.add(c.user_id);
             pageCommentIds.add(c.id);
             for (const r of (repliesMap.get(c.id) || [])) {
@@ -1658,31 +1640,38 @@
         window.titleMap = new Map();
         const uidArr = [...pageUserIds].filter(id => id);
         if (uidArr.length > 0) {
-            // 公司徽章 + 佩戴称号（并行拉取；称号走批量 RPC，一次查询替代逐个查询）
-            const [compRes, titleRes] = await Promise.all([
-                supabaseClient
+            // 公司徽章：分块查询（避免 URL 过长）
+            const compChunks = [];
+            for (let i = 0; i < uidArr.length; i += 100) {
+                compChunks.push(supabaseClient
                     .from('user_companies')
                     .select('user_id, company_name, verified')
-                    .in('user_id', uidArr),
-                supabaseClient.rpc('get_user_titles_batch', { p_user_ids: uidArr })
-            ]);
-            const companies = compRes.data || [];
-            if (compRes.error) console.error(compRes.error);
+                    .in('user_id', uidArr.slice(i, i + 100)));
+            }
+            const compResults = await Promise.all(compChunks);
+            const companies = [];
+            for (const r of compResults) {
+                if (r.error) console.error(r.error);
+                companies.push(...(r.data || []));
+            }
             window.companyMap = new Map(companies.map(c => [c.user_id, c]));
-            // 称号批量结果
-            window.titleMap = new Map();
+            // 佩戴称号：批量 RPC 分块查询（一次查询替代逐个查询，加速加载）
             const TITLE_BASE = window.location.origin + '/';
-            const titles = titleRes.data || [];
-            for (const t of titles) {
-                const row = {
-                    title_key: t.title_key,
-                    name: t.name,
-                    image_url: t.image_url,
-                    icon: t.icon,
-                    stars: t.stars
-                };
-                row._img = /^https?:/.test(row.image_url) ? row.image_url : TITLE_BASE + row.image_url;
-                window.titleMap.set(t.user_id, row);
+            for (let i = 0; i < uidArr.length; i += 200) {
+                const { data: titles, error: titleErr } = await supabaseClient
+                    .rpc('get_user_titles_batch', { p_user_ids: uidArr.slice(i, i + 200) });
+                if (titleErr) { console.error(titleErr); break; }
+                for (const t of (titles || [])) {
+                    const row = {
+                        title_key: t.title_key,
+                        name: t.name,
+                        image_url: t.image_url,
+                        icon: t.icon,
+                        stars: t.stars
+                    };
+                    row._img = /^https?:/.test(row.image_url) ? row.image_url : TITLE_BASE + row.image_url;
+                    window.titleMap.set(t.user_id, row);
+                }
             }
         }
 
@@ -1707,13 +1696,12 @@
             }
         }
 
-        // 懒加载：allMainComments 只存当前已加载的这一页（按最新排序）
         allMainComments = mainComments;
         allRepliesMap = repliesMap;
-        totalComments = totalComments;   // 已在前面 count 查询赋值
+        totalComments = data.length;
 
         const toolbarTotal = document.getElementById('toolbarTotal');
-        if (toolbarTotal) toolbarTotal.innerText = `共 ${totalComments} 条评论`;
+        if (toolbarTotal) toolbarTotal.innerText = `共 ${data.length} 条评论`;
 
         const highlightId = new URLSearchParams(window.location.search).get('highlight');
         if (highlightId) {
@@ -1741,21 +1729,7 @@
             pendingHighlightId = null;
         }
 
-        // 数据已加载完成：直接渲染当前页
-        renderLoadedPage(targetPage);
-    }
-
-    // 渲染已加载的当前页数据（懒加载：allMainComments 只含当前页）
-    function renderLoadedPage(page) {
-        currentPage = page;
-        const pageMainComments = allMainComments;
-        const start = (page - 1) * COMMENTS_PER_PAGE;
-        const tree = pageMainComments.map((main, idx) => {
-            const replies = allRepliesMap.get(main.id) || [];
-            return { ...main, replies: replies, floor: start + idx + 1 };
-        });
-        renderComments(tree);
-        renderPagination();
+        renderCommentsForPage(targetPage);
     }
 
     let isPostingComment = false;   // 防连点：发布评论中锁定，避免手滑重复发布
@@ -1807,7 +1781,8 @@
             charCountSpan.innerText = '0';
             const savedPage = currentPage;
             commentsCache = null;   // 有新评论，缓存失效
-            await fetchComments();
+            await fetchComments();
+            renderCommentsForPage(savedPage);
         } finally {
             isPostingComment = false;
         }
