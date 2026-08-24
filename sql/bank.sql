@@ -2,7 +2,7 @@
 -- NB频道 - NB银行（v2：存款/贷款/信誉分）
 -- 在 Supabase SQL Editor 中执行本文件（幂等）
 -- 功能：
---   1) 存款：活期 0.5%/天、定期7天到期3%、定期30天到期5%
+--   1) 存款：活期 0.3%/天、定期7天到期3%、定期30天到期5%
 --   2) 贷款：抵押贷（存款×80%，到期总利率10%）、信用贷（信誉分额度，10%，800+打9折）
 --   3) 信誉分：初始100，满分1000；按时还+5、逾期-15/天、成就+3、签到+2、评论+0.5(日上限2)
 --   4) 每天凌晨自动结算存款利息 + 处理到期贷款（pg_cron）
@@ -161,7 +161,7 @@ BEGIN
     INSERT INTO public.bank_logs (user_id, type, amount, detail)
     VALUES (p_user_id, 'deposit', p_amount, '活期存入');
     RETURN jsonb_build_object('success', true, 'message',
-        format('已存入 %s NB币（活期，日利率 0.5%%）', p_amount));
+        format('已存入 %s NB币（活期，日利率 0.3%%）', p_amount));
 END;
 $$;
 
@@ -284,14 +284,14 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '该定期没有存款');
     END IF;
 
-    -- 已到期：按定期总利率结算；未到期提前支取：按活期 0.5%/天算已存天数
+    -- 已到期：按定期总利率结算；未到期提前支取：按活期 0.3%/天算已存天数
     v_elapsed_days := GREATEST(floor(extract(epoch FROM (now() - v_deposited_at)) / 86400), 0);
     IF v_elapsed_days >= p_days THEN
         -- 到期
         v_interest := floor(v_amount * CASE WHEN p_days = 7 THEN 0.03 ELSE 0.05 END);
     ELSE
         -- 提前支取：活期利率 × 已存天数
-        v_interest := floor(v_amount * 0.005 * v_elapsed_days);   -- 活期 0.5%/天
+        v_interest := floor(v_amount * 0.003 * v_elapsed_days);   -- 活期 0.3%/天
     END IF;
 
     IF p_days = 7 THEN
@@ -545,16 +545,16 @@ BEGIN
         deposit > 0 OR fixed7 > 0 OR fixed30 > 0 OR
         loan_principal > 0 OR loan_credit > 0
     LOOP
-        -- 1) 活期利息 0.5%
+        -- 1) 活期利息 0.3%
         IF v_acc.deposit > 0 THEN
-            v_interest := floor(v_acc.deposit * 0.005);   -- 活期 0.5%/天
+            v_interest := floor(v_acc.deposit * 0.003);   -- 活期 0.3%/天
             IF v_interest > 0 THEN
                 UPDATE public.bank_accounts SET deposit = deposit + v_interest
                  WHERE user_id = v_acc.user_id;
                 UPDATE public.profiles SET nb_balance = nb_balance + v_interest
                  WHERE id = v_acc.user_id;
                 INSERT INTO public.bank_logs (user_id, type, amount, detail)
-                VALUES (v_acc.user_id, 'interest', v_interest, '活期利息 0.5%');
+                VALUES (v_acc.user_id, 'interest', v_interest, '活期利息 0.3%');
             END IF;
         END IF;
 

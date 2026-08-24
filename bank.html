@@ -195,11 +195,33 @@
 
             let html = `
                 <div class="overview">
-                    <div class="ov-card"><div class="num">${fmtBig(acc.deposit)}</div><div class="label">活期存款</div><div class="tip">日利率 0.5%</div></div>
+                    <div class="ov-card"><div class="num">${fmtBig(acc.deposit)}</div><div class="label">活期存款</div><div class="tip">日利率 0.3%</div></div>
                     <div class="ov-card"><div class="num">${fmtBig(acc.fixed7)}</div><div class="label">定期7天</div><div class="tip">到期3%${acc.fixed7_until ? ' · ' + fmtTime(acc.fixed7_until).slice(5,16) + '到期' : ''}</div></div>
                     <div class="ov-card"><div class="num">${fmtBig(acc.fixed30)}</div><div class="label">定期30天</div><div class="tip">到期5%${acc.fixed30_until ? ' · ' + fmtTime(acc.fixed30_until).slice(5,16) + '到期' : ''}</div></div>
                     <div class="ov-card"><div class="num">${fmtBig(acc.loan_principal)}</div><div class="label">抵押贷款</div><div class="tip">到期10%</div></div>
                     <div class="ov-card"><div class="num">${fmtBig(acc.loan_credit)}</div><div class="label">信用贷款</div><div class="tip">到期${acc.credit_score >= 800 ? '9%' : '10%'}</div></div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">📋 利率表</div>
+                    <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                        <thead>
+                            <tr style="background:var(--count-bg);">
+                                <th style="padding:8px 12px; text-align:left; border-bottom:1px solid var(--card-border);">类型</th>
+                                <th style="padding:8px 12px; text-align:left; border-bottom:1px solid var(--card-border);">利率</th>
+                                <th style="padding:8px 12px; text-align:left; border-bottom:1px solid var(--card-border);">说明</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td style="padding:7px 12px; border-bottom:1px dashed var(--card-border);">💵 活期</td><td style="padding:7px 12px; border-bottom:1px dashed var(--card-border); color:#4caf50; font-weight:700;">0.3% / 天</td><td style="padding:7px 12px; border-bottom:1px dashed var(--card-border); color:var(--count-text);">每日凌晨自动结算，随时存取</td></tr>
+                            <tr><td style="padding:7px 12px; border-bottom:1px dashed var(--card-border);">📅 定期 7 天</td><td style="padding:7px 12px; border-bottom:1px dashed var(--card-border); color:#4caf50; font-weight:700;">3%（到期总）</td><td style="padding:7px 12px; border-bottom:1px dashed var(--card-border); color:var(--count-text);">锁定 7 天，到期本息自动转活期；提前支取按活期 0.3%/天算</td></tr>
+                            <tr><td style="padding:7px 12px; border-bottom:1px dashed var(--card-border);">📅 定期 30 天</td><td style="padding:7px 12px; border-bottom:1px dashed var(--card-border); color:#4caf50; font-weight:700;">5%（到期总）</td><td style="padding:7px 12px; border-bottom:1px dashed var(--card-border); color:var(--count-text);">锁定 30 天，到期本息自动转活期；提前支取按活期 0.3%/天算</td></tr>
+                            <tr><td style="padding:7px 12px; border-bottom:1px dashed var(--card-border);">🏦 抵押贷款</td><td style="padding:7px 12px; border-bottom:1px dashed var(--card-border); color:#e74c3c; font-weight:700;">10%（到期总）</td><td style="padding:7px 12px; border-bottom:1px dashed var(--card-border); color:var(--count-text);">额度=存款×80%；提前还按实际天数折算（30天=10%）</td></tr>
+                            <tr><td style="padding:7px 12px; border-bottom:1px dashed var(--card-border);">🤝 信用贷款</td><td style="padding:7px 12px; border-bottom:1px dashed var(--card-border); color:#e74c3c; font-weight:700;">10%（到期总）· 信誉800+打9折=9%</td><td style="padding:7px 12px; border-bottom:1px dashed var(--card-border); color:var(--count-text);">额度=信誉分×500~1500；提前还按实际天数折算</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
                 </div>
                 ${frozenTip}
 
