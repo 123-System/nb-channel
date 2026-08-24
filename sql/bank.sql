@@ -344,12 +344,12 @@ BEGIN
             format('超出抵押额度（当前可贷 %s NB币）', v_limit));
     END IF;
 
-    -- 冻结贷款时点的活期存款；之后新存入的部分可自由取
+    -- 冻结贷款时点的全部存款（活期+定期，作为抵押）；之后新存入的部分可自由取
     UPDATE public.bank_accounts
        SET loan_principal = p_amount,
            loan_until = now() + (p_days || ' days')::interval,
            frozen = true,
-           frozen_amount = v_acc.deposit
+           frozen_amount = v_acc.deposit + v_acc.fixed7 + v_acc.fixed30
      WHERE user_id = p_user_id;
     UPDATE public.profiles SET nb_balance = nb_balance + p_amount WHERE id = p_user_id;
     INSERT INTO public.bank_logs (user_id, type, amount, detail)
@@ -726,5 +726,8 @@ GRANT EXECUTE ON FUNCTION public.bank_loan(uuid, integer, integer) TO anon;
 GRANT EXECUTE ON FUNCTION public.bank_credit_loan(uuid, integer, integer) TO anon;
 GRANT EXECUTE ON FUNCTION public.bank_repay(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION public.bank_repay_credit(uuid) TO anon;
-GRANT EXECUTE ON FUNCTION public.bank_daily_settle() TO anon;
+-- bank_daily_settle 不授权给 anon：只允许 pg_cron 定时任务调用
+-- （否则任何用户都能手动触发全站结算；如需手动测试由管理员用 SQL 调用）
 GRANT EXECUTE ON FUNCTION public.get_bank_logs(uuid, integer) TO anon;
+-- 撤销（幂等，防止旧版本授权残留）
+REVOKE EXECUTE ON FUNCTION public.bank_daily_settle() FROM anon, authenticated, public;
