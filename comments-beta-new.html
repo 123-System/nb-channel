@@ -243,10 +243,28 @@
             <textarea id="comment-text" rows="3" placeholder="写下你的评论... (最多200字，图片约占41字)" maxlength="200"></textarea>
             <div class="char-counter"><span id="char-count">0</span>/200</div>
             <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
-                <button type="button" id="btn-comment-image" title="发图片（JPG/PNG/GIF/WebP，≤5MB）" style="background:none; border:1px solid var(--card-border); border-radius:8px; padding:6px 12px; cursor:pointer; font-size:0.95rem;">📷 发送图片</button>
+                <button type="button" id="btn-comment-image" title="发图片（相册/拍照）" style="background:none; border:1px solid var(--card-border); border-radius:8px; padding:6px 12px; cursor:pointer; font-size:0.95rem;">📷 图片</button>
                 <button id="submit-comment" style="margin-left:auto;">发布评论</button>
             </div>
             <input type="file" id="comment-image-input" accept="image/*" style="display:none;">
+            <input type="file" id="comment-cam-input" accept="image/*" capture="environment" style="display:none;">
+        </div>
+
+        <!-- 图片来源菜单 -->
+        <div class="ctx-menu" id="commentImgSrcMenu" style="position:fixed; z-index:30000; min-width:170px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,0.3); padding:6px; display:none;">
+            <div class="ctx-item" data-src="album" style="padding:9px 14px; border-radius:8px; cursor:pointer; font-size:0.88rem; color:var(--text-color); white-space:nowrap;">🖼️ 从相册选择</div>
+            <div class="ctx-item" data-src="camera" style="padding:9px 14px; border-radius:8px; cursor:pointer; font-size:0.88rem; color:var(--text-color); white-space:nowrap;">📷 拍照</div>
+        </div>
+        <!-- 拍照弹窗 -->
+        <div class="cam-modal" id="commentCamModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:20000; justify-content:center; align-items:center;">
+            <div class="cam-box" style="background:var(--card-bg); border-radius:20px; padding:20px; width:min(420px,92vw); text-align:center;">
+                <h3 style="margin:0 0 12px; color:var(--text-color);">📷 拍照</h3>
+                <video id="commentCamVideo" autoplay playsinline muted style="width:100%; max-height:52vh; border-radius:12px; background:#000; object-fit:contain;"></video>
+                <div style="display:flex; gap:10px; justify-content:center; margin-top:12px;">
+                    <button id="commentCamShoot" style="border:none; border-radius:30px; padding:10px 26px; cursor:pointer; font-size:0.95rem; background:var(--nav-btn-hover-bg); color:#fff;">📸 拍照</button>
+                    <button id="commentCamClose" class="gray" style="border:none; border-radius:30px; padding:10px 26px; cursor:pointer; font-size:0.95rem; background:var(--nav-btn-bg); color:var(--nav-btn-text);">取消</button>
+                </div>
+            </div>
         </div>
 
         <!-- 排序工具栏 -->
@@ -397,14 +415,13 @@
             }
         });
     }
-    // 发图片：上传到 images 公开桶，在光标处插入 [img]key[/img] 标记
+    // 发图片：相册/拍照 → 上传到 images 公开桶，在光标处插入 [img]key[/img] 标记
     const commentImageBtn = document.getElementById('btn-comment-image');
     const commentImageInput = document.getElementById('comment-image-input');
+    const commentCamInput = document.getElementById('comment-cam-input');
+    const commentImgSrcMenu = document.getElementById('commentImgSrcMenu');
     if (commentImageBtn && commentImageInput) {
-        commentImageBtn.addEventListener('click', () => commentImageInput.click());
-        commentImageInput.addEventListener('change', async () => {
-            const file = commentImageInput.files[0];
-            commentImageInput.value = '';
+        const uploadCommentImage = async (file) => {
             if (!file) return;
             if (!currentUser) { showMessage('提示', '请先登录'); return; }
             if (file.size > 5 * 1024 * 1024) { showMessage('提示', '图片不能超过 5MB'); return; }
@@ -428,7 +445,89 @@
             } catch (e) {
                 showMessage('提示', '图片上传失败：' + e.message + '\n（请确认 PythonAnywhere 后端已 Reload）');
             }
+        };
+
+        // 来源菜单
+        commentImageBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const rect = e.currentTarget.getBoundingClientRect();
+            commentImgSrcMenu.style.display = 'block';
+            commentImgSrcMenu.style.left = Math.min(rect.left, window.innerWidth - 190) + 'px';
+            commentImgSrcMenu.style.top = (rect.bottom + 6) + 'px';
         });
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#commentImgSrcMenu') && !e.target.closest('#btn-comment-image')) {
+                commentImgSrcMenu.style.display = 'none';
+            }
+        });
+        commentImgSrcMenu.addEventListener('click', async (e) => {
+            const item = e.target.closest('.ctx-item');
+            if (!item) return;
+            commentImgSrcMenu.style.display = 'none';
+            if (item.dataset.src === 'album') {
+                commentImageInput.click();
+            } else if (item.dataset.src === 'camera') {
+                await openCommentCamera(uploadCommentImage);
+            }
+        });
+
+        commentImageInput.addEventListener('change', async () => {
+            const file = commentImageInput.files[0];
+            commentImageInput.value = '';
+            await uploadCommentImage(file);
+        });
+        // 原生相机 fallback
+        if (commentCamInput) {
+            commentCamInput.addEventListener('change', async () => {
+                const file = commentCamInput.files[0];
+                commentCamInput.value = '';
+                await uploadCommentImage(file);
+            });
+        }
+    }
+
+    // ========== 评论区摄像头拍照（电脑/手机都支持） ==========
+    async function openCommentCamera(onDone) {
+        const modal = document.getElementById('commentCamModal');
+        const video = document.getElementById('commentCamVideo');
+        const shootBtn = document.getElementById('commentCamShoot');
+        const closeBtn = document.getElementById('commentCamClose');
+        let stream = null;
+
+        try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('unsupported');
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+        } catch (err) {
+            // fallback：手机原生相机
+            if (commentCamInput) commentCamInput.click();
+            return;
+        }
+
+        modal.style.display = 'flex';
+        video.srcObject = stream;
+        await video.play().catch(() => {});
+
+        const cleanup = () => {
+            if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+            video.srcObject = null;
+            modal.style.display = 'none';
+            shootBtn.onclick = null;
+            closeBtn.onclick = null;
+        };
+
+        shootBtn.onclick = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 1280;
+            canvas.height = video.videoHeight || 720;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob((blob) => {
+                cleanup();
+                if (!blob) { showMessage('提示', '拍照失败，请重试'); return; }
+                const file = new File([blob], 'camera_' + Date.now() + '.jpg', { type: 'image/jpeg' });
+                onDone(file);
+            }, 'image/jpeg', 0.88);
+        };
+        closeBtn.onclick = cleanup;
     }
 
     if (reportReason) {

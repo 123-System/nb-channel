@@ -104,6 +104,28 @@
             background: #ff4757; border-radius: 50%;
             min-width: 8px; height: 8px; flex-shrink: 0;
         }
+        /* 拍照弹窗 */
+        .cam-modal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            z-index: 20000; justify-content: center; align-items: center;
+        }
+        .cam-modal.show { display: flex; }
+        .cam-box {
+            background: var(--card-bg); border-radius: 20px; padding: 20px;
+            width: min(420px, 92vw); text-align: center;
+        }
+        .cam-box h3 { margin: 0 0 12px; color: var(--text-color); }
+        .cam-box video {
+            width: 100%; max-height: 52vh; border-radius: 12px; background: #000;
+            object-fit: contain;
+        }
+        .cam-btns { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
+        .cam-btn {
+            border: none; border-radius: 30px; padding: 10px 26px; cursor: pointer;
+            font-size: 0.95rem; background: var(--nav-btn-hover-bg); color: #fff;
+        }
+        .cam-btn.gray { background: var(--nav-btn-bg); color: var(--nav-btn-text); }
+        .cam-btn:disabled { opacity: 0.5; cursor: default; }
         .chat-body { flex: 1; overflow-y: auto; padding: 16px; background: var(--count-bg); }
         .msg { display: flex; align-items: flex-start; margin-bottom: 10px; gap: 6px; }
         .msg.me { justify-content: flex-end; }
@@ -203,11 +225,28 @@
                 <span class="qp-cancel" id="quotePreviewCancel">✕</span>
             </div>
             <div class="chat-input" id="chatInputBar" style="display:none;">
-                <button class="img-btn" id="imgBtn" title="发图片（JPG/PNG/GIF/WebP，≤5MB）">📷 发送图片</button>
+                <button class="img-btn" id="imgBtn" title="发送图片（相册/拍照）">📷 图片</button>
                 <button class="img-btn" id="emojiBtn" title="表情">😊</button>
                 <textarea id="msgInput" rows="1" placeholder="输入消息，Enter 发送"></textarea>
                 <button id="sendBtn">发送</button>
                 <input type="file" id="imgInput" accept="image/*" style="display:none;">
+                <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none;">
+            </div>
+            <!-- 图片来源菜单 -->
+            <div class="ctx-menu" id="imgSrcMenu">
+                <div class="ctx-item" data-src="album">🖼️ 从相册选择</div>
+                <div class="ctx-item" data-src="camera">📷 拍照</div>
+            </div>
+            <!-- 拍照弹窗 -->
+            <div class="cam-modal" id="camModal">
+                <div class="cam-box">
+                    <h3>📷 拍照</h3>
+                    <video id="camVideo" autoplay playsinline muted></video>
+                    <div class="cam-btns">
+                        <button class="cam-btn" id="camShoot">📸 拍照</button>
+                        <button class="cam-btn gray" id="camClose">取消</button>
+                    </div>
+                </div>
             </div>
             <!-- 表情面板 -->
             <div class="emoji-panel" id="emojiPanel"></div>
@@ -1117,14 +1156,42 @@
         document.getElementById('transferAmount').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') { e.preventDefault(); doTransfer(); }
         });
-        // 发图片：上传到 images 公开桶 → 直接发送图片消息
-        document.getElementById('imgBtn').onclick = () => document.getElementById('imgInput').click();
-        document.getElementById('imgInput').addEventListener('change', async () => {
-            const input = document.getElementById('imgInput');
-            const file = input.files[0];
-            input.value = '';
-            if (!file || !currentConvId) return;
+        // 发图片：相册/拍照 → 上传到 images 公开桶 → 直接发送图片消息
+        const imgSrcMenu = document.getElementById('imgSrcMenu');
+        document.getElementById('imgBtn').onclick = (e) => {
+            e.stopPropagation();
+            hideMsgMenu();
+            // 菜单定位在按钮下方
+            const rect = e.currentTarget.getBoundingClientRect();
+            imgSrcMenu.style.display = 'block';
+            imgSrcMenu.style.left = Math.min(rect.left, window.innerWidth - 190) + 'px';
+            imgSrcMenu.style.top = (rect.bottom + 6) + 'px';
+        };
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#imgSrcMenu') && !e.target.closest('#imgBtn')) {
+                imgSrcMenu.style.display = 'none';
+            }
+        });
+        imgSrcMenu.addEventListener('click', async (e) => {
+            const item = e.target.closest('.ctx-item');
+            if (!item) return;
+            imgSrcMenu.style.display = 'none';
+            if (item.dataset.src === 'album') {
+                document.getElementById('imgInput').click();
+            } else if (item.dataset.src === 'camera') {
+                await openCameraCapture(openCameraDone);
+            }
+        });
+
+        // 拍照回调：把拍到的文件走统一上传
+        async function openCameraDone(file) {
+            if (!file) return;
             if (file.size > 5 * 1024 * 1024) { alert('图片不能超过 5MB'); return; }
+            await uploadChatImage(file);
+        }
+
+        async function uploadChatImage(file) {
+            if (!currentConvId) { alert('请先选择会话'); return; }
             const fd = new FormData();
             fd.append('file', file);
             try {
@@ -1139,6 +1206,25 @@
             } catch (e) {
                 alert('图片上传失败：' + e.message + '\n（请确认 PythonAnywhere 后端已 Reload）');
             }
+        }
+
+        // 相册选择
+        document.getElementById('imgInput').addEventListener('change', async () => {
+            const input = document.getElementById('imgInput');
+            const file = input.files[0];
+            input.value = '';
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) { alert('图片不能超过 5MB'); return; }
+            await uploadChatImage(file);
+        });
+        // 原生相机 fallback（getUserMedia 不可用时）
+        document.getElementById('camInput').addEventListener('change', async () => {
+            const input = document.getElementById('camInput');
+            const file = input.files[0];
+            input.value = '';
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) { alert('图片不能超过 5MB'); return; }
+            await uploadChatImage(file);
         });
         // 滚动到顶部自动加载更早消息（微信同款上拉加载历史）
         document.getElementById('chatBody').addEventListener('scroll', () => {
@@ -1147,6 +1233,54 @@
         document.getElementById('msgInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
         });
+    }
+
+    // ========== 摄像头拍照（电脑/手机都支持） ==========
+    // 优先 getUserMedia 弹窗拍照；不可用（非 HTTPS/无摄像头权限）时
+    // fallback 到 <input capture="environment"> 调起手机原生相机
+    async function openCameraCapture(onDone) {
+        const modal = document.getElementById('camModal');
+        const video = document.getElementById('camVideo');
+        const shootBtn = document.getElementById('camShoot');
+        const closeBtn = document.getElementById('camClose');
+        let stream = null;
+
+        // 尝试 getUserMedia
+        try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('unsupported');
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+        } catch (err) {
+            // fallback：手机原生相机
+            document.getElementById('camInput').click();
+            return;
+        }
+
+        modal.classList.add('show');
+        video.srcObject = stream;
+        await video.play().catch(() => {});
+
+        const cleanup = () => {
+            if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+            video.srcObject = null;
+            modal.classList.remove('show');
+            shootBtn.onclick = null;
+            closeBtn.onclick = null;
+        };
+
+        shootBtn.onclick = () => {
+            // canvas 截帧 → jpeg blob → File
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 1280;
+            canvas.height = video.videoHeight || 720;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob((blob) => {
+                cleanup();
+                if (!blob) { alert('拍照失败，请重试'); return; }
+                const file = new File([blob], 'camera_' + Date.now() + '.jpg', { type: 'image/jpeg' });
+                onDone(file);
+            }, 'image/jpeg', 0.88);
+        };
+        closeBtn.onclick = cleanup;
     }
 
     init();
