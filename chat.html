@@ -59,6 +59,16 @@
         .ctx-menu .ctx-item:hover { background: var(--count-bg); }
         .ctx-menu .ctx-item.danger { color: #e74c3c; }
         .ctx-menu .ctx-item.danger:hover { background: rgba(231,76,60,0.12); }
+        /* 撤回提示（自己可见）：取消撤回 */
+        .recall-tip {
+            text-align: center; font-size: 0.75rem; color: var(--count-text);
+            padding: 3px 0; margin: 2px 0 10px;
+        }
+        .recall-tip .unrecall-link {
+            color: var(--status-border); cursor: pointer; margin-left: 6px;
+            text-decoration: underline; text-underline-offset: 2px;
+        }
+        .recall-tip .unrecall-link:hover { filter: brightness(1.2); }
         .chat-body { flex: 1; overflow-y: auto; padding: 16px; background: var(--count-bg); }
         .msg { display: flex; align-items: flex-start; margin-bottom: 10px; gap: 6px; }
         .msg.me { justify-content: flex-end; }
@@ -645,7 +655,15 @@
                 alert((error && error.message) || (data && data.message) || '撤回失败');
                 return;
             }
-            if (msgEl) msgEl.remove();   // 立即移除自己的气泡
+            if (msgEl) {
+                // 移除气泡，插入自己可见的"已撤回 · 取消撤回"提示（2 分钟）
+                const tip = document.createElement('div');
+                tip.className = 'recall-tip';
+                tip.dataset.msgid = msgId;
+                tip.innerHTML = '你撤回了一条消息<span class="unrecall-link" data-msgid="' + msgId + '">取消撤回</span>';
+                msgEl.replaceWith(tip);
+                scheduleUnrecallExpiry(tip, msgId);
+            }
             if (isRp) refreshBalance();  // 红包撤回 → 钱退回 → 刷新余额
         } else if (act === 'del') {
             const { data, error } = await supabaseClient.rpc('delete_my_message', {
@@ -658,6 +676,30 @@
             if (msgEl) msgEl.remove();
         }
         loadConvs();
+    }
+
+    // "取消撤回"提示：2 分钟后自动消失
+    function scheduleUnrecallExpiry(tip, msgId) {
+        setTimeout(() => {
+            const el = document.querySelector(`#chatBody .recall-tip[data-msgid="${msgId}"]`);
+            if (el) el.remove();
+        }, RECALL_WINDOW_MS);
+    }
+
+    // 点击"取消撤回"：复原消息（双方恢复可见；红包重新扣款恢复待领取）
+    async function doUnrecall(msgId) {
+        const { data, error } = await supabaseClient.rpc('unrecall_message', {
+            p_user: currentUser.id, p_message_id: msgId
+        });
+        if (error || !data || !data.success) {
+            alert((error && error.message) || (data && data.message) || '取消撤回失败');
+            return;
+        }
+        // 移除提示并重新加载消息（气泡恢复原位）
+        const tip = document.querySelector(`#chatBody .recall-tip[data-msgid="${msgId}"]`);
+        if (tip) tip.remove();
+        if (currentConvId) await loadMessages(currentConvId);
+        refreshBalance();
     }
 
     async function refreshBalance() {
@@ -721,6 +763,13 @@
         });
         body.addEventListener('click', (e) => {
             if (longPressTriggered) { e.stopPropagation(); return; }
+            // 点击"取消撤回"
+            const unrecallLink = e.target.closest('.unrecall-link');
+            if (unrecallLink) {
+                e.preventDefault();
+                doUnrecall(parseInt(unrecallLink.dataset.msgid));
+                return;
+            }
             // 点击空白处关闭菜单
             if (!e.target.closest('#msgCtxMenu')) hideMsgMenu();
         }, true);
@@ -776,8 +825,8 @@
     function appendLocalMessage(m) {
         const body = document.getElementById('chatBody');
         if (body.querySelector('.empty-tip')) body.innerHTML = '';
-        // 简单去重：检查是否已有同 id
-        if (body.querySelector(`[data-msgid="${m.id}"]`)) return;
+        // 简单去重：检查是否已有同 id 的消息气泡（注意排除 recall-tip）
+        if (body.querySelector(`.msg[data-msgid="${m.id}"]`)) return;
         const div = document.createElement('div');
         div.dataset.msgid = m.id;
         div.innerHTML = renderMsg(m);
@@ -806,20 +855,22 @@
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload) => {
                 const msg = payload.new;
                 if (currentConvId && msg.conversation_id === currentConvId) {
-                    const el = document.querySelector(`#chatBody [data-msgid="${msg.id}"]`);
-                    if (!el) return;
+                    const el = document.querySelector(`#chatBody .msg[data-msgid="${msg.id}"]`);
                     if (msg.status === 'recalled') {
-                        // 消息被撤回：双方都不可见 → 移除气泡
-                        el.remove();
+                        // 消息被撤回：双方都不可见 → 移除气泡（保留自己的"取消撤回"提示）
+                        if (el) el.remove();
                     } else if ((msg.deleted_for || []).indexOf(currentUser.id) !== -1) {
                         // 对自己视角隐藏（删除/清空）→ 移除气泡
-                        el.remove();
-                    } else {
+                        if (el) el.remove();
+                    } else if (el) {
                         // 红包被领取/退回后 content 变化：实时更新气泡
                         const div = document.createElement('div');
                         div.dataset.msgid = msg.id;
                         div.innerHTML = renderMsg(msg);
                         el.replaceWith(div);
+                    } else {
+                        // 对方取消撤回：消息重新可见 → 重新插入（去重由 appendLocalMessage 处理）
+                        appendLocalMessage(msg);
                     }
                 }
                 loadConvs();
