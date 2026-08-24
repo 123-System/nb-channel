@@ -161,7 +161,14 @@
             const logsRes = await supabaseClient.rpc('get_bank_logs', { p_user_id: user.id, p_limit: 30 });
             const logs = logsRes.data || [];
             const lv = creditLevel(acc.credit_score);
-            const frozenTip = acc.frozen ? ' <span style="color:#e74c3c;">🔒 存款已冻结（抵押贷款未还清）</span>' : '';
+            // 冻结期：可存不可取
+            const frozenTip = acc.frozen
+                ? ' <div class="info-line" style="color:#e74c3c;">🔒 存款已冻结（抵押贷款未还清）：可以继续存钱，但不能取款（包括刚存入的部分）；还清贷款后自动解冻。</div>'
+                : '';
+            const frozenBtn = acc.frozen ? ' disabled style="opacity:0.45;"' : '';
+            const frozenHint = acc.frozen
+                ? '<span class="info-line" style="margin:0; color:#e74c3c;">🔒 冻结中：只可存入，取款已禁用</span>'
+                : '<span class="info-line" style="margin:0;">今日存入上限 500万/天</span>';
 
             let html = `
                 <div class="overview">
@@ -171,15 +178,15 @@
                     <div class="ov-card"><div class="num">${fmtBig(acc.loan_principal)}</div><div class="label">抵押贷款</div><div class="tip">日利率 0.2%</div></div>
                     <div class="ov-card"><div class="num">${fmtBig(acc.loan_credit)}</div><div class="label">信用贷款</div><div class="tip">日利率 ${acc.credit_score >= 800 ? '0.27%' : '0.3%'}</div></div>
                 </div>
-                ${frozenTip ? `<div class="info-line">${frozenTip}</div>` : ''}
+                ${frozenTip}
 
                 <div class="section">
                     <div class="section-title">💰 存款</div>
                     <div class="bank-row">
                         <input type="number" id="depAmt" min="1" placeholder="金额" style="min-width:120px;">
                         <button onclick="doDeposit()">存入活期</button>
-                        <button class="gray" onclick="doWithdraw()">取出活期</button>
-                        <span class="info-line" style="margin:0;">今日存入上限 500万/天</span>
+                        <button class="gray" onclick="doWithdraw()"${frozenBtn}>取出活期</button>
+                        ${frozenHint}
                     </div>
                     <div class="bank-row">
                         <input type="number" id="fixedAmt" min="1" placeholder="定期金额">
@@ -188,7 +195,7 @@
                             <option value="30">定期 30 天（0.2%/天）</option>
                         </select>
                         <button onclick="doFixedDeposit()">存定期</button>
-                        <button class="gray" onclick="doFixedWithdraw()">取出定期</button>
+                        <button class="gray" onclick="doFixedWithdraw()"${frozenBtn}>取出定期</button>
                     </div>
                     <div class="info-line">📅 定期到期自动转入活期并结算利息；提前支取按活期利率算已存天数。</div>
                 </div>
