@@ -2,8 +2,8 @@
 -- NB频道 - NB银行（v2：存款/贷款/信誉分）
 -- 在 Supabase SQL Editor 中执行本文件（幂等）
 -- 功能：
---   1) 存款：活期 0.3%/天、定期7天到期3%、定期30天到期5%
---   2) 贷款：抵押贷（存款×80%，到期总利率10%）、信用贷（信誉分额度，10%，800+打9折）
+--   1) 存款：活期 0.1%/天、定期7天到期2%、定期30天到期10%
+--   2) 贷款：抵押贷（存款×80%，到期总利率10%）、信用贷（信誉分额度，12%，800+打9折）
 --   3) 信誉分：初始100，满分1000；按时还+5、逾期-15/天、成就+3、签到+2、评论+0.5(日上限2)
 --   4) 每天凌晨自动结算存款利息 + 处理到期贷款（pg_cron）
 --   5) 防刷：活期每日存款上限 500 万
@@ -84,16 +84,16 @@ BEGIN
     -- 信用贷额度与利率（按信誉分）
     IF v_acc.credit_score >= 800 THEN
         v_credit_limit := v_acc.credit_score * 1500;
-        v_credit_rate := 0.09;   -- 9折（总利率10%打9折）
+        v_credit_rate := 0.108;   -- 9折（总利率12%打9折）
     ELSIF v_acc.credit_score >= 600 THEN
         v_credit_limit := v_acc.credit_score * 1000;
-        v_credit_rate := 0.10;
+        v_credit_rate := 0.12;
     ELSIF v_acc.credit_score >= 300 THEN
         v_credit_limit := v_acc.credit_score * 500;
-        v_credit_rate := 0.10;
+        v_credit_rate := 0.12;
     ELSE
         v_credit_limit := 0;
-        v_credit_rate := 0.10;
+        v_credit_rate := 0.12;
     END IF;
 
     RETURN jsonb_build_object(
@@ -161,7 +161,7 @@ BEGIN
     INSERT INTO public.bank_logs (user_id, type, amount, detail)
     VALUES (p_user_id, 'deposit', p_amount, '活期存入');
     RETURN jsonb_build_object('success', true, 'message',
-        format('已存入 %s NB币（活期，日利率 0.3%%）', p_amount));
+        format('已存入 %s NB币（活期，日利率 0.1%%）', p_amount));
 END;
 $$;
 
@@ -183,7 +183,7 @@ BEGIN
     IF p_amount IS NULL OR p_amount <= 0 THEN
         RETURN jsonb_build_object('success', false, 'message', '金额必须大于0');
     END IF;
-    v_rate := CASE WHEN p_days = 7 THEN 0.03 ELSE 0.05 END;   -- 到期总利率
+    v_rate := CASE WHEN p_days = 7 THEN 0.02 ELSE 0.10 END;   -- 到期总利率
     v_type := CASE WHEN p_days = 7 THEN 'fixed7' ELSE 'fixed30' END;
 
     SELECT nb_balance INTO v_balance FROM public.profiles WHERE id = p_user_id;
@@ -216,7 +216,7 @@ BEGIN
     END IF;
     RETURN jsonb_build_object('success', true, 'message',
         format('已存入 %s NB币（定期%s天，到期总利率 %s%%）', p_amount, p_days,
-               CASE WHEN p_days = 7 THEN '3' ELSE '5' END));
+               CASE WHEN p_days = 7 THEN '2' ELSE '10' END));
 END;
 $$;
 
@@ -287,14 +287,14 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '该定期没有存款');
     END IF;
 
-    -- 已到期：按定期总利率结算；未到期提前支取：按活期 0.3%/天算已存天数
+    -- 已到期：按定期总利率结算；未到期提前支取：按活期 0.1%/天算已存天数
     v_elapsed_days := GREATEST(floor(extract(epoch FROM (now() - v_deposited_at)) / 86400), 0);
     IF v_elapsed_days >= p_days THEN
         -- 到期
-        v_interest := floor(v_amount * CASE WHEN p_days = 7 THEN 0.03 ELSE 0.05 END);
+        v_interest := floor(v_amount * CASE WHEN p_days = 7 THEN 0.02 ELSE 0.10 END);
     ELSE
         -- 提前支取：活期利率 × 已存天数
-        v_interest := floor(v_amount * 0.003 * v_elapsed_days);   -- 活期 0.3%/天
+        v_interest := floor(v_amount * 0.001 * v_elapsed_days);   -- 活期 0.1%/天
     END IF;
 
     IF p_days = 7 THEN
@@ -391,13 +391,13 @@ BEGIN
 
     IF v_acc.credit_score >= 800 THEN
         v_limit := v_acc.credit_score * 1500;
-        v_rate := 0.09;
+        v_rate := 0.108;
     ELSIF v_acc.credit_score >= 600 THEN
         v_limit := v_acc.credit_score * 1000;
-        v_rate := 0.10;
+        v_rate := 0.12;
     ELSE
         v_limit := v_acc.credit_score * 500;
-        v_rate := 0.10;
+        v_rate := 0.12;
     END IF;
     IF p_amount > v_limit THEN
         RETURN jsonb_build_object('success', false, 'message',
@@ -412,10 +412,10 @@ BEGIN
     INSERT INTO public.bank_logs (user_id, type, amount, detail)
     VALUES (p_user_id, 'loan_credit', p_amount,
         format('信用贷 %s 天（到期总利率 %s%%）', p_days,
-               CASE WHEN v_acc.credit_score >= 800 THEN '9' ELSE '10' END));
+               CASE WHEN v_acc.credit_score >= 800 THEN '10.8' ELSE '12' END));
     RETURN jsonb_build_object('success', true, 'message',
         format('信用贷款 %s NB币到账（%s 天，到期总利率 %s%%）', p_amount, p_days,
-               CASE WHEN v_acc.credit_score >= 800 THEN '9' ELSE '10' END));
+               CASE WHEN v_acc.credit_score >= 800 THEN '10.8' ELSE '12' END));
 END;
 $$;
 
@@ -506,7 +506,7 @@ BEGIN
     END IF;
 
     v_days := GREATEST(ceil(extract(epoch FROM (now() - v_loan_start)) / 86400), 1);
-    v_interest := floor(v_acc.loan_credit * (CASE WHEN v_acc.credit_score >= 800 THEN 0.09 ELSE 0.10 END) * v_days / 30);
+    v_interest := floor(v_acc.loan_credit * (CASE WHEN v_acc.credit_score >= 800 THEN 0.108 ELSE 0.12 END) * v_days / 30);
     v_total := v_acc.loan_credit + v_interest;
 
     SELECT nb_balance INTO v_balance FROM public.profiles WHERE id = p_user_id;
@@ -548,23 +548,23 @@ BEGIN
         deposit > 0 OR fixed7 > 0 OR fixed30 > 0 OR
         loan_principal > 0 OR loan_credit > 0
     LOOP
-        -- 1) 活期利息 0.3%
+        -- 1) 活期利息 0.1%
         IF v_acc.deposit > 0 THEN
-            v_interest := floor(v_acc.deposit * 0.003);   -- 活期 0.3%/天
+            v_interest := floor(v_acc.deposit * 0.001);   -- 活期 0.1%/天
             IF v_interest > 0 THEN
                 UPDATE public.bank_accounts SET deposit = deposit + v_interest
                  WHERE user_id = v_acc.user_id;
                 UPDATE public.profiles SET nb_balance = nb_balance + v_interest
                  WHERE id = v_acc.user_id;
                 INSERT INTO public.bank_logs (user_id, type, amount, detail)
-                VALUES (v_acc.user_id, 'interest', v_interest, '活期利息 0.3%');
+                VALUES (v_acc.user_id, 'interest', v_interest, '活期利息 0.1%');
             END IF;
         END IF;
 
         -- 2) 定期 7 天到期 → 转活期+利息
         IF v_acc.fixed7 > 0 AND v_acc.fixed7_until IS NOT NULL
            AND v_acc.fixed7_until <= now() THEN
-            v_interest := floor(v_acc.fixed7 * 0.03);
+            v_interest := floor(v_acc.fixed7 * 0.02);
             UPDATE public.bank_accounts
                SET deposit = deposit + v_acc.fixed7 + v_interest,
                    fixed7 = 0, fixed7_until = NULL
@@ -573,13 +573,13 @@ BEGIN
              WHERE id = v_acc.user_id;
             INSERT INTO public.bank_logs (user_id, type, amount, detail)
             VALUES (v_acc.user_id, 'interest', v_interest,
-                format('定期7天到期（本金 %s + 利息 %s，总利率3%%）', v_acc.fixed7, v_interest));
+                format('定期7天到期（本金 %s + 利息 %s，总利率2%%）', v_acc.fixed7, v_interest));
         END IF;
 
         -- 3) 定期 30 天到期 → 转活期+利息
         IF v_acc.fixed30 > 0 AND v_acc.fixed30_until IS NOT NULL
            AND v_acc.fixed30_until <= now() THEN
-            v_interest := floor(v_acc.fixed30 * 0.05);
+            v_interest := floor(v_acc.fixed30 * 0.10);
             UPDATE public.bank_accounts
                SET deposit = deposit + v_acc.fixed30 + v_interest,
                    fixed30 = 0, fixed30_until = NULL
@@ -588,7 +588,7 @@ BEGIN
              WHERE id = v_acc.user_id;
             INSERT INTO public.bank_logs (user_id, type, amount, detail)
             VALUES (v_acc.user_id, 'interest', v_interest,
-                format('定期30天到期（本金 %s + 利息 %s，总利率5%%）', v_acc.fixed30, v_interest));
+                format('定期30天到期（本金 %s + 利息 %s，总利率10%%）', v_acc.fixed30, v_interest));
         END IF;
 
         -- 4) 抵押贷到期 → 自动扣本息（按实际天数折算，7天≈2.33%、30天=10%）；余额不足 → 逾期罚息+信誉-15
@@ -650,7 +650,7 @@ BEGIN
                  ORDER BY id DESC LIMIT 1;
                 IF v_loan_start2 IS NULL THEN v_loan_start2 := now() - interval '1 day'; END IF;
                 v_days2 := GREATEST(ceil(extract(epoch FROM (now() - v_loan_start2)) / 86400), 1);
-                v_interest := floor(v_acc.loan_credit * (CASE WHEN v_acc.credit_score >= 800 THEN 0.09 ELSE 0.10 END) * v_days2 / 30);
+                v_interest := floor(v_acc.loan_credit * (CASE WHEN v_acc.credit_score >= 800 THEN 0.108 ELSE 0.12 END) * v_days2 / 30);
                 IF (SELECT nb_balance FROM public.profiles WHERE id = v_acc.user_id) >=
                    v_acc.loan_credit + v_interest THEN
                     UPDATE public.profiles SET nb_balance = nb_balance - v_acc.loan_credit - v_interest
