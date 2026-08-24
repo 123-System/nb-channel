@@ -15,7 +15,7 @@ ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS status      text NOT NULL D
 ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS recalled_at timestamptz;                     -- 撤回时间（取消撤回窗口判断）
 ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS deleted_for uuid[] NOT NULL DEFAULT '{}';     -- 对自己视角不可见的用户列表
 
--- 2. 删除消息（自己视角，仅限自己的消息）
+-- 2. 删除消息（自己视角）：会话成员可删除任意消息（含对方的），仅自己视角隐藏
 CREATE OR REPLACE FUNCTION public.delete_my_message(p_user uuid, p_message_id bigint)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -23,21 +23,18 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-    v_conv    bigint;
-    v_sender  uuid;
+    v_conv   bigint;
+    v_low    uuid;
+    v_high   uuid;
 BEGIN
-    SELECT conversation_id, sender_id INTO v_conv, v_sender
+    SELECT conversation_id INTO v_conv
       FROM public.messages WHERE id = p_message_id;
     IF v_conv IS NULL THEN
         RETURN jsonb_build_object('success', false, 'message', '消息不存在');
     END IF;
-    IF v_sender <> p_user THEN
-        RETURN jsonb_build_object('success', false, 'message', '只能删除自己发送的消息');
-    END IF;
-    IF NOT (p_user = ANY(
-        (SELECT user_low FROM public.conversations WHERE id = v_conv)
-        || (SELECT user_high FROM public.conversations WHERE id = v_conv)
-    )) THEN
+    SELECT user_low, user_high INTO v_low, v_high
+      FROM public.conversations WHERE id = v_conv;
+    IF p_user NOT IN (v_low, v_high) THEN
         RETURN jsonb_build_object('success', false, 'message', '不是会话成员');
     END IF;
 

@@ -630,12 +630,12 @@
         return `<div class="msg other" data-msgid="${m.id}">${img}<div class="bubble">${renderContentWithImages(m.content, false)}</div>${time}</div>`;
     }
 
-    // ========== 消息操作：右键/长按自己的消息 ==========
+    // ========== 消息操作：右键/长按消息 ==========
     let longPressTimer = null;
     let longPressTriggered = false;
     const RECALL_WINDOW_MS = 2 * 60 * 1000;   // 2 分钟撤回窗口
 
-    function showMsgMenu(x, y, msgEl) {
+    function showMsgMenu(x, y, msgEl, isMine) {
         const menu = document.getElementById('msgCtxMenu');
         const msgId = parseInt(msgEl.dataset.msgid);
         const created = new Date(msgEl.dataset.created).getTime();
@@ -644,11 +644,12 @@
         const isClaimedRp = !!msgEl.querySelector('.redpacket.claimed');
         const isRefundedRp = !!msgEl.querySelector('.redpacket.refunded');
         let items = '';
-        if (withinWindow && !isClaimedRp && !isRefundedRp) {
-            // 2 分钟内可撤回；已领取/已退回的红包不能再撤（钱已定）
+        // 撤回：仅自己的消息、2 分钟内、未定状态的红包可撤
+        if (isMine && withinWindow && !isClaimedRp && !isRefundedRp) {
             items += `<div class="ctx-item" data-act="recall">↩️ 撤回${isRedpacket ? '红包' : '消息'}</div>`;
         }
-        items += `<div class="ctx-item" data-act="del">🗑️ 删除（仅自己可见）</div>`;
+        // 删除：自己的和对方的都能删（仅自己视角）
+        items += `<div class="ctx-item" data-act="del">🗑️ 删除${isMine ? '' : '（对方消息，仅自己可见）'}</div>`;
         if (!items) return;
         menu.innerHTML = items;
         menu.style.display = 'block';
@@ -758,17 +759,17 @@
     function bindMsgContextMenu() {
         const body = document.getElementById('chatBody');
 
-        // 右键（桌面端）
+        // 右键（桌面端）：自己的和对方的消息都可操作（撤回仅自己的）
         body.addEventListener('contextmenu', (e) => {
-            const msgEl = e.target.closest('.msg.me');
+            const msgEl = e.target.closest('.msg');
             if (!msgEl) return;
             e.preventDefault();
-            showMsgMenu(e.clientX, e.clientY, msgEl);
+            showMsgMenu(e.clientX, e.clientY, msgEl, msgEl.classList.contains('me'));
         });
 
         // 长按（移动端）
         body.addEventListener('touchstart', (e) => {
-            const msgEl = e.target.closest('.msg.me');
+            const msgEl = e.target.closest('.msg');
             if (!msgEl) return;
             const t = e.touches[0];
             longPressTriggered = false;
@@ -776,7 +777,7 @@
             longPressTimer = setTimeout(() => {
                 longPressTriggered = true;
                 if (navigator.vibrate) navigator.vibrate(20);
-                showMsgMenu(t.clientX, t.clientY, msgEl);
+                showMsgMenu(t.clientX, t.clientY, msgEl, msgEl.classList.contains('me'));
             }, 500);
         }, { passive: true });
         const cancelLongPress = () => { clearTimeout(longPressTimer); };
