@@ -1182,14 +1182,25 @@
                 imgSrcMenu.style.display = 'none';
             }
         });
-        imgSrcMenu.addEventListener('click', async (e) => {
+        imgSrcMenu.addEventListener('click', (e) => {
             const item = e.target.closest('.ctx-item');
             if (!item) return;
-            imgSrcMenu.style.display = 'none';
+            e.stopPropagation();
+            // 先触发（保持用户手势激活），再隐藏菜单
+            const menu = imgSrcMenu;
             if (item.dataset.src === 'album') {
                 document.getElementById('imgInput').click();
+                menu.style.display = 'none';
             } else if (item.dataset.src === 'camera') {
-                await openCameraCapture(openCameraDone);
+                // 同步判断是否支持 getUserMedia：不支持就直接调原生相机 input（同步手势内）
+                const canCam = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+                if (!canCam) {
+                    document.getElementById('camInput').click();
+                    menu.style.display = 'none';
+                } else {
+                    menu.style.display = 'none';
+                    openCameraCapture(openCameraDone);
+                }
             }
         });
 
@@ -1260,8 +1271,11 @@
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('unsupported');
             stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
         } catch (err) {
-            // fallback：手机原生相机
-            document.getElementById('camInput').click();
+            // getUserMedia 失败（权限拒绝/无摄像头/非HTTPS）：提示后 fallback 原生相机。
+            // 注意：这里已是异步上下文，input.click() 可能被浏览器拦截，
+            // 所以先提示，再尝试触发（部分浏览器仍允许）。
+            const useNative = confirm('无法调用摄像头（可能未授权或设备不可用）。\n是否改用系统相机/文件选择器？');
+            if (useNative) document.getElementById('camInput').click();
             return;
         }
 

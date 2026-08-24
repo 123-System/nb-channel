@@ -458,14 +458,25 @@
                 commentImgSrcMenu.style.display = 'none';
             }
         });
-        commentImgSrcMenu.addEventListener('click', async (e) => {
+        commentImgSrcMenu.addEventListener('click', (e) => {
             const item = e.target.closest('.ctx-item');
             if (!item) return;
-            commentImgSrcMenu.style.display = 'none';
+            e.stopPropagation();
+            // 先触发（保持用户手势激活），再隐藏菜单
+            const menu = commentImgSrcMenu;
             if (item.dataset.src === 'album') {
                 commentImageInput.click();
+                menu.style.display = 'none';
             } else if (item.dataset.src === 'camera') {
-                await openCommentCamera(uploadCommentImage);
+                // 同步判断是否支持 getUserMedia：不支持就直接调原生相机 input（同步手势内）
+                const canCam = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+                if (!canCam) {
+                    if (commentCamInput) commentCamInput.click();
+                    menu.style.display = 'none';
+                } else {
+                    menu.style.display = 'none';
+                    openCommentCamera(uploadCommentImage);
+                }
             }
         });
 
@@ -496,8 +507,9 @@
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('unsupported');
             stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
         } catch (err) {
-            // fallback：手机原生相机
-            if (commentCamInput) commentCamInput.click();
+            // getUserMedia 失败（权限拒绝/无摄像头/非HTTPS）：提示后 fallback 原生相机。
+            const useNative = confirm('无法调用摄像头（可能未授权或设备不可用）。\n是否改用系统相机/文件选择器？');
+            if (useNative && commentCamInput) commentCamInput.click();
             return;
         }
 
