@@ -773,7 +773,7 @@
         let titleHtml = '';
         const ot = currentOther && currentOther.title;
         if (ot && ot._img) {
-            titleHtml = `<div class="msg-title"><span class="msg-name">${escapeHtml(currentOther.name)}</span><span class="msg-title-badge"><img class="msg-title-img" src="${ot._img}" alt="${escapeHtml(ot.name)}" onerror="this.style.display='none'"><span class="msg-title-stars">${escapeHtml(ot.name)} · ${'★'.repeat(Math.min(ot.stars || 1, 5))}</span></span></div>`;
+            titleHtml = `<div class="msg-title"><span class="msg-name">${escapeHtml(currentOther.name)}</span><span class="msg-title-badge"><img class="msg-title-img" src="${ot._img}" alt="${escapeHtml(ot.name)}" onerror="this.style.display='none'"><span class="msg-title-stars">称号：${escapeHtml(ot.name)} · ${'★'.repeat(Math.min(ot.stars || 1, 5))}</span></span></div>`;
         } else {
             titleHtml = `<div class="msg-title"><span class="msg-name">${escapeHtml(currentOther ? currentOther.name : '')}</span></div>`;
         }

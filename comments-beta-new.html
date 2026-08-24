@@ -999,7 +999,7 @@
         let titleTag = '';
         const titleInfo = window.titleMap?.get(node.user_id);
         if (titleInfo && titleInfo._img) {
-            titleTag = `<div class="comment-title"><img src="${titleInfo._img}" alt="${escapeHtml(titleInfo.name)}" onerror="this.style.display='none'"><span class="comment-title-stars">${escapeHtml(titleInfo.name)} · ${'★'.repeat(Math.min(titleInfo.stars || 1, 5))}</span></div>`;
+            titleTag = `<div class="comment-title"><img src="${titleInfo._img}" alt="${escapeHtml(titleInfo.name)}" onerror="this.style.display='none'"><span class="comment-title-stars">称号：${escapeHtml(titleInfo.name)} · ${'★'.repeat(Math.min(titleInfo.stars || 1, 5))}</span></div>`;
         }
 
         let reportButton = '';
