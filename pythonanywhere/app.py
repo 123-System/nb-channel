@@ -386,6 +386,62 @@ def upload_video():
     return jsonify({'success': True, 'key': key, 'url': url, 'message': '视频上传成功'})
 
 
+# 称号图片上传（管理员专用）：存 images/titles/<中文名>.png，覆盖式更新
+# 需要表单字段 title_name（如 签到之神），头 X-Admin-Token 校验管理员
+TITLE_NAMES = ['签到之神', '评论大师', '红包豪侠', '点赞大师', '霸道总裁', '化学狂人',
+               '作品大亨', '成就猎人', '人脉达人', '抽奖欧皇', '现金为王', '至尊皇冠']
+
+
+@app.route('/upload-title', methods=['POST'])
+def upload_title():
+    # 管理员校验：读 admin_sessions 表
+    token = request.headers.get('X-Admin-Token', '')
+    if not token:
+        return jsonify({'success': False, 'message': '缺少管理员令牌'}), 401
+    try:
+        rows = _exec_rows(
+            supabase.table('admin_sessions').select('token').eq('token', token).limit(1)
+        )
+    except Exception as e:
+        return jsonify({'success': False, 'message': '校验失败: %s' % e}), 500
+    if not rows:
+        return jsonify({'success': False, 'message': '管理员验证失败'}), 401
+
+    title_name = (request.form.get('title_name') or '').strip()
+    if title_name not in TITLE_NAMES:
+        return jsonify({'success': False, 'message': '称号名称不合法'}), 400
+
+    file = request.files.get('file')
+    if not file or file.filename == '':
+        return jsonify({'success': False, 'message': '请选择图片文件'}), 400
+
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+    if size > 2 * 1024 * 1024:
+        return jsonify({'success': False, 'message': '图片不能超过 2MB（建议先压缩到 ~100KB）'}), 400
+
+    mime = (file.mimetype or '').lower()
+    if mime not in ('image/png', 'image/jpeg', 'image/webp'):
+        return jsonify({'success': False, 'message': '仅支持 PNG/JPG/WebP'}), 400
+
+    # 固定文件名：titles/<中文名>.png（覆盖式更新，URL 不变）
+    key = 'titles/%s.png' % title_name
+    file_bytes = file.read()
+    try:
+        # 已存在则先删（Supabase 同名上传会报错）
+        try:
+            supabase.storage.from_('images').remove([key])
+        except Exception:
+            pass
+        supabase.storage.from_('images').upload(key, file_bytes, {'content-type': mime})
+    except Exception as e:
+        return jsonify({'success': False, 'message': '上传失败: %s' % e}), 500
+
+    url = SUPABASE_URL.rstrip('/') + '/storage/v1/object/public/images/' + key
+    return jsonify({'success': True, 'url': url, 'message': '%s 上传成功' % title_name})
+
+
 @app.route('/remove-avatar', methods=['POST'])
 def remove_avatar():
     """移除头像：清空 avatar_url，并删除该用户的头像文件。"""
