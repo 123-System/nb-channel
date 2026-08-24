@@ -394,17 +394,18 @@ TITLE_NAMES = ['签到之神', '评论大师', '红包豪侠', '点赞大师', '
 
 @app.route('/upload-title', methods=['POST'])
 def upload_title():
-    # 管理员校验：读 admin_sessions 表
+    # 管理员校验：复用 SECURITY DEFINER RPC _admin_token_valid（anon 可调用）
     token = request.headers.get('X-Admin-Token', '')
     if not token:
         return jsonify({'success': False, 'message': '缺少管理员令牌'}), 401
     try:
-        rows = _exec_rows(
-            supabase.table('admin_sessions').select('token').eq('token', token).limit(1)
-        )
+        data, rpc_err = rpc('_admin_token_valid', {'p_token': token})
     except Exception as e:
         return jsonify({'success': False, 'message': '校验失败: %s' % e}), 500
-    if not rows:
+    # data 可能是 True / {'result': True} / 其他包装
+    valid = data is True or (isinstance(data, dict) and data.get('result') is True) \
+        or (isinstance(data, dict) and data.get('_admin_token_valid') is True)
+    if rpc_err or not valid:
         return jsonify({'success': False, 'message': '管理员验证失败'}), 401
 
     title_name = (request.form.get('title_name') or '').strip()
