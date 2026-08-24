@@ -290,13 +290,23 @@
                 const typeCls = t.acquire_type === 'buy' ? 'buy' : (t.acquire_type === 'manual' ? 'manual' : 'auto');
                 const typeLabel = t.acquire_type === 'buy' ? '💎 购买' : (t.acquire_type === 'manual' ? '👑 颁发' : '✨ 自动');
                 let actions = '';
-                if (t.equipped) {
+                if (t.acquire_type === 'buy') {
+                    // 购买型称号：始终显示购买/升星按钮（满级显示"已满级"）
+                    if (t.stars >= 5) {
+                        actions = `<button class="t-btn-disabled" disabled>👑 已满级</button>`;
+                    } else {
+                        const price = nextBuyPrice(t, t.stars);
+                        actions = `<button class="t-btn-buy" onclick="buyTitle('${t.title_key}')">💎 ${t.owned ? '升星' : '购买'}（${fmtBig(price)} NB币）</button>`;
+                    }
+                    if (t.equipped) {
+                        actions += `<button class="t-btn-unequip" onclick="unequipTitle()">取消佩戴</button>`;
+                    } else if (t.owned) {
+                        actions += `<button class="t-btn-equip" onclick="equipTitle('${t.title_key}')">佩戴</button>`;
+                    }
+                } else if (t.equipped) {
                     actions = `<button class="t-btn-unequip" onclick="unequipTitle()">取消佩戴</button>`;
                 } else if (t.owned) {
                     actions = `<button class="t-btn-equip" onclick="equipTitle('${t.title_key}')">佩戴</button>`;
-                } else if (t.acquire_type === 'buy') {
-                    const price = nextBuyPrice(t, t.stars);
-                    actions = `<button class="t-btn-buy" onclick="buyTitle('${t.title_key}')">💎 购买${t.stars > 0 ? '升星' : ''}（${fmtBig(price)} NB币）</button>`;
                 } else if (t.acquire_type === 'manual') {
                     actions = `<button class="t-btn-disabled" disabled>👑 管理员颁发</button>`;
                 } else {
