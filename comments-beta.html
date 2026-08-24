@@ -271,7 +271,7 @@
 <div class="cam-modal" id="commentCamModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:20000; justify-content:center; align-items:center;">
     <div class="cam-box" style="background:var(--card-bg); border-radius:20px; padding:20px; width:min(420px,92vw); text-align:center;">
         <h3 style="margin:0 0 12px; color:var(--text-color);">📷 拍照</h3>
-        <video id="commentCamVideo" autoplay playsinline muted style="width:100%; max-height:52vh; border-radius:12px; background:#000; object-fit:contain;"></video>
+        <video id="commentCamVideo" autoplay playsinline muted style="width:100%; max-height:52vh; border-radius:12px; background:#000; object-fit:contain; transform:scaleX(-1);"></video>
         <div style="display:flex; gap:10px; justify-content:center; margin-top:12px;">
             <button id="commentCamShoot" style="border:none; border-radius:30px; padding:10px 26px; cursor:pointer; font-size:0.95rem; background:var(--nav-btn-hover-bg); color:#fff;">📸 拍照</button>
             <button id="commentCamClose" class="gray" style="border:none; border-radius:30px; padding:10px 26px; cursor:pointer; font-size:0.95rem; background:var(--nav-btn-bg); color:var(--nav-btn-text);">取消</button>
@@ -524,10 +524,14 @@
         };
 
         shootBtn.onclick = () => {
+            // canvas 截帧 → jpeg blob → File（与预览一致：左右镜像）
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth || 1280;
             canvas.height = video.videoHeight || 720;
-            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            const ctx = canvas.getContext('2d');
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             canvas.toBlob((blob) => {
                 cleanup();
                 if (!blob) { showMessage('提示', '拍照失败，请重试'); return; }
