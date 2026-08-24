@@ -702,6 +702,12 @@
     function goVersion(v) {
         if (typeof setUIVersion === 'function') setUIVersion(v);
         const raw = location.pathname.split('/').pop() || '';
+        const isNew = /-new\.html$/i.test(raw);
+        // 已经是目标版本：直接刷新（避免 profile-new → profile-new-new 的 404）
+        if ((v === 'new' && isNew) || (v === 'old' && !isNew)) {
+            location.reload();
+            return;
+        }
         if (raw.toLowerCase().indexOf('.html') !== -1) {
             location.href = v === 'new' ? raw.replace(/\.html$/i, '-new.html') : raw.replace(/-new\.html$/i, '.html');
         } else {
