@@ -264,6 +264,14 @@
 <script src="data/videos.js"></script>
 <script src="js/elements.js"></script>
 <script>
+    // Supabase 客户端（配平计数上报用）
+    try {
+        window.supabaseClient = supabase.createClient(
+            'https://pbaafgjkwdbwcmsikcmg.supabase.co',
+            'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg'
+        );
+    } catch (e) { window.supabaseClient = null; }
+
     // ========== 周期表渲染 ==========
     const CAT_CLASS = {
         '碱金属': 'cat-alkali', '碱土金属': 'cat-alkaline', '过渡金属': 'cat-transition',
@@ -520,6 +528,16 @@
             const pretty = [];
             [...left, ...right].forEach((t, i) => { const v = final[i]; pretty.push((v === 1 ? '' : v) + t); });
             out.innerHTML = `✅ 配平结果：<span class="big">${pretty.slice(0, left.length).join(' + ')} = ${pretty.slice(left.length).join(' + ')}</span>`;
+            // 配平成功上报（化学狂人称号计数，登录用户）
+            try {
+                const u = localStorage.getItem('nb_user');
+                if (u && window.supabaseClient) {
+                    const user = JSON.parse(u);
+                    if (user && user.id) {
+                        window.supabaseClient.rpc('record_balance_count', { p_user_id: user.id }).catch(() => {});
+                    }
+                }
+            } catch (e) { /* 忽略 */ }
         } catch (e) {
             out.innerText = '❌ ' + e.message;
         }

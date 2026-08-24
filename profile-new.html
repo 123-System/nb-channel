@@ -140,6 +140,37 @@
         .avatar-box .avatar-actions button { background: var(--nav-btn-hover-bg); color: white; border: none; border-radius: 30px; padding: 8px 18px; cursor: pointer; font-size: 0.9rem; }
         .avatar-box .avatar-actions input[type="file"] { display: none; }
         #avatarStatus { font-size: 0.8rem; color: var(--count-text); }
+        /* 称号面板 */
+        .title-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-top: 12px; }
+        .title-card {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 14px; padding: 12px; position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .title-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px -10px rgba(0,0,0,0.25); }
+        .title-card .t-img { width: 100%; border-radius: 8px; display: block; background: var(--count-bg); }
+        .title-card .t-name { font-weight: 700; margin-top: 8px; font-size: 0.95rem; color: var(--text-color); }
+        .title-card .t-desc { font-size: 0.75rem; color: var(--count-text); margin-top: 3px; line-height: 1.5; }
+        .title-card .t-stars { font-size: 0.85rem; margin-top: 4px; letter-spacing: 2px; }
+        .title-card .t-stars.locked { color: #999; }
+        .title-card .t-stars .lit { color: #ffb300; }
+        .title-card .t-stars .dim { color: #ccc; }
+        .title-card.equipped { border-color: #ffb300; box-shadow: 0 0 0 2px rgba(255,179,0,0.35); }
+        .title-card .t-badge { position: absolute; top: 8px; right: 8px; font-size: 0.68rem; padding: 2px 8px; border-radius: 20px; }
+        .t-badge.equip { background: #ffb300; color: #5a3e00; }
+        .t-badge.owned { background: #4caf50; color: #fff; }
+        .t-badge.locked { background: var(--count-bg); color: var(--count-text); }
+        .title-card .t-actions { margin-top: 8px; display: flex; gap: 8px; }
+        .title-card .t-actions button {
+            flex: 1; border: none; border-radius: 20px; padding: 6px 10px;
+            cursor: pointer; font-size: 0.8rem;
+        }
+        .t-btn-equip { background: var(--nav-btn-hover-bg); color: #fff; }
+        .t-btn-unequip { background: var(--nav-btn-bg); color: var(--nav-btn-text); }
+        .t-btn-buy { background: #ff9800; color: #fff; }
+        .t-btn-disabled { background: var(--count-bg); color: var(--count-text); cursor: default !important; }
+        .title-equip-preview { margin: 4px 0 14px; font-size: 0.8rem; color: var(--count-text); }
+        .title-equip-preview img { width: 200px; border-radius: 8px; display: block; margin-top: 6px; }
     </style>
 </head>
 <body>
@@ -168,11 +199,19 @@
             <span class="info-label">我的成就</span>
             <span class="info-value"><a href="achievements.html" style="color:var(--status-border); text-decoration:none;">🏆 查看成就 →</a></span>
         </div>
+        <div class="info-item" id="equippedTitleDisplay" style="display:none;">
+            <span class="info-label">当前称号</span>
+            <span class="info-value" id="equippedTitleName"></span>
+        </div>
         <div class="info-item" id="myCompanyDisplay" style="display:none;">
             <span class="info-label">我的虚拟公司</span>
             <span class="info-value" id="myCompanyName"></span>
         </div>
     </div>
+
+    <h2>🏅 我的称号</h2>
+    <div class="title-equip-preview" id="titleEquipPreview">加载中...</div>
+    <div class="title-grid" id="titleGrid"><div class="loading">加载中...</div></div>
 
     <h2>🎨 界面风格</h2>
     <div class="form-group" style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -364,8 +403,126 @@
         }
         initAvatarUpload();
         await loadMyCompany();
+        await loadTitles();
         await loadAutoRules();
         await loadSupporters();
+    }
+
+    // ========== 称号系统 ==========
+    const TITLE_BASE = window.location.origin + '/';  // 图片相对站根目录
+
+    function titleImgUrl(t) {
+        if (t.image_url) {
+            // 相对路径 → 拼站点根；绝对 URL 直接用
+            return /^https?:/.test(t.image_url) ? t.image_url : TITLE_BASE + t.image_url;
+        }
+        return '';
+    }
+
+    function renderStars(stars, owned) {
+        if (!owned) return '<span class="t-stars locked">🔒 未解锁</span>';
+        let html = '<span class="t-stars">';
+        for (let i = 1; i <= 5; i++) {
+            html += i <= stars ? '<span class="lit">★</span>' : '<span class="dim">★</span>';
+        }
+        html += '</span>';
+        return html;
+    }
+
+    function fmtBig(n) {
+        if (n >= 100000000) return (n / 100000000).toFixed(1).replace(/\.0$/, '') + '亿';
+        if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, '') + '万';
+        return String(n);
+    }
+
+    // 购买下一级所需金额
+    function nextBuyPrice(t, cur) {
+        if (cur === 0) return t.price;
+        if (cur >= 5) return null;
+        return (t.star_prices && t.star_prices[cur - 1]) || null;
+    }
+
+    async function loadTitles() {
+        const grid = document.getElementById('titleGrid');
+        const preview = document.getElementById('titleEquipPreview');
+        if (!grid || !currentUser) return;
+        try {
+            // 同步自动称号（解锁+最新星级）
+            await supabaseClient.rpc('sync_my_titles', { p_user_id: currentUser.id });
+            const { data, error } = await supabaseClient.rpc('get_my_titles', { p_user_id: currentUser.id });
+            if (error) throw error;
+            const list = data || [];
+            // 佩戴预览
+            const equipped = list.find(t => t.equipped);
+            const equippedName = document.getElementById('equippedTitleName');
+            if (equipped) {
+                document.getElementById('equippedTitleDisplay').style.display = 'flex';
+                equippedName.innerText = `${equipped.name} ${'★'.repeat(equipped.equipped_stars)}`;
+                preview.innerHTML = `当前佩戴：<b>${equipped.name}</b><img src="${titleImgUrl(equipped)}" alt="" onerror="this.style.display='none'">`;
+            } else {
+                document.getElementById('equippedTitleDisplay').style.display = 'none';
+                preview.innerText = '未佩戴称号（点下方卡片上的"佩戴"即可展示在评论区/私信）';
+            }
+            // 卡片列表
+            grid.innerHTML = list.map(t => {
+                const img = titleImgUrl(t);
+                const imgHtml = img ? `<img class="t-img" src="${img}" alt="${t.name}" onerror="this.style.display='none'">` : `<div class="t-img" style="height:56px; display:flex; align-items:center; justify-content:center; font-size:1.6rem;">${t.icon}</div>`;
+                const badge = t.equipped ? '<span class="t-badge equip">✔ 佩戴中</span>'
+                    : t.owned ? '<span class="t-badge owned">已拥有</span>'
+                    : '<span class="t-badge locked">未解锁</span>';
+                let actions = '';
+                if (t.equipped) {
+                    actions = `<button class="t-btn-unequip" onclick="unequipTitle()">取消佩戴</button>`;
+                } else if (t.owned) {
+                    actions = `<button class="t-btn-equip" onclick="equipTitle('${t.title_key}')">佩戴</button>`;
+                } else if (t.acquire_type === 'buy') {
+                    const price = nextBuyPrice(t, t.stars);
+                    actions = `<button class="t-btn-buy" onclick="buyTitle('${t.title_key}')">💎 购买（${fmtBig(price)} NB币）</button>`;
+                } else if (t.acquire_type === 'manual') {
+                    actions = `<button class="t-btn-disabled" disabled>👑 管理员颁发</button>`;
+                } else {
+                    actions = `<button class="t-btn-disabled" disabled>达成条件自动解锁</button>`;
+                }
+                const desc = t.acquire_desc ? `<div class="t-desc">📌 ${t.acquire_desc}</div>` : '';
+                return `<div class="title-card ${t.equipped ? 'equipped' : ''}">
+                    ${badge}
+                    ${imgHtml}
+                    <div class="t-name">${t.name}</div>
+                    ${renderStars(t.stars, t.owned)}
+                    ${desc}
+                    <div class="t-actions">${actions}</div>
+                </div>`;
+            }).join('');
+        } catch (e) {
+            grid.innerHTML = `<div class="no-data">称号加载失败：${escapeHtml ? escapeHtml(e.message) : e.message}</div>`;
+        }
+    }
+
+    async function equipTitle(key) {
+        const { data, error } = await supabaseClient.rpc('equip_title', { p_user_id: currentUser.id, p_title_key: key });
+        if (error || !data || !data.success) { alert((error && error.message) || (data && data.message) || '操作失败'); return; }
+        await loadTitles();
+    }
+
+    async function unequipTitle() {
+        const { data, error } = await supabaseClient.rpc('equip_title', { p_user_id: currentUser.id, p_title_key: '' });
+        if (error || !data || !data.success) { alert((error && error.message) || (data && data.message) || '操作失败'); return; }
+        await loadTitles();
+    }
+
+    async function buyTitle(key) {
+        const ok = confirm('确认购买该称号？将扣除相应 NB币。');
+        if (!ok) return;
+        const { data, error } = await supabaseClient.rpc('buy_title', { p_user_id: currentUser.id, p_title_key: key });
+        if (error || !data || !data.success) { alert((error && error.message) || (data && data.message) || '购买失败'); return; }
+        await showMessage('购买成功', data.message || '购买成功');
+        await loadTitles();
+        // 刷新余额
+        const bal = document.getElementById('balanceDisplay');
+        if (bal) {
+            const { data: prof } = await supabaseClient.from('profiles').select('nb_balance').eq('id', currentUser.id).single();
+            if (prof) bal.innerText = prof.nb_balance;
+        }
     }
 
     // ========== 头像上传 ==========

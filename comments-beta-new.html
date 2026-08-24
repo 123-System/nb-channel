@@ -19,6 +19,10 @@
         .modal-content input { width:100%; padding:10px; margin:10px 0; border:1px solid var(--card-border); border-radius:8px; background:var(--bg-color); color:var(--text-color); }
         .comment { border-bottom:1px solid var(--card-border); padding:15px 0; }
         .comment-meta { display:flex; align-items:center; gap:15px; margin-bottom:8px; }
+        /* 称号横幅（名字下方） */
+        .comment-title { margin: 2px 0 8px; display: flex; align-items: center; gap: 6px; }
+        .comment-title img { height: 26px; width: auto; max-width: 200px; border-radius: 6px; display: block; }
+        .comment-title .comment-title-stars { font-size: 0.72rem; color: #ffb300; letter-spacing: 1px; }
         .comment-author { font-weight:bold; }
         .comment-time { font-size:0.8rem; color:var(--count-text); }
         .comment-content { margin:8px 0; white-space: pre-wrap; word-break: break-word; }
@@ -991,6 +995,13 @@
             }
         }
 
+        // 佩戴称号横幅（名字下方）
+        let titleTag = '';
+        const titleInfo = window.titleMap?.get(node.user_id);
+        if (titleInfo && titleInfo._img) {
+            titleTag = `<div class="comment-title"><img src="${titleInfo._img}" alt="${escapeHtml(titleInfo.name)}" title="${escapeHtml(titleInfo.name)} ${'★'.repeat(Math.min(titleInfo.stars || 1, 5))}" onerror="this.style.display='none'"><span class="comment-title-stars">${'★'.repeat(Math.min(titleInfo.stars || 1, 5))}</span></div>`;
+        }
+
         let reportButton = '';
         if (currentUser) {
             reportButton = `<button class="report-btn" data-id="${node.id}" data-author-id="${node.user_id}">举报</button>`;
@@ -1012,6 +1023,7 @@
                     ${avatarHtml}<span class="comment-author">${escapeHtml(author)}${verifiedBadge}${companyTag}</span>
                     <span class="comment-time">${new Date(node.created_at).toLocaleString()}</span>
                 </div>
+                ${titleTag}
                 <div class="comment-content" data-full="${escapeHtml(fullText)}" data-short="${escapeHtml(displayText)}">${renderContentWithMentions(displayText)}</div>
                 ${toggleButton ? `<div class="toggle-btn-container">${toggleButton}</div>` : ''}
                 <div class="comment-actions">
@@ -1625,15 +1637,33 @@
         }
 
         window.companyMap = new Map();
+        window.titleMap = new Map();
         const uidArr = [...pageUserIds].filter(id => id);
         if (uidArr.length > 0) {
-            const { data: companies, error: compError } = await supabaseClient
-                .from('user_companies')
-                .select('user_id, company_name, verified')
-                .in('user_id', uidArr);
-            if (!compError && companies) {
-                window.companyMap = new Map(companies.map(c => [c.user_id, c]));
-            }
+            // 公司徽章 + 佩戴称号（并行拉取）
+            const [compRes, titleRes] = await Promise.all([
+                supabaseClient
+                    .from('user_companies')
+                    .select('user_id, company_name, verified')
+                    .in('user_id', uidArr),
+                supabaseClient.rpc('get_user_title', { p_user_id: uidArr[0] }).catch(() => null)
+            ]);
+            const companies = compRes.data || [];
+            if (compRes.error) console.error(compRes.error);
+            window.companyMap = new Map(companies.map(c => [c.user_id, c]));
+            // 称号：逐个用户查询（RPC 单用户）
+            window.titleMap = new Map();
+            const TITLE_BASE = window.location.origin + '/';
+            await Promise.all(uidArr.map(async (uid) => {
+                try {
+                    const { data: t } = await supabaseClient.rpc('get_user_title', { p_user_id: uid });
+                    if (t && t.length > 0) {
+                        const row = t[0];
+                        row._img = /^https?:/.test(row.image_url) ? row.image_url : TITLE_BASE + row.image_url;
+                        window.titleMap.set(uid, row);
+                    }
+                } catch (e) { /* 忽略单用户失败 */ }
+            }));
         }
 
         if (commentSort !== 'hot') {

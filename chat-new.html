@@ -152,6 +152,11 @@
         .msg.other .bubble { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-color); border-top-left-radius: 4px; }
         .msg.me .bubble { background: #00a1d6; color: white; border-top-right-radius: 4px; }
         .msg .time { font-size: 0.65rem; color: var(--count-text); align-self: flex-end; margin: 0 6px; }
+        /* 对方消息：名字 + 称号横幅 */
+        .msg-title { display: flex; align-items: center; gap: 5px; margin: 0 0 3px 2px; }
+        .msg-title .msg-name { font-size: 0.72rem; color: var(--count-text); }
+        .msg-title .msg-title-img { height: 18px; width: auto; max-width: 130px; border-radius: 4px; display: block; }
+        .msg-title .msg-title-stars { font-size: 0.62rem; color: #ffb300; letter-spacing: 1px; }
         /* NB币红包卡片 */
         .redpacket {
             display: inline-flex; align-items: center; gap: 10px;
@@ -559,6 +564,17 @@
     async function openConv(convId, otherId, otherName, otherAvatar) {
         currentConvId = convId;
         currentOther = { id: otherId, name: otherName, avatar: otherAvatar };
+        // 拉取对方佩戴称号（名字下方展示）
+        try {
+            const { data: t } = await supabaseClient.rpc('get_user_title', { p_user_id: otherId });
+            if (t && t.length > 0) {
+                const row = t[0];
+                row._img = /^https?:/.test(row.image_url) ? row.image_url : window.location.origin + '/' + row.image_url;
+                currentOther.title = row;
+            } else {
+                currentOther.title = null;
+            }
+        } catch (e) { currentOther.title = null; }
         cancelQuote();
         document.getElementById('chatHeaderTitle').innerText = `💬 ${otherName}`;
         document.getElementById('convMenuBtn').classList.remove('open');
@@ -752,8 +768,15 @@
             // 自己的消息：时间在左，气泡，头像在右（右键/长按可撤回/删除）
             return `<div class="msg me" data-msgid="${m.id}" data-created="${m.created_at}">${time}<div class="bubble">${renderContentWithImages(m.content, true)}</div>${img}</div>`;
         }
-        // 对方的消息：头像在左，气泡，时间在右
-        return `<div class="msg other" data-msgid="${m.id}">${img}<div class="bubble">${renderContentWithImages(m.content, false)}</div>${time}</div>`;
+        // 对方的消息：头像在左，气泡，时间在右（名字下方带称号横幅）
+        let titleHtml = '';
+        const ot = currentOther && currentOther.title;
+        if (ot && ot._img) {
+            titleHtml = `<div class="msg-title"><span class="msg-name">${escapeHtml(currentOther.name)}</span><img class="msg-title-img" src="${ot._img}" alt="${escapeHtml(ot.name)}" title="${escapeHtml(ot.name)} ${'★'.repeat(Math.min(ot.stars || 1, 5))}" onerror="this.style.display='none'">${'★'.repeat(Math.min(ot.stars || 1, 5)) ? `<span class="msg-title-stars">${'★'.repeat(Math.min(ot.stars || 1, 5))}</span>` : ''}</div>`;
+        } else {
+            titleHtml = `<div class="msg-title"><span class="msg-name">${escapeHtml(currentOther ? currentOther.name : '')}</span></div>`;
+        }
+        return `<div class="msg other" data-msgid="${m.id}">${img}<div style="display:flex; flex-direction:column; align-items:flex-start; max-width:70%;">${titleHtml}<div class="bubble">${renderContentWithImages(m.content, false)}</div></div>${time}</div>`;
     }
 
     // ========== 消息操作：右键/长按消息 ==========
