@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>称号大全 - NB频道</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/ui-new.css" id="uiNewCss">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/common.js"></script>
+    <script src="js/ui-nav.js"></script>
+    <style>
+        body {
+            padding: 40px 20px;
+            background: var(--bg-color);
+        }
+        .title-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 32px;
+            padding: 30px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            margin: 0 0 10px 0;
+            color: var(--status-border);
+        }
+        .sub-title {
+            text-align: center;
+            color: var(--count-text);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        .top-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+        .top-actions a, .top-actions button {
+            background: var(--nav-btn-bg);
+            color: var(--nav-btn-text);
+            border: 1px solid var(--card-border);
+            border-radius: 30px;
+            padding: 8px 18px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+        .top-actions a:hover, .top-actions button:hover {
+            background: var(--nav-btn-hover-bg);
+            color: white;
+        }
+        /* 佩戴预览 */
+        .equip-preview {
+            text-align: center;
+            background: var(--count-bg);
+            border-radius: 20px;
+            padding: 14px;
+            margin-bottom: 20px;
+            border: 2px dashed var(--card-border);
+        }
+        .equip-preview .ep-label { font-size: 0.8rem; color: var(--count-text); margin-bottom: 6px; }
+        .equip-preview img {
+            height: 46px; width: auto; max-width: 320px;
+            border-radius: 8px; display: inline-block; vertical-align: middle;
+        }
+        .equip-preview .ep-none { color: var(--count-text); font-size: 0.9rem; }
+        /* 统计 */
+        .stats-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 22px; }
+        .stat-card {
+            flex: 1; min-width: 120px;
+            background: var(--count-bg);
+            border-radius: 20px;
+            padding: 14px 10px;
+            text-align: center;
+        }
+        .stat-card .num { font-size: 1.5rem; font-weight: 700; color: var(--status-border); }
+        .stat-card .label { font-size: 0.8rem; color: var(--count-text); margin-top: 4px; }
+        /* 称号卡片 */
+        .title-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        .title-card {
+            background: var(--count-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 18px;
+            padding: 14px;
+            position: relative;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        .title-card.equipped {
+            border-color: #ffd700;
+            background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,152,0,0.08));
+        }
+        .title-card .t-img {
+            width: 100%; height: auto; border-radius: 10px;
+            display: block; background: #fff;
+        }
+        .title-card.locked .t-img { filter: grayscale(0.8); opacity: 0.6; }
+        .title-card .t-top { display: flex; align-items: center; justify-content: space-between; margin: 10px 0 4px; }
+        .title-card .t-name { font-weight: 800; font-size: 1.05rem; color: var(--text-color); }
+        .title-card .t-stars { font-size: 0.95rem; letter-spacing: 2px; }
+        .title-card .t-stars .lit { color: #ffb300; }
+        .title-card .t-stars .dim { color: #ccc; }
+        .title-card .t-stars .zero { color: #999; font-size: 0.75rem; }
+        .title-card .t-desc { font-size: 0.8rem; color: var(--count-text); line-height: 1.6; flex: 1; }
+        .title-card .t-type {
+            display: inline-block; font-size: 0.7rem; border-radius: 20px;
+            padding: 2px 10px; margin-top: 6px; font-weight: 600;
+        }
+        .t-type.auto { background: rgba(76,175,80,0.15); color: #4caf50; }
+        .t-type.buy { background: rgba(255,152,0,0.15); color: #ff9800; }
+        .t-type.manual { background: rgba(156,39,176,0.15); color: #9c27b0; }
+        .title-card .t-actions { margin-top: 10px; display: flex; gap: 8px; }
+        .title-card .t-actions button {
+            flex: 1; border: none; border-radius: 20px;
+            padding: 8px 10px; cursor: pointer; font-size: 0.85rem;
+        }
+        .t-btn-equip { background: var(--nav-btn-hover-bg); color: #fff; }
+        .t-btn-unequip { background: var(--nav-btn-bg); color: var(--nav-btn-text); }
+        .t-btn-buy { background: #ff9800; color: #fff; }
+        .t-btn-disabled { background: var(--card-border); color: var(--count-text); cursor: default !important; }
+        .login-tip { text-align: center; padding: 50px 0; }
+        .login-tip p { color: var(--count-text); margin-bottom: 20px; }
+        .login-tip a {
+            background: var(--nav-btn-hover-bg);
+            color: white;
+            border-radius: 30px;
+            padding: 10px 30px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .loading { text-align: center; color: var(--count-text); padding: 40px 0; }
+        .toast {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffd700;
+            color: #333;
+            border-radius: 30px;
+            padding: 12px 24px;
+            font-weight: 600;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            z-index: 9999;
+            max-width: 90vw;
+            text-align: center;
+            display: none;
+        }
+        @media (max-width: 700px) {
+            .title-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
+<div class="title-container">
+    <h1>🏅 称号大全</h1>
+    <p class="sub-title">达成条件自动解锁 · 现金为王购买升级 · 至尊皇冠管理员颁发</p>
+
+    <div class="top-actions">
+        <a href="index.html">🏠 返回首页</a>
+        <a href="profile.html">👤 个人中心</a>
+        <button id="refreshBtn">🔄 刷新</button>
+    </div>
+
+    <div id="content">
+        <div class="loading">加载中...</div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div style="margin-top:20px; text-align:center; font-size:0.85rem; color:var(--count-text); line-height:2.1;">
+    © 2026 NB频道 · 虚拟公司 · <a href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">nb-channel.top（导航页）</a> · <a href="https://github.nb-channel.top" target="_blank" rel="noopener noreferrer">github站</a> · <a href="https://cloudflare.nb-channel.top" target="_blank" rel="noopener noreferrer">cloudflare站</a> · <a href="https://pythonanywhere.nb-channel.top" target="_blank" rel="noopener noreferrer">pythonanywhere站</a><br>
+    如有任何问题或建议，请联系：<a href="mailto:nbchannel@163.com">nbchannel@163.com</a> 或 <a href="mailto:NBchannel@163.com">NBchannel@163.com</a><br>
+    制作：<a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">NB搞事局（原NB实验室-作死）</a><br>
+    托管：<a href="https://github.com/" target="_blank" rel="noopener noreferrer">Github</a> · <a href="https://www.cloudflare-cn.com/developer-platform/products/pages/" target="_blank" rel="noopener noreferrer">Cloudflare</a> · <a href="https://www.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">PythonAnywhere</a> <br>     资源致谢：<a href="https://www.jsdelivr.com/" target="_blank" rel="noopener noreferrer">jsDelivr</a> · <a href="https://supabase.com/" target="_blank" rel="noopener noreferrer">Supabase</a>
+</div>
+<div class="fixed-buttons">
+    <button class="theme-toggle-fixed" id="themeToggleFixed" onclick="toggleTheme()">🌙</button>
+    <div class="back-to-top" id="backToTop" onclick="scrollToTop()">↑</div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function getUser() {
+        const stored = localStorage.getItem('nb_user');
+        if (!stored) return null;
+        try { return JSON.parse(stored); } catch (e) { return null; }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+
+    let toastTimer = null;
+    function showToast(text) {
+        const t = document.getElementById('toast');
+        t.innerHTML = text;
+        t.style.display = 'block';
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { t.style.display = 'none'; }, 6000);
+    }
+
+    function fmtBig(n) {
+        if (n >= 100000000) return (n / 100000000).toFixed(1).replace(/\.0$/, '') + '亿';
+        if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, '') + '万';
+        return String(n);
+    }
+
+    // 购买下一级所需金额
+    function nextBuyPrice(t, cur) {
+        if (cur === 0) return t.price;
+        if (cur >= 5) return null;
+        return (t.star_prices && t.star_prices[cur - 1]) || null;
+    }
+
+    function renderStars(stars, owned) {
+        if (!owned || stars === 0) return '<span class="t-stars zero">🔒 未解锁</span>';
+        let html = '<span class="t-stars">';
+        for (let i = 1; i <= 5; i++) {
+            html += i <= stars ? '<span class="lit">★</span>' : '<span class="dim">★</span>';
+        }
+        html += '</span>';
+        return html;
+    }
+
+    async function loadTitles() {
+        const content = document.getElementById('content');
+        const user = getUser();
+        if (!user) {
+            content.innerHTML = `
+                <div class="login-tip">
+                    <p>🔒 请先登录后查看称号</p>
+                    <a href="login.html">去登录</a>
+                </div>`;
+            return;
+        }
+        content.innerHTML = '<div class="loading">加载中...</div>';
+        try {
+            // 同步自动称号（解锁 + 最新星级）
+            await supabaseClient.rpc('sync_my_titles', { p_user_id: user.id });
+            const { data, error } = await supabaseClient.rpc('get_my_titles', { p_user_id: user.id });
+            if (error) throw error;
+            const list = data || [];
+
+            const ownedCount = list.filter(t => t.owned).length;
+            const equipped = list.find(t => t.equipped);
+
+            let html = `
+                <div class="equip-preview">
+                    <div class="ep-label">当前佩戴</div>
+                    ${equipped
+                        ? `<img src="${escapeHtml(equipped.image_url)}" alt="${escapeHtml(equipped.name)}" title="${escapeHtml(equipped.name)} ${'★'.repeat(Math.min(equipped.equipped_stars || 1, 5))}">
+                           <div style="margin-top:4px; font-size:0.85rem; color:var(--text-color);">${escapeHtml(equipped.name)} ${'★'.repeat(Math.min(equipped.equipped_stars || 1, 5))}</div>`
+                        : '<span class="ep-none">未佩戴称号 —— 点下方卡片上的"佩戴"展示在评论区/私信</span>'}
+                </div>
+                <div class="stats-row">
+                    <div class="stat-card"><div class="num">${ownedCount}/${list.length}</div><div class="label">已拥有称号</div></div>
+                    <div class="stat-card"><div class="num" style="color:#4caf50;">${list.length - ownedCount}</div><div class="label">待解锁</div></div>
+                    <div class="stat-card"><div class="num" style="color:#ffb300;">${equipped ? '★'.repeat(Math.min(equipped.equipped_stars || 1, 5)) : '—'}</div><div class="label">当前星级</div></div>
+                </div>
+                <div class="title-grid">`;
+
+            for (const t of list) {
+                const typeCls = t.acquire_type === 'buy' ? 'buy' : (t.acquire_type === 'manual' ? 'manual' : 'auto');
+                const typeLabel = t.acquire_type === 'buy' ? '💎 购买' : (t.acquire_type === 'manual' ? '👑 颁发' : '✨ 自动');
+                let actions = '';
+                if (t.equipped) {
+                    actions = `<button class="t-btn-unequip" onclick="unequipTitle()">取消佩戴</button>`;
+                } else if (t.owned) {
+                    actions = `<button class="t-btn-equip" onclick="equipTitle('${t.title_key}')">佩戴</button>`;
+                } else if (t.acquire_type === 'buy') {
+                    const price = nextBuyPrice(t, t.stars);
+                    actions = `<button class="t-btn-buy" onclick="buyTitle('${t.title_key}')">💎 购买${t.stars > 0 ? '升星' : ''}（${fmtBig(price)} NB币）</button>`;
+                } else if (t.acquire_type === 'manual') {
+                    actions = `<button class="t-btn-disabled" disabled>👑 管理员颁发</button>`;
+                } else {
+                    actions = `<button class="t-btn-disabled" disabled>达成条件自动解锁</button>`;
+                }
+
+                html += `
+                    <div class="title-card ${t.equipped ? 'equipped' : (t.owned ? '' : 'locked')}">
+                        <img class="t-img" src="${escapeHtml(t.image_url)}" alt="${escapeHtml(t.name)}" onerror="this.style.display='none'">
+                        <div class="t-top">
+                            <span class="t-name">${escapeHtml(t.name)}</span>
+                            ${renderStars(t.stars, t.owned)}
+                        </div>
+                        <div class="t-desc">📌 ${escapeHtml(t.acquire_desc)}</div>
+                        <span class="t-type ${typeCls}">${typeLabel}</span>
+                        <div class="t-actions">${actions}</div>
+                    </div>`;
+            }
+
+            html += '</div>';
+            content.innerHTML = html;
+        } catch (err) {
+            console.error(err);
+            content.innerHTML = `<div class="loading">加载失败：${escapeHtml(err.message)}，请刷新重试</div>`;
+        }
+    }
+
+    async function equipTitle(key) {
+        const user = getUser();
+        if (!user) return;
+        const { data, error } = await supabaseClient.rpc('equip_title', { p_user_id: user.id, p_title_key: key });
+        if (error || !data || !data.success) { alert((error && error.message) || (data && data.message) || '操作失败'); return; }
+        showToast('✅ 已佩戴称号');
+        loadTitles();
+    }
+
+    async function unequipTitle() {
+        const user = getUser();
+        if (!user) return;
+        const { data, error } = await supabaseClient.rpc('equip_title', { p_user_id: user.id, p_title_key: '' });
+        if (error || !data || !data.success) { alert((error && error.message) || (data && data.message) || '操作失败'); return; }
+        showToast('✅ 已取消佩戴');
+        loadTitles();
+    }
+
+    async function buyTitle(key) {
+        const user = getUser();
+        if (!user) return;
+        const ok = confirm('确认购买该称号？将扣除相应 NB币。');
+        if (!ok) return;
+        const { data, error } = await supabaseClient.rpc('buy_title', { p_user_id: user.id, p_title_key: key });
+        if (error || !data || !data.success) { alert((error && error.message) || (data && data.message) || '购买失败'); return; }
+        showToast(`🎉 ${data.message || '购买成功'}`);
+        loadTitles();
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', loadTitles);
+    loadTitles();
+</script>
+</body>
+</html>
