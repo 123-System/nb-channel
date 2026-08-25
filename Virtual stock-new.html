@@ -455,6 +455,12 @@
             <label style="font-size:0.85rem;">交易金额（NB币，手续费 5%）：</label>
             <input type="number" id="tradeShares" min="1" max="500000" value="100" style="width:100%; padding:8px; margin:6px 0; border-radius:30px; border:1px solid var(--card-border); background:var(--bg-color); color:var(--text-color);">
             <div id="tradeCapHint" style="font-size:0.8rem; color:#e67e22; display:none;"></div>
+            <div id="tradeDiscountRow" style="display:none; margin:8px 0; font-size:0.85rem;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--text-color);">
+                    <input type="checkbox" id="tradeUseDiscount" style="width:16px; height:16px;">
+                    📉 使用手续费减免券（手续费 5%→2%）
+                </label>
+            </div>
             <div id="tradeAmountPreview" style="font-size:0.85rem; color:var(--count-text); text-align:right;">预计花费：--</div>
         </div>
         <div style="display:flex; gap:10px; margin-top:8px;">
@@ -1469,7 +1475,7 @@
     // ========== 金额制投资交易 ==========
     let tradeState = null;  // { companyId, name, marketValue, mode, myValue, myShares }
 
-    function showTradeDialog(companyId, companyName, marketValue, mode) {
+    async function showTradeDialog(companyId, companyName, marketValue, mode) {
         if (!currentUserId) { showMessage('提示', '请先登录'); return; }
         if (!isTradingHours()) { showMessage('提示', '当前为休市时间（每日 8:00-20:00 交易），请开盘后再操作'); return; }
         const modal = document.getElementById('tradeModal');
@@ -1516,6 +1522,21 @@
 
         const amountInput = document.getElementById('tradeShares');
         amountInput.value = mode === 'buy' ? 100 : (Math.round(myValue) || 100);
+
+        // 手续费减免券：有未使用的券时显示勾选项
+        const discountRow = document.getElementById('tradeDiscountRow');
+        const discountCheck = document.getElementById('tradeUseDiscount');
+        if (discountRow && discountCheck) {
+            discountCheck.checked = false;
+            discountRow.style.display = 'none';
+            try {
+                const { data: fx } = await supabaseClient.rpc('get_active_shop_effects', { p_user_id: currentUserId });
+                if (fx && fx.success && fx.fee_discount_count > 0) {
+                    discountRow.style.display = 'block';
+                }
+            } catch (e) { /* 忽略 */ }
+        }
+
         updateTradePreview();
 
         tradeState = { companyId, name: companyName, marketValue, mode, myValue, remainCap };
@@ -1529,6 +1550,8 @@
         buyBtn.onclick = () => executeTrade('buy');
         sellBtn.onclick = () => executeTrade('sell');
         amountInput.oninput = updateTradePreview;
+        const discountCheckbox = document.getElementById('tradeUseDiscount');
+        if (discountCheckbox) discountCheckbox.onchange = updateTradePreview;
     }
 
     function updateTradePreview() {
@@ -1543,11 +1566,13 @@
             preview.innerText = `⚠️ 最多可卖 ${formatValue(Math.round(tradeState.myValue))} NB币（您的当前持仓价值）`;
             return;
         }
+        const useDiscount = document.getElementById('tradeUseDiscount') ? document.getElementById('tradeUseDiscount').checked : false;
+        const feeRate = useDiscount ? 0.02 : 0.05;
         if (tradeState && tradeState.mode === 'sell') {
-            const fee = Math.floor(val * 0.05);
+            const fee = Math.floor(val * feeRate);
             preview.innerText = `卖出金额 ${formatValue(val)} NB币 - 手续费 ${formatValue(fee)} NB币 = 到账 ${formatValue(val - fee)} NB币`;
         } else {
-            const fee = Math.floor(val * 0.05);
+            const fee = Math.floor(val * feeRate);
             preview.innerText = `投入 ${formatValue(val)} NB币 + 手续费 ${formatValue(fee)} NB币 = 支付 ${formatValue(val + fee)} NB币`;
         }
     }
@@ -1564,10 +1589,12 @@
         }
 
         const rpcName = mode === 'buy' ? 'buy_stock' : 'sell_stock';
+        const useDiscount = document.getElementById('tradeUseDiscount') ? document.getElementById('tradeUseDiscount').checked : false;
         const { data, error } = await supabaseClient.rpc(rpcName, {
             p_user_id: currentUserId,
             p_company_id: tradeState.companyId,
-            p_amount: amount
+            p_amount: amount,
+            p_use_discount: useDiscount
         });
         if (error) {
             await showMessage('交易失败', error.message);

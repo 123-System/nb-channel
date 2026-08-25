@@ -231,12 +231,8 @@ BEGIN
          WHERE id = p_item_id;
         RETURN jsonb_build_object('success', true, 'message', '今日抽奖次数 +10 生效！');
     ELSIF v_item.item_key = 'fee_discount' THEN
-        -- 手续费减免：标记未使用（use 时不消费，交易时选择消耗）
-        UPDATE public.user_items
-           SET used = true,
-               settings = jsonb_build_object('used_at', now())
-         WHERE id = p_item_id;
-        RETURN jsonb_build_object('success', true, 'message', '手续费减免券已激活（下次交易自动生效）');
+        -- 手续费减免：在股票买卖时勾选使用（use 接口仅提示）
+        RETURN jsonb_build_object('success', true, 'message', '请在股票买卖弹窗中勾选"使用手续费减免券"（5%→2%）');
     ELSIF v_item.item_key = 'checkin_fix' THEN
         RETURN jsonb_build_object('success', false, 'message', '补签请到签到页面使用（选择要补的日期）');
     ELSE
@@ -464,6 +460,10 @@ BEGIN
         'checkin_fix_count', (SELECT count(*) FROM public.user_items
                                WHERE user_id = p_user_id AND item_key = 'checkin_fix'
                                  AND used = false AND (expires_at IS NULL OR expires_at > now())),
+        -- 可用手续费减免券数量
+        'fee_discount_count', (SELECT count(*) FROM public.user_items
+                                WHERE user_id = p_user_id AND item_key = 'fee_discount'
+                                  AND used = false AND (expires_at IS NULL OR expires_at > now())),
         -- 今日抽奖额外次数（已使用的 lottery_extra 且日期=今天）
         'lottery_extra_today', coalesce((
             SELECT sum((settings->>'lottery_extra')::int)
@@ -609,6 +609,32 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.update_bio(uuid, text) TO anon;
+
+-- ========== 15. 股票手续费券使用记录 ==========
+-- 消耗一张手续费减免券（交易时由 buy_stock/sell_stock 调用）
+CREATE OR REPLACE FUNCTION public.consume_fee_discount(p_user_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_id bigint;
+BEGIN
+    SELECT id INTO v_id FROM public.user_items
+     WHERE user_id = p_user_id AND item_key = 'fee_discount'
+       AND used = false AND (expires_at IS NULL OR expires_at > now())
+     ORDER BY id LIMIT 1;
+    IF v_id IS NULL THEN
+        RETURN false;
+    END IF;
+    UPDATE public.user_items SET used = true, settings = jsonb_build_object('used_at', now())
+     WHERE id = v_id;
+    RETURN true;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.consume_fee_discount(uuid) TO anon;
 
 -- ========== 14. 主页皮肤头图设置 ==========
 -- 上传头图后更新 profile_skin 道具的 settings.banner
