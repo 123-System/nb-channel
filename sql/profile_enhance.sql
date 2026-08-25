@@ -210,7 +210,7 @@ BEGIN
               FROM public.user_achievements ua
               LEFT JOIN public.achievements a ON a.key = ua.achievement_key
              WHERE ua.user_id = p_user_id), '[]'::jsonb),
-        -- 最近动态（合并 作品发布/评论/解锁称号/获得成就/签到，按时间倒序，最多30条）
+        -- 最近动态（合并 作品发布/解锁称号/获得成就/签到，按时间倒序，最多30条；不含评论）
         'activity', coalesce((
             SELECT jsonb_agg(x ORDER BY ts DESC)
               FROM (
@@ -220,13 +220,6 @@ BEGIN
                            'ts', created_at) AS x,
                        created_at AS ts
                   FROM public.products WHERE author_id = p_user_id
-                UNION ALL
-                SELECT jsonb_build_object(
-                           'type', 'comment',
-                           'text', '发表了评论：' || left(content, 40),
-                           'ts', created_at) AS x,
-                       created_at AS ts
-                  FROM public.comments WHERE user_id = p_user_id
                 UNION ALL
                 SELECT jsonb_build_object(
                            'type', 'title',
