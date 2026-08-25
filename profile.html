@@ -372,20 +372,30 @@
     }
 
     async function loadUserInfo() {
-        // 支持 ?uid=xxx 查看他人主页（无登录要求）
+        // 支持 ?username=xxx 查看他人主页（用用户名参数，不暴露用户ID）
         const qs = new URLSearchParams(window.location.search);
-        const uidParam = qs.get('uid');
+        const userParam = qs.get('username');
         const me = getCurrentUser();
 
-        if (uidParam) {
-            viewUid = uidParam;
-            isOwner = me && me.id === uidParam;
-            document.title = '用户主页 - NB频道';
+        if (userParam) {
+            // 按用户名查 ID（ID 只在内部使用，URL 中不出现）
+            const { data: target, error: targetErr } = await supabaseClient
+                .from('profiles')
+                .select('id, username')
+                .eq('username', userParam)
+                .maybeSingle();
+            if (targetErr || !target) {
+                document.getElementById('usernameDisplay').innerText = '用户不存在';
+                return;
+            }
+            viewUid = target.id;
+            isOwner = !!(me && me.id === viewUid);
+            document.title = `${target.username}的主页 - NB频道`;
         } else if (me && me.id) {
             viewUid = me.id;
             isOwner = true;
         } else {
-            // 未登录且无 uid：跳登录
+            // 未登录且无参数：跳登录
             window.location.href = uiHref('login.html?redirect=') + encodeURIComponent(window.location.href);
             return;
         }
