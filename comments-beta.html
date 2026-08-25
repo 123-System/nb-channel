@@ -1022,7 +1022,7 @@
             <div class="comment" data-id="${node.id}">
                 <div class="comment-meta">
                     ${floorBadge}
-                    ${avatarHtml}<span class="comment-author">${escapeHtml(author)}${verifiedBadge}${companyTag}</span>
+                    ${avatarHtml}<a class="comment-author" href="${uiHref('profile.html?username=')}${encodeURIComponent(author)}" style="text-decoration:none; color:inherit;" title="查看主页">${escapeHtml(author)}</a>${verifiedBadge}${companyTag}
                     <span class="comment-time">${new Date(node.created_at).toLocaleString()}</span>
                 </div>
                 ${titleTag}
