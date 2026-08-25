@@ -105,12 +105,14 @@ BEGIN
         VALUES (p_user_id, p_item_key, NULL, false);
     ELSE
         v_duration := make_interval(days => v_item.duration_days);
-        -- 时长叠加：若存在未过期的同类，从到期时间顺延；否则从现在开始
+        -- 时长叠加：只顺延"最晚到期"的那一条（避免历史多条记录被重复顺延）
         IF v_item.auto_renew THEN
             UPDATE public.user_items
                SET expires_at = GREATEST(now(), expires_at) + v_duration
-             WHERE user_id = p_user_id AND item_key = p_item_key
-               AND expires_at > now();
+             WHERE id = (SELECT id FROM public.user_items
+                          WHERE user_id = p_user_id AND item_key = p_item_key
+                            AND expires_at > now()
+                          ORDER BY expires_at DESC LIMIT 1);
             IF NOT FOUND THEN
                 INSERT INTO public.user_items (user_id, item_key, expires_at, used)
                 VALUES (p_user_id, p_item_key, now() + v_duration, false);
@@ -178,7 +180,7 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '参数错误');
     END IF;
     UPDATE public.user_items
-       SET settings = p_settings
+       SET settings = coalesce(settings, '{}'::jsonb) || p_settings
      WHERE id = p_item_id AND user_id = p_user_id;
     IF NOT FOUND THEN
         RETURN jsonb_build_object('success', false, 'message', '道具不存在');
@@ -277,24 +279,35 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '没有可用的补签卡');
     END IF;
 
-    -- 记录补签（不奖励NB币，只补记录；连续天数按目标日期恢复）
+    -- 记录补签（不奖励NB币，只补记录）
     INSERT INTO public.check_in_records (user_id, check_in_date)
     VALUES (p_user_id, p_target_date)
     ON CONFLICT (user_id, check_in_date) DO NOTHING;
 
-    -- 更新连续天数：以目标日期为基准计算（目标日期的前一天若已签，则连续 +1）
-    SELECT last_checkin_date, consecutive_days INTO v_last_checkin, v_consecutive
-      FROM public.user_checkins WHERE user_id = p_user_id;
-    IF v_last_checkin IS NULL OR v_last_checkin < p_target_date THEN
-        v_new_consecutive := 1;
-    ELSE
-        v_new_consecutive := v_consecutive;
+    -- 恢复连续天数：以补签日期为新的"最近签到"，从该日往前数连续天数
+    v_new_consecutive := 1;
+    FOR i IN 1..365 LOOP
+        IF EXISTS (SELECT 1 FROM public.check_in_records
+                    WHERE user_id = p_user_id AND check_in_date = p_target_date - i) THEN
+            v_new_consecutive := v_new_consecutive + 1;
+        ELSE
+            EXIT;
+        END IF;
+    END LOOP;
+
+    UPDATE public.user_checkins
+       SET last_checkin_date = GREATEST(coalesce(last_checkin_date, p_target_date), p_target_date),
+           consecutive_days = v_new_consecutive
+     WHERE user_id = p_user_id;
+    IF NOT FOUND THEN
+        INSERT INTO public.user_checkins (user_id, last_checkin_date, consecutive_days)
+        VALUES (p_user_id, p_target_date, v_new_consecutive);
     END IF;
 
     UPDATE public.user_items SET used = true WHERE id = v_card_id;
 
     RETURN jsonb_build_object('success', true, 'message',
-        format('补签成功：%s（消耗 1 张补签卡）', p_target_date::text));
+        format('补签成功：%s（消耗 1 张补签卡，连续 %s 天）', p_target_date::text, v_new_consecutive));
 END;
 $$;
 

@@ -213,7 +213,7 @@
                     }
                 }
                 // 改色类道具（选一条生效中的）
-                if (['comment_color', 'nickname_color', 'chat_bubble', 'particle_fx', 'profile_skin'].includes(i.item_key)) {
+                if (['comment_color', 'nickname_color', 'chat_bubble', 'particle_fx'].includes(i.item_key)) {
                     const activeOne = list.find(x => x.active);
                     if (activeOne) actions += `<button data-act="color" data-id="${activeOne.id}" data-key="${i.item_key}">🎨 更换样式</button>`;
                 }
@@ -332,8 +332,7 @@
         comment_color: { label: '评论文字颜色', options: ['#e74c3c', '#ff9800', '#f5a623', '#4caf50', '#00a1d6', '#7c4dff', '#ff6b9d', '#795548'], free: true },
         nickname_color: { label: '昵称颜色', options: ['#e74c3c', '#f5a623', 'rainbow'], free: false },
         chat_bubble: { label: '气泡颜色', options: ['#00a1d6', '#ff6b9d', '#4caf50', 'rainbow'], free: false },
-        particle_fx: { label: '粒子特效', options: ['fire', 'lightning', 'bubble', 'star'], free: false },
-        profile_skin: { label: '主页皮肤', options: ['default', 'aurora', 'night', 'cherry'], free: false }
+        particle_fx: { label: '粒子特效', options: ['fire', 'lightning', 'bubble', 'star'], free: false }
     };
 
     function openColorModal(itemKey, itemId) {
