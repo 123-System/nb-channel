@@ -17,8 +17,10 @@
             box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
         }
         h1 { text-align: center; margin: 0 0 6px; color: var(--status-border); }
-        .page-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-        .page-head h1 { margin: 0; flex: 1; }
+        .page-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
+        .page-head h1 { margin: 0; text-align: center; }
+        .page-head .balance-chip { justify-self: start; }
+        .page-head .ph-spacer { justify-self: end; }
         .balance-chip {
             display: inline-flex; align-items: center; gap: 6px;
             background: var(--count-bg); border: 1px solid var(--card-border);
@@ -109,7 +111,7 @@
     <div class="page-head">
         <span class="balance-chip">💰 NB币: <span class="bc-num" id="balanceDisplay">--</span></span>
         <h1>🛍️ NB商店</h1>
-        <span style="width:120px;"></span>
+        <span class="ph-spacer"></span>
     </div>
     <div class="sub-title">用 NB币购买道具，装点你的频道生活</div>
 

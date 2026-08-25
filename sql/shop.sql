@@ -41,12 +41,12 @@ REVOKE ALL ON public.user_items FROM anon, authenticated;
 
 -- ========== 3. 商品数据（10个） ==========
 INSERT INTO public.shop_items (key, name, icon, price, category, duration_days, stackable, auto_renew, max_hold, desc_text) VALUES
-('comment_color', '评论专属颜色券', '💬', 50000, 'decoration', 7, true, false, NULL, '自选评论文字颜色，可在背包更改（限时7天，可叠加）'),
+('comment_color', '评论专属颜色券', '💬', 50000, 'decoration', 7, true, true, NULL, '自选评论文字颜色，可在背包更改（限时7天，可叠加，自动续期）'),
 ('lottery_extra',  '抽奖次数增加券', '🎰', 10000, 'function', NULL, true, false, NULL, '当日抽奖次数+10（一次性，可叠加）'),
-('nickname_color', '昵称变色卡',     '📛', 50000, 'decoration', 7, true, false, NULL, '评论区名字变颜色（红/金/彩虹），可在背包更改（限时7天，可叠加）'),
+('nickname_color', '昵称变色卡',     '📛', 50000, 'decoration', 7, true, true, NULL, '评论区名字变颜色（红/金/彩虹），可在背包更改（限时7天，可叠加，自动续期）'),
 ('fee_discount',   '股票手续费减免券', '📉', 500000, 'function', NULL, true, false, NULL, '本次交易手续费从5%调到2%（一次性，不可叠加使用）'),
 ('profile_skin',   '主页皮肤',       '🎪', 500000, 'decoration', 7, true, true, NULL, '解锁主页头图区，可自定义头图（图片/GIF）（限时7天，可叠加，自动续期）'),
-('title_slot',     '称号展示位',     '🏅', 600000, 'function', 1, true, false, 1,   '额外增加一个称号展示位（限时1天，仅1个）'),
+('title_slot',     '称号展示位',     '🏅', 600000, 'function', 1, true, true, 1,   '额外增加一个称号展示位（限时1天，仅1个，自动续期）'),
 ('bio_extend',     '个性签名扩展',   '✏️', 20000, 'function', 7, true, true, NULL, '简介从100字扩到200字（限时7天，可叠加，自动续期）'),
 ('checkin_fix',    '补签卡',         '📝', 20000, 'function', NULL, true, false, 5,  '补回最近漏签的1天，恢复连续签到（最多持有5张，最多补前5天）'),
 ('chat_bubble',    '私信气泡皮肤',   '💬', 40000, 'decoration', 7, true, true, NULL, '私信气泡颜色（蓝/粉/绿/彩虹渐变），对方可见（限时7天，可叠加，自动续期）'),
@@ -303,3 +303,49 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.use_checkin_fix(uuid, date) TO anon;
+
+-- ========== 9. 自动续期（每天定时执行：到期前 24 小时余额充足则自动续费） ==========
+CREATE OR REPLACE FUNCTION public.renew_shop_items()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_item record;
+    v_balance bigint;
+    v_renewed integer := 0;
+    v_failed integer := 0;
+BEGIN
+    -- 所有 auto_renew=true 且即将到期（24小时内）或已过期但未使用的时长道具
+    FOR v_item IN
+        SELECT ui.id AS item_id, ui.user_id, ui.item_key, ui.expires_at,
+               s.price, s.name, s.duration_days
+          FROM public.user_items ui
+          JOIN public.shop_items s ON s.key = ui.item_key
+         WHERE s.auto_renew = true
+           AND ui.used = false
+           AND ui.expires_at IS NOT NULL
+           AND ui.expires_at <= now() + interval '24 hours'
+    LOOP
+        SELECT nb_balance INTO v_balance FROM public.profiles WHERE id = v_item.user_id;
+        IF v_balance >= v_item.price THEN
+            UPDATE public.profiles SET nb_balance = nb_balance - v_item.price WHERE id = v_item.user_id;
+            UPDATE public.user_items
+               SET expires_at = GREATEST(now(), expires_at) + make_interval(days => v_item.duration_days)
+             WHERE id = v_item.item_id;
+            v_renewed := v_renewed + 1;
+        ELSE
+            v_failed := v_failed + 1;
+        END IF;
+    END LOOP;
+
+    RETURN jsonb_build_object('success', true, 'renewed', v_renewed, 'failed', v_failed);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.renew_shop_items() TO anon;
+
+-- 每日 20:05(UTC) = 次日凌晨 4:05(北京) 执行自动续期
+SELECT cron.schedule('shop-auto-renew', '5 20 * * *', 'select public.renew_shop_items()')
+WHERE NOT EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'shop-auto-renew');
