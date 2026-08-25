@@ -488,8 +488,14 @@ BEGIN
                           WHERE user_id = p_user_id AND item_key = 'profile_skin'
                             AND used = false AND expires_at > now()
                           ORDER BY expires_at DESC LIMIT 1),
-        -- 称号展示位数量（有效的称号展示位道具数）
-        'title_slot', (SELECT count(*) FROM public.user_items
+        -- 称号展示位（含用户选择的展示称号）
+        'title_slot', (SELECT jsonb_build_object(
+                            'count', count(*),
+                            'chosen_title_key', (SELECT settings->>'chosen_title_key' FROM public.user_items
+                                                  WHERE user_id = p_user_id AND item_key = 'title_slot'
+                                                    AND used = false AND expires_at > now()
+                                                  ORDER BY expires_at DESC LIMIT 1))
+                        FROM public.user_items
                         WHERE user_id = p_user_id AND item_key = 'title_slot'
                           AND used = false AND expires_at > now()),
         -- 签名扩展是否生效
@@ -677,8 +683,7 @@ $$;
 GRANT EXECUTE ON FUNCTION public.consume_fee_discount(uuid) TO anon;
 
 -- ========== 14. 主页皮肤头图设置 ==========
--- 上传头图后更新 profile_skin 道具的 settings.banner
-CREATE OR REPLACE FUNCTION public.set_profile_banner(p_user_id uuid, p_url text)
+-- 上传头图后更新 profile_skin 道具的 settings.bannerCREATE OR REPLACE FUNCTION public.set_profile_banner(p_user_id uuid, p_url text)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -705,3 +710,42 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.set_profile_banner(uuid, text) TO anon;
+
+-- ========== 14.5 称号展示位：设置要展示的第二个称号 ==========
+CREATE OR REPLACE FUNCTION public.set_title_slot(p_user_id uuid, p_title_key text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_item_id bigint;
+BEGIN
+    IF p_user_id IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', '参数错误');
+    END IF;
+    -- 找到生效中的称号展示位道具
+    SELECT id INTO v_item_id FROM public.user_items
+     WHERE user_id = p_user_id AND item_key = 'title_slot'
+       AND used = false AND expires_at > now()
+     ORDER BY expires_at DESC LIMIT 1;
+    IF v_item_id IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', '称号展示位未生效（请先在商店购买）');
+    END IF;
+    -- 清空 = 取消展示位称号（回退为自动选最高星）
+    IF p_title_key IS NULL OR p_title_key = '' THEN
+        UPDATE public.user_items SET settings = '{}'::jsonb WHERE id = v_item_id;
+        RETURN jsonb_build_object('success', true, 'message', '已取消展示位称号');
+    END IF;
+    -- 校验：该称号必须已拥有
+    IF NOT EXISTS (SELECT 1 FROM public.user_titles WHERE user_id = p_user_id AND title_key = p_title_key) THEN
+        RETURN jsonb_build_object('success', false, 'message', '你还没有这个称号');
+    END IF;
+    UPDATE public.user_items
+       SET settings = coalesce(settings, '{}'::jsonb) || jsonb_build_object('chosen_title_key', p_title_key)
+     WHERE id = v_item_id;
+    RETURN jsonb_build_object('success', true, 'message', '展示位称号已设置');
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.set_title_slot(uuid, text) TO anon;

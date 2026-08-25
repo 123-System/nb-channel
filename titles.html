@@ -136,6 +136,7 @@
         .t-btn-equip { background: var(--nav-btn-hover-bg); color: #fff; }
         .t-btn-unequip { background: var(--nav-btn-bg); color: var(--nav-btn-text); }
         .t-btn-buy { background: #ff9800; color: #fff; }
+        .t-btn-slot { background: #7c4dff; color: #fff; }
         .t-btn-disabled { background: var(--card-border); color: var(--count-text); cursor: default !important; }
         .login-tip { text-align: center; padding: 50px 0; }
         .login-tip p { color: var(--count-text); margin-bottom: 20px; }
@@ -269,6 +270,18 @@
             const ownedCount = list.filter(t => t.owned).length;
             const equipped = list.find(t => t.equipped);
 
+            // 称号展示位：查询是否生效 + 当前设置的展示称号
+            let slotInfo = { count: 0, chosen_title_key: null };
+            try {
+                const { data: fx } = await supabaseClient.rpc('get_active_shop_effects', { p_user_id: user.id });
+                if (fx && fx.success && fx.title_slot && fx.title_slot.count) {
+                    slotInfo = fx.title_slot;
+                }
+            } catch (e) { /* 忽略 */ }
+            const hasSlot = slotInfo.count > 0;
+            const slotChosen = slotInfo.chosen_title_key || null;
+            const slotTitle = slotChosen ? (list.find(t => t.title_key === slotChosen) || null) : null;
+
             let html = `
                 <div class="equip-preview">
                     <div class="ep-label">当前佩戴</div>
@@ -276,6 +289,15 @@
                         ? `<img src="${escapeHtml(equipped.image_url)}" alt="${escapeHtml(equipped.name)}" title="${escapeHtml(equipped.name)} ${'★'.repeat(Math.min(equipped.equipped_stars || 1, 5))}">
                            <div style="margin-top:4px; font-size:0.85rem; color:var(--text-color);">${escapeHtml(equipped.name)} ${'★'.repeat(Math.min(equipped.equipped_stars || 1, 5))}</div>`
                         : '<span class="ep-none">未佩戴称号 —— 点下方卡片上的"佩戴"展示在评论区/私信</span>'}
+                    ${hasSlot ? `
+                        <div class="ep-label" style="margin-top:14px;">🎖️ 展示位称号（主页额外展示）</div>
+                        ${slotTitle
+                            ? `<img src="${escapeHtml(slotTitle.image_url)}" alt="${escapeHtml(slotTitle.name)}" title="${escapeHtml(slotTitle.name)} ${'★'.repeat(Math.min(slotTitle.stars || 1, 5))}">
+                               <div style="margin-top:4px; font-size:0.85rem; color:var(--text-color);">${escapeHtml(slotTitle.name)} ${'★'.repeat(Math.min(slotTitle.stars || 1, 5))}
+                                   <button class="t-btn-unequip" style="margin-left:8px;" onclick="clearTitleSlot()">取消</button>
+                               </div>`
+                            : '<span class="ep-none">未设置 —— 点下方已拥有称号卡片上的"设为展示位"（到期自动消失）</span>'}
+                    ` : ''}
                 </div>
                 <div class="stats-row">
                     <div class="stat-card"><div class="num">${ownedCount}/${list.length}</div><div class="label">已拥有称号</div></div>
@@ -288,6 +310,14 @@
                 const typeCls = t.acquire_type === 'buy' ? 'buy' : (t.acquire_type === 'manual' ? 'manual' : 'auto');
                 const typeLabel = t.acquire_type === 'buy' ? '💎 购买' : (t.acquire_type === 'manual' ? '👑 颁发' : '✨ 自动');
                 let actions = '';
+                const slotActive = typeof hasSlot !== 'undefined' && hasSlot;
+                // 展示位按钮：已拥有且不是当前佩戴（避免和佩戴重复）
+                if (slotActive && t.owned && !t.equipped) {
+                    const isSlot = slotChosen === t.title_key;
+                    actions += isSlot
+                        ? `<button class="t-btn-disabled" disabled>🎖️ 展示中</button>`
+                        : `<button class="t-btn-slot" onclick="setTitleSlot('${t.title_key}')">🎖️ 设为展示位</button>`;
+                }
                 if (t.acquire_type === 'buy') {
                     // 购买型称号：始终显示购买/升星按钮（满级显示"已满级"）
                     if (t.stars >= 5) {
@@ -376,8 +406,7 @@
         const { data, error } = await supabaseClient.rpc('equip_title', { p_user_id: user.id, p_title_key: key });
         if (error || !data || !data.success) { alert((error && error.message) || (data && data.message) || '操作失败'); return; }
         showToast('✅ 已佩戴称号');
-        loadTitles();
-    }
+        loadTitles();    }
 
     async function unequipTitle() {
         const user = getUser();
@@ -396,6 +425,27 @@
         const { data, error } = await supabaseClient.rpc('buy_title', { p_user_id: user.id, p_title_key: key });
         if (error || !data || !data.success) { alert((error && error.message) || (data && data.message) || '购买失败'); return; }
         showToast(`🎉 ${data.message || '购买成功'}`);
+        loadTitles();
+    }
+
+    // ===== 称号展示位（商店道具 title_slot） =====
+    async function setTitleSlot(key) {
+        const user = getUser();
+        if (!user) return;
+        const { data, error } = await supabaseClient.rpc('set_title_slot', { p_user_id: user.id, p_title_key: key });
+        if (error || !data || !data.success) { alert((error && error.message) || (data && data.message) || '设置失败'); return; }
+        showToast('🎖️ 已设为展示位称号');
+        loadTitles();
+    }
+
+    async function clearTitleSlot() {
+        const user = getUser();
+        if (!user) return;
+        const ok = confirm('取消展示位称号？（主页展示位将自动显示最高星称号）');
+        if (!ok) return;
+        const { data, error } = await supabaseClient.rpc('set_title_slot', { p_user_id: user.id, p_title_key: '' });
+        if (error || !data || !data.success) { alert((error && error.message) || (data && data.message) || '操作失败'); return; }
+        showToast('✅ 已取消展示位称号');
         loadTitles();
     }
 

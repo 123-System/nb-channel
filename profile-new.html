@@ -485,12 +485,16 @@
 
         // 商店道具效果（粒子特效 / 称号展示位 / 主页头图）
         window.__titleSlot = 0;
+        window.__titleSlotChosen = null;
         let bannerUrl = null;
         try {
             const { data: fx } = await supabaseClient.rpc('get_active_shop_effects', { p_user_id: viewUid });
             if (fx && fx.success) {
                 if (fx.particle_fx) startParticleFx(fx.particle_fx);
-                window.__titleSlot = fx.title_slot || 0;
+                if (fx.title_slot && fx.title_slot.count) {
+                    window.__titleSlot = fx.title_slot.count;
+                    window.__titleSlotChosen = fx.title_slot.chosen_title_key || null;
+                }
                 if (fx.profile_skin && fx.profile_skin.banner) bannerUrl = fx.profile_skin.banner;
             }
         } catch (e) { /* 忽略 */ }
@@ -524,12 +528,19 @@
                     <span class="comment-title-stars">称号：${escapeHtml(t.name)} · ${'★'.repeat(Math.min(t.stars || 1, 5))}</span>
                  </div>`;
         }
-        // 称号展示位：有 title_slot 时，额外显示最高星的未佩戴称号
+        // 称号展示位：优先显示用户设置的展示称号；未设置则回退为最高星未佩戴称号
         const slotCount = window.__titleSlot || 0;
         if (slotCount > 0 && home.titles_list && home.titles_list.length > 0) {
-            const extra = home.titles_list
-                .filter(t => !t.equipped)
-                .sort((a, b) => (b.stars || 0) - (a.stars || 0))[0];
+            let extra = null;
+            const chosen = window.__titleSlotChosen;
+            if (chosen) {
+                extra = home.titles_list.find(t => t.title_key === chosen) || null;
+            }
+            if (!extra) {
+                extra = home.titles_list
+                    .filter(t => !t.equipped)
+                    .sort((a, b) => (b.stars || 0) - (a.stars || 0))[0];
+            }
             if (extra) {
                 const base = window.location.origin + '/';
                 const img = /^https?:/.test(extra.image_url || '') ? extra.image_url : base + extra.image_url;
