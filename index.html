@@ -274,6 +274,7 @@
                 </div>
                 <div id="checkinSection" style="display: none;">
                     <button id="checkinBtn" class="checkin-btn">📅 签到</button>
+                    <button id="fixCheckinBtn" class="checkin-btn" style="background:#9c27b0; display:none;" title="使用补签卡补回最近漏签">📝 补签</button>
                     <div id="nextBonusText" class="next-bonus">明天签到: +? NB</div>
                 </div>
                 <div id="lotterySection" style="display: none;">
@@ -678,6 +679,20 @@
                     nextBonusSpan.innerHTML = `✨ 明天签到: +${nextBonus} NB`;
                 }
             }
+            // 补签按钮：有补签卡且存在漏签（最近5天有缺口）时显示
+            const fixBtn = document.getElementById('fixCheckinBtn');
+            if (fixBtn) {
+                try {
+                    const { data: fx } = await supabaseClient.rpc('get_active_shop_effects', { p_user_id: user.id });
+                    const fixCount = (fx && fx.success) ? (fx.checkin_fix_count || 0) : 0;
+                    if (fixCount > 0) {
+                        fixBtn.style.display = 'inline-block';
+                        fixBtn.title = `补签卡 ×${fixCount}：补回最近漏签的1天`;
+                    } else {
+                        fixBtn.style.display = 'none';
+                    }
+                } catch (e) { fixBtn.style.display = 'none'; }
+            }
             if (achSection) achSection.style.display = 'block';
             
             authBtn.innerHTML = '登出账号';
@@ -724,6 +739,55 @@
                 }
                 await doCheckin(user.id);
             };
+        }
+
+        // 补签：弹窗选择要补的日期（今天之前1~5天内的漏签）
+        const fixBtn = document.getElementById('fixCheckinBtn');
+        if (fixBtn) {
+            fixBtn.onclick = async () => {
+                const user = getCurrentUser();
+                if (!user) { await showMessage('提示', '请先登录'); return; }
+                const { data: fx } = await supabaseClient.rpc('get_active_shop_effects', { p_user_id: user.id });
+                const fixCount = (fx && fx.success) ? (fx.checkin_fix_count || 0) : 0;
+                if (fixCount <= 0) { await showMessage('提示', '没有可用的补签卡，去商店购买吧'); return; }
+                // 列出今天之前 1~5 天的日期选项
+                const opts = [];
+                const today = new Date();
+                for (let i = 1; i <= 5; i++) {
+                    const d = new Date(today);
+                    d.setDate(d.getDate() - i);
+                    opts.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+                }
+                const pick = await showPickDate(opts, fixCount);
+                if (!pick) return;
+                const { data, error } = await supabaseClient.rpc('use_checkin_fix', { p_user_id: user.id, p_target_date: pick });
+                await showMessage(error || !data || !data.success ? '补签失败' : '✅ 补签成功', (error && error.message) || (data && data.message) || '');
+                location.reload();
+            };
+        }
+
+        // 日期选择弹窗（简单版：5个按钮）
+        function showPickDate(dates, fixCount) {
+            return new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.className = 'custom-modal';
+                modal.style.display = 'flex';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <h3>📝 补签（补签卡 ×${fixCount}）</h3>
+                        <p style="margin: 10px 0; color:var(--count-text);">选择要补签的日期（消耗1张补签卡，只补记录，恢复连续天数）</p>
+                        <div style="display:flex; flex-direction:column; gap:8px; margin: 12px 0;">
+                            ${dates.map(d => `<button data-d="${d}" style="background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); border-radius:14px; padding:10px; cursor:pointer;">📅 ${d}</button>`).join('')}
+                        </div>
+                        <button id="pickCancel" style="background:#6c757d;">取消</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                modal.querySelectorAll('button[data-d]').forEach(b => {
+                    b.onclick = () => { modal.remove(); resolve(b.dataset.d); };
+                });
+                modal.querySelector('#pickCancel').onclick = () => { modal.remove(); resolve(null); };
+            });
         }
 
         await updateUI();

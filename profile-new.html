@@ -180,12 +180,24 @@
         .activity-item { display: flex; gap: 10px; padding: 8px 4px; border-bottom: 1px solid var(--card-border); font-size: 0.92rem; }
         .activity-item .act-icon { flex-shrink: 0; }
         .activity-item .act-time { margin-left: auto; color: var(--count-text); font-size: 0.78rem; white-space: nowrap; }
+        /* 粒子特效层（主页背景） */
+        #fxCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+        .profile-container { position: relative; z-index: 2; }
         /* 称号面板（已迁移至独立页面 titles.html） */
     </style>
 </head>
 <body>
+<canvas id="fxCanvas"></canvas>
 <div class="profile-container">
     <h1 id="pageTitle">👤 用户主页</h1>
+    <!-- 主页头图区（profile_skin 道具生效时显示） -->
+    <div id="homeBanner" style="display:none; margin-bottom:14px; border-radius:20px; overflow:hidden; position:relative;">
+        <img id="homeBannerImg" src="" alt="" style="width:100%; height:160px; object-fit:cover; display:block;">
+        <div id="bannerActions" style="display:none; position:absolute; right:10px; bottom:10px; gap:8px;">
+            <input type="file" id="bannerFile" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
+            <button id="bannerUploadBtn" style="background:rgba(0,0,0,0.6); color:#fff; border:none; border-radius:20px; padding:6px 14px; cursor:pointer; font-size:0.8rem;">📷 更换头图</button>
+        </div>
+    </div>
     <!-- 主页头部卡 -->
     <div class="info-card home-header">
         <img id="avatarImg" src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2780%27%20height=%2780%27%3E%3Crect%20width=%2780%27%20height=%2780%27%20fill=%27%23b0bec5%27/%3E%3Ccircle%20cx=%2740%27%20cy=%2730%27%20r=%2715%27%20fill=%27%23eceff1%27/%3E%3Cpath%20d=%27M14%2072c4-14%2014-22%2026-22s22%208%2026%2022z%27%20fill=%27%23eceff1%27/%3E%3C/svg%3E" alt="头像">
@@ -471,22 +483,62 @@
             return;
         }
 
+        // 商店道具效果（粒子特效 / 称号展示位 / 主页头图）
+        window.__titleSlot = 0;
+        let bannerUrl = null;
+        try {
+            const { data: fx } = await supabaseClient.rpc('get_active_shop_effects', { p_user_id: viewUid });
+            if (fx && fx.success) {
+                if (fx.particle_fx) startParticleFx(fx.particle_fx);
+                window.__titleSlot = fx.title_slot || 0;
+                if (fx.profile_skin && fx.profile_skin.banner) bannerUrl = fx.profile_skin.banner;
+            }
+        } catch (e) { /* 忽略 */ }
+
+        // 主页头图（profile_skin 道具的 banner）
+        if (bannerUrl) {
+            const bannerBox = document.getElementById('homeBanner');
+            bannerBox.style.display = 'block';
+            document.getElementById('homeBannerImg').src = bannerUrl;
+        }
+        if (isOwner) {
+            document.getElementById('bannerActions').style.display = 'flex';
+            initBannerUpload();
+        }
+
         // 蓝标认证
         if (home.verified) {
             document.getElementById('homeBadges').insertAdjacentHTML('beforeend',
                 '<span style="display:inline-flex; align-items:center; gap:4px;"><img src="https://s41.ax1x.com/2026/04/05/peNSL5t.png" style="width:22px;height:22px; vertical-align:middle;" alt=""> 已认证蓝标</span>');
         }
 
-        // 佩戴称号（横幅图）
+        // 佩戴称号（横幅图）+ 称号展示位（title_slot 道具：额外展示最高星未佩戴称号）
+        const titleEl = document.getElementById('homeTitle');
         if (home.title) {
             const t = home.title;
             const base = window.location.origin + '/';
             const img = /^https?:/.test(t.image_url || '') ? t.image_url : base + t.image_url;
-            document.getElementById('homeTitle').innerHTML =
+            titleEl.innerHTML =
                 `<div style="display:flex; align-items:center; gap:8px;">
                     <img src="${img}" alt="${escapeHtml(t.name)}" style="height:30px; border-radius:6px;" onerror="this.style.display='none'">
                     <span class="comment-title-stars">称号：${escapeHtml(t.name)} · ${'★'.repeat(Math.min(t.stars || 1, 5))}</span>
                  </div>`;
+        }
+        // 称号展示位：有 title_slot 时，额外显示最高星的未佩戴称号
+        const slotCount = window.__titleSlot || 0;
+        if (slotCount > 0 && home.titles_list && home.titles_list.length > 0) {
+            const extra = home.titles_list
+                .filter(t => !t.equipped)
+                .sort((a, b) => (b.stars || 0) - (a.stars || 0))[0];
+            if (extra) {
+                const base = window.location.origin + '/';
+                const img = /^https?:/.test(extra.image_url || '') ? extra.image_url : base + extra.image_url;
+                titleEl.insertAdjacentHTML('beforeend',
+                    `<div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+                        <img src="${img}" alt="" style="height:30px; border-radius:6px;" onerror="this.style.display='none'">
+                        <span class="comment-title-stars">展示位：${escapeHtml(extra.name)} · ${'★'.repeat(Math.min(extra.stars || 1, 5))}</span>
+                     </div>`);
+            }
         }
 
         // 公司徽章
@@ -547,6 +599,93 @@
             await loadAutoRules();
             await loadSupporters();
         }
+    }
+
+    // ===== 主页粒子特效（fire/lightning/bubble/star，鼠标+触摸触发） =====
+    let fxAnimId = null;
+    function startParticleFx(type) {
+        const canvas = document.getElementById('fxCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let W = canvas.width = window.innerWidth;
+        let H = canvas.height = window.innerHeight;
+        const particles = [];
+        const CONFIG = {
+            fire:      { color: ['#ff6b6b', '#ffb347', '#ffd700'], count: 30, life: 60 },
+            lightning: { color: ['#4d96ff', '#b57bff', '#ffffff'], count: 25, life: 45 },
+            bubble:    { color: ['rgba(255,255,255,0.7)', 'rgba(124,205,255,0.7)', 'rgba(255,182,222,0.7)'], count: 20, life: 90 },
+            star:      { color: ['#ffe66d', '#ffffff', '#b57bff'], count: 35, life: 70 }
+        }[type] || { color: ['#ffffff'], count: 20, life: 60 };
+        const isBubble = type === 'bubble';
+
+        function spawn(x, y, burst) {
+            const n = burst ? 12 : 1;
+            for (let i = 0; i < n; i++) {
+                const ang = Math.random() * Math.PI * 2;
+                const speed = burst ? (1 + Math.random() * 3) : 0.3;
+                particles.push({
+                    x: x + (Math.random() - 0.5) * 20,
+                    y: y + (Math.random() - 0.5) * 20,
+                    vx: Math.cos(ang) * speed,
+                    vy: Math.sin(ang) * speed - (burst ? 1 : 0.2),
+                    life: 0,
+                    maxLife: CONFIG.life + Math.random() * 30,
+                    size: isBubble ? 2 + Math.random() * 5 : 1.5 + Math.random() * 3,
+                    color: CONFIG.color[Math.floor(Math.random() * CONFIG.color.length)],
+                    grav: isBubble ? -0.02 : 0.04
+                });
+            }
+            if (particles.length > 150) particles.splice(0, particles.length - 150);
+        }
+
+        // 常驻飘落
+        for (let i = 0; i < CONFIG.count; i++) {
+            spawn(Math.random() * W, Math.random() * H, false);
+        }
+
+        function onMove(e) {
+            const x = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+            const y = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+            if (Math.random() < 0.5) spawn(x, y, false);
+        }
+        function onDown(e) {
+            const x = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+            const y = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+            spawn(x, y, true);
+        }
+
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('touchmove', onMove, { passive: true });
+        window.addEventListener('mousedown', onDown);
+        window.addEventListener('touchstart', onDown, { passive: true });
+        window.addEventListener('resize', () => {
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+        });
+
+        function tick() {
+            ctx.clearRect(0, 0, W, H);
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.life++;
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.grav;
+                if (isBubble) { p.vx *= 0.98; p.vy *= 0.98; }
+                const alpha = Math.max(0, 1 - p.life / p.maxLife);
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                if (p.life > p.maxLife || p.y > H + 20 || p.y < -20) particles.splice(i, 1);
+            }
+            ctx.globalAlpha = 1;
+            // 持续补充常驻粒子
+            if (particles.length < CONFIG.count * 0.5) spawn(Math.random() * W, Math.random() * H, false);
+            fxAnimId = requestAnimationFrame(tick);
+        }
+        tick();
     }
 
     // ===== 签到热力图（近365天，GitHub贡献图风格） =====
@@ -671,6 +810,41 @@
             content.innerHTML = '';
             empty.style.display = 'block';
         }
+    }
+
+    // ========== 主页头图上传（profile_skin 道具） ==========
+    function initBannerUpload() {
+        const fileInput = document.getElementById('bannerFile');
+        const uploadBtn = document.getElementById('bannerUploadBtn');
+        if (!fileInput || !uploadBtn) return;
+        uploadBtn.onclick = () => fileInput.click();
+        fileInput.onchange = async () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) { await showMessage('提示', '头图不能超过 5MB'); fileInput.value = ''; return; }
+            const form = new FormData();
+            form.append('file', file);
+            uploadBtn.innerText = '⏳ 上传中...';
+            try {
+                const resp = await fetch('https://nbchannel.pythonanywhere.com/upload-banner', {
+                    method: 'POST',
+                    headers: { 'X-User-Id': currentUser.id },
+                    body: form
+                });
+                const result = await resp.json();
+                if (!resp.ok || !result.success) {
+                    await showMessage('上传失败', result.message || '请重试');
+                } else {
+                    document.getElementById('homeBanner').style.display = 'block';
+                    document.getElementById('homeBannerImg').src = result.banner_url;
+                    await showMessage('✅ 成功', '头图已更新');
+                }
+            } catch (e) {
+                await showMessage('上传失败', e.message);
+            }
+            uploadBtn.innerText = '📷 更换头图';
+            fileInput.value = '';
+        };
     }
 
     // ========== 头像上传 ==========

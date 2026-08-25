@@ -409,3 +409,233 @@ GRANT EXECUTE ON FUNCTION public.renew_shop_items() TO anon;
 -- 每日 20:05(UTC) = 次日凌晨 4:05(北京) 执行自动续期
 SELECT cron.schedule('shop-auto-renew', '5 20 * * *', 'select public.renew_shop_items()')
 WHERE NOT EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'shop-auto-renew');
+
+-- ========== 10. 生效效果查询（各页面读取当前生效的道具） ==========
+-- 返回 { comment_color, nickname_color, chat_bubble, particle_fx, profile_skin,
+--        title_slot, bio_extend, checkin_fix_count, lottery_extra_today }
+CREATE OR REPLACE FUNCTION public.get_active_shop_effects(p_user_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_result jsonb;
+BEGIN
+    IF p_user_id IS NULL THEN
+        RETURN jsonb_build_object('success', false);
+    END IF;
+    SELECT jsonb_build_object(
+        'success', true,
+        -- 评论颜色（取设置值）
+        'comment_color', (SELECT settings->>'value' FROM public.user_items
+                           WHERE user_id = p_user_id AND item_key = 'comment_color'
+                             AND used = false AND expires_at > now()
+                           ORDER BY expires_at DESC LIMIT 1),
+        -- 昵称颜色
+        'nickname_color', (SELECT settings->>'value' FROM public.user_items
+                            WHERE user_id = p_user_id AND item_key = 'nickname_color'
+                              AND used = false AND expires_at > now()
+                            ORDER BY expires_at DESC LIMIT 1),
+        -- 私信气泡
+        'chat_bubble', (SELECT settings->>'value' FROM public.user_items
+                         WHERE user_id = p_user_id AND item_key = 'chat_bubble'
+                           AND used = false AND expires_at > now()
+                         ORDER BY expires_at DESC LIMIT 1),
+        -- 粒子特效
+        'particle_fx', (SELECT settings->>'value' FROM public.user_items
+                         WHERE user_id = p_user_id AND item_key = 'particle_fx'
+                           AND used = false AND expires_at > now()
+                         ORDER BY expires_at DESC LIMIT 1),
+        -- 主页皮肤（settings 里含 banner 头图）
+        'profile_skin', (SELECT settings FROM public.user_items
+                          WHERE user_id = p_user_id AND item_key = 'profile_skin'
+                            AND used = false AND expires_at > now()
+                          ORDER BY expires_at DESC LIMIT 1),
+        -- 称号展示位数量（有效的称号展示位道具数）
+        'title_slot', (SELECT count(*) FROM public.user_items
+                        WHERE user_id = p_user_id AND item_key = 'title_slot'
+                          AND used = false AND expires_at > now()),
+        -- 签名扩展是否生效
+        'bio_extend', EXISTS (SELECT 1 FROM public.user_items
+                               WHERE user_id = p_user_id AND item_key = 'bio_extend'
+                                 AND used = false AND expires_at > now()),
+        -- 可用补签卡数量
+        'checkin_fix_count', (SELECT count(*) FROM public.user_items
+                               WHERE user_id = p_user_id AND item_key = 'checkin_fix'
+                                 AND used = false AND (expires_at IS NULL OR expires_at > now())),
+        -- 今日抽奖额外次数（已使用的 lottery_extra 且日期=今天）
+        'lottery_extra_today', coalesce((
+            SELECT sum((settings->>'lottery_extra')::int)
+              FROM public.user_items
+             WHERE user_id = p_user_id AND item_key = 'lottery_extra' AND used = true
+               AND settings->>'lottery_date' = (now() AT TIME ZONE 'Asia/Shanghai')::date::text), 0)
+    ) INTO v_result;
+    RETURN v_result;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_active_shop_effects(uuid) TO anon;
+
+-- ========== 11. 抽奖次数：计入抽奖券 ==========
+-- 说明：do_lottery 的每日上限 = 基础上限 + 今日已使用抽奖券的 +10/张
+-- 在 do_lottery 内读取 get_active_shop_effects 不便，直接内联查询。
+-- 此函数返回今日剩余可抽次数（含券加成），供前端显示。
+CREATE OR REPLACE FUNCTION public.get_lottery_today(p_user_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_limit integer;
+    v_extra integer := 0;
+    v_used_today integer;
+BEGIN
+    SELECT value::integer INTO v_limit FROM public.admin_config WHERE key = 'lottery_daily_limit';
+    IF v_limit IS NULL OR v_limit < 1 THEN v_limit := 10; END IF;
+
+    SELECT coalesce(sum((settings->>'lottery_extra')::int), 0) INTO v_extra
+      FROM public.user_items
+     WHERE user_id = p_user_id AND item_key = 'lottery_extra' AND used = true
+       AND settings->>'lottery_date' = (now() AT TIME ZONE 'Asia/Shanghai')::date::text;
+
+    SELECT count(*) INTO v_used_today FROM public.lottery_records
+     WHERE user_id = p_user_id AND created_at::date = current_date;
+
+    RETURN jsonb_build_object('success', true,
+        'limit', v_limit, 'extra', v_extra,
+        'used_today', v_used_today,
+        'remaining', GREATEST(v_limit + v_extra - v_used_today, 0));
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_lottery_today(uuid) TO anon;
+
+-- ========== 12. 修改 do_lottery：上限 = 基础 + 抽奖券加成 ==========
+CREATE OR REPLACE FUNCTION public.do_lottery(p_user_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+    v_cost constant integer := 50;
+    v_amount integer := 0;
+    v_result text := 'none';
+    v_sector integer := 0;
+    v_balance bigint;
+    v_today_count integer;
+    v_limit integer;
+    v_extra integer := 0;
+BEGIN
+    SELECT value::integer INTO v_limit FROM public.admin_config WHERE key = 'lottery_daily_limit';
+    IF v_limit IS NULL OR v_limit < 1 THEN
+        v_limit := 10;
+    END IF;
+
+    -- 今日抽奖券加成（已使用且日期=今天的 lottery_extra 道具）
+    SELECT coalesce(sum((settings->>'lottery_extra')::int), 0) INTO v_extra
+      FROM public.user_items
+     WHERE user_id = p_user_id AND item_key = 'lottery_extra' AND used = true
+       AND settings->>'lottery_date' = (now() AT TIME ZONE 'Asia/Shanghai')::date::text;
+
+    SELECT count(*) INTO v_today_count FROM public.lottery_records
+     WHERE user_id = p_user_id AND created_at::date = current_date;
+    IF v_today_count >= v_limit + v_extra THEN
+        RETURN jsonb_build_object('success', false, 'message',
+            format('今日抽奖次数已达上限（%s次），明天再来吧', v_limit + v_extra));
+    END IF;
+
+    UPDATE public.profiles SET nb_balance = nb_balance - v_cost
+     WHERE id = p_user_id AND nb_balance >= v_cost;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'message', 'NB币余额不足（每次抽奖需 50 NB币）');
+    END IF;
+
+    v_sector := floor(random() * 8)::integer;
+
+    IF v_sector = 1 THEN v_amount := 10;
+    ELSIF v_sector = 2 THEN v_amount := 50;
+    ELSIF v_sector = 3 THEN v_amount := 100;
+    ELSIF v_sector = 5 THEN v_amount := 200;
+    ELSIF v_sector = 6 THEN v_amount := 500;
+    ELSIF v_sector = 7 THEN v_amount := 2000;
+    END IF;
+
+    IF v_amount > 0 THEN
+        v_result := 'win';
+        UPDATE public.profiles SET nb_balance = nb_balance + v_amount WHERE id = p_user_id;
+    END IF;
+
+    INSERT INTO public.lottery_records (user_id, result, amount)
+    VALUES (p_user_id, v_result, v_amount);
+
+    SELECT nb_balance INTO v_balance FROM public.profiles WHERE id = p_user_id;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'result', v_result,
+        'amount', v_amount,
+        'sector', v_sector,
+        'balance', v_balance,
+        'today_count', v_today_count + 1,
+        'daily_limit', v_limit + v_extra
+    );
+END;
+$function$;
+
+-- ========== 13. 签名扩展：有 bio_extend 生效时简介上限 200 字 ==========
+CREATE OR REPLACE FUNCTION public.update_bio(p_user_id uuid, p_bio text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_max integer := 100;
+BEGIN
+    IF p_user_id IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', '参数错误');
+    END IF;
+    IF EXISTS (SELECT 1 FROM public.user_items
+                WHERE user_id = p_user_id AND item_key = 'bio_extend'
+                  AND used = false AND expires_at > now()) THEN
+        v_max := 200;
+    END IF;
+    UPDATE public.profiles SET bio = left(coalesce(p_bio, ''), v_max) WHERE id = p_user_id;
+    RETURN jsonb_build_object('success', true, 'max', v_max);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.update_bio(uuid, text) TO anon;
+
+-- ========== 14. 主页皮肤头图设置 ==========
+-- 上传头图后更新 profile_skin 道具的 settings.banner
+CREATE OR REPLACE FUNCTION public.set_profile_banner(p_user_id uuid, p_url text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_item_id bigint;
+BEGIN
+    IF p_user_id IS NULL OR p_url IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', '参数错误');
+    END IF;
+    SELECT id INTO v_item_id FROM public.user_items
+     WHERE user_id = p_user_id AND item_key = 'profile_skin'
+       AND used = false AND expires_at > now()
+     ORDER BY expires_at DESC LIMIT 1;
+    IF v_item_id IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', '主页皮肤未生效（请先购买）');
+    END IF;
+    UPDATE public.user_items
+       SET settings = jsonb_build_object('banner', p_url)
+     WHERE id = v_item_id;
+    RETURN jsonb_build_object('success', true);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.set_profile_banner(uuid, text) TO anon;

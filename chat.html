@@ -595,6 +595,17 @@
                 currentUser.myTitle = null;
             }
         } catch (e) { currentUser.myTitle = null; }
+        // 商店道具：气泡皮肤（自己 + 对方）
+        currentOther.bubbleFx = null;
+        currentUser.bubbleFx = null;
+        try {
+            const [{ data: oFx }, { data: mFx }] = await Promise.all([
+                supabaseClient.rpc('get_active_shop_effects', { p_user_id: otherId }),
+                supabaseClient.rpc('get_active_shop_effects', { p_user_id: currentUser.id })
+            ]);
+            currentOther.bubbleFx = (oFx && oFx.success && oFx.chat_bubble) ? oFx.chat_bubble : null;
+            currentUser.bubbleFx = (mFx && mFx.success && mFx.chat_bubble) ? mFx.chat_bubble : null;
+        } catch (e) { /* 忽略 */ }
         cancelQuote();
         document.getElementById('chatHeaderTitle').innerText = `💬 ${otherName}`;
         document.getElementById('convMenuBtn').style.display = 'inline-block';
@@ -794,14 +805,31 @@
             const myTitleBlock = titleHtml
                 ? `<div class="msg-title me"><span class="msg-name">${escapeHtml(currentUser.username || '我')}</span>${titleHtml}</div>`
                 : '';
-            return `<div class="msg me" data-msgid="${m.id}" data-created="${m.created_at}">${time}<div class="msg-body me">${myTitleBlock}<div class="bubble">${renderContentWithImages(m.content, true)}</div></div>${img}</div>`;
+            const myBubbleStyle = bubbleStyle(currentUser.bubbleFx, true);
+            return `<div class="msg me" data-msgid="${m.id}" data-created="${m.created_at}">${time}<div class="msg-body me">${myTitleBlock}<div class="bubble"${myBubbleStyle}>${renderContentWithImages(m.content, true)}</div></div>${img}</div>`;
         }
         // 对方的消息：头像在左，气泡，时间在右（名字下方带称号横幅）
         const otherName = escapeHtml(currentOther ? currentOther.name : '');
         const otherTitleBlock = titleHtml
             ? `<div class="msg-title"><span class="msg-name">${otherName}</span>${titleHtml}</div>`
             : `<div class="msg-title"><span class="msg-name">${otherName}</span></div>`;
-        return `<div class="msg other" data-msgid="${m.id}">${img}<div class="msg-body other">${otherTitleBlock}<div class="bubble">${renderContentWithImages(m.content, false)}</div></div>${time}</div>`;
+        const otherBubbleStyle = bubbleStyle(currentOther ? currentOther.bubbleFx : null, false);
+        return `<div class="msg other" data-msgid="${m.id}">${img}<div class="msg-body other">${otherTitleBlock}<div class="bubble"${otherBubbleStyle}>${renderContentWithImages(m.content, false)}</div></div>${time}</div>`;
+    }
+
+    // 气泡皮肤样式（chat_bubble 道具）
+    function bubbleStyle(fx, isMe) {
+        if (!fx || fx === 'default') return '';
+        const colors = {
+            '#00a1d6': '#00a1d6', '#ff6b9d': '#ff6b9d', '#4caf50': '#4caf50'
+        };
+        if (fx === 'rainbow') {
+            return ` style="background:linear-gradient(90deg,#ff6b6b,#ffb347,#ffe66d,#6bcb77,#4d96ff,#b57bff); color:#fff;"`;
+        }
+        if (colors[fx]) {
+            return ` style="background:${colors[fx]}; color:#fff;"`;
+        }
+        return '';
     }
 
     // ========== 消息操作：右键/长按消息 ==========

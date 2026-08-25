@@ -23,6 +23,12 @@
         .comment-title img { height: 26px; width: auto; max-width: 200px; border-radius: 6px; display: block; }
         .comment-title .comment-title-stars { font-size: 0.68rem; color: #ffb300; letter-spacing: 1px; font-weight: 600; }
         .comment-author { font-weight:bold; }
+        .nb-rainbow {
+            background: linear-gradient(90deg, #ff6b6b, #ffb347, #ffe66d, #6bcb77, #4d96ff, #b57bff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent !important;
+        }
         .comment-time { font-size:0.8rem; color:var(--count-text); }
         .comment-content { margin:8px 0; white-space: pre-wrap; word-break: break-word; }
         .comment-actions { display:flex; gap:10px; margin-top:8px; }
@@ -395,6 +401,7 @@
     let commentSort = 'latest';    // 排序方式：latest=最新 hot=最热
     let reactionAgg = {};          // comment_id -> {likes, dislikes}
     let myReactions = {};          // comment_id -> 1|-1（当前用户的选择）
+    let shopFxMap = {};            // user_id -> {comment_color, nickname_color}（商店道具效果）
     let commentsCache = null;      // 评论数据缓存（翻页/切排序不重复拉取，写操作后失效）
 
     // DOM 元素
@@ -1018,15 +1025,23 @@
         const editButton = (currentUser && currentUser.id === node.user_id)
             ? `<button class="edit-btn" data-id="${node.id}">编辑</button>` : '';
 
+        // 商店道具：昵称颜色 / 评论颜色
+        const fx = shopFxMap[node.user_id] || {};
+        const nameStyle = fx.nickname_color && fx.nickname_color !== 'rainbow'
+            ? ` style="color:${fx.nickname_color};"` : '';
+        const nameClass = fx.nickname_color === 'rainbow' ? ' class="nb-rainbow"' : '';
+        const contentStyle = fx.comment_color
+            ? ` style="color:${fx.comment_color};"` : '';
+
         return `
             <div class="comment" data-id="${node.id}">
                 <div class="comment-meta">
                     ${floorBadge}
-                    ${avatarHtml}<a class="comment-author" href="${uiHref('profile.html?username=')}${encodeURIComponent(author)}" style="text-decoration:none; color:inherit;" title="查看主页">${escapeHtml(author)}</a>${verifiedBadge}${companyTag}
+                    ${avatarHtml}<a class="comment-author" href="${uiHref('profile.html?username=')}${encodeURIComponent(author)}" style="text-decoration:none;${nameStyle}"${nameClass} title="查看主页">${escapeHtml(author)}</a>${verifiedBadge}${companyTag}
                     <span class="comment-time">${new Date(node.created_at).toLocaleString()}</span>
                 </div>
                 ${titleTag}
-                <div class="comment-content" data-full="${escapeHtml(fullText)}" data-short="${escapeHtml(displayText)}">${renderContentWithMentions(displayText)}</div>
+                <div class="comment-content" data-full="${escapeHtml(fullText)}" data-short="${escapeHtml(displayText)}"${contentStyle}>${renderContentWithMentions(displayText)}</div>
                 ${toggleButton ? `<div class="toggle-btn-container">${toggleButton}</div>` : ''}
                 <div class="comment-actions">
                     ${showReplyBtn ? `<button class="reply-btn" data-id="${node.id}">回复</button>` : ''}
@@ -1645,6 +1660,23 @@
                     _img: /^https?:/.test(r.title_image || '') ? r.title_image : TITLE_BASE + r.title_image
                 });
             }
+        }
+
+        // ===== 商店道具效果：批量拉取本页作者（评论色/昵称色） =====
+        shopFxMap = {};
+        const fxUserIds = [...new Set(rows.map(r => r.user_id).filter(Boolean))];
+        if (fxUserIds.length > 0) {
+            await Promise.all(fxUserIds.map(async (uid) => {
+                try {
+                    const { data: fx } = await supabaseClient.rpc('get_active_shop_effects', { p_user_id: uid });
+                    if (fx && fx.success) {
+                        shopFxMap[uid] = {
+                            comment_color: fx.comment_color || null,
+                            nickname_color: fx.nickname_color || null
+                        };
+                    }
+                } catch (e) { /* 忽略单个失败 */ }
+            }));
         }
 
         // 排序：最新（默认）或最热（点赞数-点踩数，RPC 已返回当前页点赞数据）

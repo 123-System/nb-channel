@@ -309,6 +309,60 @@ def upload_avatar():
     return jsonify({'success': True, 'avatar_url': avatar_url, 'message': '头像上传成功'})
 
 
+@app.route('/upload-banner', methods=['POST'])
+def upload_banner():
+    """上传主页头图（profile_skin 道具）：X-User-Id + multipart 文件。
+    存 avatars 公开桶，更新 profile_skin 道具的 settings.banner。"""
+    user_id, err = get_user_id()
+    if err:
+        return jsonify({'success': False, 'message': err}), 401
+
+    file = request.files.get('file')
+    if not file or file.filename == '':
+        return jsonify({'success': False, 'message': '请选择图片文件'}), 400
+
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+    if size > 5 * 1024 * 1024:
+        return jsonify({'success': False, 'message': '头图不能超过 5MB'}), 400
+
+    mime = (file.mimetype or '').lower()
+    ext_map = {'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp'}
+    ext = ext_map.get(mime)
+    if not ext:
+        return jsonify({'success': False, 'message': '仅支持 JPG/PNG/GIF/WebP 图片'}), 400
+
+    key = 'banner_%s_%d%s' % (str(user_id), int(datetime.datetime.now().timestamp() * 1000), ext)
+    file_bytes = file.read()
+    try:
+        supabase.storage.from_('avatars').upload(key, file_bytes, {'content-type': mime})
+    except Exception as e:
+        return jsonify({'success': False, 'message': '头图上传失败: %s' % e}), 500
+
+    banner_url = SUPABASE_URL.rstrip('/') + '/storage/v1/object/public/avatars/' + key
+    data, rpc_err = rpc('set_profile_banner', {'p_user_id': user_id, 'p_url': banner_url})
+    if rpc_err or not data or data.get('success') is not True:
+        try:
+            supabase.storage.from_('avatars').remove([key])
+        except Exception:
+            pass
+        return jsonify({'success': False, 'message': '头图保存失败: %s' % (rpc_err or '未知错误')}), 500
+
+    # 清理旧头图
+    try:
+        prefix = 'banner_%s' % str(user_id)
+        old_rows = _exec_rows(supabase.storage.from_('avatars').list('', {}))
+        for old in old_rows:
+            old_name = old.get('name') or ''
+            if old_name.startswith(prefix) and old_name != key:
+                supabase.storage.from_('avatars').remove([old_name])
+    except Exception:
+        pass
+
+    return jsonify({'success': True, 'banner_url': banner_url, 'message': '头图上传成功'})
+
+
 @app.route('/upload-image', methods=['POST'])
 def upload_image():
     """上传图片（评论区/私信用）：存 images 公开桶，返回 key + 完整 URL。
