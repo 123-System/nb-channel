@@ -253,8 +253,10 @@ BEGIN
                        (cr.check_in_date::timestamptz + interval '12 hours') AS ts
                   FROM public.check_in_records cr
                  WHERE cr.user_id = p_user_id
+                ORDER BY ts DESC
+                LIMIT 30
               ) t
-            ORDER BY ts DESC LIMIT 30), '[]'::jsonb)
+        ), '[]'::jsonb)
     ) INTO v_result;
 
     RETURN v_result;
