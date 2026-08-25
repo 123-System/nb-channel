@@ -56,6 +56,20 @@
             transition: 0.2s;
         }
         .shop-card button:hover { filter: brightness(0.9); transform: scale(0.98); }
+        .sc-buy-row { display: flex; align-items: center; gap: 8px; }
+        .sc-qty {
+            display: inline-flex; align-items: center; gap: 2px;
+            background: var(--bg-color); border: 1px solid var(--card-border);
+            border-radius: 30px; padding: 2px 4px;
+        }
+        .sc-qty button {
+            border: none; background: none; cursor: pointer; font-size: 1.1rem;
+            width: 30px; height: 30px; line-height: 1; border-radius: 50%;
+            color: var(--text-color); padding: 0;
+        }
+        .sc-qty button:hover { background: var(--count-bg); filter: none; transform: none; }
+        .sc-qty span { min-width: 26px; text-align: center; font-weight: 700; color: var(--status-border); font-size: 0.95rem; }
+        .sc-buy-btn { flex: 1; }
         .login-tip { text-align: center; padding: 50px 0; }
         .login-tip p { color: var(--count-text); margin-bottom: 20px; }
         .login-tip a { background: var(--nav-btn-hover-bg); color: white; border-radius: 30px; padding: 10px 30px; text-decoration: none; }
@@ -189,13 +203,24 @@
                 : '<span class="sc-badge bd-once">一次性</span>';
             const renew = i.auto_renew ? '<span class="sc-badge bd-duration">自动续期</span>' : '';
             const stack = i.stackable ? '<span class="sc-badge bd-duration">可叠加</span>' : '';
+            // 可叠加商品：显示数量选择器；不可叠加：直接购买按钮
+            const buyRow = i.stackable
+                ? `<div class="sc-buy-row">
+                    <div class="sc-qty">
+                        <button data-act="minus" data-key="${i.key}">−</button>
+                        <span data-qty="${i.key}">1</span>
+                        <button data-act="plus" data-key="${i.key}">+</button>
+                    </div>
+                    <button class="sc-buy-btn" data-key="${i.key}" data-name="${escapeHtml(i.name)}" data-price="${i.price}">🛒 购买</button>
+                  </div>`
+                : `<button class="sc-buy-btn" data-key="${i.key}" data-name="${escapeHtml(i.name)}" data-price="${i.price}">🛒 购买</button>`;
             return `<div class="shop-card">
                 <div class="sc-icon">${i.icon}</div>
                 <div class="sc-name">${escapeHtml(i.name)}</div>
                 <div class="sc-desc">${cat} ${dur} ${renew} ${stack}
                     <div style="margin-top:6px;">${escapeHtml(i.desc_text)}</div></div>
-                <div class="sc-price">💰 ${fmtPrice(i.price)} NB币</div>
-                <button data-key="${i.key}" data-name="${escapeHtml(i.name)}" data-price="${i.price}">🛒 购买</button>
+                <div class="sc-price" data-price-line="${i.key}">💰 ${fmtPrice(i.price)} NB币</div>
+                ${buyRow}
             </div>`;
         }
 
@@ -203,25 +228,49 @@
             `<div class="section"><div class="section-title">🎨 装饰道具</div><div class="shop-grid">${deco.map(cardHtml).join('')}</div></div>` +
             `<div class="section"><div class="section-title">⚡ 功能道具</div><div class="shop-grid">${func.map(cardHtml).join('')}</div></div>`;
 
+        // 数量选择：+ / -
+        body.querySelectorAll('[data-act]').forEach(btn => {
+            btn.onclick = () => {
+                const key = btn.dataset.key;
+                const qtyEl = body.querySelector(`[data-qty="${key}"]`);
+                const priceLine = body.querySelector(`[data-price-line="${key}"]`);
+                const price = parseInt(body.querySelector(`[data-key="${key}"].sc-buy-btn`).dataset.price);
+                let qty = parseInt(qtyEl.innerText) || 1;
+                if (btn.dataset.act === 'plus') qty += 1;
+                else qty = Math.max(1, qty - 1);
+                qtyEl.innerText = qty;
+                if (priceLine) priceLine.innerHTML = `💰 ${fmtPrice(price * qty)} NB币${qty > 1 ? `（${qty}件）` : ''}`;
+            };
+        });
+
         // 购买
-        body.querySelectorAll('button[data-key]').forEach(btn => {
+        body.querySelectorAll('.sc-buy-btn').forEach(btn => {
             btn.onclick = async () => {
                 const key = btn.dataset.key;
                 const name = btn.dataset.name;
                 const price = parseInt(btn.dataset.price);
-                const ok = await showConfirm(`购买「${name}」`, `确认花费 ${fmtPrice(price)} NB币购买「${name}」吗？`);
+                const qtyEl = body.querySelector(`[data-qty="${key}"]`);
+                const qty = qtyEl ? (parseInt(qtyEl.innerText) || 1) : 1;
+                const total = price * qty;
+                const ok = await showConfirm(`购买「${name}」`, `确认花费 ${fmtPrice(total)} NB币购买「${name}」${qty > 1 ? ` ×${qty}` : ''}吗？`);
                 if (!ok) return;
-                const { data, error } = await supabaseClient.rpc('buy_shop_item', { p_user_id: user.id, p_item_key: key });
-                if (error) {
-                    await showMessage('购买失败', error.message);
-                } else if (!data.success) {
-                    await showMessage('购买失败', data.message);
-                } else {
-                    await showMessage('✅ 购买成功', data.message);
-                    // 刷新余额
-                    const { data: prof2 } = await supabaseClient.from('profiles').select('nb_balance').eq('id', user.id).maybeSingle();
-                    if (prof2) document.getElementById('balanceDisplay').innerText = prof2.nb_balance;
+                // 逐个购买（叠加逻辑在 RPC 内处理）
+                for (let k = 0; k < qty; k++) {
+                    const { data, error } = await supabaseClient.rpc('buy_shop_item', { p_user_id: user.id, p_item_key: key });
+                    if (error) {
+                        await showMessage('购买失败', error.message);
+                        break;
+                    } else if (!data.success) {
+                        await showMessage('购买失败', data.message);
+                        break;
+                    }
                 }
+                // 刷新余额
+                const { data: prof2 } = await supabaseClient.from('profiles').select('nb_balance').eq('id', user.id).maybeSingle();
+                if (prof2) document.getElementById('balanceDisplay').innerText = prof2.nb_balance;
+                if (qtyEl) qtyEl.innerText = '1';
+                const priceLine = body.querySelector(`[data-price-line="${key}"]`);
+                if (priceLine) priceLine.innerHTML = `💰 ${fmtPrice(price)} NB币`;
             };
         });
     }
