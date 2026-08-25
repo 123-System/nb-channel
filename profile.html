@@ -430,21 +430,23 @@
             ? `注册于 ${created.getFullYear()}-${String(created.getMonth() + 1).padStart(2, '0')}-${String(created.getDate()).padStart(2, '0')}`
             : '';
 
+        // 主页聚合数据：一次 RPC（SECURITY DEFINER，避免 anon 直查
+        // user_titles/user_achievements/friendships 等表被 RLS 拒绝）
+        const { data: home, error: homeErr } = await supabaseClient
+            .rpc('get_user_home_profile', { p_user_id: viewUid });
+        if (homeErr || !home || !home.success) {
+            console.error('get_user_home_profile 失败:', homeErr || home);
+            return;
+        }
+
         // 蓝标认证
-        const { data: vUsers } = await supabaseClient
-            .from('verified_users')
-            .select('user_id')
-            .eq('user_id', viewUid)
-            .maybeSingle();
-        if (vUsers) {
-            const badges = document.getElementById('homeBadges');
-            badges.insertAdjacentHTML('beforeend', '<span style="color:#00a1d6;">✅ 认证UP主</span>');
+        if (home.verified) {
+            document.getElementById('homeBadges').insertAdjacentHTML('beforeend', '<span style="color:#00a1d6;">✅ 认证UP主</span>');
         }
 
         // 佩戴称号（横幅图）
-        const { data: titleRows } = await supabaseClient.rpc('get_user_title', { p_user_id: viewUid });
-        if (titleRows && titleRows.length > 0) {
-            const t = titleRows[0];
+        if (home.title) {
+            const t = home.title;
             const base = window.location.origin + '/';
             const img = /^https?:/.test(t.image_url || '') ? t.image_url : base + t.image_url;
             document.getElementById('homeTitle').innerHTML =
@@ -455,33 +457,22 @@
         }
 
         // 公司徽章
-        const { data: company } = await supabaseClient
-            .from('user_companies')
-            .select('id, company_name, verified')
-            .eq('user_id', viewUid)
-            .maybeSingle();
-        if (company) {
-            const badge = company.verified
-                ? `<span style="color:#4caf50;">✅ 已认证虚拟公司：${escapeHtml(company.company_name)}</span>`
-                : `<span style="color:#f44336;">⚠️ 未认证虚拟公司：${escapeHtml(company.company_name)}</span>`;
+        if (home.company) {
+            const badge = home.company.verified
+                ? `<span style="color:#4caf50;">✅ 已认证虚拟公司：${escapeHtml(home.company.company_name)}</span>`
+                : `<span style="color:#f44336;">⚠️ 未认证虚拟公司：${escapeHtml(home.company.company_name)}</span>`;
             document.getElementById('homeBadges').insertAdjacentHTML('beforeend', badge);
         }
 
         // 统计条（不显示金额）
-        const [t1, t2, t3, t4, t5, t6] = await Promise.all([
-            supabaseClient.from('user_titles').select('id', { count: 'exact', head: true }).eq('user_id', viewUid),
-            supabaseClient.from('user_achievements').select('id', { count: 'exact', head: true }).eq('user_id', viewUid),
-            supabaseClient.from('products').select('id', { count: 'exact', head: true }).eq('author_id', viewUid),
-            supabaseClient.from('comments').select('id', { count: 'exact', head: true }).eq('user_id', viewUid),
-            supabaseClient.from('user_checkins').select('consecutive_days').eq('user_id', viewUid).maybeSingle(),
-            supabaseClient.from('friendships').select('id', { count: 'exact', head: true }).or(`user_a.eq.${viewUid},user_b.eq.${viewUid}`)
-        ]);
-        document.getElementById('statTitles').innerText = t1.count || 0;
-        document.getElementById('statAch').innerText = t2.count || 0;
-        document.getElementById('statProducts').innerText = t3.count || 0;
-        document.getElementById('statComments').innerText = t4.count || 0;
-        document.getElementById('statCheckin').innerText = (t5.data && t5.data.consecutive_days) || 0;
-        document.getElementById('statFriends').innerText = t6.count || 0;
+        const stats = home.stats || {};
+        document.getElementById('statTitles').innerText = stats.titles || 0;
+        document.getElementById('statAch').innerText = stats.achievements || 0;
+        document.getElementById('statProducts').innerText = stats.products || 0;
+        document.getElementById('statComments').innerText = stats.comments || 0;
+        document.getElementById('statCheckin').innerText = stats.checkin || 0;
+        document.getElementById('statFriends').innerText = stats.friends || 0;
+        window.__homeData = home;   // Tab 内容区复用
 
         // 头像上传（仅本人）
         if (isOwner) initAvatarUpload();
@@ -513,29 +504,22 @@
         content.innerHTML = '<div class="no-data">加载中...</div>';
         empty.style.display = 'none';
         let html = '';
+        const home = window.__homeData;
         if (tab === 'products') {
-            const { data, error } = await supabaseClient
-                .from('products')
-                .select('id, title, price, downloads, created_at')
-                .eq('author_id', viewUid)
-                .order('created_at', { ascending: false })
-                .limit(20);
-            if (!error && data && data.length > 0) {
-                html = data.map(p => {
-                    const d = new Date(p.created_at);
+            const list = (home && home.products_list) || [];
+            if (list.length > 0) {
+                html = list.map(p => {
+                    const d = p.created_at ? new Date(p.created_at) : null;
+                    const ds = d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '';
                     return `<div class="tab-item">
                         <a class="tab-title" href="${uiHref('product_share.html')}" onclick="return false;">${escapeHtml(p.title)}</a>
-                        <div class="tab-meta">下载 ${p.downloads || 0} · ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}</div>
+                        <div class="tab-meta">下载 ${p.downloads || 0}${ds ? ' · ' + ds : ''}</div>
                     </div>`;
                 }).join('');
             }
         } else if (tab === 'company') {
-            const { data: comp, error } = await supabaseClient
-                .from('user_companies')
-                .select('id, company_name, verified, created_at')
-                .eq('user_id', viewUid)
-                .maybeSingle();
-            if (!error && comp) {
+            const comp = home && home.company_info;
+            if (comp) {
                 const d = comp.created_at ? new Date(comp.created_at) : null;
                 html = `<div class="tab-item">
                     <div class="tab-title">🏢 ${escapeHtml(comp.company_name)}</div>
@@ -543,22 +527,11 @@
                 </div>`;
             }
         } else if (tab === 'achievements') {
-            const { data, error } = await supabaseClient
-                .from('user_achievements')
-                .select('achievement_key')
-                .eq('user_id', viewUid);
-            if (!error && data && data.length > 0) {
-                const keys = data.map(a => a.achievement_key);
-                const { data: defs } = await supabaseClient
-                    .from('achievements')
-                    .select('key, name, icon')
-                    .in('key', keys);
-                const defMap = {};
-                (defs || []).forEach(d => { defMap[d.key] = d; });
-                html = keys.map(k => {
-                    const d = defMap[k] || {};
+            const list = (home && home.achievements_list) || [];
+            if (list.length > 0) {
+                html = list.map(a => {
                     return `<div class="tab-item">
-                        <span class="tab-title">${d.icon || '🏆'} ${escapeHtml(d.name || k)}</span>
+                        <span class="tab-title">${a.icon || '🏆'} ${escapeHtml(a.name || a.key)}</span>
                     </div>`;
                 }).join('');
             }
