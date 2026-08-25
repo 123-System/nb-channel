@@ -595,9 +595,11 @@
                 currentUser.myTitle = null;
             }
         } catch (e) { currentUser.myTitle = null; }
-        // 商店道具：气泡皮肤（自己 + 对方）
+        // 商店道具：气泡皮肤 + 展示位称号（自己 + 对方）
         currentOther.bubbleFx = null;
         currentUser.bubbleFx = null;
+        currentOther.slotTitle = null;
+        currentUser.slotTitle = null;
         try {
             const [{ data: oFx }, { data: mFx }] = await Promise.all([
                 supabaseClient.rpc('get_active_shop_effects', { p_user_id: otherId }),
@@ -605,6 +607,8 @@
             ]);
             currentOther.bubbleFx = (oFx && oFx.success && oFx.chat_bubble) ? oFx.chat_bubble : null;
             currentUser.bubbleFx = (mFx && mFx.success && mFx.chat_bubble) ? mFx.chat_bubble : null;
+            currentOther.slotTitle = (oFx && oFx.success && oFx.title_slot && oFx.title_slot.slot_title) || null;
+            currentUser.slotTitle = (mFx && mFx.success && mFx.title_slot && mFx.title_slot.slot_title) || null;
         } catch (e) { /* 忽略 */ }
         cancelQuote();
         document.getElementById('chatHeaderTitle').innerText = `💬 ${otherName}`;
@@ -799,6 +803,12 @@
         let titleHtml = '';
         if (titleInfo && titleInfo._img) {
             titleHtml = `<span class="msg-title-badge"><img class="msg-title-img" src="${titleInfo._img}" alt="${escapeHtml(titleInfo.name)}" title="点击查看称号大全" onclick="location.href=uiHref('titles.html')" onerror="this.style.display='none'"><span class="msg-title-stars">称号：${escapeHtml(titleInfo.name)} · ${'★'.repeat(Math.min(titleInfo.stars || 1, 5))}</span></span>`;
+        }
+        // 展示位称号（商店道具 title_slot，私信也展示第二个称号）
+        const slotInfo = me ? (currentUser.slotTitle || null) : (currentOther && currentOther.slotTitle);
+        if (slotInfo && slotInfo.image_url) {
+            const sImg = /^https?:/.test(slotInfo.image_url) ? slotInfo.image_url : window.location.origin + '/' + slotInfo.image_url;
+            titleHtml += `<span class="msg-title-badge"><img class="msg-title-img" src="${sImg}" alt="" title="展示位称号" onclick="location.href=uiHref('titles.html')" onerror="this.style.display='none'"><span class="msg-title-stars">展示位：${escapeHtml(slotInfo.name)} · ${'★'.repeat(Math.min(slotInfo.stars || 1, 5))}</span></span>`;
         }
         if (me) {
             // 自己的消息：时间在左，气泡，头像在右（右键/长按可撤回/删除）
