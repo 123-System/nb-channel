@@ -200,6 +200,7 @@
     <div class="home-tabs">
         <button class="home-tab active" data-tab="products">🛍️ 作品</button>
         <button class="home-tab" data-tab="company">🏢 公司</button>
+        <button class="home-tab" data-tab="titles">🏅 称号</button>
         <button class="home-tab" data-tab="achievements">🏆 成就</button>
     </div>
     <div id="homeTabContent"></div>
@@ -527,6 +528,20 @@
                     <div class="tab-title">🏢 ${escapeHtml(comp.company_name)}</div>
                     <div class="tab-meta">${comp.verified ? '✅ 已认证' : '⚠️ 未认证'}${d ? ' · 成立于 ' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') : ''}</div>
                 </div>`;
+            }
+        } else if (tab === 'titles') {
+            const list = (home && home.titles_list) || [];
+            if (list.length > 0) {
+                const base = window.location.origin + '/';
+                html = list.map(t => {
+                    const img = /^https?:/.test(t.image_url || '') ? t.image_url : base + t.image_url;
+                    const equipped = t.equipped ? ' <span style="color:#00a1d6; font-size:0.75rem;">(佩戴中)</span>' : '';
+                    return `<div class="tab-item" style="display:flex; align-items:center; gap:10px;">
+                        <img src="${img}" alt="${escapeHtml(t.name)}" style="height:26px; border-radius:6px;" onerror="this.style.display='none'">
+                        <span class="tab-title">${escapeHtml(t.name)}${equipped}</span>
+                        <span style="color:#ffb300; font-size:0.8rem;">${'★'.repeat(Math.min(t.stars || 1, 5))}</span>
+                    </div>`;
+                }).join('');
             }
         } else if (tab === 'achievements') {
             const list = (home && home.achievements_list) || [];
