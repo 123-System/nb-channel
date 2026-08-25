@@ -63,11 +63,11 @@ GRANT EXECUTE ON FUNCTION public.visit_profile(uuid) TO anon;
 -- 若 check_in_records 表存在（含 user_id + 日期），用它；否则退化为只显示当前连续天数。
 -- 这里先确认表结构：若已有该表则直接使用；没有则创建（兼容老数据）。
 CREATE TABLE IF NOT EXISTS public.check_in_records (
-    id         bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    user_id    uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-    check_date date NOT NULL DEFAULT (now() AT TIME ZONE 'Asia/Shanghai')::date,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    UNIQUE (user_id, check_date)
+    id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id       uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    check_in_date date NOT NULL DEFAULT (now() AT TIME ZONE 'Asia/Shanghai')::date,
+    created_at    timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (user_id, check_in_date)
 );
 ALTER TABLE public.check_in_records ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.check_in_records FROM anon, authenticated;
@@ -110,9 +110,9 @@ BEGIN
         consecutive_days = EXCLUDED.consecutive_days;
 
     -- 历史记录（幂等）
-    INSERT INTO check_in_records (user_id, check_date)
+    INSERT INTO check_in_records (user_id, check_in_date)
     VALUES (p_user_id, v_today)
-    ON CONFLICT (user_id, check_date) DO NOTHING;
+    ON CONFLICT (user_id, check_in_date) DO NOTHING;
 
     RETURN jsonb_build_object('success', true, 'reward', reward, 'consecutive', new_consecutive);
 END;
@@ -133,11 +133,11 @@ BEGIN
     IF p_user_id IS NULL THEN
         RETURN jsonb_build_object('success', false, 'dates', '[]'::jsonb);
     END IF;
-    SELECT array_agg(check_date ORDER BY check_date)
+    SELECT array_agg(check_in_date ORDER BY check_in_date)
       INTO v_dates
       FROM public.check_in_records
      WHERE user_id = p_user_id
-       AND check_date >= (now() AT TIME ZONE 'Asia/Shanghai')::date - (p_days - 1);
+       AND check_in_date >= (now() AT TIME ZONE 'Asia/Shanghai')::date - (p_days - 1);
     RETURN jsonb_build_object('success', true, 'dates', coalesce(to_jsonb(v_dates), '[]'::jsonb));
 END;
 $$;
@@ -245,7 +245,7 @@ BEGIN
                 SELECT jsonb_build_object(
                            'type', 'checkin',
                            'text', '签到打卡',
-                           'ts', (cr.check_date::timestamptz + interval '12 hours'))
+                           'ts', (cr.check_in_date::timestamptz + interval '12 hours'))
                   FROM public.check_in_records cr
                  WHERE cr.user_id = p_user_id
               ) x
