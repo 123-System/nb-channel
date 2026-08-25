@@ -196,6 +196,76 @@
         const deco = items.filter(i => i.category === 'decoration');
         const func = items.filter(i => i.category === 'function');
 
+        // 完整规则说明（弹窗展示；无则只显示 desc）
+        const RULES = {
+            checkin_fix: [
+                '📝 补签卡使用规则：',
+                '1. 使用后补回"最近漏签"的 1 天（只能补今天之前 1~5 天内的漏签）',
+                '2. 每次补签消耗 1 张卡，同一日期不能重复补',
+                '3. 连续签到按"真实签到"计算：补签日 + 之前连续的真实签到天数（补签只能接上断掉的连续，不能凭空堆天数）',
+                '4. 补签不计入签到总次数、不计入签到热力图、不影响"签到之神"称号',
+                '5. 每自然月最多补签 5 次；最多同时持有 5 张卡',
+                '6. 补签不奖励 NB 币'
+            ],
+            lottery_extra: [
+                '🎰 抽奖次数增加券使用规则：',
+                '1. 使用后当日抽奖次数 +10（在背包点"⚡ 使用"生效）',
+                '2. 与每日基础次数（默认10次）叠加，当天有效，隔天失效',
+                '3. 多张可叠加：用 2 张 = 当日 +20 次'
+            ],
+            fee_discount: [
+                '📉 股票手续费减免券使用规则：',
+                '1. 买入/卖出时，在交易弹窗勾选"使用手续费减免券"',
+                '2. 手续费从 5% 降至 2%',
+                '3. 一次交易消耗 1 张，未勾选则保留'
+            ],
+            title_slot: [
+                '🏅 称号展示位使用规则：',
+                '1. 生效期间，主页额外展示 1 个称号（自动取"最高星级的未佩戴称号"）',
+                '2. 自动续期：到期前余额充足自动扣费续期',
+                '3. 仅 1 个展示位，重复购买会顺延到期时间'
+            ],
+            bio_extend: [
+                '✏️ 个性签名扩展使用规则：',
+                '1. 生效期间，主页简介字数上限从 100 字提升到 200 字',
+                '2. 自动续期：到期前余额充足自动扣费续期'
+            ],
+            comment_color: [
+                '💬 评论专属颜色券使用规则：',
+                '1. 生效期间，你的评论文字显示自选颜色',
+                '2. 在背包点"🎨 更换样式"可随时改色（支持任意颜色）',
+                '3. 叠加购买 = 时长叠加（2张=14天）'
+            ],
+            nickname_color: [
+                '📛 昵称变色卡使用规则：',
+                '1. 生效期间，评论区你的名字显示颜色（红/金/🌈彩虹）',
+                '2. 在背包点"🎨 更换样式"可随时更换',
+                '3. 叠加购买 = 时长叠加（2张=14天）'
+            ],
+            chat_bubble: [
+                '💬 私信气泡皮肤使用规则：',
+                '1. 生效期间，私信聊天气泡显示颜色（蓝/粉/绿/🌈彩虹）',
+                '2. 对方也能看到你的气泡颜色',
+                '3. 在背包点"🎨 更换样式"可随时更换',
+                '4. 叠加购买 = 时长叠加（2张=14天）'
+            ],
+            profile_skin: [
+                '🎪 主页皮肤使用规则：',
+                '1. 生效期间，主页解锁头图区',
+                '2. 在个人中心主页可上传头图（支持图片/GIF，≤5MB）',
+                '3. 自动续期：到期前余额充足自动扣费续期',
+                '4. 叠加购买 = 时长叠加'
+            ],
+            particle_fx: [
+                '🔮 主页粒子特效卡使用规则：',
+                '1. 生效期间，主页有鼠标粒子特效：移动鼠标产生拖尾、点击产生爆发（手机触摸同样生效）',
+                '2. 在背包点"🎨 更换样式"选择特效：🔥火焰 / ⚡闪电 / 🫧气泡 / ✨星光',
+                '3. 自动续期：到期前余额充足自动扣费续期',
+                '4. 叠加购买 = 时长叠加'
+            ]
+        };
+        const RULE_KEYS = Object.keys(RULES);
+
         function cardHtml(i) {
             const cat = i.category === 'decoration'
                 ? '<span class="sc-badge bd-decoration">🎨 装饰</span>'
@@ -205,6 +275,7 @@
                 : '<span class="sc-badge bd-once">一次性</span>';
             const renew = i.auto_renew ? '<span class="sc-badge bd-duration">自动续期</span>' : '';
             const stack = i.stackable ? '<span class="sc-badge bd-duration">可叠加</span>' : '';
+            const ruleBtn = RULES[i.key] ? `<a href="javascript:void(0)" data-rule="${i.key}" style="font-size:0.75rem; color:var(--status-border); text-decoration:underline; margin-top:2px; display:inline-block;">📖 查看完整规则</a>` : '';
             // 可叠加商品：显示数量选择器；不可叠加：直接购买按钮
             const buyRow = i.stackable
                 ? `<div class="sc-buy-row">
@@ -221,6 +292,7 @@
                 <div class="sc-name">${escapeHtml(i.name)}</div>
                 <div class="sc-desc">${cat} ${dur} ${renew} ${stack}
                     <div style="margin-top:6px;">${escapeHtml(i.desc_text)}</div></div>
+                ${ruleBtn}
                 <div class="sc-price" data-price-line="${i.key}">💰 ${fmtPrice(i.price)} NB币</div>
                 ${buyRow}
             </div>`;
@@ -229,6 +301,15 @@
         body.innerHTML =
             `<div class="section"><div class="section-title">🎨 装饰道具</div><div class="shop-grid">${deco.map(cardHtml).join('')}</div></div>` +
             `<div class="section"><div class="section-title">⚡ 功能道具</div><div class="shop-grid">${func.map(cardHtml).join('')}</div></div>`;
+
+        // 规则弹窗
+        body.querySelectorAll('[data-rule]').forEach(a => {
+            a.onclick = (e) => {
+                e.stopPropagation();
+                const rules = RULES[a.dataset.rule] || [];
+                showRulesModal(a.dataset.rule, rules);
+            };
+        });
 
         // 数量选择：+ / -
         body.querySelectorAll('[data-act]').forEach(btn => {
@@ -275,6 +356,23 @@
                 if (priceLine) priceLine.innerHTML = `💰 ${fmtPrice(price)} NB币`;
             };
         });
+    }
+
+    function showRulesModal(itemKey, rules) {
+        const modal = document.createElement('div');
+        modal.className = 'custom-modal';
+        modal.style.display = 'flex';
+        const lines = rules.map(r => `<p style="text-align:left; font-size:0.9rem; line-height:1.8; color:var(--text-color); margin:6px 0;">${escapeHtml(r)}</p>`).join('');
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:440px; text-align:left;">
+                <h3 style="text-align:center;">📖 ${escapeHtml((RULES[itemKey] && RULES[itemKey][0]) || '使用规则')}</h3>
+                <div style="max-height:60vh; overflow-y:auto;">${lines.slice(1).join('')}</div>
+                <div style="text-align:center;"><button id="rulesClose" style="background:var(--nav-btn-hover-bg);">知道了</button></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.querySelector('#rulesClose').onclick = () => modal.remove();
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
     }
 
     function showConfirm(title, msg) {
