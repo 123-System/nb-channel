@@ -164,6 +164,21 @@
         #homeTabContent .tab-item .tab-title { font-weight: 600; color: var(--text-color); }
         #homeTabContent .tab-item .tab-meta { font-size: 0.8rem; color: var(--count-text); margin-top: 3px; }
         #homeTabContent a { color: var(--status-border); text-decoration: none; }
+        /* 热力图 */
+        .heatmap-wrap { background: var(--count-bg); border-radius: 18px; padding: 14px; }
+        .heatmap-title { font-size: 0.85rem; color: var(--count-text); margin-bottom: 10px; }
+        .heatmap-grid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 10px); gap: 3px; overflow-x: auto; padding-bottom: 4px; }
+        .heatmap-cell { width: 10px; height: 10px; border-radius: 2px; background: var(--card-border); }
+        .heatmap-cell.l1 { background: #c6e48b; }
+        .heatmap-cell.l2 { background: #7bc96f; }
+        .heatmap-cell.l3 { background: #239a3b; }
+        .heatmap-cell.l4 { background: #196127; }
+        .heatmap-legend { display: flex; align-items: center; gap: 4px; justify-content: flex-end; margin-top: 6px; font-size: 0.7rem; color: var(--count-text); }
+        .heatmap-legend .heatmap-cell { width: 10px; height: 10px; }
+        /* 动态时间线 */
+        .activity-item { display: flex; gap: 10px; padding: 8px 4px; border-bottom: 1px solid var(--card-border); font-size: 0.92rem; }
+        .activity-item .act-icon { flex-shrink: 0; }
+        .activity-item .act-time { margin-left: auto; color: var(--count-text); font-size: 0.78rem; white-space: nowrap; }
         /* 称号面板（已迁移至独立页面 titles.html） */
     </style>
 </head>
@@ -176,8 +191,10 @@
         <div class="home-header-info">
             <div class="home-username" id="usernameDisplay">加载中...</div>
             <div id="homeBadges"></div>
+            <div id="homeBio" style="margin-top:6px; font-size:0.95rem; color:var(--text-color);"></div>
             <div id="homeTitle"></div>
             <div class="home-joined" id="joinedDisplay"></div>
+            <div class="home-joined" id="visitDisplay" style="margin-top:2px;"></div>
         </div>
         <!-- 头像操作（仅本人可见） -->
         <div class="avatar-actions" id="avatarActions" style="display:none;">
@@ -202,12 +219,23 @@
         <button class="home-tab" data-tab="company">🏢 公司</button>
         <button class="home-tab" data-tab="titles">🏅 称号</button>
         <button class="home-tab" data-tab="achievements">🏆 成就</button>
+        <button class="home-tab" data-tab="activity">📜 动态</button>
     </div>
+    <div id="homeHeatmap" style="margin: 8px 0 14px 0;"></div>
     <div id="homeTabContent"></div>
     <div class="no-data" id="homeTabEmpty" style="display:none;">暂无内容</div>
 
     <!-- ===== 以下为个人设置区（仅本人可见） ===== -->
     <div id="settingsSection" style="display:none;">
+    <h2>✏️ 编辑简介</h2>
+    <div class="form-group">
+        <input type="text" id="bioInput" placeholder="一句话介绍自己（最多100字）" maxlength="100">
+        <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+            <button id="saveBioBtn">保存简介</button>
+            <span id="bioStatus" style="font-size:0.8rem; color:var(--count-text);"></span>
+        </div>
+    </div>
+
     <h2>🎨 界面风格</h2>
     <div class="form-group" style="display:flex; gap:10px; flex-wrap:wrap;">
         <button id="uiStyleNew" style="flex:1; min-width:120px;">🆕 新版界面</button>
@@ -478,8 +506,33 @@
         document.getElementById('statFriends').innerText = stats.friends || 0;
         window.__homeData = home;   // Tab 内容区复用
 
+        // 简介
+        const bioEl = document.getElementById('homeBio');
+        if (home.bio) {
+            bioEl.innerText = home.bio;
+        } else if (isOwner) {
+            bioEl.innerHTML = '<span style="color:var(--count-text); font-size:0.85rem;">点击下方"✏️ 编辑简介"写下你的签名</span>';
+        }
+
+        // 主页访问量（他人访问时 +1；同一天同一访客只计一次）
+        if (!isOwner) {
+            const visitKey = 'nb_visit_' + viewUid + '_' + new Date().toISOString().slice(0, 10);
+            if (!sessionStorage.getItem(visitKey)) {
+                supabaseClient.rpc('visit_profile', { p_user_id: viewUid }).then(() => {
+                    sessionStorage.setItem(visitKey, '1');
+                }).catch(() => {});
+            }
+        }
+        document.getElementById('visitDisplay').innerText = `👁️ 主页被访问 ${home.visits || 0} 次`;
+
+        // 签到热力图
+        renderHeatmap(viewUid);
+
         // 头像上传（仅本人）
         if (isOwner) initAvatarUpload();
+
+        // 简介编辑器（仅本人）
+        if (isOwner) initBioEditor();
 
         // Tab 内容
         document.querySelectorAll('.home-tab').forEach(btn => {
@@ -493,6 +546,49 @@
             await loadAutoRules();
             await loadSupporters();
         }
+    }
+
+    // ===== 签到热力图（近365天，GitHub贡献图风格） =====
+    async function renderHeatmap(uid) {
+        const wrap = document.getElementById('homeHeatmap');
+        wrap.innerHTML = '<div class="no-data" style="padding:10px;">加载签到数据...</div>';
+        const { data, error } = await supabaseClient.rpc('get_checkin_heatmap', { p_user_id: uid, p_days: 365 });
+        if (error || !data || !data.success) {
+            wrap.innerHTML = '';
+            return;
+        }
+        const dateSet = new Set((data.dates || []).map(d => d.slice(0, 10)));
+        const today = new Date();
+        // 从今天往前推 364 天，按周分列（每列7天，周日开头）
+        const cells = [];
+        const start = new Date(today);
+        start.setDate(start.getDate() - 363);
+        start.setHours(0, 0, 0, 0);
+        // 对齐到周日
+        const offset = start.getDay();
+        start.setDate(start.getDate() - offset);
+        const grid = [];
+        let col = [];
+        for (let i = 0; i < 371; i++) {
+            const d = new Date(start);
+            d.setDate(start.getDate() + i);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const inRange = d <= today && d > new Date(today.getFullYear(), today.getMonth(), today.getDate() - 364);
+            let cls = 'heatmap-cell';
+            if (inRange) {
+                const n = dateSet.has(key) ? 2 : 0;   // 有签到 l2 档，无签到灰色
+                if (n > 0) cls += ' l' + n;
+            }
+            col.push({ key, cls, inRange });
+            if (col.length === 7) { grid.push(col); col = []; }
+        }
+        if (col.length) grid.push(col);
+        const gridHtml = grid.map(c => `<div style="display:flex; flex-direction:column; gap:3px;">${c.map(x => `<div class="${x.cls}" title="${x.inRange ? x.key : ''}"></div>`).join('')}</div>`).join('');
+        wrap.innerHTML = `<div class="heatmap-wrap">
+            <div class="heatmap-title">📅 签到热力图（近365天）</div>
+            <div class="heatmap-grid" style="display:flex; gap:3px;">${gridHtml}</div>
+            <div class="heatmap-legend">少 <span class="heatmap-cell"></span><span class="heatmap-cell l1"></span><span class="heatmap-cell l2"></span><span class="heatmap-cell l3"></span><span class="heatmap-cell l4"></span> 多</div>
+        </div>`;
     }
 
     // ===== 主页 Tab =====
@@ -541,6 +637,20 @@
                         <img src="${img}" alt="" style="height:26px; border-radius:6px;" onerror="this.style.display='none'">
                         <span class="tab-title">${escapeHtml(t.name)}${equipped}</span>
                         <span style="color:#ffb300; font-size:0.8rem;">${'★'.repeat(Math.min(t.stars || 1, 5))}</span>
+                    </div>`;
+                }).join('');
+            }
+        } else if (tab === 'activity') {
+            const list = (home && home.activity) || [];
+            if (list.length > 0) {
+                const ICONS = { product: '🛍️', comment: '💬', title: '🏅', achievement: '🏆', checkin: '📅' };
+                html = list.map(a => {
+                    const d = a.ts ? new Date(a.ts) : null;
+                    const ds = d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '';
+                    return `<div class="activity-item">
+                        <span class="act-icon">${ICONS[a.type] || '•'}</span>
+                        <span>${escapeHtml(a.text || '')}</span>
+                        <span class="act-time">${ds}</span>
                     </div>`;
                 }).join('');
             }
@@ -794,6 +904,30 @@
     document.getElementById('saveEditBtn').addEventListener('click', saveHandler, { once: true });
     document.getElementById('closeEditBtn').addEventListener('click', cleanup, { once: true });
 }
+
+    // ========== 保存简介 ==========
+    function initBioEditor() {
+        const input = document.getElementById('bioInput');
+        const btn = document.getElementById('saveBioBtn');
+        const status = document.getElementById('bioStatus');
+        if (!input || !btn) return;
+        // 预填当前简介
+        const home = window.__homeData;
+        if (home && home.bio) input.value = home.bio;
+        btn.onclick = async () => {
+            const bio = input.value.trim();
+            status.innerText = '⏳ 保存中...';
+            const { data, error } = await supabaseClient.rpc('update_bio', { p_user_id: viewUid, p_bio: bio });
+            if (error || !data || !data.success) {
+                status.innerText = '❌ 保存失败';
+                return;
+            }
+            status.innerText = '✅ 已保存';
+            document.getElementById('homeBio').innerText = bio || '';
+            // 更新缓存数据
+            if (window.__homeData) window.__homeData.bio = bio;
+        };
+    }
 
     async function updateUsername() {
         const newUsername = document.getElementById('newUsername').value.trim();
