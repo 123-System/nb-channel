@@ -121,7 +121,7 @@ $$;
 -- ========== 4. 存款 ==========
 
 -- 活期存款（每日上限 1000 万）
-CREATE OR REPLACE FUNCTION public.bank_deposit(p_user_id uuid, p_amount integer)
+CREATE OR REPLACE FUNCTION public.bank_deposit(p_user_id uuid, p_amount bigint)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -166,7 +166,7 @@ END;
 $$;
 
 -- 定期存款（7天/30天）
-CREATE OR REPLACE FUNCTION public.bank_fixed_deposit(p_user_id uuid, p_amount integer, p_days integer)
+CREATE OR REPLACE FUNCTION public.bank_fixed_deposit(p_user_id uuid, p_amount bigint, p_days integer)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -223,7 +223,7 @@ $$;
 -- ========== 5. 取款 ==========
 
 -- 活期取款（冻结期可取出"新存入的部分"，冻结金额不能取）
-CREATE OR REPLACE FUNCTION public.bank_withdraw(p_user_id uuid, p_amount integer)
+CREATE OR REPLACE FUNCTION public.bank_withdraw(p_user_id uuid, p_amount bigint)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -314,7 +314,7 @@ $$;
 -- ========== 6. 贷款 ==========
 
 -- 抵押贷（额度 = 存款×80%）
-CREATE OR REPLACE FUNCTION public.bank_loan(p_user_id uuid, p_amount integer, p_days integer)
+CREATE OR REPLACE FUNCTION public.bank_loan(p_user_id uuid, p_amount bigint, p_days integer)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -360,7 +360,7 @@ END;
 $$;
 
 -- 信用贷（按信誉分）
-CREATE OR REPLACE FUNCTION public.bank_credit_loan(p_user_id uuid, p_amount integer, p_days integer)
+CREATE OR REPLACE FUNCTION public.bank_credit_loan(p_user_id uuid, p_amount bigint, p_days integer)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
