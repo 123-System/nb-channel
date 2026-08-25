@@ -321,10 +321,10 @@
                 if (t.acquire_type === 'buy') {
                     // 购买型称号：始终显示购买/升星按钮（满级显示"已满级"）
                     if (t.stars >= 5) {
-                        actions = `<button class="t-btn-disabled" disabled>👑 已满级</button>`;
+                        actions += `<button class="t-btn-disabled" disabled>👑 已满级</button>`;
                     } else {
                         const price = nextBuyPrice(t, t.stars);
-                        actions = `<button class="t-btn-buy" onclick="buyTitle('${t.title_key}')">💎 ${t.owned ? '升星' : '购买'}（${fmtBig(price)} NB币）</button>`;
+                        actions += `<button class="t-btn-buy" onclick="buyTitle('${t.title_key}')">💎 ${t.owned ? '升星' : '购买'}（${fmtBig(price)} NB币）</button>`;
                     }
                     if (t.equipped) {
                         actions += `<button class="t-btn-unequip" onclick="unequipTitle()">取消佩戴</button>`;
@@ -332,13 +332,13 @@
                         actions += `<button class="t-btn-equip" onclick="equipTitle('${t.title_key}')">佩戴</button>`;
                     }
                 } else if (t.equipped) {
-                    actions = `<button class="t-btn-unequip" onclick="unequipTitle()">取消佩戴</button>`;
+                    actions += `<button class="t-btn-unequip" onclick="unequipTitle()">取消佩戴</button>`;
                 } else if (t.owned) {
-                    actions = `<button class="t-btn-equip" onclick="equipTitle('${t.title_key}')">佩戴</button>`;
+                    actions += `<button class="t-btn-equip" onclick="equipTitle('${t.title_key}')">佩戴</button>`;
                 } else if (t.acquire_type === 'manual') {
-                    actions = `<button class="t-btn-disabled" disabled>👑 管理员颁发</button>`;
+                    actions += `<button class="t-btn-disabled" disabled>👑 管理员颁发</button>`;
                 } else {
-                    actions = `<button class="t-btn-disabled" disabled>达成条件自动解锁</button>`;
+                    actions += `<button class="t-btn-disabled" disabled>达成条件自动解锁</button>`;
                 }
 
                 // 升星要求展示
