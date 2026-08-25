@@ -198,7 +198,6 @@
     <div class="home-tabs">
         <button class="home-tab active" data-tab="products">🛍️ 作品</button>
         <button class="home-tab" data-tab="company">🏢 公司</button>
-        <button class="home-tab" data-tab="comments">💬 评论</button>
         <button class="home-tab" data-tab="achievements">🏆 成就</button>
     </div>
     <div id="homeTabContent"></div>
@@ -542,22 +541,6 @@
                     <div class="tab-title">🏢 ${escapeHtml(comp.company_name)}</div>
                     <div class="tab-meta">${comp.verified ? '✅ 已认证' : '⚠️ 未认证'}${d ? ' · 成立于 ' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') : ''}</div>
                 </div>`;
-            }
-        } else if (tab === 'comments') {
-            const { data, error } = await supabaseClient
-                .from('comments')
-                .select('id, content, created_at')
-                .eq('user_id', viewUid)
-                .order('created_at', { ascending: false })
-                .limit(20);
-            if (!error && data && data.length > 0) {
-                html = data.map(c => {
-                    const d = new Date(c.created_at);
-                    return `<div class="tab-item">
-                        <div class="tab-title">${escapeHtml((c.content || '').slice(0, 60))}</div>
-                        <div class="tab-meta">${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}</div>
-                    </div>`;
-                }).join('');
             }
         } else if (tab === 'achievements') {
             const { data, error } = await supabaseClient
