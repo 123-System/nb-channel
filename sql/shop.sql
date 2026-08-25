@@ -48,7 +48,7 @@ INSERT INTO public.shop_items (key, name, icon, price, category, duration_days, 
 ('profile_skin',   '主页皮肤',       '🎪', 500000, 'decoration', 7, true, true, NULL, '解锁主页头图区，可自定义头图（图片/GIF）（限时7天，可叠加，自动续期）'),
 ('title_slot',     '称号展示位',     '🏅', 500000, 'function', 1, true, true, 1,   '额外增加一个称号展示位（限时1天，仅1个，自动续期）'),
 ('bio_extend',     '个性签名扩展',   '✏️', 20000, 'function', 7, true, true, NULL, '简介从100字扩到200字（限时7天，可叠加，自动续期）'),
-('checkin_fix',    '补签卡',         '📝', 20000, 'function', NULL, true, false, 5,  '补回最近漏签的1天，恢复连续签到（最多持有5张，最多补前5天）'),
+('checkin_fix',    '补签卡',         '📝', 20000, 'function', NULL, true, false, 5,  '补回最近漏签的1天，恢复连续签到（最多持有5张，最多补前5天，每月最多补5次；补签不计入签到总数/热力图）'),
 ('chat_bubble',    '私信气泡皮肤',   '💬', 40000, 'decoration', 7, true, true, NULL, '私信气泡颜色（蓝/粉/绿/彩虹渐变），对方可见（限时7天，可叠加，自动续期）'),
 ('particle_fx',    '主页粒子特效卡', '🔮', 30000, 'decoration', 7, true, true, NULL, '主页背景粒子特效（火焰/闪电/气泡/星光），鼠标触摸触发（限时7天，可叠加，自动续期）')
 ON CONFLICT (key) DO UPDATE SET
@@ -246,6 +246,20 @@ $$;
 GRANT EXECUTE ON FUNCTION public.use_shop_item(uuid, bigint) TO anon;
 
 -- ========== 8. 补签（补签卡） ==========
+-- 补签记录写入独立表 checkin_fix_records（不写入 check_in_records）：
+--   - 不刷"签到之神"称号的累计签到次数（称号按 check_in_records 统计）
+--   - 不刷签到热力图（热力图按 check_in_records 统计）
+--   - 连续天数按"真实签到"往前数（补签日 + 之前连续的真实签到）
+CREATE TABLE IF NOT EXISTS public.checkin_fix_records (
+    id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id       uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    check_in_date date NOT NULL,
+    created_at    timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (user_id, check_in_date)
+);
+ALTER TABLE public.checkin_fix_records ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.checkin_fix_records FROM anon, authenticated;
+
 CREATE OR REPLACE FUNCTION public.use_checkin_fix(p_user_id uuid, p_target_date date)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -255,19 +269,30 @@ AS $$
 DECLARE
     v_today date := (now() AT TIME ZONE 'Asia/Shanghai')::date;
     v_card_id bigint;
-    v_last_checkin date;
-    v_consecutive integer;
     v_new_consecutive integer;
+    v_idx integer;
+    v_month_count integer;
 BEGIN
-    -- 校验目标日期：只能补今天之前的 1~5 天，且今天还没签到
+    -- 校验目标日期：只能补今天之前的 1~5 天
     IF p_target_date IS NULL THEN
         RETURN jsonb_build_object('success', false, 'message', '请选择要补签的日期');
     END IF;
     IF p_target_date >= v_today OR p_target_date < v_today - 5 THEN
         RETURN jsonb_build_object('success', false, 'message', '只能补签前 5 天内的漏签');
     END IF;
+    -- 每自然月最多补签 5 次（防止买卡无限补）
+    SELECT count(*) INTO v_month_count FROM public.checkin_fix_records
+     WHERE user_id = p_user_id
+       AND date_trunc('month', check_in_date) = date_trunc('month', p_target_date);
+    IF v_month_count >= 5 THEN
+        RETURN jsonb_build_object('success', false, 'message', '本月补签次数已达上限（5次），下个月再来吧');
+    END IF;
+    -- 该日期已真实签到 或 已补签过 → 不能重复补
     IF EXISTS (SELECT 1 FROM public.check_in_records WHERE user_id = p_user_id AND check_in_date = p_target_date) THEN
         RETURN jsonb_build_object('success', false, 'message', '该日期已签到，无需补签');
+    END IF;
+    IF EXISTS (SELECT 1 FROM public.checkin_fix_records WHERE user_id = p_user_id AND check_in_date = p_target_date) THEN
+        RETURN jsonb_build_object('success', false, 'message', '该日期已补签过，不能重复补');
     END IF;
 
     -- 消耗一张补签卡
@@ -279,17 +304,18 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', '没有可用的补签卡');
     END IF;
 
-    -- 记录补签（不奖励NB币，只补记录）
-    INSERT INTO public.check_in_records (user_id, check_in_date)
-    VALUES (p_user_id, p_target_date)
-    ON CONFLICT (user_id, check_in_date) DO NOTHING;
+    -- 写入补签记录（独立表）
+    INSERT INTO public.checkin_fix_records (user_id, check_in_date)
+    VALUES (p_user_id, p_target_date);
 
-    -- 恢复连续天数：以补签日期为新的"最近签到"，从该日往前数连续天数
+    -- 连续天数：补签日本身算 1 天 + 从补签日前一天往前数"真实签到"的连续天数
     v_new_consecutive := 1;
-    FOR i IN 1..365 LOOP
+    v_idx := 1;
+    WHILE v_idx <= 365 LOOP
         IF EXISTS (SELECT 1 FROM public.check_in_records
-                    WHERE user_id = p_user_id AND check_in_date = p_target_date - i) THEN
+                    WHERE user_id = p_user_id AND check_in_date = p_target_date - v_idx) THEN
             v_new_consecutive := v_new_consecutive + 1;
+            v_idx := v_idx + 1;
         ELSE
             EXIT;
         END IF;
@@ -307,7 +333,8 @@ BEGIN
     UPDATE public.user_items SET used = true WHERE id = v_card_id;
 
     RETURN jsonb_build_object('success', true, 'message',
-        format('补签成功：%s（消耗 1 张补签卡，连续 %s 天）', p_target_date::text, v_new_consecutive));
+        format('补签成功：%s（消耗 1 张补签卡，连续 %s 天；补签不计入签到总数/热力图）',
+               p_target_date::text, v_new_consecutive));
 END;
 $$;
 
