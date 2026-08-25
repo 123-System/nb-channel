@@ -27,8 +27,14 @@
         }
         .bp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
         .bp-card {
+            position: relative;
             background: var(--count-bg); border: 1px solid var(--card-border);
             border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 8px;
+        }
+        .bp-card .bc-count {
+            position: absolute; top: 10px; right: 12px;
+            background: var(--nav-btn-hover-bg); color: white;
+            border-radius: 20px; padding: 2px 10px; font-size: 0.85rem; font-weight: 700;
         }
         .bp-card .bc-icon { font-size: 1.8rem; }
         .bp-card .bc-name { font-weight: 700; color: var(--text-color); }
@@ -170,45 +176,68 @@
             body.innerHTML = '<div class="no-data">背包空空如也，<a href="shop.html" style="color:var(--status-border);">去商店逛逛 →</a></div>';
             return;
         }
-        // 分组：有效（未过期未使用）/ 已用 / 已过期
-        const active = items.filter(i => i.active);
-        const used = items.filter(i => i.used);
-        const expired = items.filter(i => !i.used && !i.active && i.expires_at);
 
-        function cardHtml(i) {
+        // ===== 同种道具合并成一张卡片（按 item_key 分组） =====
+        // active(生效/待使用) 合并显示 ×N；已使用/已过期各自合并显示 ×N
+        const groups = {};   // item_key -> { info, active: [], used: [], expired: [] }
+        for (const i of items) {
+            if (!groups[i.item_key]) groups[i.item_key] = { info: i, active: [], used: [], expired: [] };
+            if (i.used) groups[i.item_key].used.push(i);
+            else if (i.expires_at && !i.active) groups[i.item_key].expired.push(i);
+            else groups[i.item_key].active.push(i);
+        }
+
+        function cardHtml(group, list) {
+            if (list.length === 0) return '';
+            const i = list[0];
+            const count = list.length;
             let status = '';
             let statusCls = '';
             let actions = '';
-            if (i.used) {
-                status = '已使用';
+            const isUsed = list.every(x => x.used);
+            const isExpired = !isUsed && list.every(x => !x.active && x.expires_at);
+            if (isUsed) {
+                status = `已使用 ×${count}`;
                 statusCls = 'st-used';
-            } else if (i.expires_at && !i.active) {
-                status = '已过期';
+            } else if (isExpired) {
+                status = `已过期 ×${count}`;
                 statusCls = 'st-expired';
             } else {
-                if (i.expires_at) {
-                    status = `生效中 · 剩余 ${remainingDays(i.expires_at)} 天`;
-                    statusCls = 'st-active';
-                } else {
-                    status = '待使用';
-                    statusCls = 'st-active';
+                const firstActive = list.find(x => x.active);
+                if (firstActive) {
+                    if (firstActive.expires_at) {
+                        status = `生效中 · 剩余 ${remainingDays(firstActive.expires_at)} 天`;
+                        statusCls = 'st-active';
+                    } else {
+                        status = `待使用 ×${count}`;
+                        statusCls = 'st-active';
+                    }
                 }
-                // 改色类道具
+                // 改色类道具（选一条生效中的）
                 if (['comment_color', 'nickname_color', 'chat_bubble', 'particle_fx', 'profile_skin'].includes(i.item_key)) {
-                    actions += `<button data-act="color" data-id="${i.id}" data-key="${i.item_key}">🎨 更换样式</button>`;
+                    const activeOne = list.find(x => x.active);
+                    if (activeOne) actions += `<button data-act="color" data-id="${activeOne.id}" data-key="${i.item_key}">🎨 更换样式</button>`;
                 }
-                // 一次性道具
-                if (i.duration_days === null && !i.used && i.item_key !== 'checkin_fix') {
-                    actions += `<button data-act="use" data-id="${i.id}" data-key="${i.item_key}" data-name="${escapeHtml(i.name)}">⚡ 使用</button>`;
+                // 一次性道具使用（未使用的）
+                if (i.duration_days === null && !isUsed && i.item_key !== 'checkin_fix') {
+                    const activeOne = list.find(x => x.active);
+                    if (activeOne) actions += `<button data-act="use" data-id="${activeOne.id}" data-key="${i.item_key}" data-name="${escapeHtml(i.name)}">⚡ 使用</button>`;
                 }
-                if (i.item_key === 'checkin_fix') {
-                    actions += `<button data-act="checkin" data-id="${i.id}">📝 去补签</button>`;
+                if (i.item_key === 'checkin_fix' && !isUsed) {
+                    const activeOne = list.find(x => x.active);
+                    if (activeOne) actions += `<button data-act="checkin" data-id="${activeOne.id}">📝 去补签</button>`;
+                }
+                // 出售（未使用未过期的才能卖）
+                const sellable = list.filter(x => x.active);
+                if (sellable.length > 0) {
+                    actions += `<button data-act="sell" data-key="${i.item_key}" data-name="${escapeHtml(i.name)}" class="gray">💰 出售</button>`;
                 }
             }
             const meta = i.expires_at
-                ? `到期：${fmtTime(i.expires_at)}`
+                ? `到期：${fmtTime(i.expires_at)}${count > 1 ? `（最早）` : ''}`
                 : '永久有效（一次性道具）';
             return `<div class="bp-card" data-id="${i.id}">
+                <span class="bc-count">×${count}</span>
                 <div class="bc-icon">${i.icon || '📦'}</div>
                 <div class="bc-name">${escapeHtml(i.name)}</div>
                 <div class="bc-meta">${meta}</div>
@@ -218,9 +247,12 @@
         }
 
         let html = '';
-        if (active.length) html += `<div class="section-title" style="margin-top:8px;">🟢 生效中 / 待使用</div><div class="bp-grid">${active.map(cardHtml).join('')}</div>`;
-        if (used.length) html += `<div class="section-title" style="margin-top:20px;">⚪ 已使用</div><div class="bp-grid">${used.map(cardHtml).join('')}</div>`;
-        if (expired.length) html += `<div class="section-title" style="margin-top:20px;">🔴 已过期</div><div class="bp-grid">${expired.map(cardHtml).join('')}</div>`;
+        const activeCards = Object.keys(groups).map(k => cardHtml(groups[k], groups[k].active)).filter(Boolean).join('');
+        const usedCards = Object.keys(groups).map(k => cardHtml(groups[k], groups[k].used)).filter(Boolean).join('');
+        const expiredCards = Object.keys(groups).map(k => cardHtml(groups[k], groups[k].expired)).filter(Boolean).join('');
+        if (activeCards) html += `<div class="section-title" style="margin-top:8px;">🟢 生效中 / 待使用</div><div class="bp-grid">${activeCards}</div>`;
+        if (usedCards) html += `<div class="section-title" style="margin-top:20px;">⚪ 已使用</div><div class="bp-grid">${usedCards}</div>`;
+        if (expiredCards) html += `<div class="section-title" style="margin-top:20px;">🔴 已过期</div><div class="bp-grid">${expiredCards}</div>`;
         body.innerHTML = html;
 
         // 事件
@@ -236,11 +268,64 @@
                 } else if (act === 'color') {
                     openColorModal(btn.dataset.key, parseInt(id));
                 } else if (act === 'checkin') {
-                    // 跳到主页签到区（补签入口后续在签到处做）
                     await showMessage('提示', '补签功能将在签到页面开放');
+                } else if (act === 'sell') {
+                    openSellModal(btn.dataset.key, btn.dataset.name);
                 }
             };
         });
+    }
+
+    // ===== 出售弹窗（同种道具数量选择） =====
+    async function openSellModal(itemKey, itemName) {
+        const user = getCurrentUser();
+        const { data, error } = await supabaseClient.rpc('get_my_items', { p_user_id: user.id });
+        if (error || !data || !data.success) return;
+        // 可卖数量 + 单价80%
+        const sellable = (data.items || []).filter(i => i.item_key === itemKey && i.active);
+        const count = sellable.length;
+        if (count === 0) { await showMessage('提示', '没有可出售的道具'); return; }
+        // 查购买价
+        const { data: shopInfo } = await supabaseClient.from('shop_items').select('price').eq('key', itemKey).maybeSingle();
+        const unit = shopInfo ? Math.floor(shopInfo.price * 0.8) : 0;
+
+        const modal = document.createElement('div');
+        modal.className = 'custom-modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3>💰 出售「${escapeHtml(itemName)}」</h3>
+                <p style="margin: 12px 0; color:var(--count-text);">持有 ${count} 个 · 单价回收 ${unit} NB币（购买价80%）</p>
+                <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin: 12px 0;">
+                    <button id="sellMinus" style="background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); border-radius:50%; width:36px; height:36px; cursor:pointer; font-size:1.1rem;">−</button>
+                    <span id="sellQty" style="font-size:1.4rem; font-weight:800; color:var(--status-border); min-width:40px; text-align:center;">1</span>
+                    <button id="sellPlus" style="background:var(--nav-btn-bg); color:var(--nav-btn-text); border:1px solid var(--card-border); border-radius:50%; width:36px; height:36px; cursor:pointer; font-size:1.1rem;">+</button>
+                </div>
+                <p style="color:var(--count-text); font-size:0.9rem;">预计回收：<span id="sellTotal" style="color:#ff9800; font-weight:800;">${unit} NB币</span></p>
+                <div style="display:flex; gap:10px; justify-content:center;">
+                    <button id="sellOk" style="background:var(--nav-btn-hover-bg);">确认出售</button>
+                    <button id="sellCancel" style="background:#6c757d;">取消</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        let qty = 1;
+        const qtyEl = modal.querySelector('#sellQty');
+        const totalEl = modal.querySelector('#sellTotal');
+        const update = () => {
+            qtyEl.innerText = qty;
+            totalEl.innerText = (unit * qty) + ' NB币';
+        };
+        modal.querySelector('#sellMinus').onclick = () => { qty = Math.max(1, qty - 1); update(); };
+        modal.querySelector('#sellPlus').onclick = () => { qty = Math.min(count, qty + 1); update(); };
+        modal.querySelector('#sellCancel').onclick = () => modal.remove();
+        modal.querySelector('#sellOk').onclick = async () => {
+            modal.remove();
+            const res = await supabaseClient.rpc('sell_shop_item', { p_user_id: user.id, p_item_key: itemKey, p_quantity: qty });
+            const msg = res.error ? res.error.message : (res.data && res.data.message) || '';
+            await showMessage(res.error || !res.data || !res.data.success ? '出售失败' : '✅ 已出售', msg);
+            loadBackpack();
+        };
     }
 
     // ===== 改色弹窗 =====

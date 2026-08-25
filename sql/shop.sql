@@ -304,6 +304,66 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.use_checkin_fix(uuid, date) TO anon;
 
+-- ========== 8.5 出售道具（按购买价 80% 回收，同一道具可多张一起卖） ==========
+CREATE OR REPLACE FUNCTION public.sell_shop_item(p_user_id uuid, p_item_key text, p_quantity integer DEFAULT 1)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_item record;
+    v_qty integer := GREATEST(coalesce(p_quantity, 1), 1);
+    v_sold integer := 0;
+    v_refund bigint := 0;
+    v_ids bigint[];
+BEGIN
+    IF p_user_id IS NULL OR p_item_key IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', '参数错误');
+    END IF;
+
+    -- 收集该道具下可卖（未使用、未过期）的记录，按 id 升序取前 v_qty 条
+    SELECT array_agg(id) INTO v_ids FROM (
+        SELECT ui.id
+          FROM public.user_items ui
+         WHERE ui.user_id = p_user_id
+           AND ui.item_key = p_item_key
+           AND ui.used = false
+           AND (ui.expires_at IS NULL OR ui.expires_at > now())
+         ORDER BY ui.id
+         LIMIT v_qty
+    ) t;
+
+    IF v_ids IS NULL OR array_length(v_ids, 1) = 0 THEN
+        RETURN jsonb_build_object('success', false, 'message', '没有可出售的该道具');
+    END IF;
+    IF array_length(v_ids, 1) < v_qty THEN
+        RETURN jsonb_build_object('success', false, 'message',
+            format('可出售数量不足（当前仅 %s 个）', array_length(v_ids, 1)));
+    END IF;
+
+    -- 逐条计算退款（购买价 × 80%，向下取整）
+    FOR v_item IN
+        SELECT ui.id, s.price
+          FROM public.user_items ui
+          JOIN public.shop_items s ON s.key = ui.item_key
+         WHERE ui.id = ANY(v_ids)
+    LOOP
+        v_refund := v_refund + floor(v_item.price * 0.8);
+    END LOOP;
+
+    -- 删除并退款
+    DELETE FROM public.user_items WHERE id = ANY(v_ids);
+    UPDATE public.profiles SET nb_balance = nb_balance + v_refund WHERE id = p_user_id;
+
+    RETURN jsonb_build_object('success', true,
+        'message', format('已出售 %s 个道具，回收 %s NB币（购买价80%%）', array_length(v_ids, 1), v_refund),
+        'refund', v_refund, 'sold', array_length(v_ids, 1));
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.sell_shop_item(uuid, text, integer) TO anon;
+
 -- ========== 9. 自动续期（每天定时执行：到期前 24 小时余额充足则自动续费） ==========
 CREATE OR REPLACE FUNCTION public.renew_shop_items()
 RETURNS jsonb
