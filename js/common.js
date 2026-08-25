@@ -508,13 +508,13 @@ function uiHref(h) {
     try {
         src = (document.currentScript && document.currentScript.src) || '';
     } catch (e) {}
-    var scriptPath = 'js/ui-nav.js';
+    var scriptPath = 'js/ui-nav.js?v=20260825';
     if (src) {
         var i = src.lastIndexOf('/');
         if (i !== -1) {
             var dir = src.substring(0, i);
             var j = dir.lastIndexOf('/');
-            scriptPath = (j !== -1 ? dir.substring(0, j + 1) : dir + '/') + 'js/ui-nav.js';
+            scriptPath = (j !== -1 ? dir.substring(0, j + 1) : dir + '/') + 'js/ui-nav.js?v=20260825';
         }
     }
     var s = document.createElement('script');
