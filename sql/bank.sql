@@ -6,7 +6,7 @@
 --   2) 贷款：抵押贷（存款×80%，到期总利率10%）、信用贷（信誉分额度，12%，800+打9折）
 --   3) 信誉分：初始100，满分1000；按时还+5、逾期-15/天、成就+3、签到+2、评论+0.5(日上限2)
 --   4) 每天凌晨自动结算存款利息 + 处理到期贷款（pg_cron）
---   5) 防刷：活期每日存款上限 500 万
+--   5) 防刷：活期每日存款上限 1000 万
 -- ============================================================
 
 -- ========== 1. 银行账户表 ==========
@@ -120,7 +120,7 @@ $$;
 
 -- ========== 4. 存款 ==========
 
--- 活期存款（每日上限 500 万）
+-- 活期存款（每日上限 1000 万）
 CREATE OR REPLACE FUNCTION public.bank_deposit(p_user_id uuid, p_amount integer)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -141,14 +141,14 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', 'NB币余额不足');
     END IF;
 
-    -- 今日活期存款上限 500 万
+    -- 今日活期存款上限 1000 万
     SELECT coalesce(sum(amount), 0) INTO v_today_dep
       FROM public.bank_logs
      WHERE user_id = p_user_id AND type = 'deposit'
        AND (created_at AT TIME ZONE 'Asia/Shanghai')::date = v_today;
-    IF v_today_dep + p_amount > 5000000 THEN
+    IF v_today_dep + p_amount > 10000000 THEN
         RETURN jsonb_build_object('success', false, 'message',
-            '今日活期存款已达上限（500万/天）');
+            '今日活期存款已达上限（1000万/天）');
     END IF;
 
     SELECT * INTO v_acc FROM public.bank_accounts WHERE user_id = p_user_id;
