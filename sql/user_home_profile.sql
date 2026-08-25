@@ -34,14 +34,19 @@ BEGIN
                     JOIN public.titles t ON t.key = p.equipped_title_id
                     LEFT JOIN public.user_titles ut ON ut.title_key = t.key AND ut.user_id = p_user_id
                    WHERE p.id = p_user_id AND p.equipped_title_id IS NOT NULL),
-        -- 全部称号列表（含佩戴标记）
+        -- 全部称号列表（含佩戴标记；每个称号只取最高星级一条，避免历史重复数据）
         'titles_list', coalesce((
             SELECT jsonb_agg(jsonb_build_object(
                         'title_key', t.key, 'name', t.name, 'icon', t.icon,
                         'image_url', t.image_url, 'stars', ut.stars,
                         'equipped', (p.equipped_title_id = t.key))
                     ORDER BY ut.stars DESC, t.key)
-              FROM public.user_titles ut
+              FROM (
+                  SELECT DISTINCT ON (title_key) title_key, stars
+                    FROM public.user_titles
+                   WHERE user_id = p_user_id
+                   ORDER BY title_key, stars DESC
+              ) ut
               JOIN public.titles t ON t.key = ut.title_key
               LEFT JOIN public.profiles p ON p.id = p_user_id), '[]'::jsonb),
         -- 公司徽章
