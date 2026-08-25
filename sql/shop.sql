@@ -488,13 +488,38 @@ BEGIN
                           WHERE user_id = p_user_id AND item_key = 'profile_skin'
                             AND used = false AND expires_at > now()
                           ORDER BY expires_at DESC LIMIT 1),
-        -- 称号展示位（含用户选择的展示称号）
+        -- 称号展示位（含用户选择的展示称号 + 展示称号详情）
         'title_slot', (SELECT jsonb_build_object(
                             'count', count(*),
                             'chosen_title_key', (SELECT settings->>'chosen_title_key' FROM public.user_items
                                                   WHERE user_id = p_user_id AND item_key = 'title_slot'
                                                     AND used = false AND expires_at > now()
-                                                  ORDER BY expires_at DESC LIMIT 1))
+                                                  ORDER BY expires_at DESC LIMIT 1),
+                            'slot_title', coalesce(
+                                -- 1. 用户设置的展示称号（必须已拥有）
+                                (SELECT jsonb_build_object(
+                                            'title_key', t.key, 'name', t.name,
+                                            'image_url', t.image_url, 'icon', t.icon, 'stars', ut.stars)
+                                   FROM public.titles t
+                                   JOIN public.user_titles ut ON ut.title_key = t.key AND ut.user_id = p_user_id
+                                  WHERE t.key = (SELECT settings->>'chosen_title_key' FROM public.user_items
+                                                  WHERE user_id = p_user_id AND item_key = 'title_slot'
+                                                    AND used = false AND expires_at > now()
+                                                  ORDER BY expires_at DESC LIMIT 1)
+                                  LIMIT 1),
+                                -- 2. 回退：最高星的未佩戴称号
+                                (SELECT jsonb_build_object(
+                                            'title_key', t.key, 'name', t.name,
+                                            'image_url', t.image_url, 'icon', t.icon, 'stars', ut.stars)
+                                   FROM public.user_titles ut
+                                   JOIN public.titles t ON t.key = ut.title_key
+                                   LEFT JOIN public.profiles p ON p.id = p_user_id
+                                  WHERE ut.user_id = p_user_id
+                                    AND t.key <> coalesce(p.equipped_title_id, '')
+                                  ORDER BY ut.stars DESC, t.key
+                                  LIMIT 1)
+                            )
+                        )
                         FROM public.user_items
                         WHERE user_id = p_user_id AND item_key = 'title_slot'
                           AND used = false AND expires_at > now()),

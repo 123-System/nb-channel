@@ -1010,6 +1010,13 @@
         if (titleInfo && titleInfo._img) {
             titleTag = `<div class="comment-title"><img src="${titleInfo._img}" alt="${escapeHtml(titleInfo.name)}" title="点击查看称号大全" style="cursor:pointer;" onclick="location.href=uiHref('titles.html')" onerror="this.style.display='none'"><span class="comment-title-stars">称号：${escapeHtml(titleInfo.name)} · ${'★'.repeat(Math.min(titleInfo.stars || 1, 5))}</span></div>`;
         }
+        // 展示位称号（商店道具 title_slot，主页与评论区都展示第二个称号）
+        const fxSlot = (shopFxMap[node.user_id] && shopFxMap[node.user_id].slot_title) || null;
+        if (fxSlot && fxSlot.image_url) {
+            const base = window.location.origin + '/';
+            const sImg = /^https?:/.test(fxSlot.image_url) ? fxSlot.image_url : base + fxSlot.image_url;
+            titleTag += `<div class="comment-title"><img src="${sImg}" alt="" title="展示位称号" style="cursor:pointer;" onclick="location.href=uiHref('titles.html')" onerror="this.style.display='none'"><span class="comment-title-stars">展示位：${escapeHtml(fxSlot.name)} · ${'★'.repeat(Math.min(fxSlot.stars || 1, 5))}</span></div>`;
+        }
 
         let reportButton = '';
         if (currentUser) {
@@ -1662,7 +1669,7 @@
             }
         }
 
-        // ===== 商店道具效果：批量拉取本页作者（评论色/昵称色） =====
+        // ===== 商店道具效果：批量拉取本页作者（评论色/昵称色/展示位称号） =====
         shopFxMap = {};
         const fxUserIds = [...new Set(rows.map(r => r.user_id).filter(Boolean))];
         if (fxUserIds.length > 0) {
@@ -1672,7 +1679,8 @@
                     if (fx && fx.success) {
                         shopFxMap[uid] = {
                             comment_color: fx.comment_color || null,
-                            nickname_color: fx.nickname_color || null
+                            nickname_color: fx.nickname_color || null,
+                            slot_title: (fx.title_slot && fx.title_slot.slot_title) || null
                         };
                     }
                 } catch (e) { /* 忽略单个失败 */ }
