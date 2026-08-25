@@ -683,7 +683,8 @@ $$;
 GRANT EXECUTE ON FUNCTION public.consume_fee_discount(uuid) TO anon;
 
 -- ========== 14. 主页皮肤头图设置 ==========
--- 上传头图后更新 profile_skin 道具的 settings.bannerCREATE OR REPLACE FUNCTION public.set_profile_banner(p_user_id uuid, p_url text)
+-- 上传头图后更新 profile_skin 道具的 settings.banner
+CREATE OR REPLACE FUNCTION public.set_profile_banner(p_user_id uuid, p_url text)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
