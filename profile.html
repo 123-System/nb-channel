@@ -138,41 +138,74 @@
         .avatar-box .avatar-actions button { background: var(--nav-btn-hover-bg); color: white; border: none; border-radius: 30px; padding: 8px 18px; cursor: pointer; font-size: 0.9rem; }
         .avatar-box .avatar-actions input[type="file"] { display: none; }
         #avatarStatus { font-size: 0.8rem; color: var(--count-text); }
+        /* 主页头部卡 */
+        .home-header { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .home-header img { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 2px solid var(--card-border); background: var(--count-bg); }
+        .home-header-info { flex: 1; min-width: 200px; }
+        .home-username { font-size: 1.5rem; font-weight: 700; color: var(--status-border); }
+        .home-joined { font-size: 0.8rem; color: var(--count-text); margin-top: 4px; }
+        #homeBadges { margin-top: 6px; font-size: 0.85rem; display: flex; gap: 10px; flex-wrap: wrap; }
+        #homeTitle { margin-top: 6px; }
+        #homeTitle img { width: auto; height: 30px; border-radius: 6px; display: block; }
+        #homeTitle .comment-title-stars { font-size: 0.7rem; color: #ffb300; }
+        /* 统计条 */
+        .home-stats { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0 6px 0; }
+        .home-stats > div { flex: 1; min-width: 90px; background: var(--count-bg); border-radius: 18px; padding: 14px 8px; text-align: center; }
+        .home-stats span { display: block; font-size: 1.4rem; font-weight: 700; color: var(--status-border); }
+        .home-stats label { font-size: 0.8rem; color: var(--count-text); }
+        /* Tab */
+        .home-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 14px 0; }
+        .home-tab { background: var(--count-bg); color: var(--text-color); border: 1px solid var(--card-border); border-radius: 30px; padding: 8px 18px; cursor: pointer; font-size: 0.95rem; }
+        .home-tab.active { background: var(--nav-btn-hover-bg); color: white; border-color: var(--nav-btn-hover-bg); }
+        #homeTabContent { min-height: 60px; }
+        #homeTabContent .tab-item { padding: 12px 4px; border-bottom: 1px solid var(--card-border); font-size: 0.95rem; }
+        #homeTabContent .tab-item .tab-title { font-weight: 600; color: var(--text-color); }
+        #homeTabContent .tab-item .tab-meta { font-size: 0.8rem; color: var(--count-text); margin-top: 3px; }
+        #homeTabContent a { color: var(--status-border); text-decoration: none; }
         /* 称号面板（已迁移至独立页面 titles.html） */
     </style>
 </head>
 <body>
 <div class="profile-container">
-    <h1>📋 个人中心</h1>
-    <!-- 头像区 -->
-    <div class="info-card avatar-box">
+    <h1 id="pageTitle">👤 用户主页</h1>
+    <!-- 主页头部卡 -->
+    <div class="info-card home-header">
         <img id="avatarImg" src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2780%27%20height=%2780%27%3E%3Crect%20width=%2780%27%20height=%2780%27%20fill=%27%23b0bec5%27/%3E%3Ccircle%20cx=%2740%27%20cy=%2730%27%20r=%2715%27%20fill=%27%23eceff1%27/%3E%3Cpath%20d=%27M14%2072c4-14%2014-22%2026-22s22%208%2026%2022z%27%20fill=%27%23eceff1%27/%3E%3C/svg%3E" alt="头像">
-        <div class="avatar-actions">
+        <div class="home-header-info">
+            <div class="home-username" id="usernameDisplay">加载中...</div>
+            <div id="homeBadges"></div>
+            <div id="homeTitle"></div>
+            <div class="home-joined" id="joinedDisplay"></div>
+        </div>
+        <!-- 头像操作（仅本人可见） -->
+        <div class="avatar-actions" id="avatarActions" style="display:none;">
             <input type="file" id="avatarFile" accept="image/jpeg,image/png,image/gif,image/webp">
             <button id="avatarUploadBtn">📷 上传头像</button>
             <button id="avatarRemoveBtn" style="background:#6c757d;">🗑️ 移除头像</button>
             <span id="avatarStatus">支持 JPG/PNG/GIF/WebP，≤2MB</span>
         </div>
     </div>
-    <div id="userInfo" class="info-card">
-        <div class="info-item">
-            <span class="info-label">用户名</span>
-            <span class="info-value" id="usernameDisplay">加载中...</span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">NB币余额</span>
-            <span class="info-value" id="balanceDisplay">加载中...</span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">我的成就</span>
-            <span class="info-value"><a href="achievements.html" style="color:var(--status-border); text-decoration:none;">🏆 查看成就 →</a></span>
-        </div>
-        <div class="info-item" id="myCompanyDisplay" style="display:none;">
-            <span class="info-label">我的虚拟公司</span>
-            <span class="info-value" id="myCompanyName"></span>
-        </div>
+    <!-- 统计条（不显示金额类数据） -->
+    <div class="home-stats">
+        <div><span id="statTitles">--</span><label>称号</label></div>
+        <div><span id="statAch">--</span><label>成就</label></div>
+        <div><span id="statProducts">--</span><label>作品</label></div>
+        <div><span id="statComments">--</span><label>评论</label></div>
+        <div><span id="statCheckin">--</span><label>连续签到</label></div>
+        <div><span id="statFriends">--</span><label>好友</label></div>
     </div>
+    <!-- Tab 内容区 -->
+    <div class="home-tabs">
+        <button class="home-tab active" data-tab="products">🛍️ 作品</button>
+        <button class="home-tab" data-tab="company">🏢 公司</button>
+        <button class="home-tab" data-tab="comments">💬 评论</button>
+        <button class="home-tab" data-tab="achievements">🏆 成就</button>
+    </div>
+    <div id="homeTabContent"></div>
+    <div class="no-data" id="homeTabEmpty" style="display:none;">暂无内容</div>
 
+    <!-- ===== 以下为个人设置区（仅本人可见） ===== -->
+    <div id="settingsSection" style="display:none;">
     <h2>🎨 界面风格</h2>
     <div class="form-group" style="display:flex; gap:10px; flex-wrap:wrap;">
         <button id="uiStyleNew" style="flex:1; min-width:120px;">🆕 新版界面</button>
@@ -216,6 +249,7 @@
     <div class="back-link">
         <a href="index.html">← 返回首页</a>
     </div>
+    </div><!-- /settingsSection -->
 </div>
 
 <!-- 修改规则的模态框 -->
@@ -254,6 +288,9 @@
     let currentUser = null;
     let currentRules = [];
     let myCompany = null;
+    let viewUid = null;          // 查看的用户ID（?uid=xxx 时为他人的主页）
+    let isOwner = false;         // 是否本人浏览
+    let homeTab = 'products';    // 当前 Tab
 
     function showMessage(title, msg) {
         return new Promise((resolve) => {
@@ -288,11 +325,6 @@
             .maybeSingle();
         if (error || !data) return null;
         myCompany = data;
-        const displayDiv = document.getElementById('myCompanyDisplay');
-        if (displayDiv && myCompany) {
-            displayDiv.style.display = 'flex';
-            document.getElementById('myCompanyName').innerText = myCompany.company_name;
-        }
         return myCompany;
     }
 
@@ -340,31 +372,210 @@
     }
 
     async function loadUserInfo() {
-        const user = getCurrentUser();
-        if (!user) {
+        // 支持 ?uid=xxx 查看他人主页（无登录要求）
+        const qs = new URLSearchParams(window.location.search);
+        const uidParam = qs.get('uid');
+        const me = getCurrentUser();
+
+        if (uidParam) {
+            viewUid = uidParam;
+            isOwner = me && me.id === uidParam;
+            document.title = '用户主页 - NB频道';
+        } else if (me && me.id) {
+            viewUid = me.id;
+            isOwner = true;
+        } else {
+            // 未登录且无 uid：跳登录
             window.location.href = uiHref('login.html?redirect=') + encodeURIComponent(window.location.href);
             return;
         }
-        currentUser = user;
-        const { data, error } = await supabaseClient
+
+        // 本人浏览：显示设置区和头像操作；他人浏览：隐藏
+        document.getElementById('settingsSection').style.display = isOwner ? 'block' : 'none';
+        document.getElementById('avatarActions').style.display = isOwner ? 'flex' : 'none';
+        if (!isOwner) {
+            document.getElementById('pageTitle').innerText = '👤 用户主页';
+        }
+
+        // 拉取用户资料（不含金额字段）
+        const { data: profile, error: profErr } = await supabaseClient
             .from('profiles')
-            .select('username, nb_balance, avatar_url')
-            .eq('id', user.id)
-            .single();
-        if (error) {
-            document.getElementById('usernameDisplay').innerText = '获取失败';
-            document.getElementById('balanceDisplay').innerText = '--';
-        } else {
-            document.getElementById('usernameDisplay').innerText = data.username;
-            document.getElementById('balanceDisplay').innerText = data.nb_balance;
-            if (data.avatar_url) {
-                document.getElementById('avatarImg').src = data.avatar_url;
+            .select('id, username, avatar_url, created_at, is_banned, banned_reason')
+            .eq('id', viewUid)
+            .maybeSingle();
+        if (profErr || !profile) {
+            document.getElementById('usernameDisplay').innerText = '用户不存在';
+            return;
+        }
+        currentUser = isOwner ? me : null;   // 仅本人浏览时视为"已登录"
+
+        document.getElementById('usernameDisplay').innerText = profile.username;
+        if (profile.is_banned) {
+            document.getElementById('homeBadges').innerHTML = `<span style="color:#f44336;">🚫 该用户已被封禁（${escapeHtml(profile.banned_reason || '违规')}）</span>`;
+        }
+        if (profile.avatar_url) {
+            document.getElementById('avatarImg').src = profile.avatar_url;
+        }
+        const created = profile.created_at ? new Date(profile.created_at) : null;
+        document.getElementById('joinedDisplay').innerText = created
+            ? `注册于 ${created.getFullYear()}-${String(created.getMonth() + 1).padStart(2, '0')}-${String(created.getDate()).padStart(2, '0')}`
+            : '';
+
+        // 蓝标认证
+        const { data: vUsers } = await supabaseClient
+            .from('verified_users')
+            .select('user_id')
+            .eq('user_id', viewUid)
+            .maybeSingle();
+        if (vUsers) {
+            const badges = document.getElementById('homeBadges');
+            badges.insertAdjacentHTML('beforeend', '<span style="color:#00a1d6;">✅ 认证UP主</span>');
+        }
+
+        // 佩戴称号（横幅图）
+        const { data: titleRows } = await supabaseClient.rpc('get_user_title', { p_user_id: viewUid });
+        if (titleRows && titleRows.length > 0) {
+            const t = titleRows[0];
+            const base = window.location.origin + '/';
+            const img = /^https?:/.test(t.image_url || '') ? t.image_url : base + t.image_url;
+            document.getElementById('homeTitle').innerHTML =
+                `<div style="display:flex; align-items:center; gap:8px;">
+                    <img src="${img}" alt="${escapeHtml(t.name)}" style="height:30px; border-radius:6px;" onerror="this.style.display='none'">
+                    <span class="comment-title-stars">称号：${escapeHtml(t.name)} · ${'★'.repeat(Math.min(t.stars || 1, 5))}</span>
+                 </div>`;
+        }
+
+        // 公司徽章
+        const { data: company } = await supabaseClient
+            .from('user_companies')
+            .select('id, company_name, verified')
+            .eq('user_id', viewUid)
+            .maybeSingle();
+        if (company) {
+            const badge = company.verified
+                ? `<span style="color:#4caf50;">✅ 已认证虚拟公司：${escapeHtml(company.company_name)}</span>`
+                : `<span style="color:#f44336;">⚠️ 未认证虚拟公司：${escapeHtml(company.company_name)}</span>`;
+            document.getElementById('homeBadges').insertAdjacentHTML('beforeend', badge);
+        }
+
+        // 统计条（不显示金额）
+        const [t1, t2, t3, t4, t5, t6] = await Promise.all([
+            supabaseClient.from('user_titles').select('id', { count: 'exact', head: true }).eq('user_id', viewUid),
+            supabaseClient.from('user_achievements').select('id', { count: 'exact', head: true }).eq('user_id', viewUid),
+            supabaseClient.from('products').select('id', { count: 'exact', head: true }).eq('author_id', viewUid),
+            supabaseClient.from('comments').select('id', { count: 'exact', head: true }).eq('user_id', viewUid),
+            supabaseClient.from('user_checkins').select('consecutive_days').eq('user_id', viewUid).maybeSingle(),
+            supabaseClient.from('friendships').select('id', { count: 'exact', head: true }).or(`user_a.eq.${viewUid},user_b.eq.${viewUid}`)
+        ]);
+        document.getElementById('statTitles').innerText = t1.count || 0;
+        document.getElementById('statAch').innerText = t2.count || 0;
+        document.getElementById('statProducts').innerText = t3.count || 0;
+        document.getElementById('statComments').innerText = t4.count || 0;
+        document.getElementById('statCheckin').innerText = (t5.data && t5.data.consecutive_days) || 0;
+        document.getElementById('statFriends').innerText = t6.count || 0;
+
+        // 头像上传（仅本人）
+        if (isOwner) initAvatarUpload();
+
+        // Tab 内容
+        document.querySelectorAll('.home-tab').forEach(btn => {
+            btn.onclick = () => switchHomeTab(btn.dataset.tab);
+        });
+        await loadHomeTab(homeTab);
+
+        // 个人设置区数据（仅本人）
+        if (isOwner) {
+            await loadMyCompany();
+            await loadAutoRules();
+            await loadSupporters();
+        }
+    }
+
+    // ===== 主页 Tab =====
+    function switchHomeTab(tab) {
+        homeTab = tab;
+        document.querySelectorAll('.home-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+        loadHomeTab(tab);
+    }
+
+    async function loadHomeTab(tab) {
+        const content = document.getElementById('homeTabContent');
+        const empty = document.getElementById('homeTabEmpty');
+        content.innerHTML = '<div class="no-data">加载中...</div>';
+        empty.style.display = 'none';
+        let html = '';
+        if (tab === 'products') {
+            const { data, error } = await supabaseClient
+                .from('products')
+                .select('id, title, price, downloads, created_at')
+                .eq('author_id', viewUid)
+                .order('created_at', { ascending: false })
+                .limit(20);
+            if (!error && data && data.length > 0) {
+                html = data.map(p => {
+                    const d = new Date(p.created_at);
+                    return `<div class="tab-item">
+                        <a class="tab-title" href="${uiHref('product_share.html')}" onclick="return false;">${escapeHtml(p.title)}</a>
+                        <div class="tab-meta">下载 ${p.downloads || 0} · ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}</div>
+                    </div>`;
+                }).join('');
+            }
+        } else if (tab === 'company') {
+            const { data: comp, error } = await supabaseClient
+                .from('user_companies')
+                .select('id, company_name, verified, created_at')
+                .eq('user_id', viewUid)
+                .maybeSingle();
+            if (!error && comp) {
+                const d = comp.created_at ? new Date(comp.created_at) : null;
+                html = `<div class="tab-item">
+                    <div class="tab-title">🏢 ${escapeHtml(comp.company_name)}</div>
+                    <div class="tab-meta">${comp.verified ? '✅ 已认证' : '⚠️ 未认证'}${d ? ' · 成立于 ' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') : ''}</div>
+                </div>`;
+            }
+        } else if (tab === 'comments') {
+            const { data, error } = await supabaseClient
+                .from('comments')
+                .select('id, content, created_at')
+                .eq('user_id', viewUid)
+                .order('created_at', { ascending: false })
+                .limit(20);
+            if (!error && data && data.length > 0) {
+                html = data.map(c => {
+                    const d = new Date(c.created_at);
+                    return `<div class="tab-item">
+                        <div class="tab-title">${escapeHtml((c.content || '').slice(0, 60))}</div>
+                        <div class="tab-meta">${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}</div>
+                    </div>`;
+                }).join('');
+            }
+        } else if (tab === 'achievements') {
+            const { data, error } = await supabaseClient
+                .from('user_achievements')
+                .select('achievement_key')
+                .eq('user_id', viewUid);
+            if (!error && data && data.length > 0) {
+                const keys = data.map(a => a.achievement_key);
+                const { data: defs } = await supabaseClient
+                    .from('achievements')
+                    .select('key, name, icon')
+                    .in('key', keys);
+                const defMap = {};
+                (defs || []).forEach(d => { defMap[d.key] = d; });
+                html = keys.map(k => {
+                    const d = defMap[k] || {};
+                    return `<div class="tab-item">
+                        <span class="tab-title">${d.icon || '🏆'} ${escapeHtml(d.name || k)}</span>
+                    </div>`;
+                }).join('');
             }
         }
-        initAvatarUpload();
-        await loadMyCompany();
-        await loadAutoRules();
-        await loadSupporters();
+        if (html) {
+            content.innerHTML = html;
+        } else {
+            content.innerHTML = '';
+            empty.style.display = 'block';
+        }
     }
 
     // ========== 头像上传 ==========
