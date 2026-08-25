@@ -509,7 +509,7 @@
             '<div class="stat-item"><div class="num">10w+</div><div class="label">B站粉丝</div></div>' +
             '<div class="stat-item"><div class="num">11</div><div class="label">友商官网</div></div>' +
             '<div class="stat-item"><div class="num">' + days + ' 天</div><div class="label">建站天数</div></div>' +
-            '<div class="stat-item"><div class="num">9</div><div class="label">核心功能</div></div>');
+            '<div class="stat-item"><div class="num">11</div><div class="label">核心功能</div></div>');
 
         // 5. 功能卡片
         var featureGrid = document.createElement('div');
@@ -523,7 +523,9 @@
             '<a class="feature-card" href="messages.html"><div class="f-icon">🔔</div><div class="f-name">消息中心</div><div class="f-desc">评论回复、点赞与私信通知</div><div class="f-go">去看看 →</div></a>' +
             '<a class="feature-card" href="titles.html"><div class="f-icon">🏅</div><div class="f-name">称号</div><div class="f-desc">12 种称号，达成条件自动解锁升级</div><div class="f-go">去看看 →</div></a>' +
             '<a class="feature-card" href="tools.html"><div class="f-icon">🔬</div><div class="f-name">化学工具</div><div class="f-desc">周期表、摩尔质量与方程式配平</div><div class="f-go">去使用 →</div></a>' +
-            '<a class="feature-card" href="bank.html"><div class="f-icon">🏦</div><div class="f-name">NB银行</div><div class="f-desc">存钱有利息，贷款可救急，信誉分定额度</div><div class="f-go">去存钱 →</div></a>');
+            '<a class="feature-card" href="bank.html"><div class="f-icon">🏦</div><div class="f-name">NB银行</div><div class="f-desc">存钱有利息，贷款可救急，信誉分定额度</div><div class="f-go">去存钱 →</div></a>' +
+            '<a class="feature-card" href="shop.html"><div class="f-icon">🛍️</div><div class="f-name">NB商店</div><div class="f-desc">用 NB币买道具：颜色、特效、称号位</div><div class="f-go">去逛逛 →</div></a>' +
+            '<a class="feature-card" href="backpack.html"><div class="f-icon">🎒</div><div class="f-name">我的背包</div><div class="f-desc">管理道具：使用、改色、出售、续期</div><div class="f-go">去看看 →</div></a>');
 
         // 6. 友商网格（与预览版一致）+ 隐藏原版友商文字卡
         var friendGrid = document.createElement('div');
