@@ -361,7 +361,7 @@
         const modal = document.createElement('div');
         modal.className = 'custom-modal';
         modal.style.display = 'flex';
-        const lines = rules.map(r => `<p style="text-align:left; font-size:0.9rem; line-height:1.8; color:var(--text-color); margin:6px 0;">${escapeHtml(r)}</p>`).join('');
+        const lines = rules.map(r => `<p style="text-align:left; font-size:0.9rem; line-height:1.8; color:var(--text-color); margin:6px 0;">${escapeHtml(r)}</p>`);
         modal.innerHTML = `
             <div class="modal-content" style="max-width:440px; text-align:left;">
                 <h3 style="text-align:center;">📖 ${escapeHtml((RULES[itemKey] && RULES[itemKey][0]) || '使用规则')}</h3>
