@@ -217,19 +217,22 @@ BEGIN
                 SELECT jsonb_build_object(
                            'type', 'product',
                            'text', '发布了作品《' || title || '》',
-                           'ts', created_at)
+                           'ts', created_at) AS x,
+                       created_at AS ts
                   FROM public.products WHERE author_id = p_user_id
                 UNION ALL
                 SELECT jsonb_build_object(
                            'type', 'comment',
                            'text', '发表了评论：' || left(content, 40),
-                           'ts', created_at)
+                           'ts', created_at) AS x,
+                       created_at AS ts
                   FROM public.comments WHERE user_id = p_user_id
                 UNION ALL
                 SELECT jsonb_build_object(
                            'type', 'title',
                            'text', '解锁称号：' || t.name,
-                           'ts', ut.unlocked_at)
+                           'ts', ut.unlocked_at) AS x,
+                       ut.unlocked_at AS ts
                   FROM public.user_titles ut
                   JOIN public.titles t ON t.key = ut.title_key
                  WHERE ut.user_id = p_user_id
@@ -237,7 +240,8 @@ BEGIN
                 SELECT jsonb_build_object(
                            'type', 'achievement',
                            'text', '获得成就：' || a.name,
-                           'ts', ua.claimed_at)
+                           'ts', ua.claimed_at) AS x,
+                       ua.claimed_at AS ts
                   FROM public.user_achievements ua
                   LEFT JOIN public.achievements a ON a.key = ua.achievement_key
                  WHERE ua.user_id = p_user_id
@@ -245,10 +249,11 @@ BEGIN
                 SELECT jsonb_build_object(
                            'type', 'checkin',
                            'text', '签到打卡',
-                           'ts', (cr.check_in_date::timestamptz + interval '12 hours'))
+                           'ts', (cr.check_in_date::timestamptz + interval '12 hours')) AS x,
+                       (cr.check_in_date::timestamptz + interval '12 hours') AS ts
                   FROM public.check_in_records cr
                  WHERE cr.user_id = p_user_id
-              ) x
+              ) t
             ORDER BY ts DESC LIMIT 30), '[]'::jsonb)
     ) INTO v_result;
 
