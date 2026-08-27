@@ -854,9 +854,22 @@
         var isHome = !!document.querySelector('.video-container');
         if (isBeta && isHome) {
             // 测试版首页：高级感官网布局（登录区保留，其余全部接管）
-            loadBetaCss();
-            bindNavAuth();
-            injectBetaHome();
+            try {
+                loadBetaCss();
+                bindNavAuth();
+                injectBetaHome();
+            } catch (e) {
+                // beta 注入失败：降级为新UI，绝不白屏
+                loadPremiumCss();
+                injectMouseFx();
+                injectOrbs();
+                bindNavAuth();
+                if (document.querySelector('.nav-container')) {
+                    replaceNav();
+                }
+                injectHomeHero();
+                injectBanner();
+            }
         } else {
             // 新UI（默认）/ 测试版其他页面 / 经典模式（各注入函数内部自动跳过）
             loadPremiumCss();
