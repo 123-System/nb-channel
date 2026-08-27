@@ -268,6 +268,7 @@
 }
 .comment:hover { box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 16px 32px -14px rgba(0,161,214,0.25); transform: translateY(-1px); }
 .comment img, .comment-meta img { border-radius: 50%; }
+.comment .comment-title img { border-radius: 6px; }
 .comment-author { font-weight: 700; }
 .comment-time { font-size: 0.78rem; }
 .comment-actions button, .comment-reactions button, .sort-btn, .toggle-btn, .report-btn, .reply-btn, .delete-btn, .apology-btn {
