@@ -374,12 +374,14 @@
         }, 3500);
     } catch (e) {}
 })();
-</script><script src="js/common.js?v=20260828"></script><script src="js/ui-nav.js?v=20260828"></script>
+</script><script src="js/common.js?v=20260828"></script><script src="js/ui-nav.js?v=20260829"></script>
 <script>
     // ========== 幸运转盘 ==========
     const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
-    const lotteryClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // 全页复用同一个 supabase 客户端（避免多实例共享 auth 存储键导致 GoTrueClient 警告）
+    window.__nbSupabase = window.__nbSupabase || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const lotteryClient = window.__nbSupabase;
 
     const LOTTERY_SECTORS = [
         { name: '谢谢惠顾', color: '#95a5a6' },
@@ -627,7 +629,8 @@
     (async function initUserArea() {
         const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        window.__nbSupabase = window.__nbSupabase || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.__nbSupabase;
         const balanceSpan = document.getElementById('balanceDisplay');
         const authBtn = document.getElementById('authButton');
         const profileBtn = document.getElementById('profileBtn');
