@@ -856,6 +856,8 @@
                     if (!raw) return;
                     var track = annBox.querySelector('.ba-track');
                     if (!track) return;
+                    // 先显示再测量:display:none 状态下 offsetWidth 恒为 0,滚动动画无法建立
+                    annBox.style.display = 'flex';
                     var one = '<span class="ba-item">' + betaLinkify(betaEscapeHtml(raw)) + '</span>';
                     track.innerHTML = one;
                     var item = track.querySelector('.ba-item');
@@ -867,11 +869,19 @@
                         var all = '';
                         for (var ci = 0; ci < copies; ci++) all += '<span class="ba-item">' + betaLinkify(betaEscapeHtml(raw)) + '</span>';
                         track.innerHTML = all;
-                        track.style.setProperty('--ba-shift', '-' + itemW + 'px');
                         var dur = Math.max(8, itemW / 45);
-                        track.style.animation = 'baMarquee ' + dur + 's linear infinite';
+                        if (track.animate) {
+                            // Web Animations API:最稳的无缝滚动(不依赖@keyframes/var)
+                            track.animate(
+                                [{ transform: 'translateX(0)' }, { transform: 'translateX(-' + itemW + 'px)' }],
+                                { duration: dur * 1000, iterations: Infinity, easing: 'linear' }
+                            );
+                        } else {
+                            // 降级:CSS keyframes(位移写入自定义属性)
+                            track.style.setProperty('--ba-shift', '-' + itemW + 'px');
+                            track.style.animation = 'baMarquee ' + dur + 's linear infinite';
+                        }
                     }
-                    annBox.style.display = 'flex';
                 })
                 .catch(function () {});
         }
