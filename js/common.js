@@ -397,42 +397,10 @@ function fallbackCopy() {
 })();
 
 // ==========================================================
-// 界面版本（新版/旧版）：后端存储偏好 + 本地缓存，默认新版
-// ==========================================================
-function getUIVersion() {
-    // -new 文件强制新版（页面本身即新版版式）
-    var page = (location.pathname.split('/').pop() || '').toLowerCase();
-    if (page.indexOf('-new.html') !== -1) return 'new';
-    return localStorage.getItem('nb_ui') === 'old' ? 'old' : 'new';
-}
-
-function setUIVersion(v) {
-    var ver = v === 'old' ? 'old' : 'new';
-    localStorage.setItem('nb_ui', ver);
-    // 登录用户同时写后端（换设备/浏览器也保持偏好）
-    try {
-        var stored = JSON.parse(localStorage.getItem('nb_user'));
-        if (stored && stored.id) {
-            fetch('https://pbaafgjkwdbwcmsikcmg.supabase.co/rest/v1/rpc/set_ui_version', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    apikey: 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg',
-                    Authorization: 'Bearer sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg'
-                },
-                body: JSON.stringify({ p_user_id: stored.id, p_version: ver })
-            }).catch(function () {});
-        }
-    } catch (e) {}
-}
-
-// ==========================================================
-// uiHref：站内链接转 -new 版本（仅在新版文件内生效，旧版文件原样返回）
+// uiHref：站内链接（纯新 UI，无 -new 版本，原样返回）
 // ==========================================================
 function uiHref(h) {
-    var page = (location.pathname.split('/').pop() || '').toLowerCase();
-    if (page.indexOf('-new.html') === -1) return h;
-    return String(h).replace(/\.html(?=[?#]|$)/, '-new.html');
+    return h;
 }
 
 // 新版文件内：拦截所有站内链接点击，直接跳 -new 版本（消除"先跳旧版再重定向"的闪跳）

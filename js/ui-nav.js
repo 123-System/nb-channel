@@ -9,10 +9,8 @@
 // ============================================================
 (function () {
     function getVer() {
-        // -new 文件本身即新版版式，强制新版（不受本地偏好影响）
-        var page = (location.pathname.split('/').pop() || '').toLowerCase();
-        if (page.indexOf('-new.html') !== -1) return 'new';
-        return typeof getUIVersion === 'function' ? getUIVersion() : 'new';
+        // 纯新 UI：永远返回 new
+        return 'new';
     }
 
     // 在新版文件中，站内链接自动指向 -new 版本（避免跳回旧版再被重定向）
