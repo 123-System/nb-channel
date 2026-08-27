@@ -670,12 +670,34 @@
         }
         injectHomeHero();   // 首页：注入完整官网效果（= preview/index.html）
         injectBanner();     // 其他页面：注入 Hero 横幅（已有 .hero 的页面自动跳过）
+        injectClassicHeader();   // 经典模式：注入旧版网站大标题（📺 NB频道官网 + UP主）
         // 滚动渐显：等首屏元素就位后观察
         setTimeout(injectReveal, 50);
         // ===== 新 UI 注入完成：解除旧 UI 隐藏（防闪现 FOUC） =====
         document.documentElement.classList.remove('ui-boot-new');
         var bootHide = document.getElementById('uiBootHide');
         if (bootHide) bootHide.remove();
+    }
+
+    // 经典模式：在每个页面顶部注入旧版网站大标题（📺 NB频道官网 + UP主：NB搞事局）
+    function injectClassicHeader() {
+        if (!document.documentElement.classList.contains('classic')) return;
+        if (document.getElementById('classicSiteHeader')) return;
+        // 首页经典模式保留旧版完整头部（含大标题+UP主），跳过注入避免重复
+        if (document.querySelector('.video-container')) return;
+        var container = document.querySelector('.container') ||
+                        document.querySelector('.profile-container') ||
+                        document.querySelector('.title-container') ||
+                        document.querySelector('.shop-container') ||
+                        document.querySelector('.bp-container') ||
+                        document.body;
+        var hd = document.createElement('div');
+        hd.id = 'classicSiteHeader';
+        hd.style.cssText = 'text-align:center; margin:0 0 20px 0;';
+        hd.innerHTML =
+            '<h1 style="margin:0 0 4px; font-size:1.9rem; font-weight:700; color:var(--status-border, #00a1d6);">📺 NB频道官网</h1>' +
+            '<div style="font-size:1rem; color:var(--count-text, #666);">UP主：NB搞事局</div>';
+        container.insertBefore(hd, container.firstChild);
     }
 
     // 旧版初始化：旧版页面无需任何注入
