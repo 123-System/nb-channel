@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>页面重定向中 - NB频道</title>
+    <script>
+        // GitHub Pages 404 兜底：把 -new 旧链接重定向到新版单文件
+        (function () {
+            var path = location.pathname;
+            var file = path.split('/').pop() || '';
+            var target = null;
+            // bank-new.html → bank.html
+            if (/-new\.html$/i.test(file)) {
+                target = file.replace(/-new\.html$/i, '.html');
+            } else if (file === 'index-preview.html') {
+                target = 'index.html';
+            }
+            if (target) {
+                // 保留 query/hash
+                location.replace(target + location.search + location.hash);
+            } else {
+                location.replace('index.html');
+            }
+        })();
+    </script>
+</head>
+<body style="font-family:sans-serif; text-align:center; padding:60px 20px; background:#f5f7fa; color:#333;">
+    <h2>🔄 正在跳转到新版页面...</h2>
+    <p>如果长时间未跳转，<a href="index.html" style="color:#00a1d6;">点此返回首页</a></p>
+</body>
+</html>

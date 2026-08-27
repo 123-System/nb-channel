@@ -1,0 +1,4 @@
+# Cloudflare Pages 重定向规则
+# 旧版 -new 链接 → 新版单文件（301 永久重定向）
+
+/*-new.html  /:splat.html  301
