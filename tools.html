@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -12,7 +12,9 @@
 (function () {
     try {
         // 经典模式(可选):localStorage nb_classic=1 时加 classic 类(第一帧前生效,零闪跳)
-        if (localStorage.getItem('nb_classic') === '1') document.documentElement.classList.add('classic');
+        var m = localStorage.getItem('nb_ui_mode');
+        if (m === 'classic' || (m !== 'beta' && localStorage.getItem('nb_classic') === '1')) document.documentElement.classList.add('classic');
+        else if (m === 'beta') document.documentElement.classList.add('beta');
         // 纯新UI:隐藏 body,等待 ui-nav.js 注入完成后解除(首帧即完整新UI,零闪跳)
         document.documentElement.classList.add('ui-boot-new');
         var st = document.createElement('style');
@@ -26,8 +28,8 @@
         }, 3500);
     } catch (e) {}
 })();
-</script><script src="js/common.js?v=20260827"></script>
-    <script src="js/ui-nav.js?v=20260827"></script>
+</script><script src="js/common.js?v=20260828"></script>
+    <script src="js/ui-nav.js?v=20260828"></script>
     <style>
         body { padding: 40px 20px; background: var(--bg-color); }
         .tools-container { max-width: 1100px; margin: 0 auto; }

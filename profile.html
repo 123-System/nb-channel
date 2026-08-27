@@ -12,7 +12,9 @@
 (function () {
     try {
         // 经典模式(可选):localStorage nb_classic=1 时加 classic 类(第一帧前生效,零闪跳)
-        if (localStorage.getItem('nb_classic') === '1') document.documentElement.classList.add('classic');
+        var m = localStorage.getItem('nb_ui_mode');
+        if (m === 'classic' || (m !== 'beta' && localStorage.getItem('nb_classic') === '1')) document.documentElement.classList.add('classic');
+        else if (m === 'beta') document.documentElement.classList.add('beta');
         // 纯新UI:隐藏 body,等待 ui-nav.js 注入完成后解除(首帧即完整新UI,零闪跳)
         document.documentElement.classList.add('ui-boot-new');
         var st = document.createElement('style');
@@ -26,8 +28,8 @@
         }, 3500);
     } catch (e) {}
 })();
-</script><script src="js/common.js?v=20260827"></script>
-    <script src="js/ui-nav.js?v=20260827"></script>
+</script><script src="js/common.js?v=20260828"></script>
+    <script src="js/ui-nav.js?v=20260828"></script>
     <style>
         body {
             padding: 40px 20px;
@@ -263,6 +265,7 @@
     <div class="form-group" style="display:flex; gap:10px; flex-wrap:wrap;">
         <button id="styleNewBtn" style="flex:1; min-width:120px;">✨ 新潮模式</button>
         <button id="styleClassicBtn" style="flex:1; min-width:120px; background:#6c757d;">📄 经典模式</button>
+        <button id="styleBetaBtn" style="flex:1; min-width:120px; background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:#fff;">🧪 测试版UI</button>
         <div style="width:100%; font-size:0.8rem; color:var(--count-text);" id="styleHint"></div>
     </div>
 
@@ -1215,20 +1218,36 @@
     document.getElementById('updateUsernameBtn').addEventListener('click', updateUsername);
     document.getElementById('updatePasswordBtn').addEventListener('click', updatePassword);
 
-    // ===== 界面风格切换（新潮 / 经典） =====
+    // ===== 界面风格切换（新潮 / 经典 / 测试版UI） =====
+    function getUiMode() {
+        const m = localStorage.getItem('nb_ui_mode');
+        if (m === 'classic' || m === 'beta') return m;
+        if (localStorage.getItem('nb_classic') === '1') return 'classic';
+        return 'new';
+    }
+    function setUiMode(m) {
+        localStorage.setItem('nb_ui_mode', m);
+        if (m === 'classic') localStorage.setItem('nb_classic', '1');
+        else localStorage.removeItem('nb_classic');
+        location.reload();
+    }
     function refreshStyleBtns() {
-        const classic = localStorage.getItem('nb_classic') === '1';
+        const mode = getUiMode();
         const newBtn = document.getElementById('styleNewBtn');
         const oldBtn = document.getElementById('styleClassicBtn');
+        const betaBtn = document.getElementById('styleBetaBtn');
         const hint = document.getElementById('styleHint');
-        if (newBtn) newBtn.style.outline = classic ? 'none' : '3px solid #00a1d6';
-        if (oldBtn) oldBtn.style.outline = classic ? '3px solid #00a1d6' : 'none';
-        if (hint) hint.innerText = classic ? '当前使用：经典模式（旧版风格）' : '当前使用：新潮模式（毛玻璃官网风）';
+        if (newBtn) newBtn.style.outline = mode === 'new' ? '3px solid #00a1d6' : 'none';
+        if (oldBtn) oldBtn.style.outline = mode === 'classic' ? '3px solid #00a1d6' : 'none';
+        if (betaBtn) betaBtn.style.outline = mode === 'beta' ? '3px solid #00a1d6' : 'none';
+        if (hint) hint.innerText = mode === 'classic' ? '当前使用：经典模式（旧版风格）' : (mode === 'beta' ? '当前使用：测试版UI（高级感官网，仅首页生效，非最终版）' : '当前使用：新潮模式（毛玻璃官网风）');
     }
     const styleNewBtn = document.getElementById('styleNewBtn');
     const styleClassicBtn = document.getElementById('styleClassicBtn');
-    if (styleNewBtn) styleNewBtn.onclick = () => { localStorage.setItem('nb_classic', '0'); location.reload(); };
-    if (styleClassicBtn) styleClassicBtn.onclick = () => { localStorage.setItem('nb_classic', '1'); location.reload(); };
+    const styleBetaBtn = document.getElementById('styleBetaBtn');
+    if (styleNewBtn) styleNewBtn.onclick = () => setUiMode('new');
+    if (styleClassicBtn) styleClassicBtn.onclick = () => setUiMode('classic');
+    if (styleBetaBtn) styleBetaBtn.onclick = () => setUiMode('beta');
     refreshStyleBtns();
 
     loadUserInfo();

@@ -659,18 +659,217 @@
         }
     }
 
+    // ===== 测试版 UI（beta）：加载 css/beta.css（仅首页触发） =====
+    function loadBetaCss() {
+        if (document.getElementById('uiBetaCss')) return;
+        var link = document.createElement('link');
+        link.id = 'uiBetaCss';
+        link.rel = 'stylesheet';
+        link.href = 'css/beta.css?v=20260828';
+        document.head.appendChild(link);
+    }
+
+    // ===== 测试版 UI（beta）：首页注入高级感官网布局（仅首页，其他页面保持新UI） =====
+    function injectBetaHome() {
+        var vc = document.querySelector('.video-container');
+        if (!vc) return;   // 仅首页
+        var container = document.querySelector('.container') || document.body;
+        // 1. 隐藏原版顶部标题与 UP主信息（内容由 hero 承担）
+        var h1 = container.querySelector(':scope > h1');
+        if (h1) h1.style.display = 'none';
+        var ai = document.getElementById('authorInfo');
+        if (ai) ai.style.display = 'none';
+        // 2. 取出 LOGO 视频（移入 beta Hero）
+        var logoVideo = document.getElementById('logoVideo');
+        if (logoVideo) logoVideo.parentNode.removeChild(logoVideo);
+        // 3. 隐藏旧首页内容（保留右上角登录区 authArea）
+        var kids = Array.prototype.slice.call(container.children);
+        kids.forEach(function (k) {
+            if (k.id === 'authArea') return;
+            k.style.display = 'none';
+        });
+        // 4. 隐藏 container 外的旧版权页脚与旧浮动按钮
+        var sib = container.nextElementSibling;
+        while (sib && sib.tagName !== 'SCRIPT') {
+            sib.style.display = 'none';
+            sib = sib.nextElementSibling;
+        }
+        var fixed = document.querySelector('.fixed-buttons');
+        if (fixed) fixed.style.display = 'none';
+        // 5. 注入 beta 首页（导航 → Hero → 数据条 → 理念 → 功能 → 视频 → 友商 → CTA → 页脚）
+        var wrap = document.createElement('div');
+        wrap.innerHTML =
+            '<nav class="nav">' +
+                '<a class="nav-logo" href="#"><span class="dot"></span>NB频道</a>' +
+                '<div class="nav-menu">' +
+                    '<a href="#" class="active">首页</a>' +
+                    '<a href="videos.html">视频</a>' +
+                    '<a href="about.html">关于</a>' +
+                    '<a href="changelog.html">更新日志</a>' +
+                    '<a href="product.html">我的产品</a>' +
+                    '<a href="APP.html">软件/APP</a>' +
+                    '<a href="#friends">友商</a>' +
+                '</div>' +
+                '<a class="nav-cta" href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">⭐ 关注 B站</a>' +
+            '</nav>' +
+            '<header class="hero">' +
+                '<div class="hero-inner">' +
+                    '<span class="hero-badge">🏢 虚拟公司 · 📺 10万+粉丝 · 🧪 化学·物理·作死</span>' +
+                    '<h1>热爱理科与<span class="grad">作死</span>的<br>UP主官方网站</h1>' +
+                    '<p>NB频道，全名 NoBook 频道——一个由"NB搞事局"建立的虚拟公司。分享有趣的化学、物理实验与日常作死小技巧。</p>' +
+                    '<div class="hero-btns">' +
+                        '<a class="hero-btn primary" href="videos.html">🎬 看视频</a>' +
+                        '<a class="hero-btn ghost" href="comments-beta.html">💬 进评论区</a>' +
+                    '</div>' +
+                    '<div class="hero-video"></div>' +
+                '</div>' +
+                '<div class="hero-scroll">▾</div>' +
+                '<div class="hero-fade"></div>' +
+            '</header>' +
+            '<div class="stats">' +
+                '<div class="stat"><div class="num">10w<small>+</small></div><div class="label">B站粉丝</div></div>' +
+                '<div class="stat"><div class="num">11</div><div class="label">友商官网</div></div>' +
+                '<div class="stat"><div class="num" id="siteDays">--</div><div class="label">建站天数</div></div>' +
+                '<div class="stat"><div class="num">11</div><div class="label">核心功能</div></div>' +
+            '</div>' +
+            '<section class="section" id="about">' +
+                '<div class="about-grid">' +
+                    '<div class="about-text reveal">' +
+                        '<span class="section-eyebrow">About Us</span>' +
+                        '<h2>一家认真搞笑的<br><span class="grad">虚拟公司</span></h2>' +
+                        '<p>NB频道，全名 <b>NoBook 频道</b>，是 UP主「NB搞事局」创立的虚拟公司。我们一边做化学物理实验、一边经营着属于所有人的数字世界——有股票、有银行、有商店，还有数不清的快乐。</p>' +
+                        '<p>我们把「搞事」当作一门严肃的事业：每一个实验都认真讲原理，每一笔虚拟交易都认真清算，每一位用户，都是公司的股东与伙伴。</p>' +
+                        '<div class="about-sign">—— NB搞事局<span>创始人 & 唯一的正式员工</span></div>' +
+                        '<div class="about-tags">' +
+                            '<span class="tag">🏢 成立 <b>2026.02</b></span>' +
+                            '<span class="tag">👤 创始人 <b>NB搞事局</b></span>' +
+                            '<span class="tag">🏷️ 性质 <b>虚拟公司 · 粉丝全资持股</b></span>' +
+                            '<span class="tag">📍 总部 <b>地球 · 网络</b></span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="about-cards">' +
+                        '<div class="about-card reveal"><div class="ico">🎯</div><div><h4>使命<em>Mission</em></h4><p>让理科变得好玩——把枯燥的公式变成有趣的实验，把危险的操作变成有分寸的科普。</p></div></div>' +
+                        '<div class="about-card reveal"><div class="ico">🔭</div><div><h4>愿景<em>Vision</em></h4><p>成为中文互联网上最快乐的理科社区——虚拟但认真，真实且有趣，把「作死」玩成科学与艺术。</p></div></div>' +
+                        '<div class="about-card reveal"><div class="ico">💎</div><div><h4>价值观<em>Values</em></h4><p>好奇 · 安全 · 认真 · 好玩——好奇心驱动探索，安全永远是底线，虚拟经济绝不含糊，快乐是最终目的。</p></div></div>' +
+                    '</div>' +
+                '</div>' +
+            '</section>' +
+            '<section class="section">' +
+                '<div class="section-head reveal">' +
+                    '<span class="section-eyebrow">Features</span>' +
+                    '<h2>🚀 核心功能</h2>' +
+                    '<p>从虚拟炒股到化学工具，NB频道的数字世界应有尽有</p>' +
+                '</div>' +
+                '<div class="grid">' +
+                    '<a class="card reveal" href="videos.html"><div class="ico">🎬</div><h3>视频</h3><p>化学实验、物理趣味与日常作死，最新视频都在这里。</p><span class="go">去看看 →</span></a>' +
+                    '<a class="card reveal" href="comments-beta.html"><div class="ico">💬</div><h3>评论区</h3><p>和友商交流，支持图片、@提及与称号展示。</p><span class="go">去逛逛 →</span></a>' +
+                    '<a class="card reveal" href="Virtual stock.html"><div class="ico">📈</div><h3>NB虚拟股票</h3><p>NB币炒股，市场 8:00-20:00 自主运转。</p><span class="go">去炒股 →</span></a>' +
+                    '<a class="card reveal" href="chat.html"><div class="ico">👥</div><h3>好友私信</h3><p>实时聊天，支持发送图片与红包转账。</p><span class="go">去聊天 →</span></a>' +
+                    '<a class="card reveal" href="product_share.html"><div class="ico">🎨</div><h3>作品分享</h3><p>上传你的作品，或购买他人的优秀作品。</p><span class="go">去看看 →</span></a>' +
+                    '<a class="card reveal" href="messages.html"><div class="ico">🔔</div><h3>消息中心</h3><p>评论回复、点赞与私信通知，不遗漏任何互动。</p><span class="go">去看看 →</span></a>' +
+                    '<a class="card reveal" href="titles.html"><div class="ico">🏅</div><h3>称号</h3><p>12 种称号，达成条件自动解锁升级，最高 5 星。</p><span class="go">去看看 →</span></a>' +
+                    '<a class="card reveal" href="tools.html"><div class="ico">🔬</div><h3>化学工具</h3><p>周期表、摩尔质量与方程式配平，理科必备。</p><span class="go">去使用 →</span></a>' +
+                    '<a class="card reveal" href="bank.html"><div class="ico">🏦</div><h3>NB银行</h3><p>存钱有利息，贷款可救急，信誉分定额度。</p><span class="go">去存钱 →</span></a>' +
+                    '<a class="card reveal" href="shop.html"><div class="ico">🛍️</div><h3>NB商店</h3><p>用 NB币买道具：评论颜色、特效、称号位。</p><span class="go">去逛逛 →</span></a>' +
+                    '<a class="card reveal" href="backpack.html"><div class="ico">🎒</div><h3>我的背包</h3><p>管理道具：使用、改色、出售、续期。</p><span class="go">去看看 →</span></a>' +
+                '</div>' +
+            '</section>' +
+            '<section class="section" style="padding-top:0;">' +
+                '<div class="section-head reveal">' +
+                    '<span class="section-eyebrow">Videos</span>' +
+                    '<h2>🎬 最新视频</h2>' +
+                    '<p>化学实验、物理趣味与日常作死</p>' +
+                '</div>' +
+                '<div class="video-grid">' +
+                    '<a class="vcard reveal" href="https://www.bilibili.com/video/BV1Nr3i63ENL" target="_blank" rel="noopener noreferrer"><div class="thumb"><img src="https://i1.hdslb.com/bfs/archive/7fc0a17bb56a553d152776e86ea34e604b9fdbf6.jpg" alt="《 行 星 发 动 机 》" loading="lazy"><span class="dur">6:10</span><span class="play">▶</span></div><div class="body"><h4>《 行 星 发 动 机 》</h4><div class="meta">《逝验室·化学》 · 3.2万播放</div></div></a>' +
+                    '<a class="vcard reveal" href="https://www.bilibili.com/video/BV1zJ376kENb" target="_blank" rel="noopener noreferrer"><div class="thumb"><img src="https://i0.hdslb.com/bfs/archive/9ad74a4776aac3a7c1461c9fd806d081ab725c6c.jpg" alt="《 炸 弹 》" loading="lazy"><span class="dur">1:41</span><span class="play">▶</span></div><div class="body"><h4>《 炸 弹 》</h4><div class="meta">《产品》 · 5.5万播放</div></div></a>' +
+                    '<a class="vcard reveal" href="https://www.bilibili.com/video/BV1diNT6bE2R" target="_blank" rel="noopener noreferrer"><div class="thumb"><img src="https://i2.hdslb.com/bfs/archive/2865c5c1b0aea7225ca9e7d6c568d1fe6352cc93.jpg" alt="《 化 钉 液 》" loading="lazy"><span class="dur">2:27</span><span class="play">▶</span></div><div class="body"><h4>《 化 钉 液 》</h4><div class="meta">《产品》 · 1.6万播放</div></div></a>' +
+                    '<a class="vcard reveal" href="https://www.bilibili.com/video/BV1v8AfzmE9o" target="_blank" rel="noopener noreferrer"><div class="thumb"><img src="https://i1.hdslb.com/bfs/archive/ed50fccde58ca8466a6dbaef022424c94222a84d.jpg" alt="《 官 网 0 . 2 . 5 》" loading="lazy"><span class="dur">4:32</span><span class="play">▶</span></div><div class="body"><h4>《 官 网 0 . 2 . 5 》</h4><div class="meta">《官网》 · 7228播放</div></div></a>' +
+                '</div>' +
+            '</section>' +
+            '<section class="section friends-section" id="friends">' +
+                '<div class="section-head reveal">' +
+                    '<span class="section-eyebrow">Partners</span>' +
+                    '<h2>🤝 友商</h2>' +
+                    '<p>一起搞事的伙伴们——点击卡片访问他们的官网</p>' +
+                '</div>' +
+                '<div class="friends-grid">' +
+                    '<a class="friend reveal" href="https://orgent.pythonanywhere.com/" target="_blank" rel="noopener noreferrer"><div class="logo">O</div><div class="info"><div class="name">Orgent <span class="arrow">↗</span></div><div class="desc">B站已注销 · 仅留念</div></div></a>' +
+                    '<a class="friend reveal" href="https://45d.cn/AWM/" target="_blank" rel="noopener noreferrer"><div class="logo">A</div><div class="info"><div class="name">AWM <span class="arrow">↗</span></div><div class="desc">友商官网</div></div></a>' +
+                    '<a class="friend reveal" href="https://fafat.uuk.pp.ua/" target="_blank" rel="noopener noreferrer"><div class="logo">F</div><div class="info"><div class="name">Fafat <span class="arrow">↗</span></div><div class="desc">友商官网</div></div></a>' +
+                    '<a class="friend reveal" href="https://nb-qx.top/" target="_blank" rel="noopener noreferrer"><div class="logo">L</div><div class="info"><div class="name">Lemon（齐喜） <span class="arrow">↗</span></div><div class="desc">友商官网</div></div></a>' +
+                    '<a class="friend reveal" href="https://gaohantu.cn/" target="_blank" rel="noopener noreferrer"><div class="logo">G</div><div class="info"><div class="name">GaoHanTu <span class="arrow">↗</span></div><div class="desc">友商官网</div></div></a>' +
+                    '<a class="friend reveal" href="https://utw.pages.dev" target="_blank" rel="noopener noreferrer"><div class="logo">U</div><div class="info"><div class="name">Utw <span class="arrow">↗</span></div><div class="desc">友商官网</div></div></a>' +
+                    '<a class="friend reveal" href="https://pipetrainingcamp.github.io/" target="_blank" rel="noopener noreferrer"><div class="logo">P</div><div class="info"><div class="name">PTC（GoodPTC） <span class="arrow">↗</span></div><div class="desc">友商官网</div></div></a>' +
+                    '<a class="friend reveal" href="https://yoyo-user-awa.github.io/UVS/" target="_blank" rel="noopener noreferrer"><div class="logo">V</div><div class="info"><div class="name">UVS <span class="arrow">↗</span></div><div class="desc">友商官网</div></div></a>' +
+                    '<a class="friend reveal" href="https://3f7ceb4e.pinit.eth.limo/" target="_blank" rel="noopener noreferrer"><div class="logo">W</div><div class="info"><div class="name">UwLS <span class="arrow">↗</span></div><div class="desc">友商官网</div></div></a>' +
+                    '<a class="friend reveal" href="https://45d.cn/nb-og.top/" target="_blank" rel="noopener noreferrer"><div class="logo">Og</div><div class="info"><div class="name">Oganesson <span class="arrow">↗</span></div><div class="desc">友商官网</div></div></a>' +
+                    '<a class="friend reveal" href="https://78439049.pinit.eth.limo/" target="_blank" rel="noopener noreferrer"><div class="logo">S</div><div class="info"><div class="name">SOT <span class="arrow">↗</span></div><div class="desc">友商官网</div></div></a>' +
+                '</div>' +
+            '</section>' +
+            '<div class="cta">' +
+                '<h2>加入 NB 频道的数字世界</h2>' +
+                '<p>关注 B站、参与讨论、投资公司、购买道具——总有一款适合你</p>' +
+                '<div class="hero-btns" style="justify-content:center;">' +
+                    '<a class="hero-btn primary" href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">⭐ 去 B站关注</a>' +
+                    '<a class="hero-btn ghost" href="comments-beta.html">💬 进评论区</a>' +
+                '</div>' +
+            '</div>' +
+            '<footer class="footer">' +
+                '<div class="footer-grid">' +
+                    '<div><div class="brand"><span class="dot"></span>NB频道</div><p class="desc">NB频道（NoBook频道）——热爱理科（和作死）的 UP主建立的虚拟公司。化学物理实验、日常作死、虚拟经济，一个有趣的数字世界。</p></div>' +
+                    '<div><h5>功能</h5><a href="Virtual stock.html">虚拟股票</a><a href="bank.html">NB银行</a><a href="comments-beta.html">评论区</a><a href="shop.html">NB商店</a><a href="titles.html">称号系统</a></div>' +
+                    '<div><h5>友商</h5><a href="https://orgent.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">Orgent（已注销）</a><a href="https://45d.cn/AWM/" target="_blank" rel="noopener noreferrer">AWM</a><a href="https://fafat.uuk.pp.ua/" target="_blank" rel="noopener noreferrer">Fafat</a><a href="https://nb-qx.top/" target="_blank" rel="noopener noreferrer">Lemon（齐喜）</a><a href="https://gaohantu.cn/" target="_blank" rel="noopener noreferrer">GaoHanTu</a><a href="https://utw.pages.dev" target="_blank" rel="noopener noreferrer">Utw</a><a href="https://pipetrainingcamp.github.io/" target="_blank" rel="noopener noreferrer">PTC（GoodPTC）</a><a href="https://yoyo-user-awa.github.io/UVS/" target="_blank" rel="noopener noreferrer">UVS</a><a href="https://3f7ceb4e.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">UwLS</a><a href="https://45d.cn/nb-og.top/" target="_blank" rel="noopener noreferrer">Oganesson</a><a href="https://78439049.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">SOT</a></div>' +
+                    '<div><h5>联系</h5><a href="mailto:nbchannel@163.com">nbchannel@163.com</a><a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">B站：NB搞事局</a><a href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">nb-channel.top</a></div>' +
+                '</div>' +
+                '<div class="footer-bottom">© 2026 NB频道 · 虚拟公司 · 制作：NB搞事局 · 由 GitHub Pages / Cloudflare / PythonAnywhere 提供支持</div>' +
+            '</footer>';
+        // 6. LOGO 视频移入 Hero
+        if (logoVideo) {
+            var hv = wrap.querySelector('.hero-video');
+            if (hv) {
+                logoVideo.muted = true;
+                hv.appendChild(logoVideo);
+                var pp = logoVideo.play ? logoVideo.play() : null;
+                if (pp && pp.catch) pp.catch(function () {});
+            }
+        }
+        // 7. 建站天数（本地日历日差，避免 UTC 解析凌晨少一天）
+        var daysEl = wrap.querySelector('#siteDays');
+        if (daysEl) {
+            var st = new Date(2026, 1, 17);
+            var nd = new Date();
+            st.setHours(0, 0, 0, 0);
+            nd.setHours(0, 0, 0, 0);
+            var dd = Math.round((nd - st) / 86400000);
+            if (dd > 0) daysEl.textContent = dd;
+        }
+        // 8. 插入页面
+        while (wrap.firstChild) container.appendChild(wrap.firstChild);
+    }
+
     // 新版初始化（必须在 DOM 就绪后执行：injectMouseFx/injectOrbs 需要 document.body）
     function initNewUI() {
-        loadPremiumCss();
-        injectMouseFx();
-        injectOrbs();
-        bindNavAuth();   // 导航登录/个人中心按钮绑定（页面未绑定时生效）
-        if (document.querySelector('.nav-container')) {
-            replaceNav();
+        var isBeta = document.documentElement.classList.contains('beta');
+        var isHome = !!document.querySelector('.video-container');
+        if (isBeta && isHome) {
+            // 测试版首页：高级感官网布局（登录区保留，其余全部接管）
+            loadBetaCss();
+            bindNavAuth();
+            injectBetaHome();
+        } else {
+            // 新UI（默认）/ 测试版其他页面 / 经典模式（各注入函数内部自动跳过）
+            loadPremiumCss();
+            injectMouseFx();
+            injectOrbs();
+            bindNavAuth();   // 导航登录/个人中心按钮绑定（页面未绑定时生效）
+            if (document.querySelector('.nav-container')) {
+                replaceNav();
+            }
+            injectHomeHero();   // 首页：注入完整官网效果（= preview/index.html）
+            injectBanner();     // 其他页面：注入 Hero 横幅（已有 .hero 的页面自动跳过）
+            injectClassicHeader();   // 经典模式：注入旧版网站大标题（📺 NB频道官网 + UP主）
         }
-        injectHomeHero();   // 首页：注入完整官网效果（= preview/index.html）
-        injectBanner();     // 其他页面：注入 Hero 横幅（已有 .hero 的页面自动跳过）
-        injectClassicHeader();   // 经典模式：注入旧版网站大标题（📺 NB频道官网 + UP主）
         // 滚动渐显：等首屏元素就位后观察
         setTimeout(injectReveal, 50);
         // ===== 新 UI 注入完成：解除旧 UI 隐藏（防闪现 FOUC） =====

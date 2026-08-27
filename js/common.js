@@ -437,7 +437,7 @@ function uiHref(h) {
     try {
         src = (document.currentScript && document.currentScript.src) || '';
     } catch (e) {}
-    var scriptPath = 'js/ui-nav.js?v=20260825';
+    var scriptPath = 'js/ui-nav.js?v=20260828';
     if (src) {
         var i = src.lastIndexOf('/');
         if (i !== -1) {
