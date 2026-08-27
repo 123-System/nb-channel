@@ -631,6 +631,10 @@
         injectBanner();     // 其他页面：注入 Hero 横幅（已有 .hero 的页面自动跳过）
         // 滚动渐显：等首屏元素就位后观察
         setTimeout(injectReveal, 50);
+        // ===== 新 UI 注入完成：解除旧 UI 隐藏（防闪现 FOUC） =====
+        document.documentElement.classList.remove('ui-boot-new');
+        var bootHide = document.getElementById('uiBootHide');
+        if (bootHide) bootHide.remove();
     }
 
     // 旧版初始化：旧版页面无需任何注入

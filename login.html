@@ -6,7 +6,27 @@
     <title>NB频道 - 登录/注册</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/common.js?v=20260825"></script>
+    <script id="uiBootGuard">
+(function () {
+    try {
+        var raw = location.pathname.split('/').pop() || '';
+        var isNewFile = /-new\.html$/i.test(raw);
+        var ver = isNewFile ? 'new' : (localStorage.getItem('nb_ui') === 'old' ? 'old' : 'new');
+        if (ver === 'new') {
+            document.documentElement.classList.add('ui-boot-new');
+            var st = document.createElement('style');
+            st.id = 'uiBootHide';
+            st.textContent = 'html.ui-boot-new body{visibility:hidden}';
+            document.head.appendChild(st);
+            setTimeout(function () {
+                document.documentElement.classList.remove('ui-boot-new');
+                var s = document.getElementById('uiBootHide');
+                if (s) s.remove();
+            }, 3500);
+        }
+    } catch (e) {}
+})();
+</script><script src="js/common.js?v=20260825"></script>
     <style>
         body { background: var(--bg-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
         .login-card { max-width: 400px; width: 100%; background: var(--card-bg); border-radius: 24px; padding: 30px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
