@@ -7,7 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NB频道官网 - 视频</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/ui-new.css" id="uiNewCss">
     <style>
         /* B站视频播放弹窗（基础样式，覆盖样式由弹窗内联补充） */
         .custom-modal {
@@ -119,6 +118,14 @@
             st.id = 'uiBootHide';
             st.textContent = 'html.ui-boot-new body{visibility:hidden}';
             document.head.appendChild(st);
+            // 单文件双皮肤：提前注入新版皮肤 CSS（旧 UI 用户不加载）
+            if (!isNewFile && !document.getElementById('uiNewCss')) {
+                var lk = document.createElement('link');
+                lk.id = 'uiNewCss';
+                lk.rel = 'stylesheet';
+                lk.href = 'css/ui-new.css';
+                document.head.appendChild(lk);
+            }
             setTimeout(function () {
                 document.documentElement.classList.remove('ui-boot-new');
                 var s = document.getElementById('uiBootHide');

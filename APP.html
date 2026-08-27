@@ -88,6 +88,14 @@
             st.id = 'uiBootHide';
             st.textContent = 'html.ui-boot-new body{visibility:hidden}';
             document.head.appendChild(st);
+            // 单文件双皮肤：提前注入新版皮肤 CSS（旧 UI 用户不加载）
+            if (!isNewFile && !document.getElementById('uiNewCss')) {
+                var lk = document.createElement('link');
+                lk.id = 'uiNewCss';
+                lk.rel = 'stylesheet';
+                lk.href = 'css/ui-new.css';
+                document.head.appendChild(lk);
+            }
             setTimeout(function () {
                 document.documentElement.classList.remove('ui-boot-new');
                 var s = document.getElementById('uiBootHide');

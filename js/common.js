@@ -452,7 +452,8 @@ function uiHref(h) {
 
 // ==========================================================
 // 界面版本自动跳转（同步、零闪跳）：本地偏好决定进哪个文件
-// 后端偏好只在"个人中心手动切换"时写入（setUIVersion），此处不再异步查询
+// 单文件双皮肤：xxx.html 同时承载新旧 UI，不再需要跳 -new
+// -new 文件仍兼容访问（旧链接），偏好 old 时跳回单文件
 // ==========================================================
 (function () {
     var rawPage = location.pathname.split('/').pop() || '';
@@ -462,19 +463,17 @@ function uiHref(h) {
     var base = isNew ? rawPage.replace(/-new\.html$/i, '.html') : rawPage;
     var known = ['index', 'videos', 'about', 'changelog', 'product', 'app', 'comments-beta',
                  'virtual stock', 'chat', 'product_share', 'messages', 'profile', 'achievements',
-                 'lottery_records', 'register_company', 'comments', 'login', 'tools', 'bank',
+                 'lottery_records', 'register_company', 'comments', 'login', 'tools', 'titles', 'bank',
                  'shop', 'backpack'];
-    // 注意：titles 已不在列表 —— 单文件双皮肤试点（titles.html 同时承载新旧 UI）
     if (known.indexOf(base.replace(/\.html$/i, '').toLowerCase()) === -1) return;
 
-    // -new 文件强制新版；其余按本地偏好（默认 new）
-    var pref = isNew ? 'new' : (localStorage.getItem('nb_ui') === 'old' ? 'old' : 'new');
+    var pref = localStorage.getItem('nb_ui') === 'old' ? 'old' : 'new';
     var qs = location.search || '';
-    if (pref === 'new' && !isNew) {
-        location.replace(base.replace(/\.html$/i, '-new.html') + qs);
-    } else if (pref === 'old' && isNew) {
+    // -new 文件：偏好 old → 跳回单文件；偏好 new → 留在 -new（内容一致，无需跳）
+    if (isNew && pref === 'old') {
         location.replace(base + qs);
     }
+    // 单文件：无需任何跳转（新旧 UI 都在本文件内切换）
 })();
 
 // ==========================================================

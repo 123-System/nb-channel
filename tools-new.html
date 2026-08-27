@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>化学工具 - NB频道</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/ui-new.css" id="uiNewCss">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script id="uiBootGuard">
 (function () {
@@ -19,7 +18,14 @@
             st.id = 'uiBootHide';
             st.textContent = 'html.ui-boot-new body{visibility:hidden}';
             document.head.appendChild(st);
-            setTimeout(function () {
+            // 单文件双皮肤：提前注入新版皮肤 CSS（旧 UI 用户不加载）
+            if (!isNewFile && !document.getElementById('uiNewCss')) {
+                var lk = document.createElement('link');
+                lk.id = 'uiNewCss';
+                lk.rel = 'stylesheet';
+                lk.href = 'css/ui-new.css';
+                document.head.appendChild(lk);
+            }            setTimeout(function () {
                 document.documentElement.classList.remove('ui-boot-new');
                 var s = document.getElementById('uiBootHide');
                 if (s) s.remove();
