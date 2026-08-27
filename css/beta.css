@@ -1,6 +1,7 @@
 
         /* ============ 基础 ============ */
-html.beta *{ margin: 0; padding: 0; box-sizing: border-box; }
+/* 全局重置仅首页(beta-home,首页为全新布局);其他页面保留原有样式与容器居中 */
+html.beta.beta-home *{ margin: 0; padding: 0; box-sizing: border-box; }
 html.beta{
             --bg: #f7f8fa;
             --ink: #1a1d23;
