@@ -373,7 +373,8 @@ html.beta .footer-grid{ grid-template-columns: 1fr; gap: 28px; }
 
 /* ============ 测试版适配:登录区/旧浮动按钮/容器重置 ============ */
 html.beta body { padding: 0; }
-html.beta .container { max-width: none; padding: 0; margin: 0; }
+/* 仅首页(html.beta.beta-home)容器全宽供Hero通栏;其他页面容器保持1080居中 */
+html.beta.beta-home .container { max-width: none; padding: 0; margin: 0; }
 html.beta .auth-area { position: fixed; top: 14px; right: 14px; z-index: 300; display: flex; gap: 8px; background: rgba(15,23,42,.55); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.16); border-radius: 999px; padding: 5px 6px; box-shadow: none; }
 html.beta .auth-btn, html.beta .profile-btn { background: rgba(255,255,255,.14); color: #fff; border: none; border-radius: 999px; padding: 7px 16px; font-size: .88rem; cursor: pointer; transition: background .25s ease; }
 html.beta .auth-btn:hover, html.beta .profile-btn:hover { background: rgba(255,255,255,.28); color: #fff; }

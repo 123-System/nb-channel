@@ -745,6 +745,8 @@
     function injectBetaHome() {
         var vc = document.querySelector('.video-container');
         if (!vc) return;   // 仅首页
+        // 标记首页:beta.css 据此让 .container 全宽(Hero 通栏),其他页面容器保持居中
+        document.documentElement.classList.add('beta-home');
         var container = document.querySelector('.container') || document.body;
         // 幂等保护:已注入过(hero 已存在)则跳过,防止重复执行把新内容再隐藏
         if (container.querySelector('.hero')) return;
