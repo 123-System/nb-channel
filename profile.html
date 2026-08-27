@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/ui-new.css">
     <link rel="stylesheet" href="css/classic.css">
-    <!-- 测试版UI皮肤(仅html.beta选择器生效;静态加载避免样式闪跳) -->
+    <!-- 官网模式皮肤(仅html.beta选择器生效;静态加载避免样式闪跳) -->
     <link rel="stylesheet" href="css/beta.css?v=20260844" id="uiBetaCss">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script id="uiBootGuard">
@@ -267,7 +267,7 @@
     <div class="form-group" style="display:flex; gap:10px; flex-wrap:wrap;">
         <button id="styleNewBtn" style="flex:1; min-width:120px;">✨ 新潮模式</button>
         <button id="styleClassicBtn" style="flex:1; min-width:120px; background:#6c757d;">📄 经典模式</button>
-        <button id="styleBetaBtn" style="flex:1; min-width:120px; background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:#fff;">🧪 测试版UI</button>
+        <button id="styleBetaBtn" style="flex:1; min-width:120px; background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:#fff;">🏛️ 官网模式</button>
         <div style="width:100%; font-size:0.8rem; color:var(--count-text);" id="styleHint"></div>
     </div>
 
@@ -1220,7 +1220,7 @@
     document.getElementById('updateUsernameBtn').addEventListener('click', updateUsername);
     document.getElementById('updatePasswordBtn').addEventListener('click', updatePassword);
 
-    // ===== 界面风格切换（新潮 / 经典 / 测试版UI） =====
+    // ===== 界面风格切换（新潮 / 经典 / 官网模式） =====
     function getUiMode() {
         const m = localStorage.getItem('nb_ui_mode');
         if (m === 'classic' || m === 'beta') return m;
@@ -1242,7 +1242,7 @@
         if (newBtn) newBtn.style.outline = mode === 'new' ? '3px solid #00a1d6' : 'none';
         if (oldBtn) oldBtn.style.outline = mode === 'classic' ? '3px solid #00a1d6' : 'none';
         if (betaBtn) betaBtn.style.outline = mode === 'beta' ? '3px solid #00a1d6' : 'none';
-        if (hint) hint.innerText = mode === 'classic' ? '当前使用：经典模式（旧版风格）' : (mode === 'beta' ? '当前使用：测试版UI（高级感官网，仅首页生效，非最终版）' : '当前使用：新潮模式（毛玻璃官网风）');
+        if (hint) hint.innerText = mode === 'classic' ? '当前使用：经典模式（旧版风格）' : (mode === 'beta' ? '当前使用：官网模式（高级感官网风·全站生效·非最终版）' : '当前使用：新潮模式（毛玻璃官网风）');
     }
     const styleNewBtn = document.getElementById('styleNewBtn');
     const styleClassicBtn = document.getElementById('styleClassicBtn');

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <link rel="icon" href="data:,">
@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/ui-new.css">
     <link rel="stylesheet" href="css/classic.css">
-    <!-- 测试版UI皮肤(仅html.beta选择器生效;静态加载避免样式闪跳) -->
+    <!-- 官网模式皮肤(仅html.beta选择器生效;静态加载避免样式闪跳) -->
     <link rel="stylesheet" href="css/beta.css?v=20260844" id="uiBetaCss">
 </head>
 <body>
@@ -44,6 +44,21 @@
         <!-- 更新日志内容 -->
         <div class="changelog-content">
             <h2>📋 更新日志</h2>
+
+        <p><strong>NB频道 V 0.8.4（2026-08-27）</strong></p>
+    <ul>
+        <li><strong>一、🖥️ 界面体系升级：三套界面自由切换</strong></li>
+        <li>1. 架构重构：全部页面合并为单文件，去掉新旧 UI 跳转，加载更快更稳</li>
+        <li>2. 📄 经典模式回归：完整保留旧版观感（旧配色、旧导航、旧版首页），一键切回</li>
+        <li>3. 🏛️ 全新官网模式（第三套界面）：高级感官网设计——深色渐变 Hero + LOGO 动画、数据条（粉丝/友商/建站天数）、公司理念（使命·愿景·价值观）、官网化首页（真实功能/视频/友商卡片）、全站统一导航与横幅皮肤</li>
+        <li>4. 官网模式细节：公告区单行无缝滚动（公告内链接可点击）、导航登录区（登录/个人中心/登出）、页面滚动渐显、卡片悬浮上浮</li>
+        <li>5. 切换方式：个人中心 → 🎨 界面风格 → ✨ 新潮模式 / 📄 经典模式 / 🏛️ 官网模式</li>
+        <li><strong>二、🔧 修复与优化</strong></li>
+        <li>1. 修复页面加载闪跳：皮肤样式静态加载、渲染前就绪，打开即最终效果</li>
+        <li>2. 修复首页卡片不显示、公告不滚动、建站天数时区偏差等问题</li>
+        <li>3. 修复 supabase 客户端多实例警告（登录状态更稳定）</li>
+        <li>4. 视频封面去掉懒加载占位，任何浏览器设置下正常显示</li>
+    </ul>
 
         <p><strong>NB频道 V 0.8.3（2026-08-25）</strong></p>
     <ul>
