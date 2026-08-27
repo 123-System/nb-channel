@@ -382,18 +382,18 @@ html.beta .nav-cta { display: none; }
 html.beta .nav-auth-group { display: flex; gap: 8px; }
 html.beta .nav-auth {
     padding: 8px 18px; border-radius: 999px;
-    background: rgba(255,255,255,.1); color: #fff;
-    border: 1px solid rgba(255,255,255,.22);
+    background: rgba(255,255,255,.6); color: var(--ink);
+    border: 1px solid var(--line);
     font-size: .88rem; font-weight: 600; cursor: pointer;
     transition: all .25s ease; white-space: nowrap;
 }
-html.beta .nav-auth:hover { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.4); }
+html.beta .nav-auth:hover { background: #fff; border-color: rgba(59,130,246,.4); }
 html.beta .nav-auth.primary {
     background: linear-gradient(135deg, var(--brand), #6366f1);
     border-color: transparent; color: #fff;
     box-shadow: 0 8px 20px -8px rgba(59,130,246,.5);
 }
-html.beta .nav-auth.primary:hover { background: linear-gradient(135deg, #2563eb, #4f46e5); }
+html.beta .nav-auth.primary:hover { background: linear-gradient(135deg, #2563eb, #4f46e5); color: #fff; }
 @media (max-width: 760px) {
     html.beta .nav-auth-group { gap: 6px; }
     html.beta .nav-auth { padding: 7px 12px; font-size: .8rem; }
