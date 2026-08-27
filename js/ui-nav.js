@@ -8,6 +8,10 @@
 //   4. 界面切换：localStorage 'nb_ui' = 'new' | 'old'（个人中心可设置）
 // ============================================================
 (function () {
+    // 幂等保护:common.js 可能在 head 同步期检测不到本文件的静态标签而再动态注入一份,
+    // 加执行标记避免初始化跑两遍(否则 beta 注入两次,第二遍隐藏全部内容造成闪跳)
+    if (window.__uiNavExecuted) return;
+    window.__uiNavExecuted = true;
     function getVer() {
         // 纯新 UI：永远返回 new
         return 'new';
@@ -674,6 +678,8 @@
         var vc = document.querySelector('.video-container');
         if (!vc) return;   // 仅首页
         var container = document.querySelector('.container') || document.body;
+        // 幂等保护:已注入过(hero 已存在)则跳过,防止重复执行把新内容再隐藏
+        if (container.querySelector('.hero')) return;
         // 1. 隐藏原版顶部标题与 UP主信息（内容由 hero 承担）
         var h1 = container.querySelector(':scope > h1');
         if (h1) h1.style.display = 'none';
