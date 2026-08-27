@@ -749,7 +749,9 @@
         var container = document.querySelector('.container') || document.body;
         var wrap = document.createElement('div');
         wrap.innerHTML = betaNavHtml() + betaQuickHtml();
-        container.insertBefore(wrap.firstChild, container.firstChild);
+        // 依次插入 container 顶部,保持 nav → 快捷栏顺序(只 insertBefore 一次会漏掉快捷栏)
+        var ref = container.firstChild;
+        while (wrap.firstChild) container.insertBefore(wrap.firstChild, ref);
         // 隐藏页面原有导航(注入成功后才隐藏,防止旧JS+新CSS缓存错位时页面无导航)
         var oldTop = document.querySelector('.top-nav');
         if (oldTop) oldTop.style.display = 'none';
