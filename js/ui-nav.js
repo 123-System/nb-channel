@@ -719,7 +719,10 @@
                     '<a href="APP.html">软件/APP</a>' +
                     '<a href="#friends">友商</a>' +
                 '</div>' +
-                '<a class="nav-cta" href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">⭐ 关注 B站</a>' +
+                '<div class="nav-auth-group" id="betaAuthGroup">' +
+                    '<a class="nav-auth" id="betaProfileBtn" href="#">👤 个人中心</a>' +
+                    '<a class="nav-auth primary" id="betaAuthBtn" href="#">登录 / 注册</a>' +
+                '</div>' +
             '</nav>' +
             '<header class="hero">' +
                 '<div class="hero-inner">' +
@@ -838,7 +841,30 @@
                 '</div>' +
                 '<div class="footer-bottom">© 2026 NB频道 · 虚拟公司 · 制作：NB搞事局 · 由 GitHub Pages / Cloudflare / PythonAnywhere 提供支持</div>' +
             '</footer>';
-        // 5.5 公告区:从 admin_config 拉取公告,单行无缝滚动,链接可点击,无公告保持隐藏
+        // 5.5 登录区:根据登录状态绑定个人中心/登录/登出按钮
+        var authGroup = wrap.querySelector('#betaAuthGroup');
+        if (authGroup) {
+            var storedU = null;
+            try { storedU = JSON.parse(localStorage.getItem('nb_user')); } catch (e) {}
+            var pbEl = wrap.querySelector('#betaProfileBtn');
+            var abEl = wrap.querySelector('#betaAuthBtn');
+            if (storedU && storedU.id) {
+                if (abEl) {
+                    abEl.textContent = '登出账号';
+                    abEl.href = '#';
+                    abEl.onclick = function () { localStorage.removeItem('nb_user'); location.reload(); };
+                }
+                if (pbEl) {
+                    pbEl.textContent = '👤 ' + (storedU.username || storedU.name || '个人中心');
+                    pbEl.href = 'profile.html';
+                }
+            } else {
+                var loginHref = 'login.html?redirect=' + encodeURIComponent(location.href);
+                if (abEl) { abEl.href = loginHref; abEl.textContent = '登录 / 注册'; }
+                if (pbEl) { pbEl.href = loginHref; pbEl.textContent = '👤 个人中心'; }
+            }
+        }
+        // 5.6 公告区:从 admin_config 拉取公告,单行无缝滚动,链接可点击,无公告保持隐藏
         function betaEscapeHtml(str) {
             return String(str).replace(/[&<>"']/g, function (m) {
                 return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
