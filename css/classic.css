@@ -61,19 +61,42 @@ html.classic .slider-container {
     border-color: #e5e9ef !important;
 }
 
-/* ===== 3. 导航：去掉玻璃拟态，还原经典浅色导航 ===== */
+/* ===== 3. 导航：还原旧版三行导航观感 ===== */
+/* 旧版 = nav-container(居中多行, 灰按钮, 蓝hover) */
 html.classic .top-nav {
-    background: #ffffff !important;
+    background: transparent !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
-    border: 1px solid #e5e9ef !important;
-    border-radius: 8px !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    position: static !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 0 !important;
+    margin-bottom: 20px !important;
+}
+html.classic .top-nav .nav-logo {
+    display: none !important;   /* 旧版顶部是大标题,不是logo */
+}
+html.classic .top-nav .nav-right {
+    display: none !important;   /* 旧版登录按钮在别处 */
+}
+html.classic .top-nav .nav-menu {
+    display: flex !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 15px !important;
+    width: 100% !important;
 }
 html.classic .top-nav .nav-menu .nav-btn {
     background: #e0e0e0 !important;
     color: #333 !important;
     border-radius: 4px !important;
+    padding: 6px 14px !important;
+    font-size: 0.95rem !important;
 }
 html.classic .top-nav .nav-menu .nav-btn:hover {
     background: #00a1d6 !important;
@@ -84,15 +107,27 @@ html.classic .top-nav .nav-menu .nav-btn.active {
     color: #fff !important;
     box-shadow: none !important;
 }
+/* quick-nav 还原为旧版第二三行功能链接 */
 html.classic .quick-nav {
-    background: #f0f0f0 !important;
-    border: 1px solid #ddd !important;
-    border-radius: 8px !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 15px !important;
+    padding: 0 !important;
+    margin-bottom: 12px !important;
+}
+html.classic .quick-nav > span {
+    display: none !important;   /* 隐藏"⚡ 快捷入口："标签 */
 }
 html.classic .quick-nav .nav-btn {
     background: #e0e0e0 !important;
     color: #333 !important;
     border-radius: 4px !important;
+    padding: 6px 14px !important;
+    font-size: 0.95rem !important;
 }
 html.classic .quick-nav .nav-btn:hover {
     background: #00a1d6 !important;
@@ -102,6 +137,11 @@ html.classic .quick-nav .share-btn {
     background: #00a1d6 !important;
     border-radius: 4px !important;
     box-shadow: none !important;
+    padding: 6px 14px !important;
+    font-size: 0.95rem !important;
+}
+html.classic .quick-nav .share-btn:hover {
+    transform: none !important;
 }
 
 /* ===== 4. 首页组件：隐藏 hero/数据条/功能卡片/友商网格（旧版首页没有） ===== */
@@ -119,6 +159,48 @@ html.classic .friend-grid {
 }
 html.classic #uiPageBanner {
     display: none !important;
+}
+
+/* ===== 4.5 首页还原：显示旧版首页结构（被新UI JS隐藏的元素恢复） ===== */
+html.classic .container > h1 {
+    display: block !important;
+    text-align: center !important;
+    margin: 20px 0 10px !important;
+    color: #00a1d6 !important;
+    font-size: 2rem !important;
+}
+html.classic #authorInfo {
+    display: block !important;
+    text-align: center !important;
+    margin: 4px 0 20px !important;
+    color: #666 !important;
+    font-size: 1rem !important;
+}
+html.classic .video-container {
+    display: block !important;
+    margin-bottom: 20px !important;
+}
+html.classic .home-row {
+    display: flex !important;
+    gap: 20px !important;
+    flex-wrap: wrap !important;
+    margin-bottom: 20px !important;
+}
+html.classic .home-card {
+    flex: 1 1 45% !important;
+    min-width: 280px !important;
+}
+html.classic .stats-container {
+    display: flex !important;
+    justify-content: center !important;
+    gap: 20px !important;
+    margin-top: 20px !important;
+    font-size: 0.9rem !important;
+    color: #666 !important;
+}
+/* 旧版公告栏 */
+html.classic .announcement-bar {
+    display: block !important;
 }
 
 /* ===== 5. 动画/特效：关闭 ===== */

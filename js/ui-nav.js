@@ -63,6 +63,8 @@
 
     // 鼠标特效（仅鼠标设备）：跟随光晕 + 点击粒子/波纹
     function injectMouseFx() {
+        // 经典模式：关闭鼠标特效
+        if (document.documentElement.classList.contains('classic')) return;
         if (document.getElementById('uiMouseFx') || !(window.matchMedia && window.matchMedia('(pointer: fine)').matches)) return;
         var st = document.createElement('style');
         st.id = 'uiMouseFx';
@@ -132,6 +134,8 @@
 
     // 页面 Hero 横幅（官网首页已有 .hero 则跳过）
     function injectBanner() {
+        // 经典模式：不注入 hero 横幅，保留旧版页面观感
+        if (document.documentElement.classList.contains('classic')) return;
         if (document.getElementById('uiPageBanner')) return;
         if (document.querySelector('.hero')) return;
         var banner = document.createElement('div');
@@ -344,6 +348,8 @@
 
     // 注入漂浮光斑（毛玻璃的"透出物"）
     function injectOrbs() {
+        // 经典模式：不注入光球
+        if (document.documentElement.classList.contains('classic')) return;
         if (document.getElementById('uiOrbA')) return;
         var mk = function (id, size, left, top, color, anim) {
             var d = document.createElement('div');
@@ -394,6 +400,8 @@
     // 从现有导航 DOM 收集链接 → 渲染新版导航并替换
     // 页面已有静态 .top-nav(单文件新UI)时跳过;有 .nav-container 时替换;都没有时用标准模板生成
     function replaceNav() {
+        // 经典模式：有旧 nav-container 的页面(首页)保留旧导航；其他页面仍生成新导航(经典样式由CSS处理)
+        if (document.documentElement.classList.contains('classic') && document.querySelector('.nav-container')) return;
         if (document.querySelector('.top-nav')) return;   // 已有新导航,无需处理
         var host = document.querySelector('.nav-container');
         var links = [];
@@ -490,6 +498,8 @@
 
 // ===== 新版首页注入：给原版首页运行时加上官网 hero/数据条/功能卡片 =====
     function injectHomeHero() {
+        // 经典模式：不注入，保留旧版首页结构
+        if (document.documentElement.classList.contains('classic')) return;
         // 仅原版首页（无 .hero 且含 .video-container）
         if (document.querySelector('.hero')) return;
         var vc = document.querySelector('.video-container');
