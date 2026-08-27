@@ -1,0 +1,153 @@
+/* ============================================================
+NB频道 - 经典模式皮肤（html.classic 时生效）
+尽量还原旧版界面观感：浅色背景、白卡片、无毛玻璃、无特效
+用法：<html class="classic"> 时本文件覆盖 ui-new.css 的效果
+============================================================ */
+
+/* ===== 1. 背景：去掉光斑/渐变，还原纯浅灰 ===== */
+html.classic body {
+    background: #f6f7f9 !important;
+}
+html.classic body::before {
+    display: none !important;   /* 隐藏背景光斑 */
+}
+html.classic .ui-orb {
+    display: none !important;   /* 隐藏浮动光球 */
+}
+
+/* ===== 2. 卡片：去掉毛玻璃，还原纯白/浅色实底 ===== */
+html.classic .home-card,
+html.classic .about-content,
+html.classic .changelog-content,
+html.classic .comment-section,
+html.classic .product-card,
+html.classic .upload-section,
+html.classic .info-card,
+html.classic .chat-container,
+html.classic .messages-container,
+html.classic .profile-container,
+html.classic .records-container,
+html.classic .ach-container,
+html.classic .register-card,
+html.classic .login-card,
+html.classic .balance-card,
+html.classic .my-company-card,
+html.classic .distribution-card,
+html.classic .chart-wrapper,
+html.classic .canvas-container,
+html.classic .data-table-wrapper,
+html.classic .toolbar,
+html.classic .stats {
+    background: #ffffff !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 1px solid #e5e9ef !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+    border-radius: 12px !important;
+}
+
+/* 小型元素还原纯色 */
+html.classic .comment,
+html.classic .video-card,
+html.classic .ach-card,
+html.classic .record-item,
+html.classic .notification-item,
+html.classic .stat-card,
+html.classic .stat-item,
+html.classic .feature-card,
+html.classic .msg.other .bubble,
+html.classic .slider-container {
+    background: #ffffff !important;
+    border-color: #e5e9ef !important;
+}
+
+/* ===== 3. 导航：去掉玻璃拟态，还原经典浅色导航 ===== */
+html.classic .top-nav {
+    background: #ffffff !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 1px solid #e5e9ef !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
+}
+html.classic .top-nav .nav-menu .nav-btn {
+    background: #e0e0e0 !important;
+    color: #333 !important;
+    border-radius: 4px !important;
+}
+html.classic .top-nav .nav-menu .nav-btn:hover {
+    background: #00a1d6 !important;
+    color: #fff !important;
+}
+html.classic .top-nav .nav-menu .nav-btn.active {
+    background: #00a1d6 !important;
+    color: #fff !important;
+    box-shadow: none !important;
+}
+html.classic .quick-nav {
+    background: #f0f0f0 !important;
+    border: 1px solid #ddd !important;
+    border-radius: 8px !important;
+}
+html.classic .quick-nav .nav-btn {
+    background: #e0e0e0 !important;
+    color: #333 !important;
+    border-radius: 4px !important;
+}
+html.classic .quick-nav .nav-btn:hover {
+    background: #00a1d6 !important;
+    color: #fff !important;
+}
+html.classic .quick-nav .share-btn {
+    background: #00a1d6 !important;
+    border-radius: 4px !important;
+    box-shadow: none !important;
+}
+
+/* ===== 4. 首页组件：隐藏 hero/数据条/功能卡片/友商网格（旧版首页没有） ===== */
+html.classic .hero {
+    display: none !important;
+}
+html.classic .stat-bar {
+    display: none !important;
+}
+html.classic .feature-grid {
+    display: none !important;
+}
+html.classic .friend-grid {
+    display: none !important;
+}
+html.classic #uiPageBanner {
+    display: none !important;
+}
+
+/* ===== 5. 动画/特效：关闭 ===== */
+html.classic .ui-reveal,
+html.classic .ui-reveal-in {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+}
+html.classic * {
+    animation: none !important;
+}
+
+/* ===== 6. 圆角还原（新UI偏圆，旧版偏方） ===== */
+html.classic .comment,
+html.classic .video-card,
+html.classic .ach-card,
+html.classic .record-item,
+html.classic .notification-item,
+html.classic .stat-card,
+html.classic .feature-card,
+html.classic .msg.other .bubble {
+    border-radius: 8px !important;
+}
+html.classic input,
+html.classic textarea,
+html.classic select {
+    border-radius: 4px !important;
+}
+html.classic button {
+    border-radius: 4px !important;
+}

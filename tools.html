@@ -6,10 +6,13 @@
     <title>化学工具 - NB频道</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/ui-new.css">
+    <link rel="stylesheet" href="css/classic.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script id="uiBootGuard">
 (function () {
     try {
+        // 经典模式(可选):localStorage nb_classic=1 时加 classic 类(第一帧前生效,零闪跳)
+        if (localStorage.getItem('nb_classic') === '1') document.documentElement.classList.add('classic');
         // 纯新UI:隐藏 body,等待 ui-nav.js 注入完成后解除(首帧即完整新UI,零闪跳)
         document.documentElement.classList.add('ui-boot-new');
         var st = document.createElement('style');

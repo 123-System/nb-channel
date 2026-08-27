@@ -6,10 +6,13 @@
     <title>个人中心 - NB频道</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/ui-new.css">
+    <link rel="stylesheet" href="css/classic.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script id="uiBootGuard">
 (function () {
     try {
+        // 经典模式(可选):localStorage nb_classic=1 时加 classic 类(第一帧前生效,零闪跳)
+        if (localStorage.getItem('nb_classic') === '1') document.documentElement.classList.add('classic');
         // 纯新UI:隐藏 body,等待 ui-nav.js 注入完成后解除(首帧即完整新UI,零闪跳)
         document.documentElement.classList.add('ui-boot-new');
         var st = document.createElement('style');
@@ -256,6 +259,13 @@
 
     <!-- ===== 以下为个人设置区（仅本人可见） ===== -->
     <div id="settingsSection" style="display:none;">
+    <h2>🎨 界面风格</h2>
+    <div class="form-group" style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button id="styleNewBtn" style="flex:1; min-width:120px;">✨ 新潮模式</button>
+        <button id="styleClassicBtn" style="flex:1; min-width:120px; background:#6c757d;">📄 经典模式</button>
+        <div style="width:100%; font-size:0.8rem; color:var(--count-text);" id="styleHint"></div>
+    </div>
+
     <h2>✏️ 编辑简介</h2>
     <div class="form-group">
         <input type="text" id="bioInput" placeholder="一句话介绍自己（最多100字）" maxlength="100">
@@ -1204,6 +1214,22 @@
 
     document.getElementById('updateUsernameBtn').addEventListener('click', updateUsername);
     document.getElementById('updatePasswordBtn').addEventListener('click', updatePassword);
+
+    // ===== 界面风格切换（新潮 / 经典） =====
+    function refreshStyleBtns() {
+        const classic = localStorage.getItem('nb_classic') === '1';
+        const newBtn = document.getElementById('styleNewBtn');
+        const oldBtn = document.getElementById('styleClassicBtn');
+        const hint = document.getElementById('styleHint');
+        if (newBtn) newBtn.style.outline = classic ? 'none' : '3px solid #00a1d6';
+        if (oldBtn) oldBtn.style.outline = classic ? '3px solid #00a1d6' : 'none';
+        if (hint) hint.innerText = classic ? '当前使用：经典模式（旧版风格）' : '当前使用：新潮模式（毛玻璃官网风）';
+    }
+    const styleNewBtn = document.getElementById('styleNewBtn');
+    const styleClassicBtn = document.getElementById('styleClassicBtn');
+    if (styleNewBtn) styleNewBtn.onclick = () => { localStorage.setItem('nb_classic', '0'); location.reload(); };
+    if (styleClassicBtn) styleClassicBtn.onclick = () => { localStorage.setItem('nb_classic', '1'); location.reload(); };
+    refreshStyleBtns();
 
     loadUserInfo();
 </script>
