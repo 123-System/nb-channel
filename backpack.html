@@ -5,35 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>背包 - NB频道</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/ui-new.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script id="uiBootGuard">
 (function () {
     try {
-        var raw = location.pathname.split('/').pop() || '';
-        var isNewFile = /-new\.html$/i.test(raw);
-        var ver = isNewFile ? 'new' : (localStorage.getItem('nb_ui') === 'old' ? 'old' : 'new');
-        if (ver === 'new') {
-            document.documentElement.classList.add('ui-boot-new');
-            var st = document.createElement('style');
-            st.id = 'uiBootHide';
-            st.textContent = 'html.ui-boot-new body{visibility:hidden}';
-            document.head.appendChild(st);
-            // 单文件双皮肤：提前注入新版皮肤 CSS（旧 UI 用户不加载）
-            if (!isNewFile && !document.getElementById('uiNewCss')) {
-                var lk = document.createElement('link');
-                lk.id = 'uiNewCss';
-                lk.rel = 'stylesheet';
-                lk.href = 'css/ui-new.css';
-                document.head.appendChild(lk);
-            }            setTimeout(function () {
-                document.documentElement.classList.remove('ui-boot-new');
-                var s = document.getElementById('uiBootHide');
-                if (s) s.remove();
-            }, 3500);
-        }
+        // 纯新UI:隐藏 body,等待 ui-nav.js 注入完成后解除(首帧即完整新UI,零闪跳)
+        document.documentElement.classList.add('ui-boot-new');
+        var st = document.createElement('style');
+        st.id = 'uiBootHide';
+        st.textContent = 'html.ui-boot-new body{visibility:hidden}';
+        document.head.appendChild(st);
+        setTimeout(function () {
+            document.documentElement.classList.remove('ui-boot-new');
+            var s = document.getElementById('uiBootHide');
+            if (s) s.remove();
+        }, 3500);
     } catch (e) {}
 })();
 </script><script src="js/common.js?v=20260825"></script>
+    <script src="js/ui-nav.js"></script>
     <style>
         body { padding: 40px 20px; background: var(--bg-color); }
         .bp-container {
@@ -99,27 +90,24 @@
 <script>(function(){if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark-mode');})();</script>
 <div class="container" style="max-width:1080px; margin:0 auto; padding:20px 20px 0;">
     <!-- 导航栏（背包入口暂未在导航显示，页面可直接访问） -->
-    <div class="nav-container">
-        <div class="nav-links">
-            <a href="index.html" class="nav-btn">首页</a>
-            <a href="videos.html" class="nav-btn">视频</a>
-            <a href="about.html" class="nav-btn">关于</a>
-            <a href="changelog.html" class="nav-btn">更新日志</a>
-            <a href="product.html" class="nav-btn">我的产品</a>
-            <a href="APP.html" class="nav-btn">软件/APP下载</a>
-        </div>
-        <div class="nav-actions">
-            <a href="comments-beta.html" class="nav-btn">💬 评论区</a>
-            <a href="Virtual stock.html" class="nav-btn">📈 NB虚拟股票</a>
-            <a href="chat.html" class="nav-btn">👥 好友</a>
-            <a href="product_share.html" class="nav-btn">🛍️ 作品分享</a>
-            <a href="messages.html" class="nav-btn">🔔 消息</a>
-        </div>
-        <div class="nav-actions">
-            <a href="tools.html" class="nav-btn">🔬 化学工具</a>
-            <a href="titles.html" class="nav-btn">🏅 称号</a>
-            <a href="bank.html" class="nav-btn">🏦 NB银行</a><a href="shop.html" class="nav-btn">🛍️ NB商店</a><a href="backpack.html" class="nav-btn">🎒 背包</a>
-        </div>
+    <nav class="top-nav"><a class="nav-logo" href="index.html">NB频道</a><div class="nav-menu"><a href="index.html" class="nav-btn">首页</a><a href="videos.html" class="nav-btn">视频</a><a href="about.html" class="nav-btn">关于</a><a href="changelog.html" class="nav-btn">更新日志</a><a href="product.html" class="nav-btn">我的产品</a><a href="APP.html" class="nav-btn">软件/APP下载</a></div><div class="nav-right"><button id="profileBtn" class="profile-btn">个人中心</button><button id="authButton" class="auth-btn">登录/注册</button></div></nav>
+    <div class="quick-nav"><span style="font-size:0.85rem; color:var(--count-text);">快捷入口：</span><a href="comments-beta.html" class="nav-btn">💬 评论区</a><a href="Virtual stock.html" class="nav-btn">📈 NB虚拟股票</a><a href="chat.html" class="nav-btn">👥 好友</a><a href="product_share.html" class="nav-btn">🛍️ 作品分享</a><a href="messages.html" class="nav-btn">🔔 消息</a><a href="tools.html" class="nav-btn">🔬 化学工具</a><a href="titles.html" class="nav-btn">🏅 称号</a><a href="bank.html" class="nav-btn">🏦 NB银行</a><a href="shop.html" class="nav-btn">🛍️ NB商店</a><a href="backpack.html" class="nav-btn">🎒 背包</a></div>
+
+<div class="hero">
+    <div class="hero-badges">
+        <span class="hero-badge">虚拟公司</span>
+        <span class="hero-badge">10万+粉丝</span>
+        <span class="hero-badge">化学物理作死</span>
+    </div>
+    <h1>背包</h1>
+    <div class="hero-sub">NB频道 · 虚拟公司 · 官网</div>
+    <div class="hero-btns">
+        <a class="hero-btn" href="videos.html">看视频</a>
+        <a class="hero-btn" href="comments-beta.html">进评论区</a>
+        <a class="hero-btn ghost" href="Virtual stock.html">虚拟股票</a>
+        <a class="hero-btn ghost" href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">B站关注</a>
+    </div>
+</div>
     </div>
 </div>
 <div class="bp-container">

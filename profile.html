@@ -5,36 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>个人中心 - NB频道</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/ui-new.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script id="uiBootGuard">
 (function () {
     try {
-        var raw = location.pathname.split('/').pop() || '';
-        var isNewFile = /-new\.html$/i.test(raw);
-        var ver = isNewFile ? 'new' : (localStorage.getItem('nb_ui') === 'old' ? 'old' : 'new');
-        if (ver === 'new') {
-            document.documentElement.classList.add('ui-boot-new');
-            var st = document.createElement('style');
-            st.id = 'uiBootHide';
-            st.textContent = 'html.ui-boot-new body{visibility:hidden}';
-            document.head.appendChild(st);
-            // 单文件双皮肤：提前注入新版皮肤 CSS（旧 UI 用户不加载）
-            if (!isNewFile && !document.getElementById('uiNewCss')) {
-                var lk = document.createElement('link');
-                lk.id = 'uiNewCss';
-                lk.rel = 'stylesheet';
-                lk.href = 'css/ui-new.css';
-                document.head.appendChild(lk);
-            }
-            setTimeout(function () {
-                document.documentElement.classList.remove('ui-boot-new');
-                var s = document.getElementById('uiBootHide');
-                if (s) s.remove();
-            }, 3500);
-        }
+        // 纯新UI:隐藏 body,等待 ui-nav.js 注入完成后解除(首帧即完整新UI,零闪跳)
+        document.documentElement.classList.add('ui-boot-new');
+        var st = document.createElement('style');
+        st.id = 'uiBootHide';
+        st.textContent = 'html.ui-boot-new body{visibility:hidden}';
+        document.head.appendChild(st);
+        setTimeout(function () {
+            document.documentElement.classList.remove('ui-boot-new');
+            var s = document.getElementById('uiBootHide');
+            if (s) s.remove();
+        }, 3500);
     } catch (e) {}
 })();
 </script><script src="js/common.js?v=20260825"></script>
+    <script src="js/ui-nav.js"></script>
     <style>
         body {
             padding: 40px 20px;
@@ -273,13 +263,6 @@
             <button id="saveBioBtn">保存简介</button>
             <span id="bioStatus" style="font-size:0.8rem; color:var(--count-text);"></span>
         </div>
-    </div>
-
-    <h2>🎨 界面风格</h2>
-    <div class="form-group" style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button id="uiStyleNew" style="flex:1; min-width:120px;">🆕 新版界面</button>
-        <button id="uiStyleOld" style="flex:1; min-width:120px; background:#6c757d;">📄 旧版界面</button>
-        <div style="width:100%; font-size:0.8rem; color:var(--count-text);" id="uiStyleHint"></div>
     </div>
 
     <h2>修改用户名</h2>
@@ -1222,36 +1205,6 @@
     document.getElementById('updateUsernameBtn').addEventListener('click', updateUsername);
     document.getElementById('updatePasswordBtn').addEventListener('click', updatePassword);
 
-    // 界面风格设置（新版/旧版）
-    function refreshUiStyleBtns() {
-        const cur = (typeof getUIVersion === 'function' ? getUIVersion() : 'new');
-        const hint = document.getElementById('uiStyleHint');
-        const newBtn = document.getElementById('uiStyleNew');
-        const oldBtn = document.getElementById('uiStyleOld');
-        if (newBtn) newBtn.style.outline = cur === 'new' ? '3px solid #00a1d6' : 'none';
-        if (oldBtn) oldBtn.style.outline = cur === 'old' ? '3px solid #00a1d6' : 'none';
-        if (hint) hint.innerText = cur === 'new' ? '当前使用：新版界面（毛玻璃官网风）' : '当前使用：旧版界面（经典卡片风）';
-    }
-    const uiNewBtn = document.getElementById('uiStyleNew');
-    const uiOldBtn = document.getElementById('uiStyleOld');
-    function goVersion(v) {
-        if (typeof setUIVersion === 'function') setUIVersion(v);
-        const raw = location.pathname.split('/').pop() || '';
-        const isNew = /-new\.html$/i.test(raw);
-        // 已经是目标版本：直接刷新（避免 profile-new → profile-new-new 的 404）
-        if ((v === 'new' && isNew) || (v === 'old' && !isNew)) {
-            location.reload();
-            return;
-        }
-        if (raw.toLowerCase().indexOf('.html') !== -1) {
-            location.href = v === 'new' ? raw.replace(/\.html$/i, '-new.html') : raw.replace(/-new\.html$/i, '.html');
-        } else {
-            location.reload();
-        }
-    }
-    if (uiNewBtn) uiNewBtn.onclick = () => goVersion('new');
-    if (uiOldBtn) uiOldBtn.onclick = () => goVersion('old');
-    refreshUiStyleBtns();
     loadUserInfo();
 </script>
 

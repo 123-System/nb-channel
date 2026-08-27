@@ -451,38 +451,20 @@ function uiHref(h) {
 })();
 
 // ==========================================================
-// 界面版本自动跳转（同步、零闪跳）：本地偏好决定进哪个文件
-// 单文件双皮肤：xxx.html 同时承载新旧 UI，不再需要跳 -new
-// -new 文件仍兼容访问（旧链接），偏好 old 时跳回单文件
+// 单文件纯新 UI：界面版本自动跳转已移除（无 -new 文件）
+// uiHref/getUIVersion/setUIVersion 保留为兼容 no-op（页面仍调用）
 // ==========================================================
-(function () {
-    var rawPage = location.pathname.split('/').pop() || '';
-    var page = rawPage.toLowerCase();
-    if (page.indexOf('.html') === -1) return;
-    var isNew = page.indexOf('-new.html') !== -1;
-    var base = isNew ? rawPage.replace(/-new\.html$/i, '.html') : rawPage;
-    var known = ['index', 'videos', 'about', 'changelog', 'product', 'app', 'comments-beta',
-                 'virtual stock', 'chat', 'product_share', 'messages', 'profile', 'achievements',
-                 'lottery_records', 'register_company', 'comments', 'login', 'tools', 'titles', 'bank',
-                 'shop', 'backpack'];
-    if (known.indexOf(base.replace(/\.html$/i, '').toLowerCase()) === -1) return;
-
-    var pref = localStorage.getItem('nb_ui') === 'old' ? 'old' : 'new';
-    var qs = location.search || '';
-    // -new 文件：偏好 old → 跳回单文件；偏好 new → 留在 -new（内容一致，无需跳）
-    if (isNew && pref === 'old') {
-        location.replace(base + qs);
-    }
-    // 单文件：无需任何跳转（新旧 UI 都在本文件内切换）
-})();
 
 // ==========================================================
-// 自动加载新版界面驱动 js/ui-nav.js（全站生效，无需改页面）
-// 用 currentScript 定位 js/ 目录，兼容任意目录下的页面
+// 加载新版界面驱动 js/ui-nav.js
+// 页面 head 已同步引用（零闪跳）时跳过；旧页面无引用时动态注入兜底
 // ==========================================================
 (function () {
     if (window.__uiNavLoaded) return;
     window.__uiNavLoaded = true;
+    // 页面已静态引用(同步加载)则不再注入,避免重复
+    var existing = document.querySelector('script[src*="ui-nav.js"]');
+    if (existing) return;
     var src = '';
     try {
         src = (document.currentScript && document.currentScript.src) || '';

@@ -1,0 +1,304 @@
+/* ============================================================
+   css/ui-new.css — 新版界面静态样式（-new 页面 head 直接加载）
+   内容 = ui-nav.js injectStyle 样式 + premium.css，两份同步更新
+   ============================================================ *//* ===== 极致高级感：字体渲染 / 滚动条 / 选区 ===== */html.ui-new body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }html.ui-new ::selection { background: rgba(0,161,214,0.25); }html.ui-new ::-webkit-scrollbar { width: 10px; height: 10px; }html.ui-new ::-webkit-scrollbar-thumb { background: rgba(0,161,214,0.35); border-radius: 10px; }html.ui-new ::-webkit-scrollbar-thumb:hover { background: rgba(0,161,214,0.55); }html.ui-new ::-webkit-scrollbar-track { background: transparent; }/* 玻璃拟态导航（滚动吸顶时半透明毛玻璃） */html.ui-new .top-nav {
+                position: sticky; top: 0; z-index: 300;
+                display: flex; align-items: center; gap: 14px;
+                background: rgba(255,255,255,0.78);
+                -webkit-backdrop-filter: blur(16px) saturate(1.4);
+                backdrop-filter: blur(16px) saturate(1.4);
+                border: 1px solid rgba(0,161,214,0.14);
+                border-radius: 18px; padding: 10px 18px; margin-bottom: 24px;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 12px 30px -12px rgba(0,161,214,0.18);
+            }html.ui-new body.dark-mode .top-nav { background: rgba(24,26,32,0.78); border-color: rgba(0,161,214,0.22); }html.ui-new .top-nav .nav-logo {
+                font-size: 1.2rem; font-weight: 800; color: var(--status-border);
+                text-decoration: none; white-space: nowrap; letter-spacing: 0.5px;
+            }html.ui-new .top-nav .nav-menu { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; justify-content: center; }html.ui-new .top-nav .nav-menu .nav-btn {
+                padding: 8px 16px; font-size: 0.92rem; border-radius: 30px; text-decoration: none;
+                color: var(--nav-btn-text); background: transparent; transition: all 0.25s; white-space: nowrap;
+            }html.ui-new .top-nav .nav-menu .nav-btn:hover {
+                background: rgba(0,161,214,0.12); color: var(--status-border);
+            }html.ui-new .top-nav .nav-menu .nav-btn.active {
+                background: linear-gradient(135deg, #00a1d6, #0a84c1); color: #fff;
+                box-shadow: 0 6px 16px -6px rgba(0,161,214,0.5);
+            }html.ui-new .top-nav .nav-right { display: flex; gap: 8px; white-space: nowrap; align-items: center; }html.ui-new .top-nav .auth-btn, html.ui-new .top-nav .profile-btn {
+                background: transparent; color: var(--text-color);
+                border: 1px solid var(--card-border); border-radius: 30px; padding: 7px 16px; font-size: 0.88rem;
+                cursor: pointer; transition: all 0.25s;
+            }html.ui-new .top-nav .auth-btn:hover, html.ui-new .top-nav .profile-btn:hover {
+                border-color: #00a1d6; color: var(--status-border);
+                background: rgba(0,161,214,0.08);
+            }html.ui-new .quick-nav {
+                display: flex; justify-content: center; align-items: center; flex-wrap: wrap;
+                gap: 8px; margin-bottom: 24px; padding: 10px 14px;
+                background: transparent; border: 1px solid var(--card-border);
+                border-radius: 16px;
+            }html.ui-new .quick-nav .nav-btn {
+                padding: 6px 14px; font-size: 0.88rem; border-radius: 30px; text-decoration: none;
+                color: var(--count-text); background: transparent; transition: all 0.25s; white-space: nowrap;
+            }html.ui-new .quick-nav .nav-btn:hover { color: var(--status-border); background: rgba(0,161,214,0.08); }html.ui-new .quick-nav .share-btn {
+                background: linear-gradient(135deg, #00a1d6, #0a84c1); color: #fff;
+                border: none; border-radius: 30px; padding: 6px 14px; font-size: 0.88rem;
+                cursor: pointer; transition: all 0.25s; font-weight: 500; white-space: nowrap;
+                box-shadow: 0 6px 16px -6px rgba(0,161,214,0.5);
+            }html.ui-new .quick-nav .share-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }/* 页面 Hero 横幅：光斑 + 细字重副标题 + 入场动画 */@keyframes uiHeroIn {html.ui-new from { opacity: 0; transform: translateY(18px) scale(0.99); }html.ui-new to { opacity: 1; transform: none; }}html.ui-new #uiPageBanner, html.ui-new .hero { animation: uiHeroIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }html.ui-new #uiPageBanner { position: relative; overflow: hidden; }html.ui-new #uiPageBanner::before {
+                content: ''; position: absolute; inset: 0;
+                background:
+                    radial-gradient(600px 220px at 12% 0%, rgba(255,255,255,0.14), transparent 60%),
+                    radial-gradient(500px 200px at 88% 100%, rgba(255,255,255,0.10), transparent 60%);
+                pointer-events: none;
+            }html.ui-new #uiPageBanner > div { position: relative; }/* 首屏错峰入场 */@keyframes uiFadeUp {html.ui-new from { opacity: 0; transform: translateY(16px); }html.ui-new to { opacity: 1; transform: none; }}html.ui-new .top-nav { animation: uiFadeUp 0.5s ease both; }html.ui-new .quick-nav { animation: uiFadeUp 0.5s 0.08s ease both; }/* 滚动渐显 */html.ui-new .ui-reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1), transform 0.65s cubic-bezier(0.16,1,0.3,1); }html.ui-new .ui-reveal-in { opacity: 1; transform: none; }@media (max-width: 700px) {html.ui-new .top-nav { flex-wrap: wrap; justify-content: space-between; padding: 10px 14px; }html.ui-new .top-nav .nav-menu { order: 3; width: 100%; justify-content: center; }}/* ===== 全局主体高级感（index-preview 设计语言） ===== */html.ui-new .container, html.ui-new .profile-container, html.ui-new .records-container, html.ui-new .ach-container, html.ui-new .register-card { max-width: 1080px; }html.ui-new .home-card, html.ui-new .about-content, html.ui-new .changelog-content, html.ui-new .comment-section, html.ui-new .product-card, html.ui-new .upload-section, html.ui-new .info-card, html.ui-new .chat-container, html.ui-new .profile-container, html.ui-new .records-container, html.ui-new .ach-container, html.ui-new .register-card, html.ui-new .changelog-content ul, html.ui-new .about-content ul {
+                border-radius: 20px !important;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 16px 32px -18px rgba(0,0,0,0.25) !important;
+                border: 1px solid var(--card-border) !important;
+            }html.ui-new .home-card { transition: transform 0.3s, box-shadow 0.3s; }html.ui-new .home-card:hover { transform: translateY(-3px); box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 28px 48px -24px rgba(0,161,214,0.3) !important; }html.ui-new .author-info {
+                display: inline-block; margin: 4px auto 22px;
+                background: linear-gradient(135deg, rgba(0,161,214,0.12), rgba(108,92,231,0.10));
+                border: 1px solid rgba(0,161,214,0.28); border-radius: 30px;
+                padding: 7px 20px; font-size: 0.95rem; color: var(--status-border) !important;
+            }html.ui-new h2 {
+                font-weight: 800; color: var(--text-color);
+                letter-spacing: 0.5px;
+            }html.ui-new .comment-content, html.ui-new .home-card p, html.ui-new .about-content p, html.ui-new .changelog-content li { line-height: 1.95; }html.ui-new a { color: var(--status-border); }html.ui-new .comment-author { color: var(--text-color) !important; }html.ui-new table.data-table, html.ui-new table {
+                border-collapse: separate; border-spacing: 0; border-radius: 14px; overflow: hidden;
+            }html.ui-new input, html.ui-new textarea, html.ui-new select { border-radius: 12px !important; }html.ui-new button { border-radius: 30px; }html.ui-new .chat-container { border-radius: 24px !important; }html.ui-new .chat-header { border-radius: 24px 24px 0 0; }/* ===== 极致玻璃拟态：背景光斑 + 毛玻璃 ===== */html.ui-new body::before {
+                content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+                background:
+                    radial-gradient(900px 520px at 6% -8%, rgba(0,161,214,0.16), transparent 62%),
+                    radial-gradient(760px 540px at 96% 12%, rgba(108,92,231,0.14), transparent 62%),
+                    radial-gradient(860px 640px at 50% 112%, rgba(0,161,214,0.12), transparent 65%),
+                    radial-gradient(500px 400px at 82% 60%, rgba(255,152,0,0.08), transparent 60%);
+            }html.ui-new body.dark-mode::before {
+                background:
+                    radial-gradient(900px 520px at 6% -8%, rgba(0,161,214,0.20), transparent 62%),
+                    radial-gradient(760px 540px at 96% 12%, rgba(108,92,231,0.18), transparent 62%),
+                    radial-gradient(860px 640px at 50% 112%, rgba(0,161,214,0.14), transparent 65%);
+            }html.ui-new .ui-orb { position: fixed; border-radius: 50%; filter: blur(70px); opacity: 0.5; z-index: -1; pointer-events: none; }@keyframes uiOrbA {html.ui-new 0%, html.ui-new 100% { transform: translate(0,0) scale(1); }html.ui-new 50% { transform: translate(45px, -32px) scale(1.15); }}@keyframes uiOrbB {html.ui-new 0%, html.ui-new 100% { transform: translate(0,0) scale(1); }html.ui-new 50% { transform: translate(-38px, 28px) scale(1.1); }}/* 大容器：真毛玻璃（blur）——性能开销集中在少数几个元素上 */html.ui-new .home-card, html.ui-new .about-content, html.ui-new .changelog-content, html.ui-new .comment-section, html.ui-new .product-card, html.ui-new .upload-section, html.ui-new .info-card, html.ui-new .chat-container, html.ui-new .messages-container, html.ui-new .profile-container, html.ui-new .records-container, html.ui-new .ach-container, html.ui-new .register-card, html.ui-new .login-card, html.ui-new .balance-card, html.ui-new .my-company-card, html.ui-new .distribution-card, html.ui-new .chart-wrapper, html.ui-new .canvas-container, html.ui-new .data-table-wrapper, html.ui-new .toolbar, html.ui-new .stats, html.ui-new .top-nav, html.ui-new .quick-nav {
+                background: rgba(255,255,255,0.62) !important;
+                -webkit-backdrop-filter: blur(16px) saturate(1.5);
+                backdrop-filter: blur(16px) saturate(1.5);
+                border-color: rgba(255,255,255,0.55) !important;
+            }/* 小型元素：半透明实色（不 blur，性能友好，视觉近似） */html.ui-new .comment, html.ui-new .video-card, html.ui-new .ach-card, html.ui-new .record-item, html.ui-new .notification-item, html.ui-new .stat-card, html.ui-new .stat-item, html.ui-new .feature-card, html.ui-new .msg.other .bubble, html.ui-new .slider-container, html.ui-new .history-chart-container, html.ui-new .histogram-container, html.ui-new .mini-pie-container, html.ui-new .btn-group, html.ui-new .update-badge, html.ui-new .countdown-badge {
+                background: rgba(255,255,255,0.78) !important;
+                border-color: rgba(255,255,255,0.55) !important;
+            }html.ui-new body.dark-mode .home-card, html.ui-new body.dark-mode .about-content, html.ui-new body.dark-mode .changelog-content, html.ui-new body.dark-mode .comment-section, html.ui-new body.dark-mode .product-card, html.ui-new body.dark-mode .upload-section, html.ui-new body.dark-mode .info-card, html.ui-new body.dark-mode .chat-container, html.ui-new body.dark-mode .messages-container, html.ui-new body.dark-mode .profile-container, html.ui-new body.dark-mode .records-container, html.ui-new body.dark-mode .ach-container, html.ui-new body.dark-mode .register-card, html.ui-new body.dark-mode .login-card, html.ui-new body.dark-mode .balance-card, html.ui-new body.dark-mode .my-company-card, html.ui-new body.dark-mode .distribution-card, html.ui-new body.dark-mode .chart-wrapper, html.ui-new body.dark-mode .canvas-container, html.ui-new body.dark-mode .data-table-wrapper, html.ui-new body.dark-mode .toolbar, html.ui-new body.dark-mode .stats, html.ui-new body.dark-mode .top-nav, html.ui-new body.dark-mode .quick-nav {
+                background: rgba(24,26,32,0.60) !important;
+                border-color: rgba(255,255,255,0.09) !important;
+            }html.ui-new body.dark-mode .comment, html.ui-new body.dark-mode .video-card, html.ui-new body.dark-mode .ach-card, html.ui-new body.dark-mode .record-item, html.ui-new body.dark-mode .notification-item, html.ui-new body.dark-mode .stat-card, html.ui-new body.dark-mode .stat-item, html.ui-new body.dark-mode .feature-card, html.ui-new body.dark-mode .msg.other .bubble, html.ui-new body.dark-mode .slider-container, html.ui-new body.dark-mode .history-chart-container, html.ui-new body.dark-mode .histogram-container, html.ui-new body.dark-mode .mini-pie-container, html.ui-new body.dark-mode .btn-group, html.ui-new body.dark-mode .update-badge, html.ui-new body.dark-mode .countdown-badge {
+                background: rgba(24,26,32,0.72) !important;
+                border-color: rgba(255,255,255,0.09) !important;
+            }/* ==================== premium.css ==================== *//* ============================================================
+   preview/premium.css — 全站页面内容级高级感（预览专用）
+   由 preview/ui-nav.js 在新版界面下自动加载（与 ui-nav.js 同目录）
+   设计语言与 index-preview.html 一致：大圆角 / 柔和阴影 / hover 动效 / 品牌蓝
+   ============================================================ *//* ---------- 通用：内容页（关于/产品/APP/更新日志） ---------- */html.ui-new .about-content, html.ui-new .changelog-content {
+    padding: 28px !important;
+    line-height: 1.95;
+}html.ui-new .about-content a, html.ui-new .changelog-content a, html.ui-new .about-content strong {
+    color: var(--status-border);
+}html.ui-new .site-stats {
+    display: inline-block; margin-top: 14px;
+    background: linear-gradient(135deg, rgba(0,161,214,0.10), rgba(108,92,231,0.08));
+    border: 1px solid rgba(0,161,214,0.25);
+    border-radius: 30px; padding: 6px 18px;
+    font-size: 0.88rem; color: var(--count-text);
+}html.ui-new .changelog-content li { margin-bottom: 8px; }html.ui-new .changelog-content p { font-size: 1.05rem; }/* 每个版本的列表容器左内边距拉宽：给列表圆点留出空间，避免圆点贴边 */html.ui-new .changelog-content ul {
+    padding-left: 2.4em !important;
+    padding-right: 0.8em !important;
+}/* ---------- 视频页 ---------- */html.ui-new .video-count {
+    display: inline-block; margin-bottom: 12px;
+    background: linear-gradient(135deg, rgba(0,161,214,0.12), rgba(108,92,231,0.10));
+    border: 1px solid rgba(0,161,214,0.25); border-radius: 30px;
+    padding: 5px 16px; font-size: 0.85rem; color: var(--status-border) !important;
+}html.ui-new .category-filter { margin-bottom: 14px; }html.ui-new .category-filter button, html.ui-new .sort-buttons .sort-btn {
+    border-radius: 30px !important; padding: 7px 18px !important;
+    border: 1px solid var(--card-border) !important;
+    background: var(--nav-btn-bg) !important; color: var(--nav-btn-text) !important;
+    transition: 0.2s;
+}html.ui-new .category-filter button:hover, html.ui-new .sort-buttons .sort-btn:hover, html.ui-new .category-filter button.active, html.ui-new .sort-buttons .sort-btn.active {
+    background: var(--nav-btn-hover-bg) !important; color: #fff !important;
+    box-shadow: 0 4px 12px rgba(0,161,214,0.3);
+}html.ui-new .search-box {
+    border-radius: 30px !important; border: 1px solid var(--card-border) !important;
+    padding: 9px 18px !important;
+}html.ui-new .search-hint { color: var(--count-text); font-size: 0.8rem; }html.ui-new .video-card {
+    border-radius: 18px !important; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 14px 30px -16px rgba(0,0,0,0.25) !important;
+    border: 1px solid var(--card-border) !important;
+    transition: transform 0.3s, box-shadow 0.3s;
+}html.ui-new .video-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 24px 44px -18px rgba(0,161,214,0.35) !important;
+    border-color: #00a1d6 !important;
+}html.ui-new .video-card img { border-radius: 18px 18px 0 0 !important; }html.ui-new .status-note {
+    background: var(--count-bg); border: 1px dashed var(--card-border);
+    border-radius: 14px; padding: 10px 16px; font-size: 0.85rem; color: var(--count-text);
+}/* ---------- 评论区 ---------- */html.ui-new .comment-section { padding: 24px !important; }html.ui-new .auth-bar { border-bottom-color: var(--card-border); }html.ui-new .new-comment-area textarea, html.ui-new .reply-form textarea {
+    border-radius: 14px !important; border: 1px solid var(--card-border) !important;
+    background: var(--bg-color); color: var(--text-color); padding: 12px 14px !important;
+}html.ui-new .comment {
+    border: 1px solid var(--card-border) !important;
+    border-radius: 16px !important;
+    background: var(--card-bg);
+    padding: 14px 16px !important;
+    margin-bottom: 12px !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03), 0 10px 24px -14px rgba(0,0,0,0.15);
+    transition: box-shadow 0.3s, transform 0.3s;
+}html.ui-new .comment:hover { box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 16px 32px -14px rgba(0,161,214,0.25); transform: translateY(-1px); }html.ui-new .comment img, html.ui-new .comment-meta img { border-radius: 50%; }html.ui-new .comment-author { font-weight: 700; }html.ui-new .comment-time { font-size: 0.78rem; }html.ui-new .comment-actions button, html.ui-new .comment-reactions button, html.ui-new .sort-btn, html.ui-new .toggle-btn, html.ui-new .report-btn, html.ui-new .reply-btn, html.ui-new .delete-btn, html.ui-new .apology-btn {
+    border-radius: 30px !important; padding: 4px 14px !important;
+}html.ui-new .reply-form {
+    background: var(--count-bg); border-radius: 14px; padding: 12px;
+    border: 1px solid var(--card-border);
+}html.ui-new .replies { margin-left: 18px; }html.ui-new .toolbar-label { color: var(--count-text); }/* ---------- 聊天页 ---------- */html.ui-new .side-item { border-radius: 14px !important; }html.ui-new .side-item:hover { background: linear-gradient(135deg, rgba(0,161,214,0.08), transparent) !important; }html.ui-new .side-item.active { background: linear-gradient(135deg, rgba(0,161,214,0.14), rgba(108,92,231,0.08)) !important; }html.ui-new .side-tab { border-radius: 12px 12px 0 0; }html.ui-new .side-tab.active { background: rgba(0,161,214,0.08); }html.ui-new .msg .bubble {
+    box-shadow: 0 4px 12px -6px rgba(0,0,0,0.18);
+    border-radius: 16px !important;
+}html.ui-new .chat-input { border-radius: 0 0 24px 24px; }html.ui-new .chat-input textarea { border-radius: 20px !important; }html.ui-new .chat-header { font-size: 1rem; }html.ui-new .search-input { border-radius: 20px !important; }/* ---------- 股票页 ---------- */html.ui-new .balance-card, html.ui-new .my-company-card, html.ui-new .distribution-card {
+    border-radius: 20px !important;
+    box-shadow: 0 18px 38px -20px rgba(0,0,0,0.22) !important;
+    border: 1px solid var(--card-border) !important;
+}html.ui-new .balance-card .stat-value, html.ui-new .stat-value {
+    font-weight: 800; font-size: 1.35rem; color: var(--status-border);
+}html.ui-new .chart-wrapper, html.ui-new .canvas-container, html.ui-new .history-chart-container, html.ui-new .histogram-container, html.ui-new .mini-pie-container {
+    border-radius: 18px !important;
+    box-shadow: 0 14px 30px -18px rgba(0,0,0,0.2) !important;
+    border: 1px solid var(--card-border) !important;
+    background: var(--card-bg);
+}html.ui-new .chart-btn, html.ui-new .btn-group button, html.ui-new .toolbar button, html.ui-new .refresh-btn, html.ui-new .pause-btn, html.ui-new .reset-btn, html.ui-new .toggle-table-btn {
+    border-radius: 30px !important;
+}html.ui-new .data-table-wrapper { border-radius: 16px; overflow: hidden; border: 1px solid var(--card-border); box-shadow: 0 12px 26px -18px rgba(0,0,0,0.2); }html.ui-new .data-table thead th {
+    background: linear-gradient(135deg, rgba(0,161,214,0.12), rgba(108,92,231,0.08));
+    color: var(--text-color); font-weight: 700;
+}html.ui-new .data-table tbody tr:hover { background: rgba(0,161,214,0.05); }html.ui-new .trade-btn { border-radius: 20px !important; }html.ui-new .stats { border-radius: 16px !important; }html.ui-new .stock-link { color: var(--status-border) !important; }/* ---------- 作品分享页 ---------- */html.ui-new .product-card {
+    border-radius: 20px !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 16px 34px -20px rgba(0,0,0,0.22) !important;
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+}html.ui-new .product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 24px 46px -20px rgba(0,161,214,0.35) !important;
+    border-color: #00a1d6 !important;
+}html.ui-new .product-title { font-weight: 800; font-size: 1.15rem; }html.ui-new .product-meta { font-size: 0.8rem; }html.ui-new .filter-btn { border-radius: 30px !important; }html.ui-new .upload-section { border-radius: 20px !important; box-shadow: 0 16px 34px -20px rgba(0,0,0,0.2) !important; }html.ui-new .user-info { font-size: 0.95rem; }/* ---------- 消息中心 ---------- */html.ui-new .messages-container {
+    border-radius: 24px !important; overflow: hidden;
+    box-shadow: 0 24px 48px -24px rgba(0,0,0,0.25) !important;
+    border: 1px solid var(--card-border) !important;
+}html.ui-new .messages-header { padding: 16px 20px; }html.ui-new .tabs .tab-btn {
+    border-radius: 30px !important; padding: 8px 18px !important;
+    border: 1px solid var(--card-border) !important;
+    background: var(--nav-btn-bg) !important; color: var(--nav-btn-text) !important;
+    transition: 0.2s;
+}html.ui-new .tabs .tab-btn.active { background: var(--nav-btn-hover-bg) !important; color: #fff !important; }html.ui-new .notification-item {
+    border-radius: 14px !important; margin: 6px 10px !important;
+    border: 1px solid var(--card-border) !important;
+    transition: box-shadow 0.2s, transform 0.2s;
+}html.ui-new .notification-item:hover { box-shadow: 0 10px 22px -12px rgba(0,0,0,0.2); transform: translateX(2px); }html.ui-new .notification-item.unread {
+    background: linear-gradient(135deg, rgba(0,161,214,0.08), transparent) !important;
+    border-left: 3px solid #00a1d6 !important;
+}html.ui-new .notification-avatar { border-radius: 50% !important; }html.ui-new .btn-back, html.ui-new .btn-read-all { border-radius: 30px !important; }html.ui-new .toast { border-radius: 30px !important; }/* ---------- 个人中心 ---------- */html.ui-new .avatar-box { border-radius: 22px !important; }html.ui-new .avatar-box img { border-radius: 50% !important; border: 3px solid var(--card-border); }html.ui-new .avatar-actions button { border-radius: 30px !important; }html.ui-new .info-item { padding: 14px 0 !important; }html.ui-new .info-label { font-weight: 700; }html.ui-new .info-value { color: var(--status-border); }html.ui-new .data-table { border-radius: 14px; overflow: hidden; }html.ui-new .rule-actions button { border-radius: 20px !important; }/* ---------- 成就页 ---------- */html.ui-new .stat-card {
+    border-radius: 18px !important;
+    box-shadow: 0 12px 26px -16px rgba(0,0,0,0.2) !important;
+    border: 1px solid var(--card-border) !important;
+}html.ui-new .ach-card {
+    box-shadow: 0 12px 26px -16px rgba(0,0,0,0.18) !important;
+    transition: transform 0.25s, box-shadow 0.25s;
+}html.ui-new .ach-card:hover { transform: translateY(-3px); box-shadow: 0 20px 36px -16px rgba(255,215,0,0.35) !important; }html.ui-new .top-actions a, html.ui-new .top-actions button { border-radius: 30px !important; }/* ---------- 抽奖记录 ---------- */html.ui-new .record-item {
+    border-radius: 14px !important; margin-bottom: 6px;
+    background: var(--count-bg); border: 1px solid transparent;
+    transition: 0.2s;
+}html.ui-new .record-item:hover { border-color: var(--card-border); background: var(--card-bg); }html.ui-new .record-result { font-weight: 700; }html.ui-new .record-amount { font-weight: 800; }/* ---------- 登录页 ---------- */html.ui-new .login-card {
+    border-radius: 24px !important;
+    box-shadow: 0 28px 60px -28px rgba(0,161,214,0.45) !important;
+    border: 1px solid var(--card-border) !important;
+    overflow: hidden;
+}html.ui-new .login-card .card-title {
+    background: linear-gradient(135deg, #00a1d6 0%, #0a84c1 45%, #6c5ce7 100%);
+    color: #fff; margin: 0; padding: 20px; font-weight: 800; letter-spacing: 1px;
+}html.ui-new .login-card .tabs .tab {
+    border-radius: 30px !important; padding: 8px 22px !important;
+    background: var(--nav-btn-bg) !important; color: var(--nav-btn-text) !important;
+    border: 1px solid var(--card-border) !important;
+}html.ui-new .login-card .tabs .tab.active { background: var(--nav-btn-hover-bg) !important; color: #fff !important; }html.ui-new .login-card input { border-radius: 30px !important; padding: 11px 18px !important; }html.ui-new .login-card button { border-radius: 30px !important; }/* ---------- 注册公司页 ---------- */html.ui-new .register-card {
+    border-radius: 24px !important;
+    box-shadow: 0 28px 60px -28px rgba(0,161,214,0.45) !important;
+    border: 1px solid var(--card-border) !important;
+    position: relative; overflow: hidden;
+}html.ui-new .register-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+    background: linear-gradient(90deg, #00a1d6, #6c5ce7);
+}html.ui-new .register-card input { border-radius: 30px !important; }html.ui-new .register-card .checkbox-group { border-radius: 14px; background: var(--count-bg); padding: 12px 14px; }/* ---------- 旧版评论区（comments.html） ---------- */html.ui-new .comment-section .comment {
+    border: 1px solid var(--card-border) !important;
+    border-radius: 16px !important;
+    background: var(--card-bg); padding: 14px 16px !important; margin-bottom: 12px !important;
+}/* ============================================================
+   新版首页专属区块（ui-nav.js 运行时注入，样式在此定义）
+   ============================================================ *//* 经典导航的新版视觉（毛玻璃 + 胶囊按钮） */html.ui-new .nav-container {
+    background: rgba(255,255,255,0.60) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.5);
+    backdrop-filter: blur(16px) saturate(1.5);
+    border: 1px solid rgba(255,255,255,0.55) !important;
+    border-radius: 18px !important;
+    padding: 14px 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 12px 28px -14px rgba(0,161,214,0.22) !important;
+}html.ui-new body.dark-mode .nav-container {
+    background: rgba(24,26,32,0.60) !important;
+    border-color: rgba(255,255,255,0.09) !important;
+}html.ui-new .nav-links, html.ui-new .nav-actions { gap: 10px; }html.ui-new .nav-container .nav-btn, html.ui-new .nav-container .share-btn {
+    border-radius: 30px !important;
+    transition: transform 0.25s, box-shadow 0.25s, background 0.25s !important;
+}html.ui-new .nav-container .nav-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px -6px rgba(0,161,214,0.4);
+}html.ui-new .nav-container .nav-btn.active {
+    background: linear-gradient(135deg, #00a1d6, #0a84c1) !important;
+    color: #fff !important;
+    box-shadow: 0 6px 16px -6px rgba(0,161,214,0.5);
+}/* 右上角登录胶囊玻璃化 */html.ui-new .auth-area {
+    background: rgba(255,255,255,0.65) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    backdrop-filter: blur(14px) saturate(1.4);
+    border: 1px solid rgba(255,255,255,0.55) !important;
+    box-shadow: 0 8px 24px -10px rgba(0,0,0,0.15) !important;
+}html.ui-new body.dark-mode .auth-area {
+    background: rgba(24,26,32,0.60) !important;
+    border-color: rgba(255,255,255,0.09) !important;
+}html.ui-new .section-title {
+    display: flex; align-items: center; gap: 10px; margin: 28px 0 8px;
+    font-size: 1.25rem; font-weight: 700; color: var(--text-color);
+}html.ui-new .section-title::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, #00a1d6, transparent); }html.ui-new .hero {
+    background: linear-gradient(135deg, #00a1d6 0%, #0a84c1 45%, #6c5ce7 100%);
+    border-radius: 24px; padding: 48px 32px 40px; text-align: center;
+    color: #fff; margin-bottom: 26px;
+    box-shadow: 0 18px 40px -12px rgba(0,161,214,0.5);
+    position: relative; overflow: hidden;
+}html.ui-new .hero::before {
+    content: ''; position: absolute; top: -60px; right: -60px;
+    width: 200px; height: 200px; border-radius: 50%; background: rgba(255,255,255,0.08);
+}html.ui-new .hero::after {
+    content: ''; position: absolute; bottom: -80px; left: -40px;
+    width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,0.06);
+}html.ui-new .hero-badges { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }html.ui-new .hero-badge {
+    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 30px; padding: 4px 14px; font-size: 0.78rem; color: #fff;
+    -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}html.ui-new .hero h1 { margin: 0 0 6px; font-size: 2.6rem; font-weight: 900; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.2); letter-spacing: 1px; }html.ui-new .hero .hero-sub { font-size: 1rem; opacity: 0.92; margin-bottom: 22px; }html.ui-new .hero .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 26px; }html.ui-new .hero .hero-btn {
+    display: inline-block; background: #fff; color: #00a1d6;
+    border-radius: 40px; padding: 10px 26px; font-weight: 700;
+    text-decoration: none; transition: 0.2s; box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+}html.ui-new .hero .hero-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.25); }html.ui-new .hero .hero-btn.ghost { background: rgba(255,255,255,0.16); color: #fff; }html.ui-new .hero-video { border-radius: 18px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.3); max-width: 720px; margin: 0 auto; border: 3px solid rgba(255,255,255,0.25); }html.ui-new .hero-video video { display: block; width: 100%; }html.ui-new .stat-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin: -6px 0 26px; }html.ui-new .stat-item {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 16px; padding: 16px 10px; text-align: center;
+    box-shadow: 0 4px 14px -8px rgba(0,0,0,0.12);
+}html.ui-new .stat-item .num { font-size: 1.5rem; font-weight: 800; color: var(--status-border); }html.ui-new .stat-item .label { font-size: 0.78rem; color: var(--count-text); margin-top: 4px; }html.ui-new .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-top: 18px; }html.ui-new .feature-card {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 18px; padding: 22px 14px; text-decoration: none;
+    color: var(--text-color); transition: 0.22s;
+}html.ui-new .feature-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -10px rgba(0,161,214,0.35); border-color: #00a1d6; }html.ui-new .feature-card .f-icon { font-size: 2.2rem; line-height: 1; }html.ui-new .feature-card .f-name { font-weight: 700; font-size: 1rem; }html.ui-new .feature-card .f-desc { font-size: 0.76rem; color: var(--count-text); text-align: center; min-height: 30px; }html.ui-new .feature-card .f-go { font-size: 0.8rem; color: #00a1d6; font-weight: 600; }html.ui-new .friend-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; margin-top: 18px; }html.ui-new .friend-card {
+    background: var(--count-bg); border: 1px solid var(--card-border); border-radius: 14px;
+    padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    transition: 0.2s;
+}html.ui-new .friend-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.12); border-color: #00a1d6; }html.ui-new .friend-card .fc-name { font-size: 0.92rem; font-weight: 600; color: var(--text-color); }html.ui-new .friend-card .fc-note { font-size: 0.72rem; color: var(--count-text); }html.ui-new .friend-card a {
+    background: #00a1d6; color: #fff; border-radius: 20px; padding: 5px 14px;
+    font-size: 0.8rem; text-decoration: none; white-space: nowrap;
+}html.ui-new .friend-card a:hover { filter: brightness(0.9); }html.ui-new .site-footer {
+    margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--card-border);
+    text-align: center; font-size: 0.85rem; color: var(--count-text); line-height: 2.1;
+}html.ui-new .site-footer a { color: var(--status-border); text-decoration: none; }html.ui-new .site-footer a:hover { text-decoration: underline; }@media (max-width: 600px) {html.ui-new .hero { padding: 32px 16px 26px; }html.ui-new .hero h1 { font-size: 1.9rem; }html.ui-new .stat-bar { grid-template-columns: repeat(2, 1fr); }}

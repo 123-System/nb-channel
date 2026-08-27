@@ -394,8 +394,9 @@
     var MAIN_HREFS = ['index.html', 'videos.html', 'about.html', 'changelog.html', 'product.html', 'APP.html'];
 
     // 从现有导航 DOM 收集链接 → 渲染新版导航并替换
-    // 无 .nav-container 的页面（如 titles 单文件试点）用标准导航模板生成
+    // 页面已有静态 .top-nav(单文件新UI)时跳过;有 .nav-container 时替换;都没有时用标准模板生成
     function replaceNav() {
+        if (document.querySelector('.top-nav')) return;   // 已有新导航,无需处理
         var host = document.querySelector('.nav-container');
         var links = [];
         var activeHref = '';
