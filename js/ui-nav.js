@@ -970,26 +970,39 @@
     function initNewUI() {
         var isBeta = document.documentElement.classList.contains('beta');
         var isHome = !!document.querySelector('.video-container');
-        if (isBeta && isHome) {
-            // 测试版首页：高级感官网布局（登录区保留，其余全部接管）
-            try {
-                loadBetaCss();
-                bindNavAuth();
-                injectBetaHome();
-            } catch (e) {
-                // beta 注入失败：降级为新UI，绝不白屏
+        if (isBeta) {
+            // 测试版模式：全站加载 beta 皮肤（静态引用已存在则跳过）
+            loadBetaCss();
+            if (isHome) {
+                // 测试版首页：高级感官网布局（登录区/公告/卡片全部接管）
+                try {
+                    bindNavAuth();
+                    injectBetaHome();
+                } catch (e) {
+                    // beta 注入失败：降级为新UI，绝不白屏
+                    loadPremiumCss();
+                    injectMouseFx();
+                    injectOrbs();
+                    bindNavAuth();
+                    if (document.querySelector('.nav-container')) {
+                        replaceNav();
+                    }
+                    injectHomeHero();
+                    injectBanner();
+                }
+            } else {
+                // 测试版其他页面：新UI结构 + beta.css 官网化皮肤（深色导航/横幅）
                 loadPremiumCss();
-                injectMouseFx();
-                injectOrbs();
                 bindNavAuth();
                 if (document.querySelector('.nav-container')) {
                     replaceNav();
                 }
-                injectHomeHero();
-                injectBanner();
+                injectHomeHero();   // 非首页自动跳过
+                injectBanner();     // 页面 Hero 横幅（深色官网风）
+                injectClassicHeader();   // 非经典模式自动跳过
             }
         } else {
-            // 新UI（默认）/ 测试版其他页面 / 经典模式（各注入函数内部自动跳过）
+            // 新UI（默认）/ 经典模式（各注入函数内部自动跳过）
             loadPremiumCss();
             injectMouseFx();
             injectOrbs();

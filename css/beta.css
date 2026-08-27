@@ -438,3 +438,40 @@ html.beta .beta-announce a:hover { color: var(--brand-deep); }
 @media (max-width: 760px) {
     html.beta .beta-announce { align-items: flex-start; flex-wrap: wrap; }
 }
+
+/* ============ 测试版UI:其他页面官网化(深色导航/深色横幅/快捷导航适配) ============ */
+html.beta .top-nav {
+    background: rgba(15,23,42,.85);
+    border: 1px solid rgba(255,255,255,.08);
+    box-shadow: 0 1px 2px rgba(0,0,0,.25), 0 16px 40px -16px rgba(0,0,0,.5);
+}
+html.beta .top-nav .nav-logo { color: #fff; }
+html.beta .top-nav .nav-menu .nav-btn { color: rgba(255,255,255,.82); }
+html.beta .top-nav .nav-menu .nav-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
+html.beta .top-nav .nav-menu .nav-btn.active {
+    background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff;
+    box-shadow: 0 6px 16px -6px rgba(59,130,246,.6);
+}
+html.beta .top-nav .auth-btn, html.beta .top-nav .profile-btn {
+    color: rgba(255,255,255,.85); border-color: rgba(255,255,255,.25); background: transparent;
+}
+html.beta .top-nav .auth-btn:hover, html.beta .top-nav .profile-btn:hover {
+    border-color: var(--brand); color: #fff; background: rgba(59,130,246,.2);
+}
+html.beta .quick-nav {
+    background: rgba(255,255,255,.55);
+    border: 1px solid rgba(255,255,255,.7);
+}
+html.beta .quick-nav .nav-btn { color: var(--ink-soft); }
+html.beta .quick-nav .nav-btn:hover { color: var(--brand); background: rgba(59,130,246,.08); }
+html.beta .quick-nav .share-btn {
+    background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff;
+    box-shadow: 0 6px 16px -6px rgba(59,130,246,.5);
+}
+/* 页面横幅:深色官网风(覆盖内联青蓝渐变) */
+html.beta #uiPageBanner {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #312e81 100%) !important;
+    box-shadow: 0 24px 60px -24px rgba(0,0,0,.55) !important;
+}
+/* 深色导航下的快速导航文字与页面标题微调 */
+html.beta h1, html.beta h2 { letter-spacing: .3px; }
