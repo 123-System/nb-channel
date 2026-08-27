@@ -233,3 +233,27 @@ html.classic select {
 html.classic button {
     border-radius: 4px !important;
 }
+
+/* ===== 7. 页面主标题还原（h1 强制显示,旧版样式） ===== */
+html.classic .container h1,
+html.classic .bank-container h1,
+html.classic .profile-container h1,
+html.classic .title-container h1,
+html.classic .shop-container h1,
+html.classic .bp-container h1,
+html.classic .records-container h1,
+html.classic .ach-container h1,
+html.classic .register-card h1,
+html.classic .login-card h1,
+html.classic .chat-container h1,
+html.classic .messages-container h1,
+html.classic .about-content h1,
+html.classic .changelog-content h1,
+html.classic .product-container h1 {
+    display: block !important;
+    text-align: center !important;
+    margin: 0 0 10px !important;
+    color: #00a1d6 !important;
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+}
