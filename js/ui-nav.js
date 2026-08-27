@@ -682,10 +682,9 @@
         // 2. 取出 LOGO 视频（移入 beta Hero）
         var logoVideo = document.getElementById('logoVideo');
         if (logoVideo) logoVideo.parentNode.removeChild(logoVideo);
-        // 3. 隐藏旧首页内容（保留右上角登录区 authArea；公告栏直接移除——其异步拉取回调会重新display:block）
+        // 3. 隐藏旧首页全部内容（公告栏直接移除——异步回调会重新display:block；右上角登录区authArea一并隐藏）
         var kids = Array.prototype.slice.call(container.children);
         kids.forEach(function (k) {
-            if (k.id === 'authArea') return;
             if (k.id === 'announcementBar') {
                 k.parentNode.removeChild(k);
                 return;
