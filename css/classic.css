@@ -94,9 +94,10 @@ html.classic .top-nav .nav-menu {
 html.classic .top-nav .nav-menu .nav-btn {
     background: #e0e0e0 !important;
     color: #333 !important;
-    border-radius: 4px !important;
-    padding: 6px 14px !important;
-    font-size: 0.95rem !important;
+    border-radius: 30px !important;
+    padding: 10px 25px !important;
+    font-size: 1.1rem !important;
+    min-width: 90px !important;
 }
 html.classic .top-nav .nav-menu .nav-btn:hover {
     background: #00a1d6 !important;
@@ -125,9 +126,10 @@ html.classic .quick-nav > span {
 html.classic .quick-nav .nav-btn {
     background: #e0e0e0 !important;
     color: #333 !important;
-    border-radius: 4px !important;
-    padding: 6px 14px !important;
-    font-size: 0.95rem !important;
+    border-radius: 30px !important;
+    padding: 10px 25px !important;
+    font-size: 1.1rem !important;
+    min-width: 90px !important;
 }
 html.classic .quick-nav .nav-btn:hover {
     background: #00a1d6 !important;
@@ -135,10 +137,11 @@ html.classic .quick-nav .nav-btn:hover {
 }
 html.classic .quick-nav .share-btn {
     background: #00a1d6 !important;
-    border-radius: 4px !important;
+    border-radius: 30px !important;
     box-shadow: none !important;
-    padding: 6px 14px !important;
-    font-size: 0.95rem !important;
+    padding: 10px 25px !important;
+    font-size: 1.1rem !important;
+    min-width: 90px !important;
 }
 html.classic .quick-nav .share-btn:hover {
     transform: none !important;
@@ -230,7 +233,7 @@ html.classic textarea,
 html.classic select {
     border-radius: 4px !important;
 }
-html.classic button {
+html.classic button:not(.nav-btn) {
     border-radius: 4px !important;
 }
 
