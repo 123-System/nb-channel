@@ -744,7 +744,7 @@
             '<div class="beta-announce" id="betaAnnounce" style="display:none;">' +
                 '<div class="ba-icon">📢</div>' +
                 '<div class="ba-title">公告</div>' +
-                '<div class="ba-text"></div>' +
+                '<div class="ba-track-wrap"><div class="ba-track" id="baTrack"></div></div>' +
             '</div>' +
             '<section class="section" id="about">' +
                 '<div class="about-grid">' +
@@ -838,16 +838,39 @@
                 '</div>' +
                 '<div class="footer-bottom">© 2026 NB频道 · 虚拟公司 · 制作：NB搞事局 · 由 GitHub Pages / Cloudflare / PythonAnywhere 提供支持</div>' +
             '</footer>';
-        // 5.5 公告区:从 admin_config 拉取公告填充(beta 风格卡片,无公告则保持隐藏)
+        // 5.5 公告区:从 admin_config 拉取公告,单行无缝滚动,链接可点击,无公告保持隐藏
+        function betaEscapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, function (m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
+        function betaLinkify(str) {
+            return str.replace(/(https?:\/\/[^\s<>"']+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:var(--brand); text-decoration:underline;">$1</a>');
+        }
         var annBox = wrap.querySelector('#betaAnnounce');
         if (annBox && window.supabase) {
             var aClient = window.__nbSupabase || supabase.createClient('https://pbaafgjkwdbwcmsikcmg.supabase.co', 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg');
             aClient.from('admin_config').select('value').eq('key', 'announcement').maybeSingle()
                 .then(function (res) {
-                    var txt = (res && res.data && res.data.value) ? String(res.data.value).trim() : '';
-                    if (!txt) return;
-                    var t = annBox.querySelector('.ba-text');
-                    if (t) t.textContent = txt;
+                    var raw = (res && res.data && res.data.value) ? String(res.data.value).trim() : '';
+                    if (!raw) return;
+                    var track = annBox.querySelector('.ba-track');
+                    if (!track) return;
+                    var one = '<span class="ba-item">' + betaLinkify(betaEscapeHtml(raw)) + '</span>';
+                    track.innerHTML = one;
+                    var item = track.querySelector('.ba-item');
+                    var itemW = item ? item.offsetWidth : 0;
+                    if (itemW > 0) {
+                        var wrapEl = annBox.querySelector('.ba-track-wrap');
+                        var barW = wrapEl ? wrapEl.clientWidth : 0;
+                        var copies = Math.max(2, Math.ceil(barW / itemW) + 1);
+                        var all = '';
+                        for (var ci = 0; ci < copies; ci++) all += '<span class="ba-item">' + betaLinkify(betaEscapeHtml(raw)) + '</span>';
+                        track.innerHTML = all;
+                        track.style.setProperty('--ba-shift', '-' + itemW + 'px');
+                        var dur = Math.max(8, itemW / 45);
+                        track.style.animation = 'baMarquee ' + dur + 's linear infinite';
+                    }
                     annBox.style.display = 'flex';
                 })
                 .catch(function () {});

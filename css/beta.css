@@ -400,8 +400,21 @@ html.beta .beta-announce .ba-title {
     flex-shrink: 0; font-size: .82rem; font-weight: 700; color: var(--brand);
     background: rgba(59,130,246,.08); border-radius: 999px; padding: 4px 12px;
 }
-html.beta .beta-announce .ba-text {
-    flex: 1; font-size: .92rem; color: var(--ink-soft); line-height: 1.7; min-width: 0;
+html.beta .beta-announce .ba-track-wrap {
+    flex: 1; overflow: hidden; min-width: 0;
+}
+html.beta .beta-announce .ba-track {
+    display: inline-block; white-space: nowrap; will-change: transform;
+}
+html.beta .beta-announce .ba-item {
+    display: inline-block; white-space: nowrap; padding-right: 80px;
+    font-size: .92rem; color: var(--ink-soft);
+}
+html.beta .beta-announce a { color: var(--brand); text-decoration: underline; }
+html.beta .beta-announce a:hover { color: var(--brand-deep); }
+@keyframes baMarquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(var(--ba-shift, -200px)); }
 }
 @media (max-width: 760px) {
     html.beta .beta-announce { align-items: flex-start; flex-wrap: wrap; }
