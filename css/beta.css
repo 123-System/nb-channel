@@ -452,6 +452,11 @@ html.beta #uiPageBanner {
 }
 /* 深色导航下的快速导航文字与页面标题微调 */
 html.beta h1, html.beta h2 { letter-spacing: .3px; }
+/* 共享组件宽度限制:无.container的页面(称号/成就/抽奖/个人中心/注册)导航不再全宽拉伸,统一1080居中;首页(beta-home)导航保持全宽 */
+html.beta .nav { max-width: 1080px; margin-left: auto; margin-right: auto; }
+html.beta.beta-home .nav { max-width: none; margin-left: 0; margin-right: 0; }
+html.beta .beta-quick { margin-left: auto; margin-right: auto; max-width: 1080px; }
+html.beta #uiPageBanner { max-width: 1080px; margin-left: auto; margin-right: auto; }
 
 /* ============ 测试版UI:非首页快捷入口栏(导航栏下方,与导航同风格) ============ */
 html.beta .beta-quick {
