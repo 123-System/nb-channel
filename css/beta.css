@@ -450,3 +450,29 @@ html.beta #uiPageBanner {
 }
 /* 深色导航下的快速导航文字与页面标题微调 */
 html.beta h1, html.beta h2 { letter-spacing: .3px; }
+
+/* ============ 测试版UI:非首页快捷入口栏(导航栏下方,与导航同风格) ============ */
+html.beta .beta-quick {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+    background: rgba(255,255,255,.55);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.7);
+    border-radius: 16px; padding: 10px 16px; margin-bottom: 24px;
+}
+html.beta .beta-quick .bq-label {
+    font-size: .82rem; font-weight: 700; color: var(--brand);
+    white-space: nowrap; margin-right: 4px;
+}
+html.beta .beta-quick a {
+    padding: 6px 14px; border-radius: 999px; font-size: .88rem;
+    color: var(--ink-soft); background: rgba(255,255,255,.6);
+    border: 1px solid transparent; transition: all .25s ease; white-space: nowrap;
+}
+html.beta .beta-quick a:hover {
+    color: var(--brand); background: #fff; border-color: rgba(59,130,246,.35);
+}
+@media (max-width: 760px) {
+    html.beta .beta-quick { gap: 6px; padding: 8px 12px; }
+    html.beta .beta-quick a { padding: 5px 10px; font-size: .82rem; }
+}

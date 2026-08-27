@@ -726,12 +726,29 @@
         }
     }
 
-    // ===== 测试版 UI（beta）：非首页注入首页同款导航栏（注入成功后由 JS 隐藏原有导航） =====
+    // ===== 测试版 UI（beta）：非首页快捷入口栏 HTML（首页不注入，首页有功能卡入口） =====
+    function betaQuickHtml() {
+        return '<div class="beta-quick">' +
+            '<span class="bq-label">⚡ 快捷入口</span>' +
+            '<a href="comments-beta.html">💬 评论区</a>' +
+            '<a href="Virtual stock.html">📈 NB虚拟股票</a>' +
+            '<a href="chat.html">👥 好友</a>' +
+            '<a href="product_share.html">🛍️ 作品分享</a>' +
+            '<a href="messages.html">🔔 消息</a>' +
+            '<a href="tools.html">🔬 化学工具</a>' +
+            '<a href="titles.html">🏅 称号</a>' +
+            '<a href="bank.html">🏦 NB银行</a>' +
+            '<a href="shop.html">🛍️ NB商店</a>' +
+            '<a href="backpack.html">🎒 背包</a>' +
+        '</div>';
+    }
+
+    // ===== 测试版 UI（beta）：非首页注入首页同款导航栏 + 快捷入口栏（注入成功后由 JS 隐藏原有导航） =====
     function injectBetaPageNav() {
         if (document.querySelector('.nav')) return;   // 幂等
         var container = document.querySelector('.container') || document.body;
         var wrap = document.createElement('div');
-        wrap.innerHTML = betaNavHtml();
+        wrap.innerHTML = betaNavHtml() + betaQuickHtml();
         container.insertBefore(wrap.firstChild, container.firstChild);
         // 隐藏页面原有导航(注入成功后才隐藏,防止旧JS+新CSS缓存错位时页面无导航)
         var oldTop = document.querySelector('.top-nav');
