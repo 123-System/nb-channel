@@ -848,6 +848,37 @@
         while (wrap.firstChild) container.appendChild(wrap.firstChild);
     }
 
+    // ===== 测试版 UI（beta）：.reveal 滚动渐显（与预览稿一致，首屏直接显示 + 兜底） =====
+    function injectBetaReveal() {
+        var els = document.querySelectorAll('.reveal');
+        if (!els.length) return;
+        if (!('IntersectionObserver' in window)) {
+            els.forEach(function (el) { el.classList.add('in'); });
+            return;
+        }
+        var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (en) {
+                if (en.isIntersecting) {
+                    en.target.classList.add('in');
+                    io.unobserve(en.target);
+                }
+            });
+        }, { threshold: 0.1 });
+        els.forEach(function (el) {
+            var rect = el.getBoundingClientRect();
+            var vh = window.innerHeight || document.documentElement.clientHeight;
+            if (rect.top < vh && rect.bottom > 0) {
+                el.classList.add('in');
+                return;
+            }
+            io.observe(el);
+        });
+        // 兜底：3 秒后强制全部显示，任何异常都不允许内容隐藏
+        setTimeout(function () {
+            document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+        }, 3000);
+    }
+
     // 新版初始化（必须在 DOM 就绪后执行：injectMouseFx/injectOrbs 需要 document.body）
     function initNewUI() {
         var isBeta = document.documentElement.classList.contains('beta');
@@ -884,7 +915,7 @@
             injectClassicHeader();   // 经典模式：注入旧版网站大标题（📺 NB频道官网 + UP主）
         }
         // 滚动渐显：等首屏元素就位后观察
-        setTimeout(injectReveal, 50);
+        setTimeout(isBeta && isHome ? injectBetaReveal : injectReveal, 50);
         // ===== 新 UI 注入完成：解除旧 UI 隐藏（防闪现 FOUC） =====
         document.documentElement.classList.remove('ui-boot-new');
         var bootHide = document.getElementById('uiBootHide');
