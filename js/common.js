@@ -451,7 +451,8 @@ function uiHref(h) {
 })();
 
 // ==========================================================
-// 界面版本自动跳转：后端偏好 new → xxx-new.html；old → xxx.html
+// 界面版本自动跳转（同步、零闪跳）：本地偏好决定进哪个文件
+// 后端偏好只在"个人中心手动切换"时写入（setUIVersion），此处不再异步查询
 // ==========================================================
 (function () {
     var rawPage = location.pathname.split('/').pop() || '';
@@ -461,40 +462,19 @@ function uiHref(h) {
     var base = isNew ? rawPage.replace(/-new\.html$/i, '.html') : rawPage;
     var known = ['index', 'videos', 'about', 'changelog', 'product', 'app', 'comments-beta',
                  'virtual stock', 'chat', 'product_share', 'messages', 'profile', 'achievements',
-                 'lottery_records', 'register_company', 'comments', 'login'];
+                 'lottery_records', 'register_company', 'comments', 'login', 'tools', 'bank',
+                 'shop', 'backpack'];
+    // 注意：titles 已不在列表 —— 单文件双皮肤试点（titles.html 同时承载新旧 UI）
     if (known.indexOf(base.replace(/\.html$/i, '').toLowerCase()) === -1) return;
 
-    var stored = null;
-    try { stored = JSON.parse(localStorage.getItem('nb_user')); } catch (e) {}
-    if (!stored || !stored.id) return;   // 未登录：留在当前文件
-
-    fetch('https://pbaafgjkwdbwcmsikcmg.supabase.co/rest/v1/profiles?select=ui_version&id=eq.' + stored.id, {
-        headers: {
-            apikey: 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg',
-            Authorization: 'Bearer sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg'
-        }
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (rows) {
-        // 优先后端偏好；后端不可用（SQL未执行/查询失败）时回退本地偏好
-        var pref = (rows && rows[0] && rows[0].ui_version) || localStorage.getItem('nb_ui') || 'new';
-        var qs = location.search || '';
-        if (pref === 'new' && !isNew) {
-            location.replace(base.replace(/\.html$/i, '-new.html') + qs);
-        } else if (pref === 'old' && isNew) {
-            location.replace(base + qs);
-        }
-    })
-    .catch(function () {
-        // 后端查询失败：用本地偏好兜底判断
-        var local = localStorage.getItem('nb_ui');
-        var qs = location.search || '';
-        if (local === 'old' && isNew) {
-            location.replace(base + qs);
-        } else if (local === 'new' && !isNew) {
-            location.replace(base.replace(/\.html$/i, '-new.html') + qs);
-        }
-    });
+    // -new 文件强制新版；其余按本地偏好（默认 new）
+    var pref = isNew ? 'new' : (localStorage.getItem('nb_ui') === 'old' ? 'old' : 'new');
+    var qs = location.search || '';
+    if (pref === 'new' && !isNew) {
+        location.replace(base.replace(/\.html$/i, '-new.html') + qs);
+    } else if (pref === 'old' && isNew) {
+        location.replace(base + qs);
+    }
 })();
 
 // ==========================================================

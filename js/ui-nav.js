@@ -394,25 +394,48 @@
     var MAIN_HREFS = ['index.html', 'videos.html', 'about.html', 'changelog.html', 'product.html', 'APP.html'];
 
     // 从现有导航 DOM 收集链接 → 渲染新版导航并替换
+    // 无 .nav-container 的页面（如 titles 单文件试点）用标准导航模板生成
     function replaceNav() {
         var host = document.querySelector('.nav-container');
-        if (!host) { return; }
-
-        var links = Array.prototype.map.call(host.querySelectorAll('a.nav-btn'), function (a) {
-            return { href: a.getAttribute('href') || '', text: (a.textContent || '').trim(), active: a.classList.contains('active') };
-        });
-        var shareBtn = host.querySelector('.share-btn');
-        var shareHtml = shareBtn ? '<button class="share-btn" id="shareButton">' + (shareBtn.textContent || '📤 分享') + '</button>' : '';
+        var links = [];
+        var activeHref = '';
+        if (host) {
+            links = Array.prototype.map.call(host.querySelectorAll('a.nav-btn'), function (a) {
+                return { href: a.getAttribute('href') || '', text: (a.textContent || '').trim(), active: a.classList.contains('active') };
+            });
+            var shareBtn = host.querySelector('.share-btn');
+            var shareHtml = shareBtn ? '<button class="share-btn" id="shareButton">' + (shareBtn.textContent || '📤 分享') + '</button>' : '';
+        } else {
+            // 标准导航模板（与 gen_new.ps1 的 New-NavHtml 一致）
+            var S = [
+                ['index.html', '首页'], ['videos.html', '视频'], ['about.html', '关于'],
+                ['changelog.html', '更新日志'], ['product.html', '我的产品'], ['APP.html', '软件/APP下载']
+            ];
+            var F = [
+                ['comments-beta.html', '💬 评论区'], ['Virtual stock.html', '📈 NB虚拟股票'],
+                ['chat.html', '👥 好友'], ['product_share.html', '🛍️ 作品分享'],
+                ['messages.html', '🔔 消息'], ['tools.html', '🔬 化学工具'],
+                ['titles.html', '🏅 称号'], ['bank.html', '🏦 NB银行'],
+                ['shop.html', '🛍️ NB商店'], ['backpack.html', '🎒 背包']
+            ];
+            links = S.concat(F).map(function (p) {
+                return { href: p[0], text: p[1], active: false };
+            });
+            activeHref = (location.pathname.split('/').pop() || '').replace(/-new\.html$/i, '.html').toLowerCase();
+            shareHtml = '';
+        }
 
         var mainLinks = links.filter(function (l) { return MAIN_HREFS.indexOf(l.href) !== -1; });
         var funcLinks = links.filter(function (l) { return MAIN_HREFS.indexOf(l.href) === -1 && !/^https?:/i.test(l.href); });
         var extraLinks = links.filter(function (l) { return /^https?:/i.test(l.href); });
 
         var mainHtml = mainLinks.map(function (l) {
-            return '<a href="' + newHref(l.href) + '" class="nav-btn' + (l.active ? ' active' : '') + '">' + l.text + '</a>';
+            var isAct = l.active || (activeHref && l.href.toLowerCase() === activeHref);
+            return '<a href="' + newHref(l.href) + '" class="nav-btn' + (isAct ? ' active' : '') + '">' + l.text + '</a>';
         }).join('');
         var funcHtml = funcLinks.concat(extraLinks).map(function (l) {
-            return '<a href="' + newHref(l.href) + '" class="nav-btn" ' + (/^https?:/i.test(l.href) ? 'target="_blank" rel="noopener noreferrer"' : '') + '>' + l.text + '</a>';
+            var isAct = l.active || (activeHref && l.href.toLowerCase() === activeHref);
+            return '<a href="' + newHref(l.href) + '" class="nav-btn' + (isAct ? ' active' : '') + '" ' + (/^https?:/i.test(l.href) ? 'target="_blank" rel="noopener noreferrer"' : '') + '>' + l.text + '</a>';
         }).join('');
 
         // 页面已有原版登录胶囊（.auth-area）时，导航内不再渲染重复的登录按钮
@@ -436,7 +459,16 @@
                 shareHtml +
             '</div>';
 
-        host.outerHTML = newHtml;
+        if (host) {
+            host.outerHTML = newHtml;
+        } else {
+            // 无 .nav-container：把新导航插入到 .container 顶部
+            var navWrap = document.createElement('div');
+            navWrap.innerHTML = newHtml;
+            var container = document.querySelector('.container') || document.body;
+            container.insertBefore(navWrap.firstChild, container.firstChild);
+            container.insertBefore(navWrap.firstChild, container.firstChild);
+        }
 
         // 登录按钮默认行为（页面自身逻辑若存在会覆盖）
         var ab = document.getElementById('authButton');
