@@ -440,9 +440,7 @@ html.beta .beta-announce a:hover { color: var(--brand-deep); }
 }
 
 /* ============ 测试版UI:其他页面官网化 ============ */
-/* 隐藏页面原有导航(顶栏+快捷导航),复用首页同款导航栏(由 injectBetaPageNav 注入) */
-html.beta .top-nav { display: none !important; }
-html.beta .quick-nav { display: none !important; }
+/* 页面原有导航由 injectBetaPageNav 注入成功后 JS 隐藏(避免旧JS+新CSS缓存错位时页面无导航) */
 /* 页面横幅:深色官网风(覆盖内联青蓝渐变) */
 html.beta #uiPageBanner {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #312e81 100%) !important;

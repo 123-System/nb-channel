@@ -726,13 +726,18 @@
         }
     }
 
-    // ===== 测试版 UI（beta）：非首页注入首页同款导航栏（原有 top-nav/quick-nav 由 CSS 隐藏） =====
+    // ===== 测试版 UI（beta）：非首页注入首页同款导航栏（注入成功后由 JS 隐藏原有导航） =====
     function injectBetaPageNav() {
         if (document.querySelector('.nav')) return;   // 幂等
         var container = document.querySelector('.container') || document.body;
         var wrap = document.createElement('div');
         wrap.innerHTML = betaNavHtml();
         container.insertBefore(wrap.firstChild, container.firstChild);
+        // 隐藏页面原有导航(注入成功后才隐藏,防止旧JS+新CSS缓存错位时页面无导航)
+        var oldTop = document.querySelector('.top-nav');
+        if (oldTop) oldTop.style.display = 'none';
+        var oldQuick = document.querySelector('.quick-nav');
+        if (oldQuick) oldQuick.style.display = 'none';
         bindBetaAuth(document);
     }
 
