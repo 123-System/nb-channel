@@ -663,14 +663,77 @@
         }
     }
 
-    // ===== 测试版 UI（beta）：加载 css/beta.css（仅首页触发） =====
+    // ===== 测试版 UI（beta）：加载 css/beta.css（全站静态引用已存在时跳过） =====
     function loadBetaCss() {
         if (document.getElementById('uiBetaCss')) return;
         var link = document.createElement('link');
         link.id = 'uiBetaCss';
         link.rel = 'stylesheet';
-        link.href = 'css/beta.css?v=20260828';
+        link.href = 'css/beta.css?v=20260840';
         document.head.appendChild(link);
+    }
+
+    // ===== 测试版 UI（beta）：首页同款导航栏 HTML（按当前页面标 active） =====
+    function betaNavHtml() {
+        var page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+        function item(href, label) {
+            var on = false;
+            if (href === 'index.html' && (page === '' || page === 'index.html')) on = true;
+            else if (href.toLowerCase() === page) on = true;
+            return '<a href="' + href + '"' + (on ? ' class="active"' : '') + '>' + label + '</a>';
+        }
+        return '<nav class="nav">' +
+            '<a class="nav-logo" href="index.html"><span class="dot"></span>NB频道</a>' +
+            '<div class="nav-menu">' +
+                item('index.html', '首页') +
+                item('videos.html', '视频') +
+                item('about.html', '关于') +
+                item('changelog.html', '更新日志') +
+                item('product.html', '我的产品') +
+                item('APP.html', '软件/APP') +
+                '<a href="index.html#friends">友商</a>' +
+            '</div>' +
+            '<div class="nav-auth-group" id="betaAuthGroup">' +
+                '<a class="nav-auth" id="betaProfileBtn" href="#">👤 个人中心</a>' +
+                '<a class="nav-auth primary" id="betaAuthBtn" href="#">登录 / 注册</a>' +
+            '</div>' +
+        '</nav>';
+    }
+
+    // ===== 测试版 UI（beta）：登录区绑定（未登录:登录/注册;已登录:用户名+登出） =====
+    function bindBetaAuth(scope) {
+        scope = scope || document;
+        var group = scope.querySelector('#betaAuthGroup');
+        if (!group) return;
+        var storedU = null;
+        try { storedU = JSON.parse(localStorage.getItem('nb_user')); } catch (e) {}
+        var pbEl = scope.querySelector('#betaProfileBtn');
+        var abEl = scope.querySelector('#betaAuthBtn');
+        if (storedU && storedU.id) {
+            if (abEl) {
+                abEl.textContent = '登出账号';
+                abEl.href = '#';
+                abEl.onclick = function () { localStorage.removeItem('nb_user'); location.reload(); };
+            }
+            if (pbEl) {
+                pbEl.textContent = '👤 ' + (storedU.username || storedU.name || '个人中心');
+                pbEl.href = 'profile.html';
+            }
+        } else {
+            var loginHref = 'login.html?redirect=' + encodeURIComponent(location.href);
+            if (abEl) { abEl.href = loginHref; abEl.textContent = '登录 / 注册'; }
+            if (pbEl) { pbEl.href = loginHref; pbEl.textContent = '👤 个人中心'; }
+        }
+    }
+
+    // ===== 测试版 UI（beta）：非首页注入首页同款导航栏（原有 top-nav/quick-nav 由 CSS 隐藏） =====
+    function injectBetaPageNav() {
+        if (document.querySelector('.nav')) return;   // 幂等
+        var container = document.querySelector('.container') || document.body;
+        var wrap = document.createElement('div');
+        wrap.innerHTML = betaNavHtml();
+        container.insertBefore(wrap.firstChild, container.firstChild);
+        bindBetaAuth(document);
     }
 
     // ===== 测试版 UI（beta）：首页注入高级感官网布局（仅首页，其他页面保持新UI） =====
@@ -705,25 +768,10 @@
         }
         var fixed = document.querySelector('.fixed-buttons');
         if (fixed) fixed.style.display = 'none';
-        // 5. 注入 beta 首页（导航 → Hero → 数据条 → 理念 → 功能 → 视频 → 友商 → CTA → 页脚）
+        // 5. 注入 beta 首页（导航 → Hero → 数据条 → 公告 → 理念 → 功能 → 视频 → 友商 → CTA → 页脚）
         var wrap = document.createElement('div');
         wrap.innerHTML =
-            '<nav class="nav">' +
-                '<a class="nav-logo" href="#"><span class="dot"></span>NB频道</a>' +
-                '<div class="nav-menu">' +
-                    '<a href="#" class="active">首页</a>' +
-                    '<a href="videos.html">视频</a>' +
-                    '<a href="about.html">关于</a>' +
-                    '<a href="changelog.html">更新日志</a>' +
-                    '<a href="product.html">我的产品</a>' +
-                    '<a href="APP.html">软件/APP</a>' +
-                    '<a href="#friends">友商</a>' +
-                '</div>' +
-                '<div class="nav-auth-group" id="betaAuthGroup">' +
-                    '<a class="nav-auth" id="betaProfileBtn" href="#">👤 个人中心</a>' +
-                    '<a class="nav-auth primary" id="betaAuthBtn" href="#">登录 / 注册</a>' +
-                '</div>' +
-            '</nav>' +
+            betaNavHtml() +
             '<header class="hero">' +
                 '<div class="hero-inner">' +
                     '<span class="hero-badge">🏢 虚拟公司 · 📺 10万+粉丝 · 🧪 化学·物理·作死</span>' +
@@ -841,29 +889,8 @@
                 '</div>' +
                 '<div class="footer-bottom">© 2026 NB频道 · 虚拟公司 · 制作：NB搞事局 · 由 GitHub Pages / Cloudflare / PythonAnywhere 提供支持</div>' +
             '</footer>';
-        // 5.5 登录区:根据登录状态绑定个人中心/登录/登出按钮
-        var authGroup = wrap.querySelector('#betaAuthGroup');
-        if (authGroup) {
-            var storedU = null;
-            try { storedU = JSON.parse(localStorage.getItem('nb_user')); } catch (e) {}
-            var pbEl = wrap.querySelector('#betaProfileBtn');
-            var abEl = wrap.querySelector('#betaAuthBtn');
-            if (storedU && storedU.id) {
-                if (abEl) {
-                    abEl.textContent = '登出账号';
-                    abEl.href = '#';
-                    abEl.onclick = function () { localStorage.removeItem('nb_user'); location.reload(); };
-                }
-                if (pbEl) {
-                    pbEl.textContent = '👤 ' + (storedU.username || storedU.name || '个人中心');
-                    pbEl.href = 'profile.html';
-                }
-            } else {
-                var loginHref = 'login.html?redirect=' + encodeURIComponent(location.href);
-                if (abEl) { abEl.href = loginHref; abEl.textContent = '登录 / 注册'; }
-                if (pbEl) { pbEl.href = loginHref; pbEl.textContent = '👤 个人中心'; }
-            }
-        }
+        // 5.5 登录区:复用公共绑定(未登录:登录/注册;已登录:用户名+登出)
+        bindBetaAuth(wrap);
         // 5.6 公告区:从 admin_config 拉取公告,单行无缝滚动,链接可点击,无公告保持隐藏
         function betaEscapeHtml(str) {
             return String(str).replace(/[&<>"']/g, function (m) {
@@ -991,9 +1018,10 @@
                     injectBanner();
                 }
             } else {
-                // 测试版其他页面：新UI结构 + beta.css 官网化皮肤（深色导航/横幅）
+                // 测试版其他页面：复用首页导航栏 + beta.css 官网化皮肤（原 top-nav/quick-nav 隐藏）
                 loadPremiumCss();
                 bindNavAuth();
+                injectBetaPageNav();   // 注入首页同款导航栏
                 if (document.querySelector('.nav-container')) {
                     replaceNav();
                 }
