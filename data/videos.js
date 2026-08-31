@@ -34,7 +34,7 @@ window.VIDEOS = /*<VIDEOS>*/[
         "bvid": "BV1v8AfzmE9o",
         "title": "《 官 网 0 . 2 . 5 》",
         "cover": "https://i1.hdslb.com/bfs/archive/ed50fccde58ca8466a6dbaef022424c94222a84d.jpg",
-        "play": "7268",
+        "play": "7274",
         "duration": "4:32",
         "pubdate": 1772545041,
         "category_key": "官网",
@@ -74,11 +74,31 @@ window.VIDEOS = /*<VIDEOS>*/[
         "bvid": "BV1WXZUBsEqi",
         "title": "《 官 网 0 . 2 1 》",
         "cover": "https://i1.hdslb.com/bfs/archive/8d071e1ca4ca804694fe7879660c438a509a44d5.jpg",
-        "play": "4415",
+        "play": "4418",
         "duration": "1:28",
         "pubdate": 1771387286,
         "category_key": "官网",
         "category_name": "《官网》"
+    },
+    {
+        "bvid": "BV1CfcqzhEkU",
+        "title": "⚡ N B 不 妙 曲 ⚡",
+        "cover": "https://i0.hdslb.com/bfs/archive/5e3124312a620a2ca534552b47f9c488ff09b423.jpg",
+        "play": "1.3万",
+        "duration": "02:48",
+        "pubdate": 1770900917,
+        "category_key": "其他",
+        "category_name": "《其他》"
+    },
+    {
+        "bvid": "BV16gcbzAE5R",
+        "title": "《 假 如 N B 实 验 室 有 加 载 动 画 》",
+        "cover": "https://i2.hdslb.com/bfs/archive/0576171bbe8f4fd9e366d4d0b19a99a6cd2f979c.jpg",
+        "play": "1.2万",
+        "duration": "00:33",
+        "pubdate": 1770820996,
+        "category_key": "其他",
+        "category_name": "《其他》"
     },
     {
         "bvid": "BV1D5zXBcECp",
@@ -104,7 +124,7 @@ window.VIDEOS = /*<VIDEOS>*/[
         "bvid": "BV1z8WfzgEr2",
         "title": "《 救 人 5 . 0 》",
         "cover": "https://i0.hdslb.com/bfs/archive/376b34e5ec23597e6649d7ac4e22314d75322f5b.jpg",
-        "play": "8409",
+        "play": "8415",
         "duration": "3:49",
         "pubdate": 1760833254,
         "category_key": "救人",
@@ -129,6 +149,26 @@ window.VIDEOS = /*<VIDEOS>*/[
         "pubdate": 1759921312,
         "category_key": "化学",
         "category_name": "《逝验室·化学》"
+    },
+    {
+        "bvid": "BV1WytCzJEZd",
+        "title": "你还没有过IDM这种变态的下载器？？？",
+        "cover": "https://i0.hdslb.com/bfs/archive/0dbcccb1de09135ccc3de14a19663869570dfcac.jpg",
+        "play": "6767",
+        "duration": "07:58",
+        "pubdate": 1754626865,
+        "category_key": "其他",
+        "category_name": "《其他》"
+    },
+    {
+        "bvid": "BV17gTRzSEDL",
+        "title": "《 美 式 居 合 》",
+        "cover": "https://i0.hdslb.com/bfs/archive/19ac70b1dfb404a212fdef7f636cc9dda7b3f934.jpg",
+        "play": "4467",
+        "duration": "15:55",
+        "pubdate": 1749391294,
+        "category_key": "其他",
+        "category_name": "《其他》"
     },
     {
         "bvid": "BV1YXEuzCEPS",
