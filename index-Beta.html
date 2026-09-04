@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -636,14 +636,29 @@
             fill: none; stroke: rgba(96,165,250,.9); stroke-width: 2;
             filter: drop-shadow(0 0 6px rgba(96,165,250,.65));
         }
-        /* 能量核心 */
-        .jny-batt { position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; z-index: 5; pointer-events: none; }
+        /* 能量核心(可拖拽) */
+        .jny-batt {
+            position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px;
+            z-index: 5; pointer-events: none;
+        }
         .jny-batt i, .jny-batt b { position: absolute; border-radius: 50%; }
         .jny-batt i { inset: 0; background: #fff; box-shadow: 0 0 22px rgba(96,165,250,.9), 0 0 46px rgba(59,130,246,.5); }
         .jny-batt b {
             inset: -9px; border: 1px solid rgba(96,165,250,.55);
             animation: jnyPulse 2.4s cubic-bezier(.16,1,.3,1) infinite;
         }
+        /* 命中热区(隐形放大,便于抓取) */
+        .jny-batt .hit {
+            position: absolute; inset: -34px; border-radius: 50%;
+            pointer-events: auto; cursor: grab;
+            touch-action: none;
+        }
+        .jny-batt:hover .hit { cursor: grab; }
+        .jny-batt.dragging .hit { cursor: grabbing; }
+        .jny-batt.dragging i {
+            box-shadow: 0 0 30px rgba(96,165,250,1), 0 0 70px rgba(59,130,246,.75);
+        }
+        .jny-batt.dragging b { animation-duration: 1s; }
         @keyframes jnyPulse {
             0% { transform: scale(.55); opacity: .85; }
             70% { transform: scale(1.25); opacity: 0; }
@@ -830,13 +845,13 @@
     <div class="section-head reveal">
         <span class="section-eyebrow">Milestones</span>
         <h2>大事记</h2>
-        <p>向下滚动——跟随这颗能量核心，从一支试管开始，穿过 NB 频道的完整成长史</p>
+        <p>滚动页面，或直接拖动能量核心——沿这条 S 形轨迹，穿越 NB 频道的成长史</p>
     </div>
     <div class="jny-spacer" id="jnySpacer">
         <div class="jny-stage" id="jnyStage">
             <div class="jny-bg" id="jnyBg"></div>
             <svg class="jny-svg" id="jnySvg" aria-hidden="true"></svg>
-            <div class="jny-batt" id="jnyBatt"><i></i><b></b></div>
+            <div class="jny-batt" id="jnyBatt"><i></i><b></b><span class="hit" title="拖动我"></span></div>
 
             <div class="jny-node" style="left:4%;top:24%;"><span class="jy">2025</span><span class="jm">06 · 萌芽</span></div>
             <div class="jny-node" style="left:13.2%;top:58%;"><span class="jy">2025</span><span class="jm">09 · 更名</span></div>
@@ -1287,7 +1302,7 @@
         });
     })();
 
-    // ===== 大事记:sticky 旅程驱动 v2(贝塞尔 S 曲线:Catmull-Rom→Cubic 平滑光带,核心沿曲线行驶) =====
+    // ===== 大事记:sticky 旅程驱动 v3(贝塞尔 S 曲线 + 能量核心可拖拽:拖动反向驱动节点/卡片/光带/滚动条) =====
     (function () {
         var stage = document.getElementById('jnyStage');
         var spacer = document.getElementById('jnySpacer');
@@ -1301,10 +1316,10 @@
         var pts = [];
         var basePath = null, goPathEl = null, totalLen = 1;
         var vh = 0, spacerTopAbs = 0, runLen = 1;
-        var ticking = false;
+        var ticking = false, dragging = false, suppressScroll = false;
+        var stageRect = null;
         var NS = 'http://www.w3.org/2000/svg';
 
-        // 折线 → 平滑贝塞尔(过每点,之字起伏成 S 曲线)
         function smoothD(p) {
             var d = 'M' + p[0].x.toFixed(1) + ',' + p[0].y.toFixed(1);
             for (var i = 1; i < p.length; i++) {
@@ -1341,33 +1356,76 @@
                 goPathEl.style.strokeDashoffset = totalLen;
             }
         }
-        function update() {
-            var sy = window.scrollY || document.documentElement.scrollTop;
-            var p = (sy - (spacerTopAbs - 70)) / runLen;
-            p = p < 0 ? 0 : (p > 1 ? 1 : p);
+        // 渲染一个滚动进度 p(滚动与拖拽共用)
+        function renderP(p) {
             var seg = p * (n - 1);
             var active = Math.round(seg);
-            // 核心沿曲线行驶(getPointAtLength 平滑取点)
             if (basePath && totalLen > 1 && basePath.getPointAtLength) {
                 var pt = basePath.getPointAtLength(totalLen * p);
                 batt.style.left = pt.x + 'px';
                 batt.style.top = pt.y + 'px';
                 goPathEl.style.strokeDashoffset = totalLen * (1 - p);
             }
-            // 节点状态
             nodes.forEach(function (nd, k) {
                 nd.classList.toggle('lit', k <= active);
                 nd.classList.toggle('dim', k > active);
             });
             cards.forEach(function (c, k) { c.classList.toggle('on', k === active); });
-            // 背景光随核心反向缓移(视差)
-            if (bgEl) bgEl.style.transform = 'translate(' + (pts[active] ? (pts[active].x - 400) * -0.22 : 0) + 'px,' + (pts[active] ? (pts[active].y - 220) * -0.22 : 0) + 'px)';
+            var ap = pts[Math.min(active, pts.length - 1)];
+            if (bgEl && ap) bgEl.style.transform = 'translate(' + (ap.x - 400) * -0.22 + 'px,' + (ap.y - 220) * -0.22 + 'px)';
             var pb = stage.querySelector('.jny-progress .bar i');
             if (pb) pb.style.width = (p * 100).toFixed(1) + '%';
         }
+        function update() {
+            var sy = window.scrollY || document.documentElement.scrollTop;
+            var p = (sy - (spacerTopAbs - 70)) / runLen;
+            p = p < 0 ? 0 : (p > 1 ? 1 : p);
+            renderP(p);
+        }
         function onScroll() {
+            if (suppressScroll) { suppressScroll = false; return; }
+            if (dragging) return;
             if (!ticking) { ticking = true; requestAnimationFrame(function () { ticking = false; update(); }); }
         }
+        // ---- 拖拽:抓住能量核心沿曲线滑动,反向驱动旅程 ----
+        function nearestDist(px, py) {
+            if (!basePath || !basePath.getPointAtLength) return -1;
+            var best = -1, bestD2 = 1e12;
+            for (var i = 0; i <= 260; i++) {
+                var q = basePath.getPointAtLength(totalLen * i / 260);
+                var dx = q.x - px, dy = q.y - py;
+                var d2 = dx * dx + dy * dy;
+                if (d2 < bestD2) { bestD2 = d2; best = i / 260; }
+            }
+            return best;
+        }
+        batt.addEventListener('pointerdown', function (e) {
+            if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
+            if (!stageRect) return;
+            dragging = true;
+            try { batt.setPointerCapture(e.pointerId); } catch (err) {}
+            batt.classList.add('dragging');
+            e.preventDefault();
+        });
+        batt.addEventListener('pointermove', function (e) {
+            if (!dragging || !stageRect) return;
+            var px = e.clientX - stageRect.left;
+            var py = e.clientY - stageRect.top;
+            var k = nearestDist(px, py);
+            if (k < 0) return;
+            renderP(k);
+            // 滚动条跟随小球(拖拽期间不触发 scroll 渲染)
+            suppressScroll = true;
+            var target = spacerTopAbs - 70 + k * runLen;
+            window.scrollTo(0, target);
+        });
+        function endDrag() {
+            if (!dragging) return;
+            dragging = false;
+            batt.classList.remove('dragging');
+        }
+        batt.addEventListener('pointerup', endDrag);
+        batt.addEventListener('pointercancel', endDrag);
         function measure() {
             vh = window.innerHeight || document.documentElement.clientHeight;
             var run = Math.max(vh * 2.1, 1500);
@@ -1383,10 +1441,14 @@
         progEl.className = 'jny-progress';
         progEl.innerHTML = 'JOURNEY <span class="bar"><i></i></span>';
         stage.appendChild(progEl);
+        // 拖拽时基于 stage 当前视口位置换算
+        function refreshStageRect() { stageRect = stage.getBoundingClientRect(); }
+        window.addEventListener('scroll', function () { refreshStageRect(); }, { passive: true });
         window.addEventListener('scroll', onScroll, { passive: true });
-        window.addEventListener('resize', measure);
+        window.addEventListener('resize', function () { measure(); refreshStageRect(); });
+        refreshStageRect();
         measure();
-        window.addEventListener('load', measure);
+        window.addEventListener('load', function () { measure(); refreshStageRect(); });
     })();
 
     // ===== 数据条 count-up(进入视口后数字滚动) =====
