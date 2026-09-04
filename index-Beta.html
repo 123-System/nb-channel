@@ -347,6 +347,20 @@
         .vcard .body { padding: 18px; }
         .vcard h4 { font-size: .98rem; font-weight: 700; margin-bottom: 6px; line-height: 1.4; }
         .vcard .meta { font-size: .8rem; color: var(--ink-faint); }
+        /* 查看更多按钮 */
+        .more-wrap { text-align: center; margin-top: 40px; }
+        .more-btn {
+            display: inline-block; padding: 12px 36px;
+            border: 1px solid var(--line); border-radius: 999px;
+            background: var(--card); color: var(--ink-soft);
+            font-size: .9rem; font-weight: 600; letter-spacing: 2px;
+            box-shadow: var(--shadow-1);
+            transition: all .35s ease;
+        }
+        .more-btn:hover {
+            border-color: var(--brand); color: var(--brand);
+            transform: translateY(-2px); box-shadow: var(--shadow-2);
+        }
 
         /* ============ 公司理念 ============ */
         .about-grid {
@@ -982,38 +996,41 @@
     </div>
 </section>
 
-<!-- 最新视频 -->
+<!-- 热门视频(按播放量 Top6) -->
 <section class="section" style="padding-top:0;">
     <div class="section-head reveal">
         <span class="section-eyebrow">Videos</span>
-        <h2>最新视频</h2>
-        <p>化学实验、物理趣味与日常作死</p>
+        <h2>热门视频</h2>
+        <p>播放量最高的化学实验、物理趣味与日常作死</p>
     </div>
     <div class="video-grid">
-        <a class="vcard reveal" href="https://www.bilibili.com/video/BV1Nr3i63ENL" target="_blank" rel="noopener noreferrer">
-            <div class="thumb"><img src="https://i1.hdslb.com/bfs/archive/7fc0a17bb56a553d152776e86ea34e604b9fdbf6.jpg" alt="《 行 星 发 动 机 》"><span class="dur">6:10</span><span class="play">▶</span></div>
-            <div class="body"><h4>《 行 星 发 动 机 》</h4><div class="meta">《逝验室·化学》 · 3.2万播放</div></div>
+        <a class="vcard reveal" href="https://www.bilibili.com/video/BV1BbRYYeEVG" target="_blank" rel="noopener noreferrer">
+            <div class="thumb"><img src="https://i0.hdslb.com/bfs/archive/fed19300b4e6f86953319ec59cbd6365b8bba08e.jpg" alt="《 加 钠 · 魔 铜 降 世 》"><span class="dur">2:26</span><span class="play">▶</span></div>
+            <div class="body"><h4>《 加 钠 · 魔 铜 降 世 》</h4><div class="meta">《逝验室·化学》 · 58.4万播放</div></div>
         </a>
-        <a class="vcard reveal" href="https://www.bilibili.com/video/BV1zJ376kENb" target="_blank" rel="noopener noreferrer">
-            <div class="thumb"><img src="https://i0.hdslb.com/bfs/archive/9ad74a4776aac3a7c1461c9fd806d081ab725c6c.jpg" alt="《 炸 弹 》"><span class="dur">1:41</span><span class="play">▶</span></div>
-            <div class="body"><h4>《 炸 弹 》</h4><div class="meta">《产品》 · 5.5万播放</div></div>
+        <a class="vcard reveal" href="https://www.bilibili.com/video/BV11gNbe4ExW" target="_blank" rel="noopener noreferrer">
+            <div class="thumb"><img src="https://i2.hdslb.com/bfs/archive/7504c36d5c933726a7ecdcfbb0d6f98085a8dc2f.jpg" alt="《 不 要 让 化 学 老 师 看 到 》"><span class="dur">6:01</span><span class="play">▶</span></div>
+            <div class="body"><h4>《 不 要 让 化 学 老 师 看 到 》</h4><div class="meta">《逝验室·化学》 · 54.8万播放</div></div>
         </a>
-        <a class="vcard reveal" href="https://www.bilibili.com/video/BV1diNT6bE2R" target="_blank" rel="noopener noreferrer">
-            <div class="thumb"><img src="https://i2.hdslb.com/bfs/archive/2865c5c1b0aea7225ca9e7d6c568d1fe6352cc93.jpg" alt="《 化 钉 液 》"><span class="dur">2:27</span><span class="play">▶</span></div>
-            <div class="body"><h4>《 化 钉 液 》</h4><div class="meta">《产品》 · 1.6万播放</div></div>
+        <a class="vcard reveal" href="https://www.bilibili.com/video/BV1E9AgetEYe" target="_blank" rel="noopener noreferrer">
+            <div class="thumb"><img src="https://i1.hdslb.com/bfs/archive/dc83cea0f23b847785bf0caa2306cd86be333bf2.jpg" alt="《 救 人 3 . 0 》"><span class="dur">3:46</span><span class="play">▶</span></div>
+            <div class="body"><h4>《 救 人 3 . 0 》</h4><div class="meta">《“救”人》 · 44.9万播放</div></div>
         </a>
-        <a class="vcard reveal" href="https://www.bilibili.com/video/BV1v8AfzmE9o" target="_blank" rel="noopener noreferrer">
-            <div class="thumb"><img src="https://i1.hdslb.com/bfs/archive/ed50fccde58ca8466a6dbaef022424c94222a84d.jpg" alt="《 官 网 0 . 2 . 5 》"><span class="dur">4:32</span><span class="play">▶</span></div>
-            <div class="body"><h4>《 官 网 0 . 2 . 5 》</h4><div class="meta">《官网》 · 7228播放</div></div>
+        <a class="vcard reveal" href="https://www.bilibili.com/video/BV17fNoetELN" target="_blank" rel="noopener noreferrer">
+            <div class="thumb"><img src="https://i2.hdslb.com/bfs/archive/b80837f9fdb33f8210616ebe996ebb94bf5bc5de.jpg" alt="《 救 人 》"><span class="dur">3:18</span><span class="play">▶</span></div>
+            <div class="body"><h4>《 救 人 》</h4><div class="meta">《“救”人》 · 33.2万播放</div></div>
         </a>
-        <a class="vcard reveal" href="https://www.bilibili.com/video/BV1ekfBB5EcZ" target="_blank" rel="noopener noreferrer">
-            <div class="thumb"><img src="https://i1.hdslb.com/bfs/archive/5438655a2f1c9bbe80b898803208e995dcd8e3c0.jpg" alt="《 炸 不 了 》"><span class="dur">2:57</span><span class="play">▶</span></div>
-            <div class="body"><h4>《 炸 不 了 》</h4><div class="meta">《产品》 · 11.3万播放</div></div>
+        <a class="vcard reveal" href="https://www.bilibili.com/video/BV1D5zXBcECp" target="_blank" rel="noopener noreferrer">
+            <div class="thumb"><img src="https://i0.hdslb.com/bfs/archive/2e0b55ba1f902deed1b1706f2ef7cd00490d6354.jpg" alt="《 3 0 0 V 电 池 》"><span class="dur">7:04</span><span class="play">▶</span></div>
+            <div class="body"><h4>《 3 0 0 V 电 池 》</h4><div class="meta">《逝验室·物理》 · 15.9万播放</div></div>
         </a>
-        <a class="vcard reveal" href="https://www.bilibili.com/video/BV1HMZYBuEze" target="_blank" rel="noopener noreferrer">
-            <div class="thumb"><img src="https://i0.hdslb.com/bfs/archive/f99157b13a7252c00221cd923ee1840d7035dd31.jpg" alt="《 镀 铜 液 》"><span class="dur">1:32</span><span class="play">▶</span></div>
-            <div class="body"><h4>《 镀 铜 液 》</h4><div class="meta">《产品》 · 1.4万播放</div></div>
+        <a class="vcard reveal" href="https://www.bilibili.com/video/BV1e6XpYbEzm" target="_blank" rel="noopener noreferrer">
+            <div class="thumb"><img src="https://i1.hdslb.com/bfs/archive/f7e73d7e98698b82ad7d1e587371088275e02b42.jpg" alt="《 加 钠 小 逝 验 》"><span class="dur">3:34</span><span class="play">▶</span></div>
+            <div class="body"><h4>《 加 钠 小 逝 验 》</h4><div class="meta">《逝验室·化学》 · 11.6万播放</div></div>
         </a>
+    </div>
+    <div class="more-wrap reveal">
+        <a class="more-btn" href="videos.html">查看全部视频 →</a>
     </div>
 </section>
 
