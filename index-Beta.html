@@ -54,8 +54,7 @@
         }
         html.dark body {
             background:
-                radial-gradient(900px 520px at 85% -10%, rgba(59,130,246,.07), transparent 60%),
-                radial-gradient(760px 540px at 5% 30%, rgba(139,92,246,.05), transparent 60%),
+                radial-gradient(900px 520px at 85% -10%, rgba(59,130,246,.06), transparent 60%),
                 var(--bg);
             background-attachment: fixed;
         }
@@ -68,7 +67,7 @@
         html.dark .beta-announce { background: linear-gradient(135deg, #101a2e, #0d1526); border-color: rgba(59,130,246,.25); }
         html.dark .beta-announce .ba-icon { background: rgba(59,130,246,.15); }
         html.dark .beta-announce .ba-item { color: var(--ink-soft); }
-        html.dark .friends-section { background: #0d1526; border-color: var(--line); }
+        html.dark .friends-section { background: transparent; }
         html.dark .vcard .thumb, html.dark .card .thumb { background: #0d1526; }
         html.dark .drawer { background: #0f1a30; }
         html.dark .drawer .d-close { background: rgba(255,255,255,.06); color: var(--ink); }
@@ -87,8 +86,7 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
             background:
-                radial-gradient(1000px 600px at 88% -12%, rgba(59,130,246,.06), transparent 62%),
-                radial-gradient(820px 560px at -8% 24%, rgba(139,92,246,.05), transparent 62%),
+                radial-gradient(1100px 620px at 82% -14%, rgba(59,130,246,.05), transparent 62%),
                 var(--bg);
             background-attachment: fixed;
             color: var(--ink);
@@ -115,14 +113,23 @@
             width: 10px; height: 10px; border-radius: 3px;
             background: linear-gradient(135deg, var(--brand), #8b5cf6);
         }
-        .nav-menu { display: flex; gap: 4px; }
+        .nav-menu { display: flex; gap: 2px; }
         .nav-menu a {
-            padding: 8px 16px; border-radius: 999px;
-            font-size: .92rem; color: var(--ink-soft);
-            transition: all .25s ease;
+            position: relative; padding: 10px 14px;
+            font-size: .92rem; font-weight: 500; letter-spacing: .4px;
+            color: var(--ink-soft); white-space: nowrap;
+            transition: color .3s ease;
         }
-        .nav-menu a:hover { color: var(--ink); background: rgba(59,130,246,.08); }
-        .nav-menu a.active { color: var(--brand); background: rgba(59,130,246,.1); font-weight: 600; }
+        .nav-menu a::after {
+            content: ''; position: absolute; left: 14px; right: 14px; bottom: 2px;
+            height: 1px; background: var(--brand);
+            transform: scaleX(0); transform-origin: left;
+            transition: transform .35s cubic-bezier(.16,1,.3,1);
+        }
+        .nav-menu a:hover { color: var(--ink); }
+        .nav-menu a:hover::after { transform: scaleX(1); }
+        .nav-menu a.active { color: var(--brand); font-weight: 600; }
+        .nav-menu a.active::after { transform: scaleX(1); }
         .nav-cta {
             padding: 9px 20px; border-radius: 999px;
             background: var(--brand); color: #fff; font-size: .9rem; font-weight: 600;
@@ -131,88 +138,92 @@
         }
         .nav-cta:hover { background: var(--brand-deep); transform: translateY(-1px); box-shadow: 0 12px 24px -8px rgba(59,130,246,.6); }
 
-        /* ============ Hero ============ */
+        /* ============ Hero(极简排版:细眉行 + 粗细字重对比 + 左文右画) ============ */
         .hero {
             position: relative; overflow: hidden;
-            padding: 120px 48px 150px; text-align: center;
-            background: linear-gradient(160deg, #0f172a 0%, #1e293b 55%, #312e81 100%);
+            padding: 140px 48px 170px;
+            background:
+                radial-gradient(860px 460px at 16% 6%, rgba(59,130,246,.15), transparent 62%),
+                radial-gradient(700px 460px at 92% 30%, rgba(139,92,246,.10), transparent 60%),
+                linear-gradient(168deg, #0b1220 0%, #101c33 58%, #1c1745 100%);
         }
         .hero::before {
-            content: ''; position: absolute; inset: 0; pointer-events: none;
-            background:
-                radial-gradient(600px 300px at 15% 10%, rgba(59,130,246,.25), transparent 60%),
-                radial-gradient(500px 300px at 85% 20%, rgba(139,92,246,.22), transparent 60%);
+            content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .6;
+            background: radial-gradient(600px 300px at 15% 10%, rgba(96,165,250,.20), transparent 60%);
+            animation: heroDrift 26s ease-in-out infinite alternate;
         }
         .hero::after {
-            content: ''; position: absolute; inset: 0; pointer-events: none;
-            background-image: radial-gradient(rgba(255,255,255,.07) 1px, transparent 1px);
-            background-size: 32px 32px;
-            mask-image: linear-gradient(to bottom, rgba(0,0,0,.6), transparent 70%);
-            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.6), transparent 70%);
+            content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+            background-image: radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px);
+            background-size: 36px 36px;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,.55), transparent 75%);
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.55), transparent 75%);
+        }
+        @keyframes heroDrift {
+            from { transform: translate3d(-18px, -10px, 0) scale(1); }
+            to { transform: translate3d(24px, 16px, 0) scale(1.06); }
         }
         /* Hero → 背景色的柔和过渡 */
         .hero-fade {
-            position: absolute; left: 0; right: 0; bottom: 0; height: 110px; z-index: 1;
+            position: absolute; left: 0; right: 0; bottom: 0; height: 120px; z-index: 1;
             background: linear-gradient(to bottom, transparent, var(--bg));
             pointer-events: none;
         }
-        .hero-inner { position: relative; z-index: 2; max-width: 860px; margin: 0 auto; }
-        .hero-badge {
-            display: inline-block;
-            padding: 6px 16px; border-radius: 999px;
-            font-size: .8rem; font-weight: 500; letter-spacing: .5px;
-            color: #c7d2fe; background: rgba(255,255,255,.08);
-            border: 1px solid rgba(255,255,255,.14);
-            margin-bottom: 28px;
+        .hero-inner {
+            position: relative; z-index: 2; max-width: 1180px; margin: 0 auto;
+            display: grid; grid-template-columns: 1.05fr .95fr; gap: 80px; align-items: center;
+        }
+        .hero-copy { text-align: left; min-width: 0; }
+        .hero-eyebrow {
+            display: block; font-size: 11px; font-weight: 400;
+            letter-spacing: 8px; color: rgba(255,255,255,.42);
+            margin-bottom: 44px;
         }
         .hero h1 {
-            font-size: 3.4rem; font-weight: 900; letter-spacing: .5px;
-            color: #fff; line-height: 1.18; margin-bottom: 20px;
-            text-wrap: balance;
+            font-size: clamp(2.5rem, 4.9vw, 4.4rem);
+            font-weight: 800; letter-spacing: 2px;
+            color: #fff; line-height: 1.16; text-wrap: balance;
         }
-        .hero h1 .grad {
-            background: linear-gradient(92deg, #7cb4ff 0%, #a78bfa 60%, #d8b4fe 100%);
-            -webkit-background-clip: text; background-clip: text; color: transparent;
+        .hero h1 .light {
+            font-weight: 200; letter-spacing: 6px; color: #9cc0ff;
         }
-        .hero p {
-            font-size: 1.12rem; color: rgba(255,255,255,.72); font-weight: 300;
-            max-width: 620px; margin: 0 auto 40px; letter-spacing: .3px;
+        .hero-sub {
+            margin: 36px 0 0; max-width: 440px;
+            font-size: .98rem; font-weight: 300; line-height: 2.15;
+            letter-spacing: .6px; color: rgba(255,255,255,.6);
         }
-        .hero-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-        .hero-btn {
-            padding: 14px 32px; border-radius: 999px; font-size: .98rem; font-weight: 600;
-            transition: all .25s ease;
+        .hero-actions { margin-top: 52px; display: flex; gap: 44px; align-items: center; flex-wrap: wrap; }
+        .hero-link {
+            font-size: .9rem; letter-spacing: 3px; font-weight: 600; color: #fff;
+            padding: 12px 2px; border-bottom: 1px solid rgba(255,255,255,.32);
+            transition: border-color .35s ease, color .35s ease;
         }
-        .hero-btn.primary {
-            background: linear-gradient(135deg, #4f8ef7, #6366f1); color: #fff;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 16px 32px -12px rgba(59,130,246,.55);
-        }
-        .hero-btn.primary:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 20px 44px -12px rgba(59,130,246,.7); }
-        .hero-btn.ghost {
-            color: rgba(255,255,255,.9); border: 1px solid rgba(255,255,255,.22);
-            background: rgba(255,255,255,.04);
-        }
-        .hero-btn.ghost:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.4); }
-        /* LOGO 视频:质感外壳(渐变垫 + 细边框 + 深层光晕) */
+        .hero-link:hover { border-color: #7cb4ff; color: #7cb4ff; }
+        .hero-media { min-width: 0; }
+        /* LOGO 视频:无边框,单靠圆角与深影(去 chrome) */
         .hero-video {
-            max-width: 760px; margin: 40px auto 0;
-            border-radius: 22px;
-            padding: 8px;
-            background: linear-gradient(160deg, rgba(255,255,255,.14), rgba(255,255,255,.04) 60%);
-            border: 1px solid rgba(255,255,255,.18);
-            box-shadow: 0 0 0 1px rgba(255,255,255,.05), 0 50px 100px -40px rgba(0,0,0,.8), 0 0 90px -30px rgba(59,130,246,.35);
-        }
-        .hero-video video {
-            display: block; width: 100%; border-radius: 15px;
+            border-radius: 22px; overflow: hidden;
+            box-shadow: 0 70px 140px -60px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.06);
             background: #0b1220;
         }
-        /* 滚动提示 */
+        .hero-video video { display: block; width: 100%; }
+        /* 微小探索指引(竖线脉冲) */
         .hero-scroll {
-            position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
-            z-index: 2; color: rgba(255,255,255,.5); font-size: 1.3rem;
-            animation: bob 2.2s ease-in-out infinite;
+            position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%);
+            z-index: 2; color: rgba(255,255,255,.34);
+            font-size: 9px; letter-spacing: 4px;
         }
-        @keyframes bob { 0%,100% { transform: translate(-50%,0); } 50% { transform: translate(-50%,7px); } }
+        .hero-scroll::after {
+            content: ''; display: block; width: 1px; height: 36px; margin: 10px auto 0;
+            background: linear-gradient(180deg, rgba(255,255,255,.55), transparent);
+            animation: scrollPulse 2.8s cubic-bezier(.16,1,.3,1) infinite;
+        }
+        @keyframes scrollPulse {
+            0% { transform: scaleY(0); transform-origin: top; }
+            45% { transform: scaleY(1); transform-origin: top; }
+            55% { transform: scaleY(1); transform-origin: bottom; }
+            100% { transform: scaleY(0); transform-origin: bottom; }
+        }
 
         /* ============ 数据条 ============ */
         .stats {
@@ -221,7 +232,7 @@
             flex-wrap: wrap;
         }
         .stat {
-            background: var(--card); border: 1px solid var(--line);
+            background: var(--card);
             border-radius: var(--radius-md); padding: 18px 34px;
             text-align: center; min-width: 140px;
             box-shadow: var(--shadow-1);
@@ -253,32 +264,21 @@
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
         .card {
             background: var(--card); border-radius: var(--radius-lg);
-            padding: 28px 24px; border: 1px solid var(--line);
+            padding: 30px 26px;
             box-shadow: var(--shadow-1);
-            transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+            transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease;
         }
         .card:hover {
-            transform: translateY(-4px);
+            transform: translateY(-5px);
             box-shadow: var(--shadow-2);
-            border-color: rgba(59,130,246,.35);
         }
         .card .ico {
             width: 48px; height: 48px; border-radius: 14px;
             display: flex; align-items: center; justify-content: center;
             font-size: 1.5rem; margin-bottom: 18px;
         }
-        /* 每张卡片专属的低饱和渐变图标底 */
-        .card:nth-child(1) .ico { background: linear-gradient(135deg, #dbeafe, #eff6ff); }
-        .card:nth-child(2) .ico { background: linear-gradient(135deg, #e0e7ff, #eef2ff); }
-        .card:nth-child(3) .ico { background: linear-gradient(135deg, #f3e8ff, #faf5ff); }
-        .card:nth-child(4) .ico { background: linear-gradient(135deg, #cffafe, #ecfeff); }
-        .card:nth-child(5) .ico { background: linear-gradient(135deg, #ffe4e6, #fff1f2); }
-        .card:nth-child(6) .ico { background: linear-gradient(135deg, #fef3c7, #fffbeb); }
-        .card:nth-child(7) .ico { background: linear-gradient(135deg, #d1fae5, #ecfdf5); }
-        .card:nth-child(8) .ico { background: linear-gradient(135deg, #e2e8f0, #f1f5f9); }
-        .card:nth-child(9) .ico { background: linear-gradient(135deg, #ffedd5, #fff7ed); }
-        .card:nth-child(10) .ico { background: linear-gradient(135deg, #e0f2fe, #f0f9ff); }
-        .card:nth-child(11) .ico { background: linear-gradient(135deg, #fce7f3, #fdf2f8); }
+        /* 图标底:统一单一品牌色系(低饱和) */
+        .card .ico { background: linear-gradient(135deg, rgba(59,130,246,.14), rgba(59,130,246,.04)); }
         .card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; }
         .card p { font-size: .88rem; color: var(--ink-soft); line-height: 1.7; }
         .card .go {
@@ -291,10 +291,10 @@
         .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
         .vcard {
             background: var(--card); border-radius: var(--radius-lg); overflow: hidden;
-            border: 1px solid var(--line); box-shadow: var(--shadow-1);
-            transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+            box-shadow: var(--shadow-1);
+            transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease;
         }
-        .vcard:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); border-color: rgba(59,130,246,.35); }
+        .vcard:hover { transform: translateY(-5px); box-shadow: var(--shadow-2); }
         .vcard .thumb {
             position: relative; height: 140px;
             display: flex; align-items: center; justify-content: center;
@@ -331,8 +331,8 @@
         .about-text .section-eyebrow { margin-bottom: 12px; }
         .about-text h2 { font-size: 1.9rem; font-weight: 800; line-height: 1.35; margin-bottom: 18px; }
         .about-text h2 .grad {
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-            -webkit-background-clip: text; background-clip: text; color: transparent;
+            color: var(--brand);
+            -webkit-background-clip: initial; background-clip: initial;
         }
         .about-text p { color: var(--ink-soft); font-size: .95rem; line-height: 1.9; margin-bottom: 14px; }
         .about-text p b { color: var(--ink); font-weight: 700; }
@@ -341,44 +341,44 @@
         .about-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
         .about-tags .tag {
             font-size: .8rem; color: var(--ink-soft);
-            background: #fff; border: 1px solid var(--line);
-            padding: 7px 14px; border-radius: 999px;
-            box-shadow: var(--shadow-1);
+            background: var(--card);
+            padding: 7px 16px; border-radius: 999px;
         }
         .about-tags .tag b { color: var(--brand); font-weight: 700; }
         .about-cards { display: flex; flex-direction: column; gap: 16px; }
         .about-card {
             display: flex; gap: 18px; align-items: flex-start;
-            background: var(--card); border: 1px solid var(--line);
+            background: var(--card);
             border-radius: var(--radius-md); padding: 22px 24px;
             box-shadow: var(--shadow-1);
-            transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+            transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease;
         }
-        .about-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); border-color: rgba(59,130,246,.35); }
+        .about-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
         .about-card .ico {
             width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+            display: flex; align-items: center; justify-content: center;
+            font-size: .85rem; font-weight: 800; letter-spacing: 1px;
+            color: var(--brand);
+            background: linear-gradient(135deg, rgba(59,130,246,.14), rgba(59,130,246,.04));
         }
-        .about-card:nth-child(1) .ico { background: linear-gradient(135deg, #dbeafe, #eff6ff); }
-        .about-card:nth-child(2) .ico { background: linear-gradient(135deg, #e0e7ff, #eef2ff); }
-        .about-card:nth-child(3) .ico { background: linear-gradient(135deg, #f3e8ff, #faf5ff); }
+        .about-card .ico { background: linear-gradient(135deg, rgba(59,130,246,.14), rgba(59,130,246,.04)); }
         .about-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
         .about-card h4 em { font-style: normal; color: var(--ink-faint); font-weight: 500; font-size: .85rem; margin-left: 8px; }
         .about-card p { font-size: .85rem; color: var(--ink-soft); line-height: 1.75; }
 
-        /* ============ 友商 ============ */
-        .friends-section { background: #fff; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+        /* ============ 友商(去边框,白底靠阴影悬浮) ============ */
+        .friends-section { background: transparent; }
         .friends-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
         .friend {
             display: flex; align-items: center; gap: 14px;
-            background: var(--bg); border: 1px solid var(--line);
+            background: var(--card);
             border-radius: var(--radius-md); padding: 16px 18px;
-            transition: all .3s ease;
+            box-shadow: var(--shadow-1);
+            transition: all .35s ease;
         }
         .friend:hover {
             transform: translateY(-3px);
-            border-color: rgba(59,130,246,.4);
-            background: #fff;
+            background: var(--card);
             box-shadow: var(--shadow-2);
         }
         .friend .logo {
@@ -386,17 +386,17 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 1.15rem; font-weight: 800; color: #fff;
         }
-        .friend:nth-child(1) .logo { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
-        .friend:nth-child(2) .logo { background: linear-gradient(135deg, #a78bfa, #8b5cf6); }
-        .friend:nth-child(3) .logo { background: linear-gradient(135deg, #34d399, #10b981); }
-        .friend:nth-child(4) .logo { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
-        .friend:nth-child(5) .logo { background: linear-gradient(135deg, #f472b6, #ec4899); }
-        .friend:nth-child(6) .logo { background: linear-gradient(135deg, #38bdf8, #06b6d4); }
-        .friend:nth-child(7) .logo { background: linear-gradient(135deg, #94a3b8, #64748b); }
-        .friend:nth-child(8) .logo { background: linear-gradient(135deg, #f87171, #ef4444); }
-        .friend:nth-child(9) .logo { background: linear-gradient(135deg, #2dd4bf, #14b8a6); }
-        .friend:nth-child(10) .logo { background: linear-gradient(135deg, #c084fc, #a855f7); }
-        .friend:nth-child(11) .logo { background: linear-gradient(135deg, #fda4af, #f43f5e); }
+        .friend:nth-child(1) .logo { background: linear-gradient(160deg, #33415e, #232c42); }
+        .friend:nth-child(2) .logo { background: linear-gradient(160deg, #33415e, #232c42); }
+        .friend:nth-child(3) .logo { background: linear-gradient(160deg, #33415e, #232c42); }
+        .friend:nth-child(4) .logo { background: linear-gradient(160deg, #33415e, #232c42); }
+        .friend:nth-child(5) .logo { background: linear-gradient(160deg, #33415e, #232c42); }
+        .friend:nth-child(6) .logo { background: linear-gradient(160deg, #33415e, #232c42); }
+        .friend:nth-child(7) .logo { background: linear-gradient(160deg, #33415e, #232c42); }
+        .friend:nth-child(8) .logo { background: linear-gradient(160deg, #33415e, #232c42); }
+        .friend:nth-child(9) .logo { background: linear-gradient(160deg, #33415e, #232c42); }
+        .friend:nth-child(10) .logo { background: linear-gradient(160deg, #33415e, #232c42); }
+        .friend:nth-child(11) .logo { background: linear-gradient(160deg, #33415e, #232c42); }
         .friend .info { flex: 1; min-width: 0; }
         .friend .name { font-size: .98rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
         .friend .name .arrow { color: var(--ink-faint); font-size: .8rem; transition: all .25s ease; }
@@ -406,10 +406,12 @@
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;
         }
 
-        /* ============ CTA ============ */
-        .cta { text-align: center; padding: 76px 24px; background: linear-gradient(135deg, #1e293b, #312e81); color: #fff; }
-        .cta h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 14px; }
-        .cta p { color: rgba(255,255,255,.7); margin-bottom: 32px; font-weight: 300; }
+        /* ============ CTA(极简收束:大字 + 文本链接 + 大留白) ============ */
+        .cta { text-align: center; padding: 120px 24px; background: linear-gradient(170deg, #101c33 0%, #1c1745 100%); color: #fff; }
+        .cta h2 { font-size: clamp(1.9rem, 3.6vw, 2.8rem); font-weight: 800; letter-spacing: 2px; margin-bottom: 18px; }
+        .cta p { color: rgba(255,255,255,.62); margin-bottom: 44px; font-weight: 300; letter-spacing: .6px; }
+        .cta-actions { display: flex; gap: 48px; justify-content: center; flex-wrap: wrap; }
+        .cta .hero-link { border-bottom-color: rgba(255,255,255,.3); }
 
         /* ============ 页脚 ============ */
         .footer {
@@ -442,7 +444,7 @@
         }
 
         /* ============ 动效 ============ */
-        .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
+        .reveal { opacity: 0; transform: translateY(30px); transition: opacity .9s cubic-bezier(.16,1,.3,1), transform .9s cubic-bezier(.16,1,.3,1); }
         .reveal.in { opacity: 1; transform: none; }
         /* 悬浮上浮(置于 .reveal.in 之后,覆盖其 transform:none,保证渐显完成后悬停仍生效) */
         .stat:hover, .card:hover, .vcard:hover, .friend:hover, .about-card:hover {
@@ -610,8 +612,11 @@
         @media (max-width: 760px) {
             .nav { padding: 0 20px; }
             .nav-menu { display: none; }
-            .hero { padding: 80px 20px 110px; }
-            .hero h1 { font-size: 2.2rem; }
+            .hero { padding: 96px 24px 130px; }
+            .hero h1 { font-size: 2.3rem; }
+            .hero-inner { grid-template-columns: 1fr; gap: 60px; }
+            .hero-eyebrow { margin-bottom: 30px; letter-spacing: 5px; }
+            .hero-sub { max-width: none; }
             .stats { gap: 12px; }
             .stat { min-width: 120px; padding: 14px 18px; }
             .about-grid { grid-template-columns: 1fr; gap: 36px; }
@@ -647,19 +652,22 @@
 <!-- Hero -->
 <header class="hero">
     <div class="hero-inner">
-        <span class="hero-badge">🏢 虚拟公司 · 📺 10万+粉丝 · 🧪 化学·物理·作死</span>
-        <h1>热爱理科与<span class="grad">作死</span>的<br>UP主官方网站</h1>
-        <p>NB频道，全名 NoBook 频道——一个由"NB搞事局"建立的虚拟公司。分享有趣的化学、物理实验与日常作死小技巧。</p>
-        <div class="hero-btns">
-            <a class="hero-btn primary" href="videos.html">🎬 看视频</a>
-            <a class="hero-btn ghost" href="comments-beta.html">💬 进评论区</a>
+        <div class="hero-copy">
+            <span class="hero-eyebrow">NOBOOK CHANNEL · EST. 2026</span>
+            <h1>热爱理科,<br>与<span class="light">作死</span>同行。</h1>
+            <p class="hero-sub">一个由 UP主「NB搞事局」建立的虚拟公司。化学与物理实验、日常作死、NB币虚拟经济与友商生态——都在这里发生。</p>
+            <div class="hero-actions">
+                <a class="hero-link" href="#about">开始探索 ↓</a>
+                <a class="hero-link" href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">在 B站关注 ↗</a>
+            </div>
         </div>
-        <div class="hero-video">
-            <span class="hv-tag">🎬 NB频道 LOGO 动画</span>
-            <video src="https://videos.tuchuangyun.top/autoupload/f/2ybw2nnc3ldHerixYxPOdCfNcKcqEnRmcljopnyJoMs/20260316/5rPu/LOGO%EF%BC%88%E6%9C%80%E7%BB%88%EF%BC%89.mp4" autoplay muted loop playsinline disablePictureInPicture></video>
+        <div class="hero-media">
+            <div class="hero-video">
+                <video src="https://videos.tuchuangyun.top/autoupload/f/2ybw2nnc3ldHerixYxPOdCfNcKcqEnRmcljopnyJoMs/20260316/5rPu/LOGO%EF%BC%88%E6%9C%80%E7%BB%88%EF%BC%89.mp4" autoplay muted loop playsinline disablePictureInPicture></video>
+            </div>
         </div>
     </div>
-    <div class="hero-scroll">▾</div>
+    <div class="hero-scroll">SCROLL</div>
     <div class="hero-fade"></div>
 </header>
 
@@ -673,7 +681,6 @@
 
 <!-- 公告区(数据从 admin_config 拉取,有公告才显示) -->
 <div class="beta-announce" id="betaAnnounce" style="display:none;">
-    <div class="ba-icon">📢</div>
     <div class="ba-title">公告</div>
     <div class="ba-track-wrap"><div class="ba-track" id="baTrack"></div></div>
 </div>
@@ -688,29 +695,29 @@
             <p>我们把「搞事」当作一门严肃的事业：每一个实验都认真讲原理，每一笔虚拟交易都认真清算，每一位用户，都是公司的股东与伙伴。</p>
             <div class="about-sign">—— NB搞事局<span>创始人 & 唯一的正式员工</span></div>
             <div class="about-tags">
-                <span class="tag">🏢 成立 <b>2026.02</b></span>
-                <span class="tag">👤 创始人 <b>NB搞事局</b></span>
-                <span class="tag">🏷️ 性质 <b>虚拟公司 · 粉丝全资持股</b></span>
-                <span class="tag">📍 总部 <b>地球 · 网络</b></span>
+                <span class="tag">成立 <b>2026.02</b></span>
+                <span class="tag">创始人 <b>NB搞事局</b></span>
+                <span class="tag">性质 <b>虚拟公司 · 粉丝全资持股</b></span>
+                <span class="tag">总部 <b>地球 · 网络</b></span>
             </div>
         </div>
         <div class="about-cards">
             <div class="about-card reveal">
-                <div class="ico">🎯</div>
+                <div class="ico">01</div>
                 <div>
                     <h4>使命<em>Mission</em></h4>
                     <p>让理科变得好玩——把枯燥的公式变成有趣的实验，把危险的操作变成有分寸的科普。</p>
                 </div>
             </div>
             <div class="about-card reveal">
-                <div class="ico">🔭</div>
+                <div class="ico">02</div>
                 <div>
                     <h4>愿景<em>Vision</em></h4>
                     <p>成为中文互联网上最快乐的理科社区——虚拟但认真，真实且有趣，把「作死」玩成科学与艺术。</p>
                 </div>
             </div>
             <div class="about-card reveal">
-                <div class="ico">💎</div>
+                <div class="ico">03</div>
                 <div>
                     <h4>价值观<em>Values</em></h4>
                     <p>好奇 · 安全 · 认真 · 好玩——好奇心驱动探索，安全永远是底线，虚拟经济绝不含糊，快乐是最终目的。</p>
@@ -724,7 +731,7 @@
 <section class="section" id="milestone">
     <div class="section-head reveal">
         <span class="section-eyebrow">Milestones</span>
-        <h2>🗓️ 大事记</h2>
+        <h2>大事记</h2>
         <p>从一腔热血到十万粉丝，一个虚拟公司的成长之路</p>
     </div>
     <div class="timeline">
@@ -777,7 +784,7 @@
 <section class="section">
     <div class="section-head reveal">
         <span class="section-eyebrow">Features</span>
-        <h2>🚀 核心功能</h2>
+        <h2>核心功能</h2>
         <p>从虚拟炒股到化学工具，NB频道的数字世界应有尽有</p>
     </div>
     <div class="grid">
@@ -832,7 +839,7 @@
 <section class="section" style="padding-top:0;">
     <div class="section-head reveal">
         <span class="section-eyebrow">Videos</span>
-        <h2>🎬 最新视频</h2>
+        <h2>最新视频</h2>
         <p>化学实验、物理趣味与日常作死</p>
     </div>
     <div class="video-grid">
@@ -859,7 +866,7 @@
 <section class="section friends-section" id="friends">
     <div class="section-head reveal">
         <span class="section-eyebrow">Partners</span>
-        <h2>🤝 友商</h2>
+        <h2>友商</h2>
         <p>一起搞事的伙伴们——点击卡片访问他们的官网</p>
     </div>
     <div class="friends-grid">
@@ -947,12 +954,11 @@
 <div class="cta">
     <h2>加入 NB 频道的数字世界</h2>
     <p>关注 B站、参与讨论、投资公司、购买道具——总有一款适合你</p>
-    <div class="hero-btns" style="justify-content:center;">
-        <a class="hero-btn primary" href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">⭐ 去 B站关注</a>
-        <a class="hero-btn ghost" href="comments-beta.html">💬 进评论区</a>
+    <div class="cta-actions">
+        <a class="hero-link" href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">在 B站关注 ↗</a>
+        <a class="hero-link" href="comments-beta.html">进入评论区 ↓</a>
     </div>
 </div>
-
 <!-- 页脚 -->
 <footer class="footer">
     <div class="footer-grid">
@@ -962,7 +968,7 @@
         </div>
         <div>
             <h5>功能</h5>
-            <a href="#">虚拟股票</a><a href="#">NB银行</a><a href="#">评论区</a><a href="#">NB商店</a><a href="#">称号系统</a>
+            <a href="Virtual stock.html">虚拟股票</a><a href="bank.html">NB银行</a><a href="comments-beta.html">评论区</a><a href="shop.html">NB商店</a><a href="titles.html">称号系统</a>
         </div>
         <div>
             <h5>友商</h5>
@@ -993,13 +999,13 @@
         <span class="d-brand"><span class="dot"></span>NB频道</span>
         <button class="d-close" id="drawerClose" aria-label="关闭菜单">✕</button>
     </div>
-    <a class="d-item active" href="index-Beta.html">🏠 首页</a>
-    <a class="d-item" href="videos.html">🎬 视频</a>
-    <a class="d-item" href="about.html">📄 关于</a>
-    <a class="d-item" href="changelog.html">📋 更新日志</a>
-    <a class="d-item" href="product.html">📦 我的产品</a>
-    <a class="d-item" href="APP.html">📱 软件/APP</a>
-    <a class="d-item" href="#friends">🤝 友商</a>
+    <a class="d-item active" href="index-Beta.html">首页</a>
+    <a class="d-item" href="videos.html">视频</a>
+    <a class="d-item" href="about.html">关于</a>
+    <a class="d-item" href="changelog.html">更新日志</a>
+    <a class="d-item" href="product.html">我的产品</a>
+    <a class="d-item" href="APP.html">软件/APP</a>
+    <a class="d-item" href="#friends">友商</a>
     <div class="d-auth">
         <a class="ga" id="dProfileBtn" href="#">👤 个人中心</a>
         <a class="gab" id="dAuthBtn" href="#">登录 / 注册</a>
