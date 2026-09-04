@@ -598,134 +598,165 @@
             border: 1px solid rgba(255,255,255,.16); font-size: .78rem; letter-spacing: .5px;
         }
 
-        /* ===== 大事记:原生 CSS Scroll-Driven 行驶时间轴 =====
-           核心:列表整体声明 view-timeline(block 方向),轨道进度/行驶光点/节点点亮
-           全部由 animation-timeline: view() + animation-range 驱动,滚动全程零 JS。 */
-        .jy-list {
+        /* ===== 大事记:横向"能量旅程"(原生 CSS Scroll-Driven)
+           滚动进度 → 光点沿横向轨道行驶 → 年份节点依次点亮 → 说明卡伴随浮现。
+           时间轴:.hs-stage 声明 view-timeline;轨道/光点/节点/卡片全部 animation-timeline:--hs 驱动。 ===== */
+        .hs-stage {
             position: relative;
-            max-width: 920px; margin: 26px auto 0;
-            view-timeline-name: --jy;
+            max-width: 1160px; margin: 46px auto 0;
+            view-timeline-name: --hs;
             view-timeline-axis: block;
         }
-        .jy-row {
-            position: relative;
-            display: grid; grid-template-columns: 118px 1fr; gap: 44px;
-            padding: 30px 0;
+        .hs-rail { position: absolute; left: 34px; right: 34px; top: 0; bottom: 0; }
+        .hs-node { position: absolute; text-align: center; transform: translateX(-50%); white-space: nowrap; }
+        .hs-y { display: block; font-size: 1.9rem; font-weight: 800; letter-spacing: 1px; line-height: 1; font-variant-numeric: tabular-nums; }
+        .hs-m { display: block; font-size: .7rem; font-weight: 600; letter-spacing: 3px; margin-top: 6px; opacity: .8; }
+        .hs-card {
+            background: var(--card); border-radius: 18px;
+            padding: 24px 30px 22px; text-align: center;
+            box-shadow: var(--shadow-1); max-width: 560px; margin: 0 auto 12px;
         }
-        .jy-st { position: relative; }
-        .jy-nd, .jy-ny { position: absolute; top: 50%; }
-        .jy-nd {
-            left: 15px; width: 9px; height: 9px; border-radius: 50%;
-            margin-top: -5px; transform: translateX(-50%);
-            background: var(--card); border: 2px solid var(--ink-faint);
-        }
-        .jy-ny {
-            left: 34px; margin-top: -8px;
-            font-size: .74rem; font-weight: 600; letter-spacing: 1.5px;
-            color: var(--ink-faint); white-space: nowrap;
-        }
-        .jy-body { min-width: 0; }
-        .jy-date {
+        .hs-date {
             font-size: 11px; font-weight: 700; letter-spacing: 2.5px;
             color: var(--brand); opacity: .9; margin-bottom: 8px;
         }
-        .jy-title { font-size: 1.16rem; font-weight: 800; letter-spacing: .4px; color: var(--ink); margin-bottom: 8px; }
-        .jy-desc { font-size: .9rem; font-weight: 300; line-height: 1.95; color: var(--ink-soft); max-width: 540px; }
+        .hs-title { font-size: 1.2rem; font-weight: 800; letter-spacing: .4px; color: var(--ink); margin-bottom: 8px; }
+        .hs-desc { font-size: .9rem; font-weight: 300; line-height: 1.9; color: var(--ink-soft); }
+        .hs-cards { max-width: 560px; margin: 0 auto; }
 
-        /* 轨道与行驶(仅支持的浏览器启用;不支持时退化为普通静态列表) */
+        /* ---- 原生滚动时间轴支持时:舞台化叠层编排 ---- */
         @supports (animation-timeline: view()) {
-            .jy-list::before, .jy-list::after {
-                content: ''; position: absolute; left: 15px; top: 18px; bottom: 18px;
-                width: 2px; transform: translateX(-50%); border-radius: 2px; pointer-events: none;
+            .hs-stage { height: 600px; }
+            /* 节点静态定位(横向等分,从第一年到最后一年) */
+            .hs-node { top: 92px; color: var(--ink); }
+            .hs-node.n1 { left: 0%; }
+            .hs-node.n2 { left: 14.2857%; }
+            .hs-node.n3 { left: 28.5714%; }
+            .hs-node.n4 { left: 42.8571%; }
+            .hs-node.n5 { left: 57.1428%; }
+            .hs-node.n6 { left: 71.4285%; }
+            .hs-node.n7 { left: 85.7142%; }
+            .hs-node.n8 { left: 100%; }
+            .hs-node { opacity: .15; }
+
+            /* 轨道基线 */
+            .hs-line, .hs-progress {
+                position: absolute; left: 0; right: 0; top: 150px; height: 2px; border-radius: 2px;
             }
-            .jy-list::before { background: var(--line); }
-            .jy-list::after {
+            .hs-line { background: var(--line); }
+            .hs-progress {
                 background: var(--brand);
-                box-shadow: 0 0 14px rgba(59,130,246,.5);
-                transform-origin: top;
-                animation: jyFill linear both;
-                animation-timeline: --jy;
+                box-shadow: 0 0 16px rgba(59,130,246,.55);
+                transform-origin: left;
+                animation: hsFill linear both;
+                animation-timeline: --hs;
                 animation-range: cover 0% cover 100%;
             }
-            @keyframes jyFill { from { transform: translateX(-50%) scaleY(0); } to { transform: translateX(-50%) scaleY(1); } }
-            .jy-ind {
-                position: absolute; left: 15px; top: 0; width: 20px; height: 20px; z-index: 3;
-                margin-left: -10px; margin-top: -10px;
-                animation: jyDrive linear both;
-                animation-timeline: --jy;
+            @keyframes hsFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+            /* 行驶光点(白芯蓝环 + 能量光环 + 尾焰拖尾) */
+            .hs-ind {
+                position: absolute; left: 0; top: 150px; width: 22px; height: 22px;
+                margin: -11px 0 0 -11px; z-index: 4;
+                animation: hsDrive linear both;
+                animation-timeline: --hs;
                 animation-range: cover 0% cover 100%;
             }
-            @keyframes jyDrive {
-                0% { top: var(--jy-y0); }
-                14.2857% { top: var(--jy-y1); }
-                28.5714% { top: var(--jy-y2); }
-                42.8571% { top: var(--jy-y3); }
-                57.1428% { top: var(--jy-y4); }
-                71.4285% { top: var(--jy-y5); }
-                85.7142% { top: var(--jy-y6); }
-                100% { top: var(--jy-y7); }
+            @keyframes hsDrive {
+                0% { left: 0%; }
+                14.2857% { left: 14.2857%; }
+                28.5714% { left: 28.5714%; }
+                42.8571% { left: 42.8571%; }
+                57.1428% { left: 57.1428%; }
+                71.4285% { left: 71.4285%; }
+                85.7142% { left: 85.7142%; }
+                100% { left: 100%; }
             }
-            .jy-ind::before {
+            .hs-ind::before {
                 content: ''; position: absolute; inset: 0; border-radius: 50%;
                 background: #fff; border: 4px solid var(--brand);
-                box-shadow: 0 0 0 5px rgba(59,130,246,.16), 0 0 22px rgba(59,130,246,.6);
+                box-shadow: 0 0 0 5px rgba(59,130,246,.18), 0 0 26px rgba(59,130,246,.65);
             }
-            .jy-ind::after {
-                content: ''; position: absolute; inset: -8px; border-radius: 50%;
-                border: 1px solid rgba(59,130,246,.45);
-                animation: jyPulse 2.8s cubic-bezier(.16,1,.3,1) infinite;
+            .hs-ind::after {
+                content: ''; position: absolute; inset: -9px; border-radius: 50%;
+                border: 1px solid rgba(59,130,246,.5);
+                animation: hsPulse 2.6s cubic-bezier(.16,1,.3,1) infinite;
             }
-            @keyframes jyPulse {
-                0% { transform: scale(.55); opacity: .9; }
-                70% { transform: scale(1.1); opacity: 0; }
+            @keyframes hsPulse {
+                0% { transform: scale(.6); opacity: .9; }
+                70% { transform: scale(1.12); opacity: 0; }
                 100% { opacity: 0; }
             }
-            /* 未来节点:暗淡;由经过窗口点亮 */
-            .jy-row .jy-nd { opacity: .55; }
-            .jy-row .jy-ny { opacity: .35; }
-            /* 每个节点用自己的经过窗口(光点抵达瞬间点亮 → 稍后转为已点亮) */
-            .jy-row:nth-child(1) .jy-nd { animation: jyNd1 linear both; animation-timeline: --jy; animation-range: cover 0% 100%; }
-            .jy-row:nth-child(1) .jy-ny { animation: jyNy1 linear both; animation-timeline: --jy; animation-range: cover 0% 100%; }
-            .jy-row:nth-child(2) .jy-nd { animation: jyNd2 linear both; animation-timeline: --jy; animation-range: cover 14.2857% 100%; }
-            .jy-row:nth-child(2) .jy-ny { animation: jyNy2 linear both; animation-timeline: --jy; animation-range: cover 14.2857% 100%; }
-            .jy-row:nth-child(3) .jy-nd { animation: jyNd3 linear both; animation-timeline: --jy; animation-range: cover 28.5714% 100%; }
-            .jy-row:nth-child(3) .jy-ny { animation: jyNy3 linear both; animation-timeline: --jy; animation-range: cover 28.5714% 100%; }
-            .jy-row:nth-child(4) .jy-nd { animation: jyNd4 linear both; animation-timeline: --jy; animation-range: cover 42.8571% 100%; }
-            .jy-row:nth-child(4) .jy-ny { animation: jyNy4 linear both; animation-timeline: --jy; animation-range: cover 42.8571% 100%; }
-            .jy-row:nth-child(5) .jy-nd { animation: jyNd5 linear both; animation-timeline: --jy; animation-range: cover 57.1428% 100%; }
-            .jy-row:nth-child(5) .jy-ny { animation: jyNy5 linear both; animation-timeline: --jy; animation-range: cover 57.1428% 100%; }
-            .jy-row:nth-child(6) .jy-nd { animation: jyNd6 linear both; animation-timeline: --jy; animation-range: cover 71.4285% 100%; }
-            .jy-row:nth-child(6) .jy-ny { animation: jyNy6 linear both; animation-timeline: --jy; animation-range: cover 71.4285% 100%; }
-            .jy-row:nth-child(7) .jy-nd { animation: jyNd7 linear both; animation-timeline: --jy; animation-range: cover 85.7142% 100%; }
-            .jy-row:nth-child(7) .jy-ny { animation: jyNy7 linear both; animation-timeline: --jy; animation-range: cover 85.7142% 100%; }
-            .jy-row:nth-child(8) .jy-nd { animation: jyNd8 linear both; animation-timeline: --jy; animation-range: cover 100% 100%; }
-            .jy-row:nth-child(8) .jy-ny { animation: jyNy8 linear both; animation-timeline: --jy; animation-range: cover 100% 100%; }
-            /* 点亮节奏:窗口内 0% 黯淡 → 4% 抵达点亮 → 20% 后转为已点亮 */
-            @keyframes jyNd1 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
-            @keyframes jyNd2 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
-            @keyframes jyNd3 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
-            @keyframes jyNd4 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
-            @keyframes jyNd5 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
-            @keyframes jyNd6 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
-            @keyframes jyNd7 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
-            @keyframes jyNd8 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
-            @keyframes jyNy1 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
-            @keyframes jyNy2 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
-            @keyframes jyNy3 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
-            @keyframes jyNy4 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
-            @keyframes jyNy5 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
-            @keyframes jyNy6 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
-            @keyframes jyNy7 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
-            @keyframes jyNy8 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
-        }
-        /* 不支持原生滚动时间轴时:节点常显为普通静态列表 */
-        .jy-fallback .jy-nd { opacity: 1; background: var(--brand); border-color: var(--brand); }
-        .jy-fallback .jy-ny { opacity: .85; color: var(--ink-soft); }
-        @media (max-width: 700px) {
-            .jy-row { grid-template-columns: 46px 1fr; gap: 18px; padding: 22px 0; }
-            .jy-ny { display: none; }
+            /* 尾焰:向后(左)拖出的能量光带 */
+            .hs-tail {
+                position: absolute; right: 16px; top: 50%; width: 110px; height: 2px;
+                margin-top: -1px; border-radius: 2px;
+                background: linear-gradient(to left, rgba(59,130,246,.65), rgba(59,130,246,0));
+            }
+
+            /* 节点点亮:未来暗淡 → 抵达(年份点亮) → 常亮(轨迹连贯) */
+            .hs-node.n1 { animation: hsNodeOn linear both; animation-timeline: --hs; animation-range: cover 0% 100%; }
+            .hs-node.n2 { animation: hsNodeOn linear both; animation-timeline: --hs; animation-range: cover 14.2857% 100%; }
+            .hs-node.n3 { animation: hsNodeOn linear both; animation-timeline: --hs; animation-range: cover 28.5714% 100%; }
+            .hs-node.n4 { animation: hsNodeOn linear both; animation-timeline: --hs; animation-range: cover 42.8571% 100%; }
+            .hs-node.n5 { animation: hsNodeOn linear both; animation-timeline: --hs; animation-range: cover 57.1428% 100%; }
+            .hs-node.n6 { animation: hsNodeOn linear both; animation-timeline: --hs; animation-range: cover 71.4285% 100%; }
+            .hs-node.n7 { animation: hsNodeOn linear both; animation-timeline: --hs; animation-range: cover 85.7142% 100%; }
+            .hs-node.n8 { animation: hsNodeOn linear both; animation-timeline: --hs; animation-range: cover 92.8571% cover 100%; }
+            @keyframes hsNodeOn {
+                0% { opacity: .15; color: var(--ink); }
+                5% { opacity: 1; color: var(--brand); text-shadow: 0 0 24px rgba(59,130,246,.5); }
+                12%, 100% { opacity: 1; color: var(--brand); }
+            }
+
+            /* 说明卡:抵达时淡入上浮,下一节点到来前淡出(末卡停驻) */
+            .hs-cards {
+                position: absolute; left: 0; right: 0; bottom: 0; height: 196px;
+                max-width: none; margin: 0;
+                display: flex; align-items: center; justify-content: center;
+            }
+            .hs-card {
+                position: absolute; margin: 0; max-width: 620px; width: min(620px, 86%);
+                opacity: 0; will-change: opacity, transform;
+            }
+            .hs-card:nth-child(1) { animation: hsCardFade linear both; animation-timeline: --hs; animation-range: cover 0% cover 14.2857%; }
+            .hs-card:nth-child(2) { animation: hsCardFade linear both; animation-timeline: --hs; animation-range: cover 14.2857% cover 28.5714%; }
+            .hs-card:nth-child(3) { animation: hsCardFade linear both; animation-timeline: --hs; animation-range: cover 28.5714% cover 42.8571%; }
+            .hs-card:nth-child(4) { animation: hsCardFade linear both; animation-timeline: --hs; animation-range: cover 42.8571% cover 57.1428%; }
+            .hs-card:nth-child(5) { animation: hsCardFade linear both; animation-timeline: --hs; animation-range: cover 57.1428% cover 71.4285%; }
+            .hs-card:nth-child(6) { animation: hsCardFade linear both; animation-timeline: --hs; animation-range: cover 71.4285% cover 85.7142%; }
+            .hs-card:nth-child(7) { animation: hsCardFade linear both; animation-timeline: --hs; animation-range: cover 85.7142% cover 92.8571%; }
+            .hs-card:nth-child(8) { animation: hsCardKeep linear both; animation-timeline: --hs; animation-range: cover 92.8571% cover 100%; }
+            @keyframes hsCardFade {
+                0% { opacity: 0; transform: translateY(20px); }
+                8% { opacity: 1; transform: none; }
+                82% { opacity: 1; transform: none; }
+                100% { opacity: 0; transform: translateY(-10px); }
+            }
+            @keyframes hsCardKeep {
+                0% { opacity: 0; transform: translateY(20px); }
+                12% { opacity: 1; transform: none; }
+                100% { opacity: 1; transform: none; }
+            }
         }
 
+        /* ---- 窄屏适配 ---- */
+        @media (max-width: 760px) {
+            @supports (animation-timeline: view()) {
+                .hs-stage { height: 520px; }
+                .hs-node { top: 66px; }
+                .hs-y { font-size: 1.15rem; }
+                .hs-m { font-size: .6rem; letter-spacing: 2px; }
+                .hs-line, .hs-progress, .hs-ind { top: 118px; }
+                .hs-cards { height: 210px; }
+                .hs-card { padding: 18px 16px 16px; }
+                .hs-title { font-size: 1.05rem; }
+                .hs-desc { font-size: .82rem; line-height: 1.75; }
+            }
+            .hs-card { padding: 18px 16px 16px; }
+            .hs-title { font-size: 1.05rem; }
+            .hs-desc { font-size: .82rem; }
+        }
         /* ===== 回到顶部 ===== */
         .backtop {
             position: fixed; right: 26px; bottom: 26px; z-index: 5000;
@@ -857,83 +888,71 @@
     </div>
 </section>
 
-<!-- 大事记:CSS Scroll-Driven 行驶时间轴(animation-timeline: view() 原生驱动,无需滚动JS) -->
+<!-- 大事记:横向"能量旅程"(CSS Scroll-Driven:光点沿横向轨道行驶,年份节点依次点亮,说明卡伴随浮现) -->
 <section class="section" id="milestone">
     <div class="section-head reveal">
         <span class="section-eyebrow">Milestones</span>
         <h2>大事记</h2>
-        <p>滚动页面，沿着这条轨道看看我们是怎么一路开过来的</p>
+        <p>滚动页面——沿着这条能量轨道，看看我们是怎么一路开过来的</p>
     </div>
-    <div class="jy-list" id="jyList">
-        <div class="jy-ind" id="jyInd"></div>
-
-        <div class="jy-row reveal">
-            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2025.06</span></div>
-            <div class="jy-body">
-                <div class="jy-date">2025.06 · 萌芽</div>
-                <h3 class="jy-title">第一支试管点燃了频道</h3>
-                <p class="jy-desc">「NB实验室-作死」发布第一期化学实验。没有剪辑技巧，只有一支试管和一颗作死的心——但评论区有人看完了。</p>
-            </div>
+    <div class="hs-stage" id="hsStage">
+        <div class="hs-rail">
+            <div class="hs-line"></div>
+            <div class="hs-progress" id="hsProgress"></div>
+            <div class="hs-ind" id="hsInd"><i class="hs-tail"></i></div>
+            <div class="hs-node n1"><span class="hs-y">2025</span><span class="hs-m">06</span></div>
+            <div class="hs-node n2"><span class="hs-y">2025</span><span class="hs-m">09</span></div>
+            <div class="hs-node n3"><span class="hs-y">2025</span><span class="hs-m">12</span></div>
+            <div class="hs-node n4"><span class="hs-y">2026</span><span class="hs-m">02</span></div>
+            <div class="hs-node n5"><span class="hs-y">2026</span><span class="hs-m">04</span></div>
+            <div class="hs-node n6"><span class="hs-y">2026</span><span class="hs-m">06</span></div>
+            <div class="hs-node n7"><span class="hs-y">2026</span><span class="hs-m">07</span></div>
+            <div class="hs-node n8"><span class="hs-y">2026</span><span class="hs-m">08</span></div>
         </div>
-        <div class="jy-row reveal">
-            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2025.09</span></div>
-            <div class="jy-body">
-                <div class="jy-date">2025.09 · 更名</div>
-                <h3 class="jy-title">「NB搞事局」正式挂牌</h3>
-                <p class="jy-desc">确立"化学 · 物理 · 作死"路线，第一期化学工具视频发布，粉丝突破一千。</p>
+        <div class="hs-cards">
+            <div class="hs-card">
+                <div class="hs-date">2025.06 · 萌芽</div>
+                <h3 class="hs-title">第一支试管点燃了频道</h3>
+                <p class="hs-desc">「NB实验室-作死」发布第一期化学实验——没有剪辑技巧，只有一支试管和一颗作死的心。</p>
             </div>
-        </div>
-        <div class="jy-row reveal">
-            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2025.12</span></div>
-            <div class="jy-body">
-                <div class="jy-date">2025.12 · 入圈</div>
-                <h3 class="jy-title">NB 圈成形，友商登场</h3>
-                <p class="jy-desc">结识 AWM、Utw 等第一批友商，虚拟公司们的"生态圈"有了雏形。</p>
+            <div class="hs-card">
+                <div class="hs-date">2025.09 · 更名</div>
+                <h3 class="hs-title">「NB搞事局」正式挂牌</h3>
+                <p class="hs-desc">确立"化学 · 物理 · 作死"路线，第一期化学工具视频发布，粉丝突破一千。</p>
             </div>
-        </div>
-        <div class="jy-row reveal">
-            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2026.02</span></div>
-            <div class="jy-body">
-                <div class="jy-date">2026.02 · 建站</div>
-                <h3 class="jy-title">官网 v1 上线</h3>
-                <p class="jy-desc">2026.02.17 正式建站。虚拟公司终于有了自己的"注册地址"——域名很小，梦想不小。</p>
+            <div class="hs-card">
+                <div class="hs-date">2025.12 · 入圈</div>
+                <h3 class="hs-title">NB 圈成形，友商登场</h3>
+                <p class="hs-desc">结识 AWM、Utw 等第一批友商，虚拟公司们的"生态圈"有了雏形。</p>
             </div>
-        </div>
-        <div class="jy-row reveal">
-            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2026.04</span></div>
-            <div class="jy-body">
-                <div class="jy-date">2026.04 · 破万</div>
-                <h3 class="jy-title">B站粉丝突破一万</h3>
-                <p class="jy-desc">评论区从"几个熟人"变成"一个小社区"。有人开始催更，有人开始二创。</p>
+            <div class="hs-card">
+                <div class="hs-date">2026.02 · 建站</div>
+                <h3 class="hs-title">官网 v1 上线</h3>
+                <p class="hs-desc">2026.02.17 正式建站——虚拟公司终于有了自己的"注册地址"，域名很小，梦想不小。</p>
             </div>
-        </div>
-        <div class="jy-row reveal">
-            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2026.06</span></div>
-            <div class="jy-body">
-                <div class="jy-date">2026.06 · 十万</div>
-                <h3 class="jy-title">十万粉丝达成</h3>
-                <p class="jy-desc">作死的尽头是科学，科学的尽头是 NB——被十万人看见之后，这句话更像真的了。</p>
+            <div class="hs-card">
+                <div class="hs-date">2026.04 · 破万</div>
+                <h3 class="hs-title">B站粉丝突破一万</h3>
+                <p class="hs-desc">评论区从"几个熟人"变成"一个小社区"——有人开始催更，有人开始二创。</p>
             </div>
-        </div>
-        <div class="jy-row reveal">
-            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2026.07</span></div>
-            <div class="jy-body">
-                <div class="jy-date">2026.07 · 经济</div>
-                <h3 class="jy-title">NB币经济开市</h3>
-                <p class="jy-desc">虚拟股票开市、NB银行开业。每天 8:00-20:00 市场自主运转——虚拟，但绝不儿戏。</p>
+            <div class="hs-card">
+                <div class="hs-date">2026.06 · 十万</div>
+                <h3 class="hs-title">十万粉丝达成</h3>
+                <p class="hs-desc">作死的尽头是科学，科学的尽头是 NB——被十万人看见之后，这句话更像真的了。</p>
             </div>
-        </div>
-        <div class="jy-row reveal">
-            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2026.08</span></div>
-            <div class="jy-body">
-                <div class="jy-date">2026.08.27 · 焕新</div>
-                <h3 class="jy-title">官网 Beta 全新上线</h3>
-                <p class="jy-desc">今天，我们把"官网"做得更像官网。留白、克制、大标题、慢动画——故事从这一页重新讲起。</p>
+            <div class="hs-card">
+                <div class="hs-date">2026.07 · 经济</div>
+                <h3 class="hs-title">NB币经济开市</h3>
+                <p class="hs-desc">虚拟股票开市、NB银行开业——每天 8:00-20:00 市场自主运转，虚拟，但绝不儿戏。</p>
+            </div>
+            <div class="hs-card">
+                <div class="hs-date">2026.08.27 · 焕新</div>
+                <h3 class="hs-title">官网 Beta 全新上线</h3>
+                <p class="hs-desc">今天，我们把"官网"做得更像官网。留白、克制、大标题、慢动画——故事从这一页重新讲起。</p>
             </div>
         </div>
     </div>
 </section>
-
 <!-- 核心功能 -->
 <section class="section">
     <div class="section-head reveal">
@@ -1309,32 +1328,6 @@
                 } catch (err) { p.remove(); }
             }
         });
-    })();
-
-    // ===== 大事记:CSS Scroll-Driven 时间轴 —— 仅发布节点坐标变量(滚动动画全由 CSS view-timeline 驱动) =====
-    (function () {
-        var list = document.getElementById('jyList');
-        if (!list) return;
-        // 不支持原生滚动时间轴的浏览器:节点恢复常显(避免全暗)
-        if (!('animationTimeline' in document.documentElement.style) && !CSS.supports('animation-timeline: view()')) {
-            list.classList.add('jy-fallback');
-            return;
-        }
-        function publish() {
-            var rows = list.querySelectorAll('.jy-row');
-            var listTop = list.getBoundingClientRect().top;
-            var vars = {};
-            rows.forEach(function (row, i) {
-                var st = row.querySelector('.jy-st');
-                var r = st.getBoundingClientRect();
-                var y = (r.top - listTop) + r.height / 2;
-                vars['--jy-y' + i] = y.toFixed(1) + 'px';
-            });
-            for (var k in vars) list.style.setProperty(k, vars[k]);
-        }
-        publish();
-        window.addEventListener('resize', publish);
-        window.addEventListener('load', publish);
     })();
 
     // ===== 数据条 count-up(进入视口后数字滚动) =====
