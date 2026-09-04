@@ -598,47 +598,76 @@
             border: 1px solid rgba(255,255,255,.16); font-size: .78rem; letter-spacing: .5px;
         }
 
-        /* ===== 大事记:年份主导的编辑式列表(超大浅印年份 + 发丝分隔 + 空气感) ===== */
-        .ms-list { max-width: 880px; margin: 16px auto 0; }
-        .ms-row {
-            display: grid; grid-template-columns: 190px 1fr; gap: 48px;
-            padding: 36px 0; align-items: start;
+        /* ===== 大事记:滚动驱动行驶时间轴(光点沿轨道行驶,依次点亮年份节点) ===== */
+        .jy-wrap {
+            display: grid; grid-template-columns: 168px 1fr; gap: 56px;
+            max-width: 960px; margin: 30px auto 0;
         }
-        .ms-row + .ms-row { border-top: 1px solid var(--line); }
-        .ms-year { text-align: right; padding-top: 4px; }
-        .ms-year span {
-            font-size: 3.4rem; font-weight: 800; line-height: 1;
-            letter-spacing: 1px; color: var(--ink); opacity: .13;
-            transition: opacity .5s ease, color .5s ease;
+        .jy-track { position: relative; }
+        .jy-line {
+            position: absolute; left: 14px; top: 6px; bottom: 6px;
+            width: 2px; transform: translateX(-50%);
+            background: var(--line); border-radius: 2px;
         }
-        .ms-dot { padding-top: 16px; }
-        .ms-dot i {
-            display: block; width: 7px; height: 7px; margin-left: auto;
-            border-radius: 50%; background: var(--brand); opacity: .3;
-            transition: opacity .4s ease, transform .4s ease;
+        .jy-progress {
+            position: absolute; left: 14px; top: 6px; width: 2px; height: 0;
+            transform: translateX(-50%);
+            background: var(--brand);
+            box-shadow: 0 0 14px rgba(59,130,246,.5);
         }
-        .ms-row:hover .ms-year span { opacity: 1; color: var(--brand); }
-        .ms-row:hover .ms-dot i { opacity: 1; transform: scale(1.4); }
-        .ms-body { min-width: 0; }
-        .ms-date {
-            font-size: 11px; font-weight: 700; letter-spacing: 3px;
-            color: var(--brand); opacity: .9; margin-bottom: 12px;
+        .jy-ind {
+            position: absolute; left: 14px; top: 0; width: 20px; height: 20px;
+            transform: translate(-50%, -50%); z-index: 3;
         }
-        .ms-title {
-            font-size: 1.3rem; font-weight: 800; letter-spacing: .5px;
-            color: var(--ink); margin-bottom: 10px;
-            transition: transform .45s cubic-bezier(.16,1,.3,1);
+        .jy-ind::before {
+            content: ''; position: absolute; inset: 0; border-radius: 50%;
+            background: #fff; border: 4px solid var(--brand);
+            box-shadow: 0 0 0 5px rgba(59,130,246,.16), 0 0 22px rgba(59,130,246,.6);
         }
-        .ms-desc {
-            font-size: .93rem; font-weight: 300; line-height: 2.05;
-            color: var(--ink-soft); max-width: 560px;
+        .jy-ind::after {
+            content: ''; position: absolute; inset: -8px; border-radius: 50%;
+            border: 1px solid rgba(59,130,246,.45);
+            animation: jyPulse 2.8s cubic-bezier(.16,1,.3,1) infinite;
         }
-        .ms-row:hover .ms-title { transform: translateX(8px); }
+        @keyframes jyPulse {
+            0% { transform: scale(.55); opacity: .9; }
+            70% { transform: scale(1.1); opacity: 0; }
+            100% { opacity: 0; }
+        }
+        .jy-node { position: absolute; left: 0; top: 0; display: flex; align-items: center; pointer-events: none; white-space: nowrap; }
+        .jy-node .nd {
+            width: 9px; height: 9px; border-radius: 50%;
+            background: var(--card); border: 2px solid var(--ink-faint);
+            margin-left: 14px; transform: translateX(-50%);
+            transition: all .5s ease;
+        }
+        .jy-node .ny {
+            font-size: .74rem; font-weight: 600; letter-spacing: 1.5px;
+            color: var(--ink-faint); opacity: .45; margin-left: 20px;
+            transition: color .5s ease, opacity .5s ease;
+        }
+        .jy-node.passed .nd { background: var(--brand); border-color: var(--brand); }
+        .jy-node.passed .ny { opacity: .85; color: var(--ink-soft); }
+        .jy-node.active .nd { background: var(--brand); border-color: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,.25); transform: translateX(-50%) scale(1.3); }
+        .jy-node.active .ny { opacity: 1; color: var(--brand); font-weight: 800; }
+        .jy-cards { display: flex; flex-direction: column; }
+        .jy-card {
+            padding: 18px 22px; border-radius: 16px;
+            transition: transform .6s cubic-bezier(.16,1,.3,1), opacity .6s ease;
+        }
+        .jy-cards .jy-card.current { transform: translateX(8px); }
+        .jy-date {
+            font-size: 11px; font-weight: 700; letter-spacing: 2.5px;
+            color: var(--brand); opacity: .9; margin-bottom: 8px;
+        }
+        .jy-title { font-size: 1.16rem; font-weight: 800; letter-spacing: .4px; color: var(--ink); margin-bottom: 8px; }
+        .jy-desc { font-size: .9rem; font-weight: 300; line-height: 1.95; color: var(--ink-soft); max-width: 540px; }
         @media (max-width: 700px) {
-            .ms-row { grid-template-columns: 1fr; gap: 12px; padding: 26px 0; }
-            .ms-year { text-align: left; }
-            .ms-year span { font-size: 2.1rem; }
-            .ms-dot { display: none; }
+            .jy-wrap { grid-template-columns: 56px 1fr; gap: 20px; }
+            .jy-line, .jy-progress, .jy-ind { left: 9px; }
+            .jy-node .nd { margin-left: 9px; }
+            .jy-node .ny { display: none; }
+            .jy-card { padding: 16px 8px; }
         }
 
         /* ===== 回到顶部 ===== */
@@ -772,114 +801,61 @@
     </div>
 </section>
 
-<!-- 大事记:年份主导的编辑式时间轴(参考国际版官网里程碑范式) -->
+<!-- 大事记:滚动驱动的"行驶时间轴"(滚动进度 → 光点沿轨道行驶 → 依次点亮年份节点) -->
 <section class="section" id="milestone">
     <div class="section-head reveal">
         <span class="section-eyebrow">Milestones</span>
         <h2>大事记</h2>
-        <p>从 2025 年夏天的一支试管，到 2026 年的官网焕新——每个节点都值得被记录</p>
+        <p>滚动页面，沿着这条轨道看看我们是怎么一路开过来的</p>
     </div>
-    <div class="ms-list">
-
-        <div class="ms-row reveal">
-            <div class="ms-year"><span>2025</span></div>
-            <div class="ms-body">
-                <div class="ms-date">06 · 萌芽</div>
-                <h3 class="ms-title">第一支试管点燃了频道</h3>
-                <p class="ms-desc">UP主以「NB实验室-作死」的名义发布第一期化学实验。没有剪辑技巧，没有漂亮封面，只有一支试管和一颗作死的心——但评论区有人看完了。</p>
+    <div class="jy-wrap">
+        <div class="jy-track" id="jyTrack">
+            <div class="jy-line"></div>
+            <div class="jy-progress" id="jyProgress"></div>
+            <div class="jy-ind" id="jyInd"></div>
+        </div>
+        <div class="jy-cards" id="jyCards">
+            <div class="jy-card reveal" data-y="2025.06">
+                <div class="jy-date">2025.06 · 萌芽</div>
+                <h3 class="jy-title">第一支试管点燃了频道</h3>
+                <p class="jy-desc">「NB实验室-作死」发布第一期化学实验。没有剪辑技巧，只有一支试管和一颗作死的心——但评论区有人看完了。</p>
+            </div>
+            <div class="jy-card reveal" data-y="2025.09">
+                <div class="jy-date">2025.09 · 更名</div>
+                <h3 class="jy-title">「NB搞事局」正式挂牌</h3>
+                <p class="jy-desc">确立"化学 · 物理 · 作死"路线，第一期化学工具视频发布，粉丝突破一千。</p>
+            </div>
+            <div class="jy-card reveal" data-y="2025.12">
+                <div class="jy-date">2025.12 · 入圈</div>
+                <h3 class="jy-title">NB 圈成形，友商登场</h3>
+                <p class="jy-desc">结识 AWM、Utw 等第一批友商，虚拟公司们的"生态圈"有了雏形。</p>
+            </div>
+            <div class="jy-card reveal" data-y="2026.02">
+                <div class="jy-date">2026.02 · 建站</div>
+                <h3 class="jy-title">官网 v1 上线</h3>
+                <p class="jy-desc">2026.02.17 正式建站。虚拟公司终于有了自己的"注册地址"——域名很小，梦想不小。</p>
+            </div>
+            <div class="jy-card reveal" data-y="2026.04">
+                <div class="jy-date">2026.04 · 破万</div>
+                <h3 class="jy-title">B站粉丝突破一万</h3>
+                <p class="jy-desc">评论区从"几个熟人"变成"一个小社区"。有人开始催更，有人开始二创。</p>
+            </div>
+            <div class="jy-card reveal" data-y="2026.06">
+                <div class="jy-date">2026.06 · 十万</div>
+                <h3 class="jy-title">十万粉丝达成</h3>
+                <p class="jy-desc">作死的尽头是科学，科学的尽头是 NB——被十万人看见之后，这句话更像真的了。</p>
+            </div>
+            <div class="jy-card reveal" data-y="2026.07">
+                <div class="jy-date">2026.07 · 经济</div>
+                <h3 class="jy-title">NB币经济开市</h3>
+                <p class="jy-desc">虚拟股票开市、NB银行开业。每天 8:00-20:00 市场自主运转——虚拟，但绝不儿戏。</p>
+            </div>
+            <div class="jy-card reveal" data-y="2026.08">
+                <div class="jy-date">2026.08.27 · 焕新</div>
+                <h3 class="jy-title">官网 Beta 全新上线</h3>
+                <p class="jy-desc">今天，我们把"官网"做得更像官网。留白、克制、大标题、慢动画——故事从这一页重新讲起。</p>
             </div>
         </div>
-        <div class="ms-row reveal">
-            <div class="ms-year ms-dot"><i></i></div>
-            <div class="ms-body">
-                <div class="ms-date">09 · 更名</div>
-                <h3 class="ms-title">「NB搞事局」正式挂牌</h3>
-                <p class="ms-desc">频道更名为 NB搞事局，确立"化学 · 物理 · 作死"的内容路线。第一期化学工具视频发布，粉丝突破一千。</p>
-            </div>
-        </div>
-        <div class="ms-row reveal">
-            <div class="ms-year ms-dot"><i></i></div>
-            <div class="ms-body">
-                <div class="ms-date">12 · 入圈</div>
-                <h3 class="ms-title">NB 圈成形，友商登场</h3>
-                <p class="ms-desc">陆续结识 AWM、Utw 等第一批友商，虚拟公司们的"生态圈"有了雏形；第一次联动视频发出，评论区第一次破百。</p>
-            </div>
-        </div>
-
-        <div class="ms-row reveal">
-            <div class="ms-year"><span>2026</span></div>
-            <div class="ms-body">
-                <div class="ms-date">02 · 建站</div>
-                <h3 class="ms-title">NB频道官网 v1 上线</h3>
-                <p class="ms-desc">2026.02.17，官网正式建站。虚拟公司终于有了自己的"注册地址"——域名很小，梦想不小。</p>
-            </div>
-        </div>
-        <div class="ms-row reveal">
-            <div class="ms-year ms-dot"><i></i></div>
-            <div class="ms-body">
-                <div class="ms-date">03 · 成立</div>
-                <h3 class="ms-title">虚拟公司宣布成立</h3>
-                <p class="ms-desc">NB搞事局宣布成立虚拟公司，并郑重宣布：全体粉丝为荣誉股东，不发行股份，只发行快乐。</p>
-            </div>
-        </div>
-        <div class="ms-row reveal">
-            <div class="ms-year ms-dot"><i></i></div>
-            <div class="ms-body">
-                <div class="ms-date">04 · 破万</div>
-                <h3 class="ms-title">B站粉丝突破一万</h3>
-                <p class="ms-desc">评论区从"几个熟人"变成"一个小社区"。有人开始催更，有人开始二创，我们开始认真做官网。</p>
-            </div>
-        </div>
-        <div class="ms-row reveal">
-            <div class="ms-year ms-dot"><i></i></div>
-            <div class="ms-body">
-                <div class="ms-date">05 · 社区</div>
-                <h3 class="ms-title">评论区与好友系统打通</h3>
-                <p class="ms-desc">评论区支持图片与 @ 提及，好友私信上线，NB币首次流通——社区的"人"开始真正连起来。</p>
-            </div>
-        </div>
-        <div class="ms-row reveal">
-            <div class="ms-year ms-dot"><i></i></div>
-            <div class="ms-body">
-                <div class="ms-date">06 · 十万</div>
-                <h3 class="ms-title">十万粉丝达成</h3>
-                <p class="ms-desc">化学实验、物理趣味与日常作死，被十万个人看见。作死的尽头是科学，科学的尽头是 NB。</p>
-            </div>
-        </div>
-        <div class="ms-row reveal">
-            <div class="ms-year ms-dot"><i></i></div>
-            <div class="ms-body">
-                <div class="ms-date">07 · 经济</div>
-                <h3 class="ms-title">NB币经济开市</h3>
-                <p class="ms-desc">NB虚拟股票开市、NB银行开业：存钱、贷款、炒股、转账。每天 8:00-20:00，市场自主运转——虚拟，但绝不儿戏。</p>
-            </div>
-        </div>
-        <div class="ms-row reveal">
-            <div class="ms-year ms-dot"><i></i></div>
-            <div class="ms-body">
-                <div class="ms-date">08 · 生态</div>
-                <h3 class="ms-title">十一大功能各就各位</h3>
-                <p class="ms-desc">NB商店、背包、称号系统、用户主页、成就系统相继上线。从看视频到经营公司，NB频道成了一个完整的小世界。</p>
-            </div>
-        </div>
-        <div class="ms-row reveal">
-            <div class="ms-year ms-dot"><i></i></div>
-            <div class="ms-body">
-                <div class="ms-date">08.27 · 焕新</div>
-                <h3 class="ms-title">官网 Beta 全新上线</h3>
-                <p class="ms-desc">今天我们决定：把"官网"做得更像官网。留白、克制、大标题、慢动画——这个故事，从这一页重新讲起。</p>
-            </div>
-        </div>
-
-        <div class="ms-row reveal">
-            <div class="ms-year"><span style="font-size:1rem; font-weight:700; letter-spacing:4px; white-space:nowrap; opacity:.4;">未完待续</span></div>
-            <div class="ms-body">
-                <div class="ms-date">Next · 下一章</div>
-                <h3 class="ms-title">更多的功能，正在路上</h3>
-                <p class="ms-desc">下一件大事是什么？我们也不知道——但一定和理科、作死与快乐有关。保持关注，故事还长。</p>
-            </div>
-        </div>
-
     </div>
 </section>
 
@@ -1258,6 +1234,70 @@
                 } catch (err) { p.remove(); }
             }
         });
+    })();
+
+    // ===== 大事记:滚动驱动的行驶时间轴(滚动进度 ↔ 指示器沿轨道行驶,依次点亮节点) =====
+    (function () {
+        var sec = document.getElementById('milestone');
+        var track = document.getElementById('jyTrack');
+        var cardsEl = document.getElementById('jyCards');
+        var prog = document.getElementById('jyProgress');
+        var ind = document.getElementById('jyInd');
+        if (!sec || !track || !cardsEl || !prog || !ind) return;
+        var cards = Array.prototype.slice.call(cardsEl.querySelectorAll('.jy-card'));
+        var nodes = [], ys = [];
+        var n = cards.length, vh = 0, secTop = 0, secH = 0;
+        var ticking = false, measuring = false;
+        // 按卡片数据生成轨道节点(圆点 + 年份标签)
+        cards.forEach(function (c) {
+            var node = document.createElement('div');
+            node.className = 'jy-node';
+            node.innerHTML = '<span class="nd"></span><span class="ny">' + (c.getAttribute('data-y') || '') + '</span>';
+            track.appendChild(node);
+            nodes.push(node);
+        });
+        function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+        function measure() {
+            vh = window.innerHeight || document.documentElement.clientHeight;
+            var secR = sec.getBoundingClientRect();
+            secTop = secR.top + window.scrollY;
+            secH = secR.height;
+            var tR = track.getBoundingClientRect();
+            ys = cards.map(function (c) {
+                var r = c.getBoundingClientRect();
+                return (r.top - tR.top) + r.height / 2;
+            });
+            nodes.forEach(function (nd, i) { nd.style.top = ys[i] + 'px'; });
+            update();
+        }
+        function update() {
+            var sy = window.scrollY || document.documentElement.scrollTop;
+            var start = secTop - vh * 0.82;
+            var end = secTop + secH - vh * 0.18;
+            var p = clamp((sy - start) / Math.max(1, end - start), 0, 1);
+            // 指示器按节点逐段插值行驶:均匀"经过"每个里程碑
+            var seg = p * (n - 1);
+            var i = Math.min(Math.floor(seg), n - 2);
+            var f = seg - i;
+            var y = ys[i] + (ys[i + 1] - ys[i]) * f;
+            ind.style.top = y + 'px';
+            prog.style.height = y + 'px';
+            var activeIdx = clamp(Math.round(seg), 0, n - 1);
+            nodes.forEach(function (nd, k) {
+                nd.classList.toggle('active', k === activeIdx);
+                nd.classList.toggle('passed', k < activeIdx);
+            });
+            cards.forEach(function (c, k) { c.classList.toggle('current', k === activeIdx); });
+        }
+        window.addEventListener('scroll', function () {
+            if (!ticking) { ticking = true; requestAnimationFrame(function () { ticking = false; update(); }); }
+        }, { passive: true });
+        window.addEventListener('resize', function () {
+            if (!measuring) { measuring = true; requestAnimationFrame(function () { measuring = false; measure(); }); }
+        }, { passive: true });
+        measure();
+        // 视频/图片加载可能改变几何,load 后再校准一次
+        window.addEventListener('load', measure);
     })();
 
     // ===== 数据条 count-up(进入视口后数字滚动) =====
