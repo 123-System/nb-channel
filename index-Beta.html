@@ -491,6 +491,20 @@
 
         /* ============ 导航登录区 ============ */
         .nav-auth-group { display: flex; gap: 8px; align-items: center; }
+        /* 北京时间时钟 */
+        .nav-clock {
+            display: flex; align-items: baseline; gap: 7px;
+            margin-right: 4px; flex-shrink: 0; user-select: none;
+        }
+        .nav-clock .nc-label {
+            font-size: 10px; font-weight: 600; letter-spacing: 2px;
+            color: var(--ink-faint);
+        }
+        .nav-clock .nc-time {
+            font-size: 13px; font-weight: 700; letter-spacing: 1.2px;
+            color: var(--ink);
+            font-variant-numeric: tabular-nums;
+        }
         .nav-auth {
             padding: 8px 18px; border-radius: 999px;
             background: rgba(255,255,255,.6); color: var(--ink);
@@ -600,6 +614,7 @@
         @media (max-width: 900px) {
             .nav-menu { display: none; }
             .nav-auth-group { display: none; }
+            .nav-clock { display: none; }
             .nav-burger { display: flex; }
         }
 
@@ -769,6 +784,10 @@
         <a href="#friends">友商</a>
     </div>
     <div class="nav-right-group">
+        <div class="nav-clock" id="navClock" title="北京时间（UTC+8）">
+            <span class="nc-label">北京时间</span>
+            <span class="nc-time" id="bjTime">--:--:--</span>
+        </div>
         <button class="theme-btn" id="themeBtn" aria-label="切换夜间模式">🌙</button>
         <div class="nav-auth-group" id="betaAuthGroup">
             <a class="nav-auth" id="betaProfileBtn" href="#">👤 个人中心</a>
@@ -1526,6 +1545,21 @@
         if (backTop) backTop.addEventListener('click', function () {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
+    })();
+
+    // ===== 导航栏北京时间(UTC+8,精确到秒;Intl 时区格式化,不受本地时区影响) =====
+    (function () {
+        var el = document.getElementById('bjTime');
+        if (!el) return;
+        var fmt = new Intl.DateTimeFormat('zh-CN', {
+            timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit',
+            second: '2-digit', hour12: false, hourCycle: 'h23'
+        });
+        function tick() {
+            el.textContent = fmt.format(new Date());
+        }
+        tick();
+        setInterval(tick, 1000);
     })();
 
     // ===== 夜间模式切换(兼容旧键 theme) =====
