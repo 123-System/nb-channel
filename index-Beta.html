@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -649,15 +649,15 @@
             70% { transform: scale(1.25); opacity: 0; }
             100% { opacity: 0; }
         }
-        /* 说明卡(叠层,JS 切换 on) */
+        /* 说明卡 */
         .jny-cardwrap {
-            position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%);
-            width: min(600px, 82%); height: 148px; z-index: 4;
+            position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%);
+            width: min(620px, 84%); height: 176px; z-index: 4;
         }
         .jny-card {
             position: absolute; inset: 0; display: flex; flex-direction: column;
             justify-content: center; align-items: center; text-align: center;
-            padding: 18px 30px; border-radius: 20px;
+            padding: 18px 32px; border-radius: 20px;
             background: rgba(15,23,42,.55);
             -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
             border: 1px solid rgba(255,255,255,.1);
@@ -666,9 +666,9 @@
         }
         .jny-card.on { opacity: 1; transform: none; pointer-events: auto; }
         .jny-tag { font-size: 11px; font-weight: 700; letter-spacing: 3px; color: #9cc0ff; margin-bottom: 8px; }
-        .jny-h { font-size: 1.35rem; font-weight: 800; letter-spacing: .6px; margin-bottom: 8px; color: #fff; }
-        .jny-d { font-size: .9rem; font-weight: 300; line-height: 1.85; color: rgba(255,255,255,.72); max-width: 480px; }
-        /* 进度提示(右上角,仅旅程显示时) */
+        .jny-h { font-size: 1.32rem; font-weight: 800; letter-spacing: .6px; margin-bottom: 8px; color: #fff; }
+        .jny-d { font-size: .9rem; font-weight: 300; line-height: 1.8; color: rgba(255,255,255,.74); max-width: 540px; }
+        /* 进度提示(右上角) */
         .jny-progress {
             position: absolute; right: 26px; top: 22px; z-index: 6;
             display: flex; align-items: center; gap: 10px;
@@ -676,15 +676,23 @@
         }
         .jny-progress .bar { width: 120px; height: 2px; background: rgba(255,255,255,.14); border-radius: 2px; overflow: hidden; }
         .jny-progress .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #60a5fa, #a78bfa); border-radius: 2px; }
+        /* SVG 轨迹 */
+        .jny-svg .base { fill: none; stroke: rgba(255,255,255,.09); stroke-width: 1.5; }
+        .jny-svg .go {
+            fill: none; stroke: rgba(110,170,255,.95); stroke-width: 2.4; stroke-linecap: round;
+            filter: drop-shadow(0 0 6px rgba(96,165,250,.7));
+        }
+        /* 节点(紧凑适配 11 个) */
+        .jny-node { transform: translate(-50%, -50%); }
+        .jny-node .jy { font-size: 1.35rem; }
+        .jny-node .jm { font-size: .58rem; letter-spacing: 2px; }
         @media (max-width: 760px) {
             .jny-spacer { height: 180vh; }
-            .jny-stage { top: 60px; height: calc(100vh - 120px); min-height: 460px; border-radius: 18px; }
-            .jny-node .jy { font-size: 1.05rem; }
-            .jny-node .jm { font-size: .55rem; letter-spacing: 1.5px; }
-            .jny-card { padding: 14px 18px; }
-            .jny-h { font-size: 1.05rem; }
-            .jny-d { font-size: .8rem; line-height: 1.7; }
-            .jny-cardwrap { bottom: 3%; height: 160px; }
+            .jny-cardwrap { bottom: 2%; height: 190px; width: 90%; }
+            .jny-card { padding: 12px 14px; }
+            .jny-h { font-size: 1.02rem; }
+            .jny-d { font-size: .78rem; line-height: 1.65; }
+            .jny-progress { display: none; }
         }
         /* ===== 回到顶部 ===== */
         .backtop {
@@ -817,12 +825,12 @@
     </div>
 </section>
 
-<!-- 大事记:sticky 滚动叙事旅程(参考 nanfu.global:长行程固定舞台 + 之字两排年份 + 能量核心沿轨迹行驶) -->
+<!-- 大事记:sticky 滚动叙事旅程(11 节点全历程,能量核心沿贝塞尔 S 曲线行驶) -->
 <section class="section jny-section" id="milestone">
     <div class="section-head reveal">
         <span class="section-eyebrow">Milestones</span>
         <h2>大事记</h2>
-        <p>向下滚动——跟随这颗能量核心，穿越 NB 频道的成长史</p>
+        <p>向下滚动——跟随这颗能量核心，从一支试管开始，穿过 NB 频道的完整成长史</p>
     </div>
     <div class="jny-spacer" id="jnySpacer">
         <div class="jny-stage" id="jnyStage">
@@ -830,55 +838,73 @@
             <svg class="jny-svg" id="jnySvg" aria-hidden="true"></svg>
             <div class="jny-batt" id="jnyBatt"><i></i><b></b></div>
 
-            <div class="jny-node" data-i="0" style="left:5%;top:24%;"><span class="jy">2025</span><span class="jm">06 · 萌芽</span></div>
-            <div class="jny-node" data-i="1" style="left:17.9%;top:58%;"><span class="jy">2025</span><span class="jm">09 · 更名</span></div>
-            <div class="jny-node" data-i="2" style="left:30.7%;top:24%;"><span class="jy">2025</span><span class="jm">12 · 入圈</span></div>
-            <div class="jny-node" data-i="3" style="left:43.6%;top:58%;"><span class="jy">2026</span><span class="jm">02 · 建站</span></div>
-            <div class="jny-node" data-i="4" style="left:56.4%;top:24%;"><span class="jy">2026</span><span class="jm">04 · 破万</span></div>
-            <div class="jny-node" data-i="5" style="left:69.3%;top:58%;"><span class="jy">2026</span><span class="jm">06 · 十万</span></div>
-            <div class="jny-node" data-i="6" style="left:82.1%;top:24%;"><span class="jy">2026</span><span class="jm">07 · 开市</span></div>
-            <div class="jny-node" data-i="7" style="left:95%;top:58%;"><span class="jy">2026</span><span class="jm">08 · 焕新</span></div>
+            <div class="jny-node" style="left:4%;top:24%;"><span class="jy">2025</span><span class="jm">06 · 萌芽</span></div>
+            <div class="jny-node" style="left:13.2%;top:58%;"><span class="jy">2025</span><span class="jm">09 · 更名</span></div>
+            <div class="jny-node" style="left:22.4%;top:24%;"><span class="jy">2025</span><span class="jm">12 · 入圈</span></div>
+            <div class="jny-node" style="left:31.6%;top:58%;"><span class="jy">2026</span><span class="jm">02 · 建站</span></div>
+            <div class="jny-node" style="left:40.8%;top:24%;"><span class="jy">2026</span><span class="jm">03 · 成立</span></div>
+            <div class="jny-node" style="left:50%;top:58%;"><span class="jy">2026</span><span class="jm">04 · 破万</span></div>
+            <div class="jny-node" style="left:59.2%;top:24%;"><span class="jy">2026</span><span class="jm">05 · 社区</span></div>
+            <div class="jny-node" style="left:68.4%;top:58%;"><span class="jy">2026</span><span class="jm">06 · 十万</span></div>
+            <div class="jny-node" style="left:77.6%;top:24%;"><span class="jy">2026</span><span class="jm">07 · 开市</span></div>
+            <div class="jny-node" style="left:86.8%;top:58%;"><span class="jy">2026</span><span class="jm">08 · 生态</span></div>
+            <div class="jny-node" style="left:96%;top:24%;"><span class="jy">2026</span><span class="jm">08.27 · 焕新</span></div>
 
             <div class="jny-cardwrap">
                 <div class="jny-card">
                     <div class="jny-tag">2025.06 · 萌芽</div>
                     <h3 class="jny-h">第一支试管点燃了频道</h3>
-                    <p class="jny-d">「NB实验室-作死」发布第一期化学实验——没有剪辑技巧，只有一支试管和一颗作死的心，但评论区有人看完了。</p>
+                    <p class="jny-d">「NB实验室-作死」发布了第一期化学实验。没有剪辑技巧，没有漂亮封面，只有一支试管、一盏酒精灯和一颗作死的心——但评论区，有人认真看完了。</p>
                 </div>
                 <div class="jny-card">
                     <div class="jny-tag">2025.09 · 更名</div>
                     <h3 class="jny-h">「NB搞事局」正式挂牌</h3>
-                    <p class="jny-d">确立"化学 · 物理 · 作死"路线，第一期化学工具视频发布，粉丝突破一千。</p>
+                    <p class="jny-d">频道更名为 NB搞事局，正式确立"化学 · 物理 · 作死"三条内容线。第一期化学工具视频发布，粉丝突破一千——我们开始像一家公司那样想问题。</p>
                 </div>
                 <div class="jny-card">
                     <div class="jny-tag">2025.12 · 入圈</div>
                     <h3 class="jny-h">NB 圈成形，友商登场</h3>
-                    <p class="jny-d">结识 AWM、Utw 等第一批友商，虚拟公司们的"生态圈"有了雏形。</p>
+                    <p class="jny-d">陆续结识 AWM、Utw 等第一批友商。第一次联动视频发出，评论区第一次破百——原来"友商"不是商业词，是朋友。</p>
                 </div>
                 <div class="jny-card">
                     <div class="jny-tag">2026.02 · 建站</div>
                     <h3 class="jny-h">官网 v1 上线</h3>
-                    <p class="jny-d">2026.02.17 正式建站——虚拟公司终于有了自己的"注册地址"，域名很小，梦想不小。</p>
+                    <p class="jny-d">2026.02.17，官网正式建站。虚拟公司终于有了自己的"注册地址"——域名很小，梦想不小；页面很朴素，更新很勤快。</p>
+                </div>
+                <div class="jny-card">
+                    <div class="jny-tag">2026.03 · 成立</div>
+                    <h3 class="jny-h">虚拟公司宣布成立</h3>
+                    <p class="jny-d">NB搞事局宣布成立虚拟公司，并郑重宣布：全体粉丝为荣誉股东。不发行股份，只发行快乐；不设董事会，只设评论区。</p>
                 </div>
                 <div class="jny-card">
                     <div class="jny-tag">2026.04 · 破万</div>
                     <h3 class="jny-h">B站粉丝突破一万</h3>
-                    <p class="jny-d">评论区从"几个熟人"变成"一个小社区"——有人开始催更，有人开始二创。</p>
+                    <p class="jny-d">评论区从"几个熟人"变成"一个小社区"。有人开始催更，有人开始二创，有人给化学实验挑错——我们第一次感到被认真对待。</p>
+                </div>
+                <div class="jny-card">
+                    <div class="jny-tag">2026.05 · 社区</div>
+                    <h3 class="jny-h">评论区与好友系统打通</h3>
+                    <p class="jny-d">评论区支持图片与 @ 提及，好友私信上线，NB币第一次流通。从"看视频"到"认识人"，社区活了起来。</p>
                 </div>
                 <div class="jny-card">
                     <div class="jny-tag">2026.06 · 十万</div>
                     <h3 class="jny-h">十万粉丝达成</h3>
-                    <p class="jny-d">作死的尽头是科学，科学的尽头是 NB——被十万人看见之后，这句话更像真的了。</p>
+                    <p class="jny-d">作死的尽头是科学，科学的尽头是 NB——被十万人看见之后，这句话更像真的了。评论区挤到需要翻页，我们开始认真做官网。</p>
                 </div>
                 <div class="jny-card">
                     <div class="jny-tag">2026.07 · 开市</div>
-                    <h3 class="jny-h">NB币经济开市</h3>
-                    <p class="jny-d">虚拟股票开市、NB银行开业——每天 8:00-20:00 市场自主运转，虚拟，但绝不儿戏。</p>
+                    <h3 class="jny-h">NB币经济正式开市</h3>
+                    <p class="jny-d">NB虚拟股票开市、NB银行开业：存钱、贷款、炒股、转账、红包。每天 8:00-20:00 市场自主运转——虚拟，但绝不儿戏。</p>
+                </div>
+                <div class="jny-card">
+                    <div class="jny-tag">2026.08 · 生态</div>
+                    <h3 class="jny-h">十一大功能各就各位</h3>
+                    <p class="jny-d">NB商店、背包、称号系统、用户主页、成就系统相继上线。从看视频到经营公司，从评论区到用户主页——NB频道成了一个小世界。</p>
                 </div>
                 <div class="jny-card">
                     <div class="jny-tag">2026.08.27 · 焕新</div>
                     <h3 class="jny-h">官网 Beta 全新上线</h3>
-                    <p class="jny-d">今天，我们把"官网"做得更像官网。留白、克制、大标题、慢动画——故事从这一页重新讲起。</p>
+                    <p class="jny-d">今天，我们把"官网"做得更像官网：留白、克制、大标题、慢动画、一条会发光的成长轨迹——这个故事，从这一页重新讲起。</p>
                 </div>
             </div>
         </div>
@@ -1261,7 +1287,7 @@
         });
     })();
 
-    // ===== 大事记:sticky 之字旅程驱动(JS:滚动进度 → 能量核心沿节点轨迹行驶/亮线/切卡;布局测量仅 resize) =====
+    // ===== 大事记:sticky 旅程驱动 v2(贝塞尔 S 曲线:Catmull-Rom→Cubic 平滑光带,核心沿曲线行驶) =====
     (function () {
         var stage = document.getElementById('jnyStage');
         var spacer = document.getElementById('jnySpacer');
@@ -1272,73 +1298,70 @@
         var cards = Array.prototype.slice.call(stage.querySelectorAll('.jny-card'));
         var bgEl = document.getElementById('jnyBg');
         var n = nodes.length;
-        var pts = [];          // 节点中心(px,相对 stage)
-        var W = 0, H = 0;
-        var basePath = null, goPath = null, goPathEl = null;
-        var totalLen = 1;
+        var pts = [];
+        var basePath = null, goPathEl = null, totalLen = 1;
         var vh = 0, spacerTopAbs = 0, runLen = 1;
         var ticking = false;
+        var NS = 'http://www.w3.org/2000/svg';
 
-        // 构建 SVG 底轨与发光轨
+        // 折线 → 平滑贝塞尔(过每点,之字起伏成 S 曲线)
+        function smoothD(p) {
+            var d = 'M' + p[0].x.toFixed(1) + ',' + p[0].y.toFixed(1);
+            for (var i = 1; i < p.length; i++) {
+                var a = p[i - 1], b = p[i];
+                var pm = p[i - 2] || a, pn = p[i + 1] || b;
+                var c1x = a.x + (b.x - pm.x) / 6, c1y = a.y + (b.y - pm.y) / 6;
+                var c2x = b.x - (pn.x - a.x) / 6, c2y = b.y - (pn.y - a.y) / 6;
+                d += ' C ' + c1x.toFixed(1) + ',' + c1y.toFixed(1) + ' ' + c2x.toFixed(1) + ',' + c2y.toFixed(1) + ' ' + b.x.toFixed(1) + ',' + b.y.toFixed(1);
+            }
+            return d;
+        }
         function buildSvg() {
             var r = stage.getBoundingClientRect();
-            W = r.width; H = r.height;
+            var W = r.width, H = r.height;
             svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
             svg.setAttribute('preserveAspectRatio', 'none');
             pts = nodes.map(function (nd) {
                 var nr = nd.getBoundingClientRect();
                 return { x: nr.left - r.left + nr.width / 2, y: nr.top - r.top + nr.height / 2 };
             });
-            var d = '';
-            pts.forEach(function (p, i) { d += (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ' '; });
-            var ns = 'http://www.w3.org/2000/svg';
+            var d = smoothD(pts);
             svg.innerHTML = '';
-            basePath = document.createElementNS(ns, 'path');
+            basePath = document.createElementNS(NS, 'path');
             basePath.setAttribute('class', 'base');
             basePath.setAttribute('d', d);
             svg.appendChild(basePath);
-            goPathEl = document.createElementNS(ns, 'path');
+            goPathEl = document.createElementNS(NS, 'path');
             goPathEl.setAttribute('class', 'go');
             goPathEl.setAttribute('d', d);
             svg.appendChild(goPathEl);
             totalLen = basePath.getTotalLength ? basePath.getTotalLength() : 1;
+            if (goPathEl) {
+                goPathEl.style.strokeDasharray = totalLen;
+                goPathEl.style.strokeDashoffset = totalLen;
+            }
         }
-        // 进度更新(rAF 节流)
         function update() {
             var sy = window.scrollY || document.documentElement.scrollTop;
-            // 旅程起点:spacer 顶到达 sticky 位(stage 开始固定在视口 top 70px)
             var p = (sy - (spacerTopAbs - 70)) / runLen;
             p = p < 0 ? 0 : (p > 1 ? 1 : p);
-            // 能量核心位置:节点间线性插值
             var seg = p * (n - 1);
-            var idx = Math.min(Math.floor(seg), n - 2);
-            var f = seg - idx;
-            var x = pts[idx].x + (pts[idx + 1].x - pts[idx].x) * f;
-            var y = pts[idx].y + (pts[idx + 1].y - pts[idx].y) * f;
-            batt.style.left = x + 'px';
-            batt.style.top = y + 'px';
-            // 亮线:从起点画到当前位置
-            if (goPathEl && totalLen > 1) {
-                var d2 = '';
-                for (var i = 0; i <= idx; i++) {
-                    var px = pts[i].x, py = pts[i].y;
-                    if (i === 0) d2 = 'M' + px.toFixed(1) + ',' + py.toFixed(1);
-                    else d2 += ' L' + px.toFixed(1) + ',' + py.toFixed(1);
-                }
-                if (f > 0) d2 += ' L' + x.toFixed(1) + ',' + y.toFixed(1);
-                goPathEl.setAttribute('d', d2);
-            }
-            // 节点状态:已过 lit / 当前 lit / 未来 dim
             var active = Math.round(seg);
+            // 核心沿曲线行驶(getPointAtLength 平滑取点)
+            if (basePath && totalLen > 1 && basePath.getPointAtLength) {
+                var pt = basePath.getPointAtLength(totalLen * p);
+                batt.style.left = pt.x + 'px';
+                batt.style.top = pt.y + 'px';
+                goPathEl.style.strokeDashoffset = totalLen * (1 - p);
+            }
+            // 节点状态
             nodes.forEach(function (nd, k) {
                 nd.classList.toggle('lit', k <= active);
                 nd.classList.toggle('dim', k > active);
             });
-            // 卡片切换
             cards.forEach(function (c, k) { c.classList.toggle('on', k === active); });
-            // 背景光跟随核心
-            if (bgEl) bgEl.style.transform = 'translate(' + (x - W / 2) * -0.18 + 'px,' + (y - H / 2) * -0.18 + 'px)';
-            // 右上进度
+            // 背景光随核心反向缓移(视差)
+            if (bgEl) bgEl.style.transform = 'translate(' + (pts[active] ? (pts[active].x - 400) * -0.22 : 0) + 'px,' + (pts[active] ? (pts[active].y - 220) * -0.22 : 0) + 'px)';
             var pb = stage.querySelector('.jny-progress .bar i');
             if (pb) pb.style.width = (p * 100).toFixed(1) + '%';
         }
@@ -1347,8 +1370,7 @@
         }
         function measure() {
             vh = window.innerHeight || document.documentElement.clientHeight;
-            // 行程长度 = 至少 1.7 屏;spacer 高度 = 行程 + 舞台高 → sticky 全程固定
-            var run = Math.max(vh * 1.7, 1200);
+            var run = Math.max(vh * 2.1, 1500);
             var stageH = stage.offsetHeight || Math.min(vh * 0.72, 720);
             spacer.style.height = Math.ceil(run + stageH + 60) + 'px';
             var sr = spacer.getBoundingClientRect();
@@ -1357,7 +1379,6 @@
             buildSvg();
             update();
         }
-        // 右上角进度指示(注入)
         var progEl = document.createElement('div');
         progEl.className = 'jny-progress';
         progEl.innerHTML = 'JOURNEY <span class="bar"><i></i></span>';
