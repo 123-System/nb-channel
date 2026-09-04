@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NB频道官网 - Beta 新版首页</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* ============ 基础 ============ */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #f7f8fa;
+            --ink: #1a1d23;
+            --ink-soft: #5a6270;
+            --ink-faint: #8b93a3;
+            --line: #e8eaee;
+            --brand: #3b82f6;
+            --brand-deep: #2563eb;
+            --card: #ffffff;
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius-sm: 8px;
+            --shadow-1: 0 1px 2px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.06);
+            --shadow-2: 0 2px 4px rgba(16,24,40,.05), 0 24px 48px -20px rgba(16,24,40,.18);
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+        a { text-decoration: none; color: inherit; }
+
+        /* ============ 导航 ============ */
+        .nav {
+            position: sticky; top: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 48px; height: 64px;
+            background: rgba(255,255,255,.72);
+            -webkit-backdrop-filter: blur(20px) saturate(1.5);
+            backdrop-filter: blur(20px) saturate(1.5);
+            border-bottom: 1px solid var(--line);
+        }
+        .nav-logo {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 1.15rem; font-weight: 800; letter-spacing: .3px;
+        }
+        .nav-logo .dot {
+            width: 10px; height: 10px; border-radius: 3px;
+            background: linear-gradient(135deg, var(--brand), #8b5cf6);
+        }
+        .nav-menu { display: flex; gap: 4px; }
+        .nav-menu a {
+            padding: 8px 16px; border-radius: 999px;
+            font-size: .92rem; color: var(--ink-soft);
+            transition: all .25s ease;
+        }
+        .nav-menu a:hover { color: var(--ink); background: rgba(59,130,246,.08); }
+        .nav-menu a.active { color: var(--brand); background: rgba(59,130,246,.1); font-weight: 600; }
+        .nav-cta {
+            padding: 9px 20px; border-radius: 999px;
+            background: var(--brand); color: #fff; font-size: .9rem; font-weight: 600;
+            box-shadow: 0 8px 20px -8px rgba(59,130,246,.5);
+            transition: all .25s ease;
+        }
+        .nav-cta:hover { background: var(--brand-deep); transform: translateY(-1px); box-shadow: 0 12px 24px -8px rgba(59,130,246,.6); }
+
+        /* ============ Hero ============ */
+        .hero {
+            position: relative; overflow: hidden;
+            padding: 120px 48px 150px; text-align: center;
+            background: linear-gradient(160deg, #0f172a 0%, #1e293b 55%, #312e81 100%);
+        }
+        .hero::before {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            background:
+                radial-gradient(600px 300px at 15% 10%, rgba(59,130,246,.25), transparent 60%),
+                radial-gradient(500px 300px at 85% 20%, rgba(139,92,246,.22), transparent 60%);
+        }
+        .hero::after {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            background-image: radial-gradient(rgba(255,255,255,.07) 1px, transparent 1px);
+            background-size: 32px 32px;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,.6), transparent 70%);
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.6), transparent 70%);
+        }
+        /* Hero → 背景色的柔和过渡 */
+        .hero-fade {
+            position: absolute; left: 0; right: 0; bottom: 0; height: 110px; z-index: 1;
+            background: linear-gradient(to bottom, transparent, var(--bg));
+            pointer-events: none;
+        }
+        .hero-inner { position: relative; z-index: 2; max-width: 860px; margin: 0 auto; }
+        .hero-badge {
+            display: inline-block;
+            padding: 6px 16px; border-radius: 999px;
+            font-size: .8rem; font-weight: 500; letter-spacing: .5px;
+            color: #c7d2fe; background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.14);
+            margin-bottom: 28px;
+        }
+        .hero h1 {
+            font-size: 3.2rem; font-weight: 900; letter-spacing: .5px;
+            color: #fff; line-height: 1.2; margin-bottom: 20px;
+        }
+        .hero h1 .grad {
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .hero p {
+            font-size: 1.12rem; color: rgba(255,255,255,.72); font-weight: 300;
+            max-width: 620px; margin: 0 auto 40px; letter-spacing: .3px;
+        }
+        .hero-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+        .hero-btn {
+            padding: 14px 32px; border-radius: 999px; font-size: .98rem; font-weight: 600;
+            transition: all .25s ease;
+        }
+        .hero-btn.primary {
+            background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff;
+            box-shadow: 0 16px 32px -12px rgba(59,130,246,.55);
+        }
+        .hero-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 20px 40px -12px rgba(59,130,246,.65); }
+        .hero-btn.ghost {
+            color: rgba(255,255,255,.9); border: 1px solid rgba(255,255,255,.22);
+            background: rgba(255,255,255,.04);
+        }
+        .hero-btn.ghost:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.4); }
+        /* LOGO 视频 */
+        .hero-video {
+            max-width: 720px; margin: 36px auto 0;
+            border-radius: 18px; overflow: hidden;
+            border: 3px solid rgba(255,255,255,.22);
+            box-shadow: 0 24px 60px -20px rgba(0,0,0,.6);
+        }
+        .hero-video video { display: block; width: 100%; }
+        /* 滚动提示 */
+        .hero-scroll {
+            position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
+            z-index: 2; color: rgba(255,255,255,.5); font-size: 1.3rem;
+            animation: bob 2.2s ease-in-out infinite;
+        }
+        @keyframes bob { 0%,100% { transform: translate(-50%,0); } 50% { transform: translate(-50%,7px); } }
+
+        /* ============ 数据条 ============ */
+        .stats {
+            display: flex; justify-content: center; gap: 20px;
+            padding: 0 24px; margin-top: -58px; position: relative; z-index: 3;
+            flex-wrap: wrap;
+        }
+        .stat {
+            background: var(--card); border: 1px solid var(--line);
+            border-radius: var(--radius-md); padding: 18px 34px;
+            text-align: center; min-width: 140px;
+            box-shadow: var(--shadow-1);
+            transition: transform .3s ease, box-shadow .3s ease;
+        }
+        .stat:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
+        .stat .num { font-size: 1.7rem; font-weight: 800; color: var(--ink); letter-spacing: .5px; }
+        .stat .num small { font-size: 1rem; font-weight: 700; color: var(--brand); }
+        .stat .label { font-size: .82rem; color: var(--ink-faint); margin-top: 2px; }
+
+        /* ============ 区块通用 ============ */
+        .section { max-width: 1080px; margin: 0 auto; padding: 80px 24px; }
+        .section-head { text-align: center; margin-bottom: 48px; }
+        .section-eyebrow {
+            display: inline-block; font-size: .78rem; font-weight: 700; letter-spacing: 2px;
+            color: var(--brand); text-transform: uppercase; margin-bottom: 12px;
+        }
+        .section-head h2 { font-size: 2rem; font-weight: 800; letter-spacing: .3px; }
+        .section-head p { color: var(--ink-soft); margin-top: 10px; font-size: 1rem; }
+
+        /* ============ 核心功能 ============ */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+        .card {
+            background: var(--card); border-radius: var(--radius-lg);
+            padding: 28px 24px; border: 1px solid var(--line);
+            box-shadow: var(--shadow-1);
+            transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-2);
+            border-color: rgba(59,130,246,.35);
+        }
+        .card .ico {
+            width: 48px; height: 48px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; margin-bottom: 18px;
+        }
+        /* 每张卡片专属的低饱和渐变图标底 */
+        .card:nth-child(1) .ico { background: linear-gradient(135deg, #dbeafe, #eff6ff); }
+        .card:nth-child(2) .ico { background: linear-gradient(135deg, #e0e7ff, #eef2ff); }
+        .card:nth-child(3) .ico { background: linear-gradient(135deg, #f3e8ff, #faf5ff); }
+        .card:nth-child(4) .ico { background: linear-gradient(135deg, #cffafe, #ecfeff); }
+        .card:nth-child(5) .ico { background: linear-gradient(135deg, #ffe4e6, #fff1f2); }
+        .card:nth-child(6) .ico { background: linear-gradient(135deg, #fef3c7, #fffbeb); }
+        .card:nth-child(7) .ico { background: linear-gradient(135deg, #d1fae5, #ecfdf5); }
+        .card:nth-child(8) .ico { background: linear-gradient(135deg, #e2e8f0, #f1f5f9); }
+        .card:nth-child(9) .ico { background: linear-gradient(135deg, #ffedd5, #fff7ed); }
+        .card:nth-child(10) .ico { background: linear-gradient(135deg, #e0f2fe, #f0f9ff); }
+        .card:nth-child(11) .ico { background: linear-gradient(135deg, #fce7f3, #fdf2f8); }
+        .card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; }
+        .card p { font-size: .88rem; color: var(--ink-soft); line-height: 1.7; }
+        .card .go {
+            display: inline-block; margin-top: 16px; font-size: .85rem; font-weight: 600;
+            color: var(--brand); transition: color .25s ease;
+        }
+        .card:hover .go { color: var(--brand-deep); }
+
+        /* ============ 视频区 ============ */
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+        .vcard {
+            background: var(--card); border-radius: var(--radius-lg); overflow: hidden;
+            border: 1px solid var(--line); box-shadow: var(--shadow-1);
+            transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+        }
+        .vcard:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); border-color: rgba(59,130,246,.35); }
+        .vcard .thumb {
+            position: relative; height: 140px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.6rem; background: #eef1f6;
+        }
+        .vcard .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .vcard .thumb .dur {
+            position: absolute; right: 8px; bottom: 8px; z-index: 1;
+            background: rgba(0,0,0,.72); color: #fff;
+            font-size: .72rem; padding: 2px 8px; border-radius: 999px;
+        }
+        .vcard:nth-child(1) .thumb { background: linear-gradient(135deg, rgba(59,130,246,.14), rgba(139,92,246,.14)); }
+        .vcard:nth-child(2) .thumb { background: linear-gradient(135deg, rgba(245,158,11,.14), rgba(239,68,68,.14)); }
+        .vcard:nth-child(3) .thumb { background: linear-gradient(135deg, rgba(16,185,129,.14), rgba(59,130,246,.14)); }
+        .vcard:nth-child(4) .thumb { background: linear-gradient(135deg, rgba(139,92,246,.14), rgba(236,72,153,.14)); }
+        /* 播放按钮 */
+        .vcard .thumb .play {
+            position: absolute; width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(255,255,255,.9); color: var(--brand);
+            display: flex; align-items: center; justify-content: center;
+            font-size: .95rem; box-shadow: 0 8px 20px -6px rgba(0,0,0,.25);
+            opacity: 0; transform: scale(.8);
+            transition: all .3s ease;
+        }
+        .vcard:hover .thumb .play { opacity: 1; transform: scale(1); }
+        .vcard .body { padding: 18px; }
+        .vcard h4 { font-size: .98rem; font-weight: 700; margin-bottom: 6px; line-height: 1.4; }
+        .vcard .meta { font-size: .8rem; color: var(--ink-faint); }
+
+        /* ============ 公司理念 ============ */
+        .about-grid {
+            display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: start;
+        }
+        .about-text .section-eyebrow { margin-bottom: 12px; }
+        .about-text h2 { font-size: 1.9rem; font-weight: 800; line-height: 1.35; margin-bottom: 18px; }
+        .about-text h2 .grad {
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .about-text p { color: var(--ink-soft); font-size: .95rem; line-height: 1.9; margin-bottom: 14px; }
+        .about-text p b { color: var(--ink); font-weight: 700; }
+        .about-sign { font-size: .95rem; font-weight: 700; color: var(--ink); margin-top: 20px; }
+        .about-sign span { color: var(--ink-faint); font-weight: 500; font-size: .82rem; margin-left: 8px; }
+        .about-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+        .about-tags .tag {
+            font-size: .8rem; color: var(--ink-soft);
+            background: #fff; border: 1px solid var(--line);
+            padding: 7px 14px; border-radius: 999px;
+            box-shadow: var(--shadow-1);
+        }
+        .about-tags .tag b { color: var(--brand); font-weight: 700; }
+        .about-cards { display: flex; flex-direction: column; gap: 16px; }
+        .about-card {
+            display: flex; gap: 18px; align-items: flex-start;
+            background: var(--card); border: 1px solid var(--line);
+            border-radius: var(--radius-md); padding: 22px 24px;
+            box-shadow: var(--shadow-1);
+            transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+        }
+        .about-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); border-color: rgba(59,130,246,.35); }
+        .about-card .ico {
+            width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+        }
+        .about-card:nth-child(1) .ico { background: linear-gradient(135deg, #dbeafe, #eff6ff); }
+        .about-card:nth-child(2) .ico { background: linear-gradient(135deg, #e0e7ff, #eef2ff); }
+        .about-card:nth-child(3) .ico { background: linear-gradient(135deg, #f3e8ff, #faf5ff); }
+        .about-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+        .about-card h4 em { font-style: normal; color: var(--ink-faint); font-weight: 500; font-size: .85rem; margin-left: 8px; }
+        .about-card p { font-size: .85rem; color: var(--ink-soft); line-height: 1.75; }
+
+        /* ============ 友商 ============ */
+        .friends-section { background: #fff; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+        .friends-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+        .friend {
+            display: flex; align-items: center; gap: 14px;
+            background: var(--bg); border: 1px solid var(--line);
+            border-radius: var(--radius-md); padding: 16px 18px;
+            transition: all .3s ease;
+        }
+        .friend:hover {
+            transform: translateY(-3px);
+            border-color: rgba(59,130,246,.4);
+            background: #fff;
+            box-shadow: var(--shadow-2);
+        }
+        .friend .logo {
+            width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.15rem; font-weight: 800; color: #fff;
+        }
+        .friend:nth-child(1) .logo { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+        .friend:nth-child(2) .logo { background: linear-gradient(135deg, #a78bfa, #8b5cf6); }
+        .friend:nth-child(3) .logo { background: linear-gradient(135deg, #34d399, #10b981); }
+        .friend:nth-child(4) .logo { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+        .friend:nth-child(5) .logo { background: linear-gradient(135deg, #f472b6, #ec4899); }
+        .friend:nth-child(6) .logo { background: linear-gradient(135deg, #38bdf8, #06b6d4); }
+        .friend:nth-child(7) .logo { background: linear-gradient(135deg, #94a3b8, #64748b); }
+        .friend:nth-child(8) .logo { background: linear-gradient(135deg, #f87171, #ef4444); }
+        .friend:nth-child(9) .logo { background: linear-gradient(135deg, #2dd4bf, #14b8a6); }
+        .friend:nth-child(10) .logo { background: linear-gradient(135deg, #c084fc, #a855f7); }
+        .friend:nth-child(11) .logo { background: linear-gradient(135deg, #fda4af, #f43f5e); }
+        .friend .info { flex: 1; min-width: 0; }
+        .friend .name { font-size: .98rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        .friend .name .arrow { color: var(--ink-faint); font-size: .8rem; transition: all .25s ease; }
+        .friend:hover .name .arrow { color: var(--brand); transform: translateX(3px); }
+        .friend .desc {
+            font-size: .8rem; color: var(--ink-faint);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;
+        }
+
+        /* ============ CTA ============ */
+        .cta { text-align: center; padding: 76px 24px; background: linear-gradient(135deg, #1e293b, #312e81); color: #fff; }
+        .cta h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 14px; }
+        .cta p { color: rgba(255,255,255,.7); margin-bottom: 32px; font-weight: 300; }
+
+        /* ============ 页脚 ============ */
+        .footer { background: #0f172a; color: #94a3b8; padding: 56px 48px 32px; }
+        .footer-grid {
+            display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px;
+            max-width: 1080px; margin: 0 auto;
+        }
+        .footer h5 { color: #e2e8f0; font-size: .92rem; font-weight: 700; margin-bottom: 16px; }
+        .footer a { display: block; color: #94a3b8; font-size: .88rem; margin-bottom: 10px; transition: color .2s; }
+        .footer a:hover { color: #fff; }
+        .footer .brand { font-size: 1.1rem; font-weight: 800; color: #fff; margin-bottom: 12px; }
+        .footer .brand .dot {
+            width: 10px; height: 10px; border-radius: 3px; display: inline-block;
+            background: linear-gradient(135deg, var(--brand), #8b5cf6); margin-right: 8px;
+        }
+        .footer .desc { font-size: .85rem; line-height: 1.8; margin-bottom: 20px; }
+        .footer-bottom {
+            max-width: 1080px; margin: 40px auto 0; padding-top: 24px;
+            border-top: 1px solid rgba(255,255,255,.08);
+            font-size: .8rem; color: #64748b; text-align: center;
+        }
+
+        /* ============ 动效 ============ */
+        .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
+        .reveal.in { opacity: 1; transform: none; }
+        /* 悬浮上浮(置于 .reveal.in 之后,覆盖其 transform:none,保证渐显完成后悬停仍生效) */
+        .stat:hover, .card:hover, .vcard:hover, .friend:hover, .about-card:hover {
+            transform: translateY(-4px);
+            transition: transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s ease, border-color .3s ease, background .3s ease;
+        }
+
+        /* ============ 导航登录区 ============ */
+        .nav-auth-group { display: flex; gap: 8px; align-items: center; }
+        .nav-auth {
+            padding: 8px 18px; border-radius: 999px;
+            background: rgba(255,255,255,.6); color: var(--ink);
+            border: 1px solid var(--line);
+            font-size: .88rem; font-weight: 600; cursor: pointer;
+            transition: all .25s ease; white-space: nowrap;
+        }
+        .nav-auth:hover { background: #fff; border-color: rgba(59,130,246,.4); }
+        .nav-auth.primary {
+            background: linear-gradient(135deg, var(--brand), #6366f1);
+            border-color: transparent; color: #fff;
+            box-shadow: 0 8px 20px -8px rgba(59,130,246,.5);
+        }
+        .nav-auth.primary:hover { background: linear-gradient(135deg, #2563eb, #4f46e5); color: #fff; }
+
+        /* ============ 公告区(单行无缝滚动) ============ */
+        .beta-announce {
+            display: flex; align-items: center; gap: 14px;
+            max-width: 1080px; margin: 26px auto 0; padding: 16px 22px;
+            background: linear-gradient(135deg, #ffffff, #f8faff);
+            border: 1px solid rgba(59,130,246,.18);
+            border-left: 4px solid var(--brand);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-1);
+        }
+        .beta-announce .ba-icon {
+            width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+            background: linear-gradient(135deg, #dbeafe, #eff6ff);
+        }
+        .beta-announce .ba-title {
+            flex-shrink: 0; font-size: .82rem; font-weight: 700; color: var(--brand);
+            background: rgba(59,130,246,.08); border-radius: 999px; padding: 4px 12px;
+        }
+        .beta-announce .ba-track-wrap { flex: 1; overflow: hidden; min-width: 0; }
+        .beta-announce .ba-track { display: inline-block; white-space: nowrap; will-change: transform; }
+        .beta-announce .ba-item {
+            display: inline-block; white-space: nowrap; padding-right: 80px;
+            font-size: .92rem; color: var(--ink-soft);
+        }
+        .beta-announce a { color: var(--brand); text-decoration: underline; }
+        .beta-announce a:hover { color: var(--brand-deep); }
+        @media (max-width: 760px) { .beta-announce { align-items: flex-start; flex-wrap: wrap; } }
+
+        /* ============ 鼠标特效 ============ */
+        .ui-fx-glow {
+            position: fixed; left: -999px; top: -999px; width: 240px; height: 240px;
+            border-radius: 50%; pointer-events: none; z-index: 9997;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(59,130,246,.18), rgba(139,92,246,.10) 45%, transparent 65%);
+            opacity: 0;
+        }
+
+        /* ============ 响应式 ============ */
+        @media (max-width: 760px) {
+            .nav { padding: 0 20px; }
+            .nav-menu { display: none; }
+            .hero { padding: 80px 20px 110px; }
+            .hero h1 { font-size: 2.2rem; }
+            .stats { gap: 12px; }
+            .stat { min-width: 120px; padding: 14px 18px; }
+            .about-grid { grid-template-columns: 1fr; gap: 36px; }
+            .friends-grid { grid-template-columns: 1fr; }
+            .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 导航 -->
+<nav class="nav">
+    <a class="nav-logo" href="index-Beta.html"><span class="dot"></span>NB频道</a>
+    <div class="nav-menu">
+        <a href="index-Beta.html" class="active">首页</a>
+        <a href="videos.html">视频</a>
+        <a href="about.html">关于</a>
+        <a href="changelog.html">更新日志</a>
+        <a href="product.html">我的产品</a>
+        <a href="APP.html">软件/APP</a>
+        <a href="#friends">友商</a>
+    </div>
+    <div class="nav-auth-group" id="betaAuthGroup">
+        <a class="nav-auth" id="betaProfileBtn" href="#">👤 个人中心</a>
+        <a class="nav-auth primary" id="betaAuthBtn" href="#">登录 / 注册</a>
+    </div>
+</nav>
+
+<!-- Hero -->
+<header class="hero">
+    <div class="hero-inner">
+        <span class="hero-badge">🏢 虚拟公司 · 📺 10万+粉丝 · 🧪 化学·物理·作死</span>
+        <h1>热爱理科与<span class="grad">作死</span>的<br>UP主官方网站</h1>
+        <p>NB频道，全名 NoBook 频道——一个由"NB搞事局"建立的虚拟公司。分享有趣的化学、物理实验与日常作死小技巧。</p>
+        <div class="hero-btns">
+            <a class="hero-btn primary" href="videos.html">🎬 看视频</a>
+            <a class="hero-btn ghost" href="comments-beta.html">💬 进评论区</a>
+        </div>
+        <div class="hero-video">
+            <video src="https://videos.tuchuangyun.top/autoupload/f/2ybw2nnc3ldHerixYxPOdCfNcKcqEnRmcljopnyJoMs/20260316/5rPu/LOGO%EF%BC%88%E6%9C%80%E7%BB%88%EF%BC%89.mp4" autoplay muted loop playsinline disablePictureInPicture></video>
+        </div>
+    </div>
+    <div class="hero-scroll">▾</div>
+    <div class="hero-fade"></div>
+</header>
+
+<!-- 数据条 -->
+<div class="stats">
+    <div class="stat"><div class="num">10w<small>+</small></div><div class="label">B站粉丝</div></div>
+    <div class="stat"><div class="num">11</div><div class="label">友商官网</div></div>
+    <div class="stat"><div class="num" id="siteDays">--</div><div class="label">建站天数</div></div>
+    <div class="stat"><div class="num">11</div><div class="label">核心功能</div></div>
+</div>
+
+<!-- 公告区(数据从 admin_config 拉取,有公告才显示) -->
+<div class="beta-announce" id="betaAnnounce" style="display:none;">
+    <div class="ba-icon">📢</div>
+    <div class="ba-title">公告</div>
+    <div class="ba-track-wrap"><div class="ba-track" id="baTrack"></div></div>
+</div>
+
+<!-- 公司理念 -->
+<section class="section" id="about">
+    <div class="about-grid">
+        <div class="about-text reveal">
+            <span class="section-eyebrow">About Us</span>
+            <h2>一家认真搞笑的<br><span class="grad">虚拟公司</span></h2>
+            <p>NB频道，全名 <b>NoBook 频道</b>，是 UP主「NB搞事局」创立的虚拟公司。我们一边做化学物理实验、一边经营着属于所有人的数字世界——有股票、有银行、有商店，还有数不清的快乐。</p>
+            <p>我们把「搞事」当作一门严肃的事业：每一个实验都认真讲原理，每一笔虚拟交易都认真清算，每一位用户，都是公司的股东与伙伴。</p>
+            <div class="about-sign">—— NB搞事局<span>创始人 & 唯一的正式员工</span></div>
+            <div class="about-tags">
+                <span class="tag">🏢 成立 <b>2026.02</b></span>
+                <span class="tag">👤 创始人 <b>NB搞事局</b></span>
+                <span class="tag">🏷️ 性质 <b>虚拟公司 · 粉丝全资持股</b></span>
+                <span class="tag">📍 总部 <b>地球 · 网络</b></span>
+            </div>
+        </div>
+        <div class="about-cards">
+            <div class="about-card reveal">
+                <div class="ico">🎯</div>
+                <div>
+                    <h4>使命<em>Mission</em></h4>
+                    <p>让理科变得好玩——把枯燥的公式变成有趣的实验，把危险的操作变成有分寸的科普。</p>
+                </div>
+            </div>
+            <div class="about-card reveal">
+                <div class="ico">🔭</div>
+                <div>
+                    <h4>愿景<em>Vision</em></h4>
+                    <p>成为中文互联网上最快乐的理科社区——虚拟但认真，真实且有趣，把「作死」玩成科学与艺术。</p>
+                </div>
+            </div>
+            <div class="about-card reveal">
+                <div class="ico">💎</div>
+                <div>
+                    <h4>价值观<em>Values</em></h4>
+                    <p>好奇 · 安全 · 认真 · 好玩——好奇心驱动探索，安全永远是底线，虚拟经济绝不含糊，快乐是最终目的。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 核心功能 -->
+<section class="section">
+    <div class="section-head reveal">
+        <span class="section-eyebrow">Features</span>
+        <h2>🚀 核心功能</h2>
+        <p>从虚拟炒股到化学工具，NB频道的数字世界应有尽有</p>
+    </div>
+    <div class="grid">
+        <a class="card reveal" href="videos.html">
+            <div class="ico">🎬</div><h3>视频</h3>
+            <p>化学实验、物理趣味与日常作死，最新视频都在这里。</p><span class="go">去看看 →</span>
+        </a>
+        <a class="card reveal" href="comments-beta.html">
+            <div class="ico">💬</div><h3>评论区</h3>
+            <p>和友商交流，支持图片、@提及与称号展示。</p><span class="go">去逛逛 →</span>
+        </a>
+        <a class="card reveal" href="Virtual stock.html">
+            <div class="ico">📈</div><h3>NB虚拟股票</h3>
+            <p>NB币炒股，市场 8:00-20:00 自主运转。</p><span class="go">去炒股 →</span>
+        </a>
+        <a class="card reveal" href="chat.html">
+            <div class="ico">👥</div><h3>好友私信</h3>
+            <p>实时聊天，支持发送图片与红包转账。</p><span class="go">去聊天 →</span>
+        </a>
+        <a class="card reveal" href="product_share.html">
+            <div class="ico">🎨</div><h3>作品分享</h3>
+            <p>上传你的作品，或购买他人的优秀作品。</p><span class="go">去看看 →</span>
+        </a>
+        <a class="card reveal" href="messages.html">
+            <div class="ico">🔔</div><h3>消息中心</h3>
+            <p>评论回复、点赞与私信通知，不遗漏任何互动。</p><span class="go">去看看 →</span>
+        </a>
+        <a class="card reveal" href="titles.html">
+            <div class="ico">🏅</div><h3>称号</h3>
+            <p>12 种称号，达成条件自动解锁升级，最高 5 星。</p><span class="go">去看看 →</span>
+        </a>
+        <a class="card reveal" href="tools.html">
+            <div class="ico">🔬</div><h3>化学工具</h3>
+            <p>周期表、摩尔质量与方程式配平，理科必备。</p><span class="go">去使用 →</span>
+        </a>
+        <a class="card reveal" href="bank.html">
+            <div class="ico">🏦</div><h3>NB银行</h3>
+            <p>存钱有利息，贷款可救急，信誉分定额度。</p><span class="go">去存钱 →</span>
+        </a>
+        <a class="card reveal" href="shop.html">
+            <div class="ico">🛍️</div><h3>NB商店</h3>
+            <p>用 NB币买道具：评论颜色、特效、称号位。</p><span class="go">去逛逛 →</span>
+        </a>
+        <a class="card reveal" href="backpack.html">
+            <div class="ico">🎒</div><h3>我的背包</h3>
+            <p>管理道具：使用、改色、出售、续期。</p><span class="go">去看看 →</span>
+        </a>
+    </div>
+</section>
+
+<!-- 最新视频 -->
+<section class="section" style="padding-top:0;">
+    <div class="section-head reveal">
+        <span class="section-eyebrow">Videos</span>
+        <h2>🎬 最新视频</h2>
+        <p>化学实验、物理趣味与日常作死</p>
+    </div>
+    <div class="video-grid">
+        <a class="vcard reveal" href="https://www.bilibili.com/video/BV1Nr3i63ENL" target="_blank" rel="noopener noreferrer">
+            <div class="thumb"><img src="https://i1.hdslb.com/bfs/archive/7fc0a17bb56a553d152776e86ea34e604b9fdbf6.jpg" alt="《 行 星 发 动 机 》" loading="lazy"><span class="dur">6:10</span><span class="play">▶</span></div>
+            <div class="body"><h4>《 行 星 发 动 机 》</h4><div class="meta">《逝验室·化学》 · 3.2万播放</div></div>
+        </a>
+        <a class="vcard reveal" href="https://www.bilibili.com/video/BV1zJ376kENb" target="_blank" rel="noopener noreferrer">
+            <div class="thumb"><img src="https://i0.hdslb.com/bfs/archive/9ad74a4776aac3a7c1461c9fd806d081ab725c6c.jpg" alt="《 炸 弹 》" loading="lazy"><span class="dur">1:41</span><span class="play">▶</span></div>
+            <div class="body"><h4>《 炸 弹 》</h4><div class="meta">《产品》 · 5.5万播放</div></div>
+        </a>
+        <a class="vcard reveal" href="https://www.bilibili.com/video/BV1diNT6bE2R" target="_blank" rel="noopener noreferrer">
+            <div class="thumb"><img src="https://i2.hdslb.com/bfs/archive/2865c5c1b0aea7225ca9e7d6c568d1fe6352cc93.jpg" alt="《 化 钉 液 》" loading="lazy"><span class="dur">2:27</span><span class="play">▶</span></div>
+            <div class="body"><h4>《 化 钉 液 》</h4><div class="meta">《产品》 · 1.6万播放</div></div>
+        </a>
+        <a class="vcard reveal" href="https://www.bilibili.com/video/BV1v8AfzmE9o" target="_blank" rel="noopener noreferrer">
+            <div class="thumb"><img src="https://i1.hdslb.com/bfs/archive/ed50fccde58ca8466a6dbaef022424c94222a84d.jpg" alt="《 官 网 0 . 2 . 5 》" loading="lazy"><span class="dur">4:32</span><span class="play">▶</span></div>
+            <div class="body"><h4>《 官 网 0 . 2 . 5 》</h4><div class="meta">《官网》 · 7228播放</div></div>
+        </a>
+    </div>
+</section>
+
+<!-- 友商（单独区块） -->
+<section class="section friends-section" id="friends">
+    <div class="section-head reveal">
+        <span class="section-eyebrow">Partners</span>
+        <h2>🤝 友商</h2>
+        <p>一起搞事的伙伴们——点击卡片访问他们的官网</p>
+    </div>
+    <div class="friends-grid">
+        <a class="friend reveal" href="https://orgent.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">
+            <div class="logo">O</div>
+            <div class="info">
+                <div class="name">Orgent <span class="arrow">↗</span></div>
+                <div class="desc">B站已注销 · 仅留念</div>
+            </div>
+        </a>
+        <a class="friend reveal" href="https://45d.cn/AWM/" target="_blank" rel="noopener noreferrer">
+            <div class="logo">A</div>
+            <div class="info">
+                <div class="name">AWM <span class="arrow">↗</span></div>
+                <div class="desc">友商官网</div>
+            </div>
+        </a>
+        <a class="friend reveal" href="https://fafat.uuk.pp.ua/" target="_blank" rel="noopener noreferrer">
+            <div class="logo">F</div>
+            <div class="info">
+                <div class="name">Fafat <span class="arrow">↗</span></div>
+                <div class="desc">友商官网</div>
+            </div>
+        </a>
+        <a class="friend reveal" href="https://nb-qx.top/" target="_blank" rel="noopener noreferrer">
+            <div class="logo">L</div>
+            <div class="info">
+                <div class="name">Lemon（齐喜） <span class="arrow">↗</span></div>
+                <div class="desc">友商官网</div>
+            </div>
+        </a>
+        <a class="friend reveal" href="https://gaohantu.cn/" target="_blank" rel="noopener noreferrer">
+            <div class="logo">G</div>
+            <div class="info">
+                <div class="name">GaoHanTu <span class="arrow">↗</span></div>
+                <div class="desc">友商官网</div>
+            </div>
+        </a>
+        <a class="friend reveal" href="https://utw.pages.dev" target="_blank" rel="noopener noreferrer">
+            <div class="logo">U</div>
+            <div class="info">
+                <div class="name">Utw <span class="arrow">↗</span></div>
+                <div class="desc">友商官网</div>
+            </div>
+        </a>
+        <a class="friend reveal" href="https://pipetrainingcamp.github.io/" target="_blank" rel="noopener noreferrer">
+            <div class="logo">P</div>
+            <div class="info">
+                <div class="name">PTC（GoodPTC） <span class="arrow">↗</span></div>
+                <div class="desc">友商官网</div>
+            </div>
+        </a>
+        <a class="friend reveal" href="https://yoyo-user-awa.github.io/UVS/" target="_blank" rel="noopener noreferrer">
+            <div class="logo">V</div>
+            <div class="info">
+                <div class="name">UVS <span class="arrow">↗</span></div>
+                <div class="desc">友商官网</div>
+            </div>
+        </a>
+        <a class="friend reveal" href="https://3f7ceb4e.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">
+            <div class="logo">W</div>
+            <div class="info">
+                <div class="name">UwLS <span class="arrow">↗</span></div>
+                <div class="desc">友商官网</div>
+            </div>
+        </a>
+        <a class="friend reveal" href="https://45d.cn/nb-og.top/" target="_blank" rel="noopener noreferrer">
+            <div class="logo">Og</div>
+            <div class="info">
+                <div class="name">Oganesson <span class="arrow">↗</span></div>
+                <div class="desc">友商官网</div>
+            </div>
+        </a>
+        <a class="friend reveal" href="https://78439049.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">
+            <div class="logo">S</div>
+            <div class="info">
+                <div class="name">SOT <span class="arrow">↗</span></div>
+                <div class="desc">友商官网</div>
+            </div>
+        </a>
+    </div>
+</section>
+
+<!-- CTA -->
+<div class="cta">
+    <h2>加入 NB 频道的数字世界</h2>
+    <p>关注 B站、参与讨论、投资公司、购买道具——总有一款适合你</p>
+    <div class="hero-btns" style="justify-content:center;">
+        <a class="hero-btn primary" href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">⭐ 去 B站关注</a>
+        <a class="hero-btn ghost" href="comments-beta.html">💬 进评论区</a>
+    </div>
+</div>
+
+<!-- 页脚 -->
+<footer class="footer">
+    <div class="footer-grid">
+        <div>
+            <div class="brand"><span class="dot"></span>NB频道</div>
+            <p class="desc">NB频道（NoBook频道）——热爱理科（和作死）的 UP主建立的虚拟公司。化学物理实验、日常作死、虚拟经济，一个有趣的数字世界。</p>
+        </div>
+        <div>
+            <h5>功能</h5>
+            <a href="#">虚拟股票</a><a href="#">NB银行</a><a href="#">评论区</a><a href="#">NB商店</a><a href="#">称号系统</a>
+        </div>
+        <div>
+            <h5>友商</h5>
+            <a href="https://orgent.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">Orgent（已注销）</a>
+            <a href="https://45d.cn/AWM/" target="_blank" rel="noopener noreferrer">AWM</a>
+            <a href="https://fafat.uuk.pp.ua/" target="_blank" rel="noopener noreferrer">Fafat</a>
+            <a href="https://nb-qx.top/" target="_blank" rel="noopener noreferrer">Lemon（齐喜）</a>
+            <a href="https://gaohantu.cn/" target="_blank" rel="noopener noreferrer">GaoHanTu</a>
+            <a href="https://utw.pages.dev" target="_blank" rel="noopener noreferrer">Utw</a>
+            <a href="https://pipetrainingcamp.github.io/" target="_blank" rel="noopener noreferrer">PTC（GoodPTC）</a>
+            <a href="https://yoyo-user-awa.github.io/UVS/" target="_blank" rel="noopener noreferrer">UVS</a>
+            <a href="https://3f7ceb4e.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">UwLS</a>
+            <a href="https://45d.cn/nb-og.top/" target="_blank" rel="noopener noreferrer">Oganesson</a>
+            <a href="https://78439049.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">SOT</a>
+        </div>
+        <div>
+            <h5>联系</h5>
+            <a href="mailto:nbchannel@163.com">nbchannel@163.com</a><a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">B站：NB搞事局</a><a href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">nb-channel.top</a>
+        </div>
+    </div>
+    <div class="footer-bottom">© 2026 NB频道 · 虚拟公司 · 制作：NB搞事局 · 由 GitHub Pages / Cloudflare / PythonAnywhere 提供支持</div>
+</footer>
+
+<script>
+    // 建站天数:从 2026-02-17(本地时区)起算日历日差,避免 UTC 解析导致凌晨少一天
+    (function () {
+        var start = new Date(2026, 1, 17);
+        var now = new Date();
+        start.setHours(0, 0, 0, 0);
+        now.setHours(0, 0, 0, 0);
+        var days = Math.round((now - start) / 86400000);
+        var el = document.getElementById('siteDays');
+        if (el && days > 0) el.textContent = days;
+    })();
+    // 滚动渐显（带轻微错开，更有层次）
+    var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+            if (e.isIntersecting) {
+                var i = Array.prototype.indexOf.call(e.target.parentNode.children, e.target);
+                e.target.style.transitionDelay = Math.min(i * 50, 250) + 'ms';
+                e.target.classList.add('in');
+                io.unobserve(e.target);
+            }
+        });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+
+    // ===== 导航登录区绑定 =====
+    (function () {
+        var storedU = null;
+        try { storedU = JSON.parse(localStorage.getItem('nb_user')); } catch (e) {}
+        var pb = document.getElementById('betaProfileBtn');
+        var ab = document.getElementById('betaAuthBtn');
+        if (storedU && storedU.id) {
+            if (ab) {
+                ab.textContent = '登出账号';
+                ab.onclick = function () { localStorage.removeItem('nb_user'); location.reload(); };
+            }
+            if (pb) {
+                pb.textContent = '👤 ' + (storedU.username || storedU.name || '个人中心');
+                pb.href = 'profile.html';
+            }
+        } else {
+            var loginHref = 'login.html?redirect=' + encodeURIComponent(location.href);
+            if (ab) { ab.href = loginHref; ab.textContent = '登录 / 注册'; }
+            if (pb) { pb.href = loginHref; pb.textContent = '👤 个人中心'; }
+        }
+    })();
+
+    // ===== 公告区:从 admin_config 拉取,单行无缝滚动,链接可点击,无公告隐藏 =====
+    (function () {
+        var bar = document.getElementById('betaAnnounce');
+        if (!bar || !window.supabase) return;
+        function esc(s) {
+            return String(s).replace(/[&<>"']/g, function (m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
+        function linkify(s) {
+            return s.replace(/(https?:\/\/[^\s<>"']+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:var(--brand); text-decoration:underline;">$1</a>');
+        }
+        var client = window.__nbSupabase || supabase.createClient('https://pbaafgjkwdbwcmsikcmg.supabase.co', 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg');
+        window.__nbSupabase = client;
+        client.from('admin_config').select('value').eq('key', 'announcement').maybeSingle()
+            .then(function (res) {
+                var raw = (res && res.data && res.data.value) ? String(res.data.value).trim() : '';
+                if (!raw) return;
+                var track = document.getElementById('baTrack');
+                if (!track) return;
+                bar.style.display = 'flex';   // 先显示再测量(隐藏时 offsetWidth 恒为 0)
+                var one = '<span class="ba-item">' + linkify(esc(raw)) + '</span>';
+                track.innerHTML = one;
+                var item = track.querySelector('.ba-item');
+                var itemW = item ? item.offsetWidth : 0;
+                if (itemW > 0) {
+                    var wrapEl = bar.querySelector('.ba-track-wrap');
+                    var barW = wrapEl ? wrapEl.clientWidth : 0;
+                    var copies = Math.max(2, Math.ceil(barW / itemW) + 1);
+                    var all = '';
+                    for (var ci = 0; ci < copies; ci++) all += '<span class="ba-item">' + linkify(esc(raw)) + '</span>';
+                    track.innerHTML = all;
+                    var dur = Math.max(8, itemW / 45);
+                    if (track.animate) {
+                        track.animate(
+                            [{ transform: 'translateX(0)' }, { transform: 'translateX(-' + itemW + 'px)' }],
+                            { duration: dur * 1000, iterations: Infinity, easing: 'linear' }
+                        );
+                    }
+                }
+            })
+            .catch(function () {});
+    })();
+
+    // ===== 鼠标特效:跟随光晕 + 点击波纹与彩色粒子(仅鼠标设备) =====
+    (function () {
+        if (!(window.matchMedia && window.matchMedia('(pointer: fine)').matches)) return;
+        var glow = document.createElement('div');
+        glow.className = 'ui-fx-glow';
+        document.body.appendChild(glow);
+        var gx = -999, gy = -999, tx = -999, ty = -999;
+        document.addEventListener('mousemove', function (e) { tx = e.clientX; ty = e.clientY; });
+        document.addEventListener('mouseenter', function () { glow.style.opacity = '1'; });
+        document.addEventListener('mouseleave', function () { glow.style.opacity = '0'; });
+        (function loop() {
+            gx += (tx - gx) * 0.14;
+            gy += (ty - gy) * 0.14;
+            glow.style.left = gx + 'px';
+            glow.style.top = gy + 'px';
+            requestAnimationFrame(loop);
+        })();
+        var colors = ['#3b82f6', '#8b5cf6', '#6366f1', '#06b6d4', '#f59e0b'];
+        document.addEventListener('click', function (e) {
+            var ring = document.createElement('div');
+            ring.style.cssText = 'position:fixed; left:' + e.clientX + 'px; top:' + e.clientY + 'px; width:12px; height:12px; border:2px solid rgba(59,130,246,.75); border-radius:50%; pointer-events:none; z-index:9999; transform:translate(-50%,-50%);';
+            document.body.appendChild(ring);
+            setTimeout(function () { if (ring.parentNode) ring.remove(); }, 900);
+            try {
+                ring.animate([
+                    { transform: 'translate(-50%,-50%) scale(1)', opacity: 0.9 },
+                    { transform: 'translate(-50%,-50%) scale(5.5)', opacity: 0 }
+                ], { duration: 600, easing: 'ease-out', fill: 'forwards' });
+            } catch (err) { ring.remove(); }
+            for (var i = 0; i < 8; i++) {
+                var p = document.createElement('div');
+                var size = 4 + Math.random() * 6;
+                var ang = Math.random() * Math.PI * 2;
+                var dist = 28 + Math.random() * 52;
+                p.style.cssText = 'position:fixed; left:' + e.clientX + 'px; top:' + e.clientY + 'px; width:' + size + 'px; height:' + size + 'px; border-radius:50%; background:' + colors[i % colors.length] + '; pointer-events:none; z-index:9999;';
+                document.body.appendChild(p);
+                var dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
+                var dur = 500 + Math.random() * 250;
+                setTimeout(function (el) {
+                    return function () { if (el.parentNode) el.remove(); };
+                }(p), dur + 250);
+                try {
+                    p.animate([
+                        { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                        { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(0.1)', opacity: 0 }
+                    ], { duration: dur, easing: 'cubic-bezier(0.15,0.8,0.25,1)', fill: 'forwards' });
+                } catch (err) { p.remove(); }
+            }
+        });
+    })();
+</script>
+</body>
+</html>
