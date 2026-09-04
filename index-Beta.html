@@ -10,6 +10,17 @@
     <meta name="theme-color" content="#0f172a">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233b82f6'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='26' font-weight='800' fill='%23fff' text-anchor='middle'%3ENB%3C/text%3E%3C/svg%3E">
     <title>NB频道官网 - Beta 新版首页</title>
+    <script>
+        // 夜间模式:第一帧前生效(无显式选择时跟随系统)
+        (function () {
+            try {
+                var t = localStorage.getItem('theme');
+                if (t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* ============ 基础 ============ */
@@ -29,10 +40,57 @@
             --shadow-1: 0 1px 2px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.06);
             --shadow-2: 0 2px 4px rgba(16,24,40,.05), 0 24px 48px -20px rgba(16,24,40,.18);
         }
+        /* ============ 夜间模式(html.dark 变量覆盖) ============ */
+        html.dark { color-scheme: dark; }
+        html.dark {
+            --bg: #0a101f;
+            --ink: #e5eaf3;
+            --ink-soft: #9aa7bd;
+            --ink-faint: #64748b;
+            --line: rgba(148,163,184,.16);
+            --card: #101a2e;
+            --shadow-1: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.28);
+            --shadow-2: 0 2px 6px rgba(0,0,0,.35), 0 28px 60px -24px rgba(0,0,0,.6);
+        }
+        html.dark body {
+            background:
+                radial-gradient(900px 520px at 85% -10%, rgba(59,130,246,.07), transparent 60%),
+                radial-gradient(760px 540px at 5% 30%, rgba(139,92,246,.05), transparent 60%),
+                var(--bg);
+            background-attachment: fixed;
+        }
+        html.dark .nav { background: rgba(10,16,31,.72); border-bottom-color: rgba(148,163,184,.12); }
+        html.dark .nav.scrolled { background: rgba(10,16,31,.9); }
+        html.dark .nav-auth { background: rgba(255,255,255,.05); color: var(--ink); border-color: rgba(148,163,184,.25); }
+        html.dark .nav-auth:hover { background: rgba(255,255,255,.1); border-color: rgba(59,130,246,.5); }
+        html.dark .nav-burger { background: rgba(255,255,255,.06); border-color: rgba(148,163,184,.25); color: var(--ink); }
+        html.dark .theme-btn { background: rgba(255,255,255,.06); border-color: rgba(148,163,184,.25); color: var(--ink); }
+        html.dark .beta-announce { background: linear-gradient(135deg, #101a2e, #0d1526); border-color: rgba(59,130,246,.25); }
+        html.dark .beta-announce .ba-icon { background: rgba(59,130,246,.15); }
+        html.dark .beta-announce .ba-item { color: var(--ink-soft); }
+        html.dark .friends-section { background: #0d1526; border-color: var(--line); }
+        html.dark .vcard .thumb, html.dark .card .thumb { background: #0d1526; }
+        html.dark .drawer { background: #0f1a30; }
+        html.dark .drawer .d-close { background: rgba(255,255,255,.06); color: var(--ink); }
+        html.dark .drawer a.d-item { color: var(--ink-soft); }
+        html.dark .drawer a.d-item:hover, html.dark .drawer a.d-item.active { background: rgba(59,130,246,.14); color: #fff; }
+        html.dark .drawer .d-brand { color: var(--ink); }
+        html.dark .backtop { background: rgba(15,23,42,.85); color: #cbd5e1; border-color: rgba(148,163,184,.25); }
+        html.dark .backtop:hover { background: var(--brand); color: #fff; }
+        html.dark .hero-scroll { color: rgba(255,255,255,.35); }
+        html.dark .about-tags .tag { background: var(--card); }
+        html.dark .friend { background: rgba(255,255,255,.03); }
+        html.dark .friend:hover { background: rgba(255,255,255,.06); }
+        html.dark .footer-bottom { border-color: rgba(255,255,255,.06); }
+
         html { scroll-behavior: smooth; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-            background: var(--bg);
+            background:
+                radial-gradient(1000px 600px at 88% -12%, rgba(59,130,246,.06), transparent 62%),
+                radial-gradient(820px 560px at -8% 24%, rgba(139,92,246,.05), transparent 62%),
+                var(--bg);
+            background-attachment: fixed;
             color: var(--ink);
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
@@ -108,11 +166,12 @@
             margin-bottom: 28px;
         }
         .hero h1 {
-            font-size: 3.2rem; font-weight: 900; letter-spacing: .5px;
-            color: #fff; line-height: 1.2; margin-bottom: 20px;
+            font-size: 3.4rem; font-weight: 900; letter-spacing: .5px;
+            color: #fff; line-height: 1.18; margin-bottom: 20px;
+            text-wrap: balance;
         }
         .hero h1 .grad {
-            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            background: linear-gradient(92deg, #7cb4ff 0%, #a78bfa 60%, #d8b4fe 100%);
             -webkit-background-clip: text; background-clip: text; color: transparent;
         }
         .hero p {
@@ -125,10 +184,10 @@
             transition: all .25s ease;
         }
         .hero-btn.primary {
-            background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff;
-            box-shadow: 0 16px 32px -12px rgba(59,130,246,.55);
+            background: linear-gradient(135deg, #4f8ef7, #6366f1); color: #fff;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 16px 32px -12px rgba(59,130,246,.55);
         }
-        .hero-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 20px 40px -12px rgba(59,130,246,.65); }
+        .hero-btn.primary:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 20px 44px -12px rgba(59,130,246,.7); }
         .hero-btn.ghost {
             color: rgba(255,255,255,.9); border: 1px solid rgba(255,255,255,.22);
             background: rgba(255,255,255,.04);
@@ -175,13 +234,20 @@
 
         /* ============ 区块通用 ============ */
         .section { max-width: 1080px; margin: 0 auto; padding: 88px 24px; }
-        .section-head { text-align: center; margin-bottom: 48px; }
+        .section-head { text-align: center; margin-bottom: 52px; }
         .section-eyebrow {
-            display: inline-block; font-size: .78rem; font-weight: 700; letter-spacing: 2px;
-            color: var(--brand); text-transform: uppercase; margin-bottom: 12px;
+            display: inline-flex; align-items: center; gap: 12px;
+            font-size: .78rem; font-weight: 700; letter-spacing: 3px;
+            color: var(--brand); text-transform: uppercase; margin-bottom: 14px;
         }
+        .section-head .section-eyebrow::before, .section-head .section-eyebrow::after {
+            content: ''; width: 26px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--brand));
+            opacity: .55;
+        }
+        .section-head .section-eyebrow::after { background: linear-gradient(90deg, var(--brand), transparent); }
         .section-head h2 { font-size: 2rem; font-weight: 800; letter-spacing: .3px; }
-        .section-head p { color: var(--ink-soft); margin-top: 10px; font-size: 1rem; }
+        .section-head p { color: var(--ink-soft); margin-top: 12px; font-size: 1rem; }
 
         /* ============ 核心功能 ============ */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
@@ -400,6 +466,15 @@
             box-shadow: 0 8px 20px -8px rgba(59,130,246,.5);
         }
         .nav-auth.primary:hover { background: linear-gradient(135deg, #2563eb, #4f46e5); color: #fff; }
+        /* 主题切换按钮 */
+        .nav-right-group { display: flex; align-items: center; gap: 10px; }
+        .theme-btn {
+            display: flex; width: 42px; height: 42px; border-radius: 12px; cursor: pointer;
+            background: rgba(255,255,255,.7); border: 1px solid var(--line);
+            font-size: 1.1rem; color: var(--ink); align-items: center; justify-content: center;
+            transition: all .25s ease; flex-shrink: 0;
+        }
+        .theme-btn:hover { background: #fff; border-color: rgba(59,130,246,.4); }
 
         /* ============ 公告区(单行无缝滚动) ============ */
         .beta-announce {
@@ -559,9 +634,12 @@
         <a href="APP.html">软件/APP</a>
         <a href="#friends">友商</a>
     </div>
-    <div class="nav-auth-group" id="betaAuthGroup">
-        <a class="nav-auth" id="betaProfileBtn" href="#">👤 个人中心</a>
-        <a class="nav-auth primary" id="betaAuthBtn" href="#">登录 / 注册</a>
+    <div class="nav-right-group">
+        <button class="theme-btn" id="themeBtn" aria-label="切换夜间模式">🌙</button>
+        <div class="nav-auth-group" id="betaAuthGroup">
+            <a class="nav-auth" id="betaProfileBtn" href="#">👤 个人中心</a>
+            <a class="nav-auth primary" id="betaAuthBtn" href="#">登录 / 注册</a>
+        </div>
     </div>
     <button class="nav-burger" id="navBurger" aria-label="打开菜单">☰</button>
 </nav>
@@ -1121,6 +1199,24 @@
         if (backTop) backTop.addEventListener('click', function () {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
+    })();
+
+    // ===== 夜间模式切换(兼容旧键 theme) =====
+    (function () {
+        var btn = document.getElementById('themeBtn');
+        var root = document.documentElement;
+        function isDark() { return root.classList.contains('dark'); }
+        function render() {
+            if (btn) btn.textContent = isDark() ? '☀️' : '🌙';
+            if (btn) btn.title = isDark() ? '切换到日间模式' : '切换到夜间模式';
+        }
+        if (btn) btn.addEventListener('click', function () {
+            var dark = !isDark();
+            root.classList.toggle('dark', dark);
+            try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+            render();
+        });
+        render();
     })();
 
     // ===== 移动端抽屉导航 =====
