@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -598,76 +598,132 @@
             border: 1px solid rgba(255,255,255,.16); font-size: .78rem; letter-spacing: .5px;
         }
 
-        /* ===== 大事记:滚动驱动行驶时间轴(光点沿轨道行驶,依次点亮年份节点) ===== */
-        .jy-wrap {
-            display: grid; grid-template-columns: 168px 1fr; gap: 56px;
-            max-width: 960px; margin: 30px auto 0;
+        /* ===== 大事记:原生 CSS Scroll-Driven 行驶时间轴 =====
+           核心:列表整体声明 view-timeline(block 方向),轨道进度/行驶光点/节点点亮
+           全部由 animation-timeline: view() + animation-range 驱动,滚动全程零 JS。 */
+        .jy-list {
+            position: relative;
+            max-width: 920px; margin: 26px auto 0;
+            view-timeline-name: --jy;
+            view-timeline-axis: block;
         }
-        .jy-track { position: relative; }
-        .jy-line {
-            position: absolute; left: 14px; top: 6px; bottom: 6px;
-            width: 2px; transform: translateX(-50%);
-            background: var(--line); border-radius: 2px;
+        .jy-row {
+            position: relative;
+            display: grid; grid-template-columns: 118px 1fr; gap: 44px;
+            padding: 30px 0;
         }
-        .jy-progress {
-            position: absolute; left: 14px; top: 6px; width: 2px; height: 0;
-            transform: translateX(-50%);
-            background: var(--brand);
-            box-shadow: 0 0 14px rgba(59,130,246,.5);
-        }
-        .jy-ind {
-            position: absolute; left: 14px; top: 0; width: 20px; height: 20px;
-            transform: translate(-50%, -50%); z-index: 3;
-        }
-        .jy-ind::before {
-            content: ''; position: absolute; inset: 0; border-radius: 50%;
-            background: #fff; border: 4px solid var(--brand);
-            box-shadow: 0 0 0 5px rgba(59,130,246,.16), 0 0 22px rgba(59,130,246,.6);
-        }
-        .jy-ind::after {
-            content: ''; position: absolute; inset: -8px; border-radius: 50%;
-            border: 1px solid rgba(59,130,246,.45);
-            animation: jyPulse 2.8s cubic-bezier(.16,1,.3,1) infinite;
-        }
-        @keyframes jyPulse {
-            0% { transform: scale(.55); opacity: .9; }
-            70% { transform: scale(1.1); opacity: 0; }
-            100% { opacity: 0; }
-        }
-        .jy-node { position: absolute; left: 0; top: 0; display: flex; align-items: center; pointer-events: none; white-space: nowrap; }
-        .jy-node .nd {
-            width: 9px; height: 9px; border-radius: 50%;
+        .jy-st { position: relative; }
+        .jy-nd, .jy-ny { position: absolute; top: 50%; }
+        .jy-nd {
+            left: 15px; width: 9px; height: 9px; border-radius: 50%;
+            margin-top: -5px; transform: translateX(-50%);
             background: var(--card); border: 2px solid var(--ink-faint);
-            margin-left: 14px; transform: translateX(-50%);
-            transition: all .5s ease;
         }
-        .jy-node .ny {
+        .jy-ny {
+            left: 34px; margin-top: -8px;
             font-size: .74rem; font-weight: 600; letter-spacing: 1.5px;
-            color: var(--ink-faint); opacity: .45; margin-left: 20px;
-            transition: color .5s ease, opacity .5s ease;
+            color: var(--ink-faint); white-space: nowrap;
         }
-        .jy-node.passed .nd { background: var(--brand); border-color: var(--brand); }
-        .jy-node.passed .ny { opacity: .85; color: var(--ink-soft); }
-        .jy-node.active .nd { background: var(--brand); border-color: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,.25); transform: translateX(-50%) scale(1.3); }
-        .jy-node.active .ny { opacity: 1; color: var(--brand); font-weight: 800; }
-        .jy-cards { display: flex; flex-direction: column; }
-        .jy-card {
-            padding: 18px 22px; border-radius: 16px;
-            transition: transform .6s cubic-bezier(.16,1,.3,1), opacity .6s ease;
-        }
-        .jy-cards .jy-card.current { transform: translateX(8px); }
+        .jy-body { min-width: 0; }
         .jy-date {
             font-size: 11px; font-weight: 700; letter-spacing: 2.5px;
             color: var(--brand); opacity: .9; margin-bottom: 8px;
         }
         .jy-title { font-size: 1.16rem; font-weight: 800; letter-spacing: .4px; color: var(--ink); margin-bottom: 8px; }
         .jy-desc { font-size: .9rem; font-weight: 300; line-height: 1.95; color: var(--ink-soft); max-width: 540px; }
+
+        /* 轨道与行驶(仅支持的浏览器启用;不支持时退化为普通静态列表) */
+        @supports (animation-timeline: view()) {
+            .jy-list::before, .jy-list::after {
+                content: ''; position: absolute; left: 15px; top: 18px; bottom: 18px;
+                width: 2px; transform: translateX(-50%); border-radius: 2px; pointer-events: none;
+            }
+            .jy-list::before { background: var(--line); }
+            .jy-list::after {
+                background: var(--brand);
+                box-shadow: 0 0 14px rgba(59,130,246,.5);
+                transform-origin: top;
+                animation: jyFill linear both;
+                animation-timeline: --jy;
+                animation-range: cover 0% cover 100%;
+            }
+            @keyframes jyFill { from { transform: translateX(-50%) scaleY(0); } to { transform: translateX(-50%) scaleY(1); } }
+            .jy-ind {
+                position: absolute; left: 15px; top: 0; width: 20px; height: 20px; z-index: 3;
+                margin-left: -10px; margin-top: -10px;
+                animation: jyDrive linear both;
+                animation-timeline: --jy;
+                animation-range: cover 0% cover 100%;
+            }
+            @keyframes jyDrive {
+                0% { top: var(--jy-y0); }
+                14.2857% { top: var(--jy-y1); }
+                28.5714% { top: var(--jy-y2); }
+                42.8571% { top: var(--jy-y3); }
+                57.1428% { top: var(--jy-y4); }
+                71.4285% { top: var(--jy-y5); }
+                85.7142% { top: var(--jy-y6); }
+                100% { top: var(--jy-y7); }
+            }
+            .jy-ind::before {
+                content: ''; position: absolute; inset: 0; border-radius: 50%;
+                background: #fff; border: 4px solid var(--brand);
+                box-shadow: 0 0 0 5px rgba(59,130,246,.16), 0 0 22px rgba(59,130,246,.6);
+            }
+            .jy-ind::after {
+                content: ''; position: absolute; inset: -8px; border-radius: 50%;
+                border: 1px solid rgba(59,130,246,.45);
+                animation: jyPulse 2.8s cubic-bezier(.16,1,.3,1) infinite;
+            }
+            @keyframes jyPulse {
+                0% { transform: scale(.55); opacity: .9; }
+                70% { transform: scale(1.1); opacity: 0; }
+                100% { opacity: 0; }
+            }
+            /* 未来节点:暗淡;由经过窗口点亮 */
+            .jy-row .jy-nd { opacity: .55; }
+            .jy-row .jy-ny { opacity: .35; }
+            /* 每个节点用自己的经过窗口(光点抵达瞬间点亮 → 稍后转为已点亮) */
+            .jy-row:nth-child(1) .jy-nd { animation: jyNd1 linear both; animation-timeline: --jy; animation-range: cover 0% 100%; }
+            .jy-row:nth-child(1) .jy-ny { animation: jyNy1 linear both; animation-timeline: --jy; animation-range: cover 0% 100%; }
+            .jy-row:nth-child(2) .jy-nd { animation: jyNd2 linear both; animation-timeline: --jy; animation-range: cover 14.2857% 100%; }
+            .jy-row:nth-child(2) .jy-ny { animation: jyNy2 linear both; animation-timeline: --jy; animation-range: cover 14.2857% 100%; }
+            .jy-row:nth-child(3) .jy-nd { animation: jyNd3 linear both; animation-timeline: --jy; animation-range: cover 28.5714% 100%; }
+            .jy-row:nth-child(3) .jy-ny { animation: jyNy3 linear both; animation-timeline: --jy; animation-range: cover 28.5714% 100%; }
+            .jy-row:nth-child(4) .jy-nd { animation: jyNd4 linear both; animation-timeline: --jy; animation-range: cover 42.8571% 100%; }
+            .jy-row:nth-child(4) .jy-ny { animation: jyNy4 linear both; animation-timeline: --jy; animation-range: cover 42.8571% 100%; }
+            .jy-row:nth-child(5) .jy-nd { animation: jyNd5 linear both; animation-timeline: --jy; animation-range: cover 57.1428% 100%; }
+            .jy-row:nth-child(5) .jy-ny { animation: jyNy5 linear both; animation-timeline: --jy; animation-range: cover 57.1428% 100%; }
+            .jy-row:nth-child(6) .jy-nd { animation: jyNd6 linear both; animation-timeline: --jy; animation-range: cover 71.4285% 100%; }
+            .jy-row:nth-child(6) .jy-ny { animation: jyNy6 linear both; animation-timeline: --jy; animation-range: cover 71.4285% 100%; }
+            .jy-row:nth-child(7) .jy-nd { animation: jyNd7 linear both; animation-timeline: --jy; animation-range: cover 85.7142% 100%; }
+            .jy-row:nth-child(7) .jy-ny { animation: jyNy7 linear both; animation-timeline: --jy; animation-range: cover 85.7142% 100%; }
+            .jy-row:nth-child(8) .jy-nd { animation: jyNd8 linear both; animation-timeline: --jy; animation-range: cover 100% 100%; }
+            .jy-row:nth-child(8) .jy-ny { animation: jyNy8 linear both; animation-timeline: --jy; animation-range: cover 100% 100%; }
+            /* 点亮节奏:窗口内 0% 黯淡 → 4% 抵达点亮 → 20% 后转为已点亮 */
+            @keyframes jyNd1 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
+            @keyframes jyNd2 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
+            @keyframes jyNd3 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
+            @keyframes jyNd4 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
+            @keyframes jyNd5 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
+            @keyframes jyNd6 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
+            @keyframes jyNd7 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
+            @keyframes jyNd8 { 0% { opacity:.55; } 4% { opacity:1; background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(59,130,246,.25); } 20%,100% { opacity:1; background:var(--brand); border-color:var(--brand); } }
+            @keyframes jyNy1 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
+            @keyframes jyNy2 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
+            @keyframes jyNy3 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
+            @keyframes jyNy4 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
+            @keyframes jyNy5 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
+            @keyframes jyNy6 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
+            @keyframes jyNy7 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
+            @keyframes jyNy8 { 0%,3% { opacity:.35; } 4%,100% { opacity:1; color:var(--brand); } }
+        }
+        /* 不支持原生滚动时间轴时:节点常显为普通静态列表 */
+        .jy-fallback .jy-nd { opacity: 1; background: var(--brand); border-color: var(--brand); }
+        .jy-fallback .jy-ny { opacity: .85; color: var(--ink-soft); }
         @media (max-width: 700px) {
-            .jy-wrap { grid-template-columns: 56px 1fr; gap: 20px; }
-            .jy-line, .jy-progress, .jy-ind { left: 9px; }
-            .jy-node .nd { margin-left: 9px; }
-            .jy-node .ny { display: none; }
-            .jy-card { padding: 16px 8px; }
+            .jy-row { grid-template-columns: 46px 1fr; gap: 18px; padding: 22px 0; }
+            .jy-ny { display: none; }
         }
 
         /* ===== 回到顶部 ===== */
@@ -801,56 +857,75 @@
     </div>
 </section>
 
-<!-- 大事记:滚动驱动的"行驶时间轴"(滚动进度 → 光点沿轨道行驶 → 依次点亮年份节点) -->
+<!-- 大事记:CSS Scroll-Driven 行驶时间轴(animation-timeline: view() 原生驱动,无需滚动JS) -->
 <section class="section" id="milestone">
     <div class="section-head reveal">
         <span class="section-eyebrow">Milestones</span>
         <h2>大事记</h2>
         <p>滚动页面，沿着这条轨道看看我们是怎么一路开过来的</p>
     </div>
-    <div class="jy-wrap">
-        <div class="jy-track" id="jyTrack">
-            <div class="jy-line"></div>
-            <div class="jy-progress" id="jyProgress"></div>
-            <div class="jy-ind" id="jyInd"></div>
-        </div>
-        <div class="jy-cards" id="jyCards">
-            <div class="jy-card reveal" data-y="2025.06">
+    <div class="jy-list" id="jyList">
+        <div class="jy-ind" id="jyInd"></div>
+
+        <div class="jy-row reveal">
+            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2025.06</span></div>
+            <div class="jy-body">
                 <div class="jy-date">2025.06 · 萌芽</div>
                 <h3 class="jy-title">第一支试管点燃了频道</h3>
                 <p class="jy-desc">「NB实验室-作死」发布第一期化学实验。没有剪辑技巧，只有一支试管和一颗作死的心——但评论区有人看完了。</p>
             </div>
-            <div class="jy-card reveal" data-y="2025.09">
+        </div>
+        <div class="jy-row reveal">
+            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2025.09</span></div>
+            <div class="jy-body">
                 <div class="jy-date">2025.09 · 更名</div>
                 <h3 class="jy-title">「NB搞事局」正式挂牌</h3>
                 <p class="jy-desc">确立"化学 · 物理 · 作死"路线，第一期化学工具视频发布，粉丝突破一千。</p>
             </div>
-            <div class="jy-card reveal" data-y="2025.12">
+        </div>
+        <div class="jy-row reveal">
+            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2025.12</span></div>
+            <div class="jy-body">
                 <div class="jy-date">2025.12 · 入圈</div>
                 <h3 class="jy-title">NB 圈成形，友商登场</h3>
                 <p class="jy-desc">结识 AWM、Utw 等第一批友商，虚拟公司们的"生态圈"有了雏形。</p>
             </div>
-            <div class="jy-card reveal" data-y="2026.02">
+        </div>
+        <div class="jy-row reveal">
+            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2026.02</span></div>
+            <div class="jy-body">
                 <div class="jy-date">2026.02 · 建站</div>
                 <h3 class="jy-title">官网 v1 上线</h3>
                 <p class="jy-desc">2026.02.17 正式建站。虚拟公司终于有了自己的"注册地址"——域名很小，梦想不小。</p>
             </div>
-            <div class="jy-card reveal" data-y="2026.04">
+        </div>
+        <div class="jy-row reveal">
+            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2026.04</span></div>
+            <div class="jy-body">
                 <div class="jy-date">2026.04 · 破万</div>
                 <h3 class="jy-title">B站粉丝突破一万</h3>
                 <p class="jy-desc">评论区从"几个熟人"变成"一个小社区"。有人开始催更，有人开始二创。</p>
             </div>
-            <div class="jy-card reveal" data-y="2026.06">
+        </div>
+        <div class="jy-row reveal">
+            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2026.06</span></div>
+            <div class="jy-body">
                 <div class="jy-date">2026.06 · 十万</div>
                 <h3 class="jy-title">十万粉丝达成</h3>
                 <p class="jy-desc">作死的尽头是科学，科学的尽头是 NB——被十万人看见之后，这句话更像真的了。</p>
             </div>
-            <div class="jy-card reveal" data-y="2026.07">
+        </div>
+        <div class="jy-row reveal">
+            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2026.07</span></div>
+            <div class="jy-body">
                 <div class="jy-date">2026.07 · 经济</div>
                 <h3 class="jy-title">NB币经济开市</h3>
                 <p class="jy-desc">虚拟股票开市、NB银行开业。每天 8:00-20:00 市场自主运转——虚拟，但绝不儿戏。</p>
             </div>
-            <div class="jy-card reveal" data-y="2026.08">
+        </div>
+        <div class="jy-row reveal">
+            <div class="jy-st"><span class="jy-nd"></span><span class="jy-ny">2026.08</span></div>
+            <div class="jy-body">
                 <div class="jy-date">2026.08.27 · 焕新</div>
                 <h3 class="jy-title">官网 Beta 全新上线</h3>
                 <p class="jy-desc">今天，我们把"官网"做得更像官网。留白、克制、大标题、慢动画——故事从这一页重新讲起。</p>
@@ -1236,68 +1311,30 @@
         });
     })();
 
-    // ===== 大事记:滚动驱动的行驶时间轴(滚动进度 ↔ 指示器沿轨道行驶,依次点亮节点) =====
+    // ===== 大事记:CSS Scroll-Driven 时间轴 —— 仅发布节点坐标变量(滚动动画全由 CSS view-timeline 驱动) =====
     (function () {
-        var sec = document.getElementById('milestone');
-        var track = document.getElementById('jyTrack');
-        var cardsEl = document.getElementById('jyCards');
-        var prog = document.getElementById('jyProgress');
-        var ind = document.getElementById('jyInd');
-        if (!sec || !track || !cardsEl || !prog || !ind) return;
-        var cards = Array.prototype.slice.call(cardsEl.querySelectorAll('.jy-card'));
-        var nodes = [], ys = [];
-        var n = cards.length, vh = 0, secTop = 0, secH = 0;
-        var ticking = false, measuring = false;
-        // 按卡片数据生成轨道节点(圆点 + 年份标签)
-        cards.forEach(function (c) {
-            var node = document.createElement('div');
-            node.className = 'jy-node';
-            node.innerHTML = '<span class="nd"></span><span class="ny">' + (c.getAttribute('data-y') || '') + '</span>';
-            track.appendChild(node);
-            nodes.push(node);
-        });
-        function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
-        function measure() {
-            vh = window.innerHeight || document.documentElement.clientHeight;
-            var secR = sec.getBoundingClientRect();
-            secTop = secR.top + window.scrollY;
-            secH = secR.height;
-            var tR = track.getBoundingClientRect();
-            ys = cards.map(function (c) {
-                var r = c.getBoundingClientRect();
-                return (r.top - tR.top) + r.height / 2;
-            });
-            nodes.forEach(function (nd, i) { nd.style.top = ys[i] + 'px'; });
-            update();
+        var list = document.getElementById('jyList');
+        if (!list) return;
+        // 不支持原生滚动时间轴的浏览器:节点恢复常显(避免全暗)
+        if (!('animationTimeline' in document.documentElement.style) && !CSS.supports('animation-timeline: view()')) {
+            list.classList.add('jy-fallback');
+            return;
         }
-        function update() {
-            var sy = window.scrollY || document.documentElement.scrollTop;
-            var start = secTop - vh * 0.82;
-            var end = secTop + secH - vh * 0.18;
-            var p = clamp((sy - start) / Math.max(1, end - start), 0, 1);
-            // 指示器按节点逐段插值行驶:均匀"经过"每个里程碑
-            var seg = p * (n - 1);
-            var i = Math.min(Math.floor(seg), n - 2);
-            var f = seg - i;
-            var y = ys[i] + (ys[i + 1] - ys[i]) * f;
-            ind.style.top = y + 'px';
-            prog.style.height = y + 'px';
-            var activeIdx = clamp(Math.round(seg), 0, n - 1);
-            nodes.forEach(function (nd, k) {
-                nd.classList.toggle('active', k === activeIdx);
-                nd.classList.toggle('passed', k < activeIdx);
+        function publish() {
+            var rows = list.querySelectorAll('.jy-row');
+            var listTop = list.getBoundingClientRect().top;
+            var vars = {};
+            rows.forEach(function (row, i) {
+                var st = row.querySelector('.jy-st');
+                var r = st.getBoundingClientRect();
+                var y = (r.top - listTop) + r.height / 2;
+                vars['--jy-y' + i] = y.toFixed(1) + 'px';
             });
-            cards.forEach(function (c, k) { c.classList.toggle('current', k === activeIdx); });
+            for (var k in vars) list.style.setProperty(k, vars[k]);
         }
-        window.addEventListener('scroll', function () {
-            if (!ticking) { ticking = true; requestAnimationFrame(function () { ticking = false; update(); }); }
-        }, { passive: true });
-        window.addEventListener('resize', function () {
-            if (!measuring) { measuring = true; requestAnimationFrame(function () { measuring = false; measure(); }); }
-        }, { passive: true });
-        measure();
-        // 视频/图片加载可能改变几何,load 后再校准一次
-        window.addEventListener('load', measure);
+        publish();
+        window.addEventListener('resize', publish);
+        window.addEventListener('load', publish);
     })();
 
     // ===== 数据条 count-up(进入视口后数字滚动) =====
