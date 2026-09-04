@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NB频道（NoBook频道）——热爱理科（和作死）的UP主NB搞事局建立的虚拟公司官网。化学物理实验、NB币虚拟经济（股票/银行/商店）、评论区与友商生态。">
+    <meta property="og:title" content="NB频道官网">
+    <meta property="og:description" content="热爱理科（和作死）的虚拟公司官网——NB币经济、化学物理、友商生态。">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233b82f6'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='26' font-weight='800' fill='%23fff' text-anchor='middle'%3ENB%3C/text%3E%3C/svg%3E">
     <title>NB频道官网 - Beta 新版首页</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -128,14 +134,19 @@
             background: rgba(255,255,255,.04);
         }
         .hero-btn.ghost:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.4); }
-        /* LOGO 视频 */
+        /* LOGO 视频:质感外壳(渐变垫 + 细边框 + 深层光晕) */
         .hero-video {
-            max-width: 720px; margin: 36px auto 0;
-            border-radius: 18px; overflow: hidden;
-            border: 3px solid rgba(255,255,255,.22);
-            box-shadow: 0 24px 60px -20px rgba(0,0,0,.6);
+            max-width: 760px; margin: 40px auto 0;
+            border-radius: 22px;
+            padding: 8px;
+            background: linear-gradient(160deg, rgba(255,255,255,.14), rgba(255,255,255,.04) 60%);
+            border: 1px solid rgba(255,255,255,.18);
+            box-shadow: 0 0 0 1px rgba(255,255,255,.05), 0 50px 100px -40px rgba(0,0,0,.8), 0 0 90px -30px rgba(59,130,246,.35);
         }
-        .hero-video video { display: block; width: 100%; }
+        .hero-video video {
+            display: block; width: 100%; border-radius: 15px;
+            background: #0b1220;
+        }
         /* 滚动提示 */
         .hero-scroll {
             position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
@@ -163,7 +174,7 @@
         .stat .label { font-size: .82rem; color: var(--ink-faint); margin-top: 2px; }
 
         /* ============ 区块通用 ============ */
-        .section { max-width: 1080px; margin: 0 auto; padding: 80px 24px; }
+        .section { max-width: 1080px; margin: 0 auto; padding: 88px 24px; }
         .section-head { text-align: center; margin-bottom: 48px; }
         .section-eyebrow {
             display: inline-block; font-size: .78rem; font-weight: 700; letter-spacing: 2px;
@@ -335,7 +346,16 @@
         .cta p { color: rgba(255,255,255,.7); margin-bottom: 32px; font-weight: 300; }
 
         /* ============ 页脚 ============ */
-        .footer { background: #0f172a; color: #94a3b8; padding: 56px 48px 32px; }
+        .footer {
+            position: relative;
+            background: linear-gradient(180deg, #0f172a 0%, #0a0f1e 100%);
+            color: #94a3b8; padding: 64px 48px 32px;
+        }
+        .footer::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(59,130,246,.55), rgba(139,92,246,.4), transparent);
+        }
+        .footer h5 { color: #e2e8f0; font-size: .92rem; font-weight: 700; margin-bottom: 16px; letter-spacing: .5px; }
         .footer-grid {
             display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px;
             max-width: 1080px; margin: 0 auto;
@@ -419,6 +439,98 @@
             opacity: 0;
         }
 
+        /* ============ 细节卫生 ============ */
+        ::selection { background: rgba(59,130,246,.2); }
+        ::-webkit-scrollbar { width: 9px; }
+        ::-webkit-scrollbar-thumb { background: rgba(59,130,246,.3); border-radius: 9px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(59,130,246,.5); }
+        ::-webkit-scrollbar-track { background: transparent; }
+        a:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 6px; }
+        .num, .cn, #siteDays { font-variant-numeric: tabular-nums; }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+            html { scroll-behavior: auto; }
+        }
+
+        /* ============ 导航滚动态 + 汉堡/抽屉 ============ */
+        .nav { transition: background .3s ease, box-shadow .3s ease; }
+        .nav.scrolled { background: rgba(255,255,255,.94); box-shadow: 0 10px 30px -20px rgba(15,23,42,.3); }
+        .nav-burger {
+            display: none; width: 42px; height: 42px; border-radius: 12px; cursor: pointer;
+            background: rgba(255,255,255,.7); border: 1px solid var(--line);
+            font-size: 1.2rem; color: var(--ink); align-items: center; justify-content: center;
+        }
+        .drawer-mask { display: none; position: fixed; inset: 0; z-index: 9000; background: rgba(15,23,42,.4); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+        .drawer {
+            position: fixed; top: 0; right: -320px; width: 300px; max-width: 85vw; height: 100vh;
+            z-index: 9001; background: #fff; box-shadow: -20px 0 60px -30px rgba(0,0,0,.4);
+            transition: right .35s cubic-bezier(.16,1,.3,1);
+            padding: 22px 20px; overflow-y: auto;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .drawer.open { right: 0; }
+        .drawer .d-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .drawer .d-brand { font-weight: 800; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+        .drawer .d-brand .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; background: linear-gradient(135deg, var(--brand), #8b5cf6); }
+        .drawer .d-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: var(--bg); font-size: .95rem; cursor: pointer; color: var(--ink); }
+        .drawer .d-close:hover { background: rgba(59,130,246,.1); }
+        .drawer a.d-item { padding: 12px 16px; border-radius: 12px; color: var(--ink-soft); font-size: .98rem; font-weight: 600; }
+        .drawer a.d-item:hover, .drawer a.d-item.active { background: rgba(59,130,246,.1); color: var(--brand); }
+        .drawer .d-auth { margin-top: 14px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; }
+        .drawer .d-auth a { flex: 1; text-align: center; padding: 11px; border-radius: 999px; font-size: .9rem; font-weight: 600; }
+        .drawer .d-auth .ga { background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+        .drawer .d-auth .gab { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; }
+        @media (max-width: 900px) {
+            .nav-menu { display: none; }
+            .nav-auth-group { display: none; }
+            .nav-burger { display: flex; }
+            .timeline::before { left: 12px; }
+            .tl-item { width: 100%; left: 0 !important; padding: 0 0 36px 44px; text-align: left; }
+            .tl-item:nth-child(odd) .tl-card { text-align: left; }
+            .tl-dot { left: 6px !important; right: auto !important; }
+        }
+
+        /* ===== Hero 视频质感壳 ===== */
+        .hero-video { position: relative; }
+        .hero-video .hv-tag {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 3;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 16px; border-radius: 999px; white-space: nowrap;
+            background: rgba(15,23,42,.55); color: rgba(255,255,255,.92);
+            -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,.16); font-size: .78rem; letter-spacing: .5px;
+        }
+
+        /* ===== 时间线 ===== */
+        .timeline { position: relative; max-width: 940px; margin: 0 auto; }
+        .timeline::before {
+            content: ''; position: absolute; left: 50%; top: 4px; bottom: 4px; width: 2px; margin-left: -1px;
+            background: linear-gradient(180deg, transparent, rgba(59,130,246,.4), rgba(139,92,246,.3), transparent);
+        }
+        .tl-item { position: relative; width: 50%; padding: 0 42px 40px; }
+        .tl-item:nth-child(odd) { left: 0; text-align: right; }
+        .tl-item:nth-child(even) { left: 50%; }
+        .tl-dot { position: absolute; top: 26px; width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid var(--brand); box-shadow: 0 0 0 5px rgba(59,130,246,.14); }
+        .tl-item:nth-child(odd) .tl-dot { right: -7px; }
+        .tl-item:nth-child(even) .tl-dot { left: -7px; }
+        .tl-time { display: inline-block; font-size: .78rem; font-weight: 700; letter-spacing: 1px; color: var(--brand); background: rgba(59,130,246,.08); border-radius: 999px; padding: 3px 12px; margin-bottom: 10px; }
+        .tl-card { display: inline-block; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 20px; box-shadow: var(--shadow-1); text-align: left; max-width: 380px; transition: transform .3s ease, box-shadow .3s ease; }
+        .tl-item:hover .tl-card { transform: translateY(-3px); box-shadow: var(--shadow-2); }
+        .tl-title { font-size: 1rem; font-weight: 800; margin-bottom: 5px; color: var(--ink); }
+        .tl-desc { font-size: .86rem; color: var(--ink-soft); line-height: 1.7; }
+
+        /* ===== 回到顶部 ===== */
+        .backtop {
+            position: fixed; right: 26px; bottom: 26px; z-index: 5000;
+            width: 46px; height: 46px; border-radius: 50%;
+            background: rgba(255,255,255,.92); color: var(--brand);
+            border: 1px solid var(--line); box-shadow: 0 12px 30px -12px rgba(15,23,42,.4);
+            font-size: 1.15rem; cursor: pointer;
+            opacity: 0; transform: translateY(12px); transition: all .3s ease;
+        }
+        .backtop.show { opacity: 1; transform: none; }
+        .backtop:hover { background: var(--brand); color: #fff; }
+
         /* ============ 响应式 ============ */
         @media (max-width: 760px) {
             .nav { padding: 0 20px; }
@@ -451,6 +563,7 @@
         <a class="nav-auth" id="betaProfileBtn" href="#">👤 个人中心</a>
         <a class="nav-auth primary" id="betaAuthBtn" href="#">登录 / 注册</a>
     </div>
+    <button class="nav-burger" id="navBurger" aria-label="打开菜单">☰</button>
 </nav>
 
 <!-- Hero -->
@@ -464,6 +577,7 @@
             <a class="hero-btn ghost" href="comments-beta.html">💬 进评论区</a>
         </div>
         <div class="hero-video">
+            <span class="hv-tag">🎬 NB频道 LOGO 动画</span>
             <video src="https://videos.tuchuangyun.top/autoupload/f/2ybw2nnc3ldHerixYxPOdCfNcKcqEnRmcljopnyJoMs/20260316/5rPu/LOGO%EF%BC%88%E6%9C%80%E7%BB%88%EF%BC%89.mp4" autoplay muted loop playsinline disablePictureInPicture></video>
         </div>
     </div>
@@ -473,10 +587,10 @@
 
 <!-- 数据条 -->
 <div class="stats">
-    <div class="stat"><div class="num">10w<small>+</small></div><div class="label">B站粉丝</div></div>
-    <div class="stat"><div class="num">11</div><div class="label">友商官网</div></div>
-    <div class="stat"><div class="num" id="siteDays">--</div><div class="label">建站天数</div></div>
-    <div class="stat"><div class="num">11</div><div class="label">核心功能</div></div>
+    <div class="stat"><div class="num"><span class="cn" data-to="10">0</span><small>w+</small></div><div class="label">B站粉丝</div></div>
+    <div class="stat"><div class="num"><span class="cn" data-to="11">0</span></div><div class="label">友商官网</div></div>
+    <div class="stat"><div class="num"><span class="cn" data-to="0" id="siteDays">0</span></div><div class="label">建站天数</div></div>
+    <div class="stat"><div class="num"><span class="cn" data-to="11">0</span></div><div class="label">核心功能</div></div>
 </div>
 
 <!-- 公告区(数据从 admin_config 拉取,有公告才显示) -->
@@ -523,6 +637,59 @@
                     <h4>价值观<em>Values</em></h4>
                     <p>好奇 · 安全 · 认真 · 好玩——好奇心驱动探索，安全永远是底线，虚拟经济绝不含糊，快乐是最终目的。</p>
                 </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 大事记(时间线) -->
+<section class="section" id="milestone">
+    <div class="section-head reveal">
+        <span class="section-eyebrow">Milestones</span>
+        <h2>🗓️ 大事记</h2>
+        <p>从一腔热血到十万粉丝，一个虚拟公司的成长之路</p>
+    </div>
+    <div class="timeline">
+        <div class="tl-item reveal">
+            <span class="tl-time">2026.02</span>
+            <div class="tl-card">
+                <div class="tl-title">🚀 NB频道官网上线</div>
+                <div class="tl-desc">NoBook 频道正式建站，UP主「NB搞事局」的虚拟公司从此启航。</div>
+            </div>
+        </div>
+        <div class="tl-item reveal">
+            <span class="tl-time">2026.04</span>
+            <div class="tl-card">
+                <div class="tl-title">📺 B站粉丝破万</div>
+                <div class="tl-desc">化学实验与日常作死的视频被更多人看到，评论区开始热闹起来。</div>
+            </div>
+        </div>
+        <div class="tl-item reveal">
+            <span class="tl-time">2026.06</span>
+            <div class="tl-card">
+                <div class="tl-title">👑 十万粉丝达成</div>
+                <div class="tl-desc">NB圈里的"作死小频道"成长为十万粉的理科社区。</div>
+            </div>
+        </div>
+        <div class="tl-item reveal">
+            <span class="tl-time">2026.07</span>
+            <div class="tl-card">
+                <div class="tl-title">💰 NB币经济启动</div>
+                <div class="tl-desc">NB虚拟股票上线，NB银行开业——存钱、贷款、炒股，虚拟经济自主运转。</div>
+            </div>
+        </div>
+        <div class="tl-item reveal">
+            <span class="tl-time">2026.08</span>
+            <div class="tl-card">
+                <div class="tl-title">🛍️ 生态功能爆发</div>
+                <div class="tl-desc">NB商店、背包、称号系统、用户主页相继上线，十一大功能各就各位。</div>
+            </div>
+        </div>
+        <div class="tl-item reveal">
+            <span class="tl-time">2026.08.27</span>
+            <div class="tl-card">
+                <div class="tl-title">🏛️ 官网焕新（Beta）</div>
+                <div class="tl-desc">全新高级感官网首页上线——这一天，我们决定把"官网"做得更像官网。</div>
             </div>
         </div>
     </div>
@@ -741,8 +908,31 @@
     <div class="footer-bottom">© 2026 NB频道 · 虚拟公司 · 制作：NB搞事局 · 由 GitHub Pages / Cloudflare / PythonAnywhere 提供支持</div>
 </footer>
 
+<!-- 移动端抽屉导航 -->
+<div class="drawer-mask" id="drawerMask"></div>
+<aside class="drawer" id="drawer">
+    <div class="d-head">
+        <span class="d-brand"><span class="dot"></span>NB频道</span>
+        <button class="d-close" id="drawerClose" aria-label="关闭菜单">✕</button>
+    </div>
+    <a class="d-item active" href="index-Beta.html">🏠 首页</a>
+    <a class="d-item" href="videos.html">🎬 视频</a>
+    <a class="d-item" href="about.html">📄 关于</a>
+    <a class="d-item" href="changelog.html">📋 更新日志</a>
+    <a class="d-item" href="product.html">📦 我的产品</a>
+    <a class="d-item" href="APP.html">📱 软件/APP</a>
+    <a class="d-item" href="#friends">🤝 友商</a>
+    <div class="d-auth">
+        <a class="ga" id="dProfileBtn" href="#">👤 个人中心</a>
+        <a class="gab" id="dAuthBtn" href="#">登录 / 注册</a>
+    </div>
+</aside>
+
+<!-- 回到顶部 -->
+<button class="backtop" id="backTop" aria-label="回到顶部">↑</button>
+
 <script>
-    // 建站天数:从 2026-02-17(本地时区)起算日历日差,避免 UTC 解析导致凌晨少一天
+    // 建站天数:从 2026-02-17(本地时区)起算日历日差,写入 data-to 由 count-up 动画填充
     (function () {
         var start = new Date(2026, 1, 17);
         var now = new Date();
@@ -750,7 +940,7 @@
         now.setHours(0, 0, 0, 0);
         var days = Math.round((now - start) / 86400000);
         var el = document.getElementById('siteDays');
-        if (el && days > 0) el.textContent = days;
+        if (el && days > 0) el.setAttribute('data-to', days);
     })();
     // 滚动渐显（带轻微错开，更有层次）
     var io = new IntersectionObserver(function (es) {
@@ -765,27 +955,28 @@
     }, { threshold: 0.1 });
     document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
 
-    // ===== 导航登录区绑定 =====
-    (function () {
+    // ===== 登录区绑定(导航 + 移动端抽屉两处共用) =====
+    function bindAuthPair(pbEl, abEl) {
+        if (!pbEl && !abEl) return;
         var storedU = null;
         try { storedU = JSON.parse(localStorage.getItem('nb_user')); } catch (e) {}
-        var pb = document.getElementById('betaProfileBtn');
-        var ab = document.getElementById('betaAuthBtn');
         if (storedU && storedU.id) {
-            if (ab) {
-                ab.textContent = '登出账号';
-                ab.onclick = function () { localStorage.removeItem('nb_user'); location.reload(); };
+            if (abEl) {
+                abEl.textContent = '登出账号';
+                abEl.onclick = function () { localStorage.removeItem('nb_user'); location.reload(); };
             }
-            if (pb) {
-                pb.textContent = '👤 ' + (storedU.username || storedU.name || '个人中心');
-                pb.href = 'profile.html';
+            if (pbEl) {
+                pbEl.textContent = '👤 ' + (storedU.username || storedU.name || '个人中心');
+                pbEl.href = 'profile.html';
             }
         } else {
             var loginHref = 'login.html?redirect=' + encodeURIComponent(location.href);
-            if (ab) { ab.href = loginHref; ab.textContent = '登录 / 注册'; }
-            if (pb) { pb.href = loginHref; pb.textContent = '👤 个人中心'; }
+            if (abEl) { abEl.href = loginHref; abEl.textContent = '登录 / 注册'; }
+            if (pbEl) { pbEl.href = loginHref; pbEl.textContent = '👤 个人中心'; }
         }
-    })();
+    }
+    bindAuthPair(document.getElementById('betaProfileBtn'), document.getElementById('betaAuthBtn'));
+    bindAuthPair(document.getElementById('dProfileBtn'), document.getElementById('dAuthBtn'));
 
     // ===== 公告区:从 admin_config 拉取,单行无缝滚动,链接可点击,无公告隐藏 =====
     (function () {
@@ -879,6 +1070,73 @@
                     ], { duration: dur, easing: 'cubic-bezier(0.15,0.8,0.25,1)', fill: 'forwards' });
                 } catch (err) { p.remove(); }
             }
+        });
+    })();
+
+    // ===== 数据条 count-up(进入视口后数字滚动) =====
+    (function () {
+        var nums = document.querySelectorAll('.stats .cn');
+        if (!nums.length) return;
+        function run() {
+            nums.forEach(function (el) {
+                var to = parseInt(el.getAttribute('data-to') || '0', 10);
+                if (isNaN(to) || to <= 0) return;
+                var dur = 1400, t0 = null;
+                function step(ts) {
+                    if (!t0) t0 = ts;
+                    var p = Math.min((ts - t0) / dur, 1);
+                    var e = 1 - Math.pow(1 - p, 3);   // easeOutCubic
+                    el.textContent = Math.round(to * e);
+                    if (p < 1) requestAnimationFrame(step);
+                }
+                requestAnimationFrame(step);
+            });
+        }
+        if ('IntersectionObserver' in window) {
+            var statsBox = document.querySelector('.stats');
+            if (statsBox) {
+                var io2 = new IntersectionObserver(function (es) {
+                    es.forEach(function (en) {
+                        if (en.isIntersecting) { run(); io2.disconnect(); }
+                    });
+                }, { threshold: 0.4 });
+                io2.observe(statsBox);
+                return;
+            }
+        }
+        run();
+    })();
+
+    // ===== 导航滚动态(吸顶加深) + 回到顶部按钮 =====
+    (function () {
+        var nav = document.querySelector('.nav');
+        var backTop = document.getElementById('backTop');
+        function onScroll() {
+            var y = window.scrollY || document.documentElement.scrollTop;
+            if (nav) nav.classList.toggle('scrolled', y > 10);
+            if (backTop) backTop.classList.toggle('show', y > 600);
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+        if (backTop) backTop.addEventListener('click', function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    })();
+
+    // ===== 移动端抽屉导航 =====
+    (function () {
+        var burger = document.getElementById('navBurger');
+        var drawer = document.getElementById('drawer');
+        var mask = document.getElementById('drawerMask');
+        var closeBtn = document.getElementById('drawerClose');
+        if (!burger || !drawer || !mask) return;
+        function open() { drawer.classList.add('open'); mask.style.display = 'block'; document.body.style.overflow = 'hidden'; }
+        function close() { drawer.classList.remove('open'); mask.style.display = 'none'; document.body.style.overflow = ''; }
+        burger.addEventListener('click', open);
+        closeBtn.addEventListener('click', close);
+        mask.addEventListener('click', close);
+        drawer.querySelectorAll('a').forEach(function (a) {
+            a.addEventListener('click', close);
         });
     })();
 </script>
