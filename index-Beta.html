@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -1544,74 +1544,29 @@
         window.addEventListener('load', function () { measure(); refreshStageRect(); });
     })();
 
-    // ===== 数据条 count-up:数字跳动 + 进位(里程表式逐位跳变,9→0 进位整串轻抖) =====
+    // ===== 数据条 count-up:平滑滚动(2.8s easeOutQuart,单调递增,数字平滑"跑"到目标) =====
     (function () {
         var boxes = document.querySelectorAll('.stats .cn');
         if (!boxes.length) return;
-        // 数字位数动画样式(一次性注入)
-        var st = document.createElement('style');
-        st.textContent =
-            '.od-d{display:inline-block;} ' +
-            '.od-d.pop{animation:odPop .18s cubic-bezier(.16,1,.3,1);} ' +
-            '@keyframes odPop{0%{transform:translateY(-2px) scale(1.25);color:var(--brand)}100%{transform:none}} ' +
-            '.cn.carry{animation:odCarry .3s cubic-bezier(.16,1,.3,1);} ' +
-            '@keyframes odCarry{0%{transform:translateY(0)}30%{transform:translateY(-3px)}60%{transform:translateY(2px)}100%{transform:none}}';
-        document.head.appendChild(st);
-        var items = Array.prototype.map.call(boxes, function (el) {
-            var to = parseInt(el.getAttribute('data-to') || '0', 10);
-            var spans = [];
-            var digits = String(Math.max(to, 1)).length;
-            el.innerHTML = '';
-            for (var i = 0; i < digits; i++) {
-                var s = document.createElement('span');
-                s.className = 'od-d';
-                s.textContent = '0';
-                el.appendChild(s);
-                spans.push(s);
-            }
-            return { el: el, to: to, spans: spans };
-        });
+        // 清掉旧里程表样式注入(如存在)
+        var oldStyle = document.getElementById('nbOdStyle');
+        if (oldStyle) oldStyle.parentNode && oldStyle.parentNode.removeChild(oldStyle);
         function run() {
-            items.forEach(function (it) {
-                var to = it.to;
-                if (to <= 0) return;
-                // 离散"嗒嗒"跳动:仅每 STEP(120ms)渲染一次,全程约 21 跳,从容不急促
-                var t0 = null, next = 0, STEP = 120, DUR = 2500, prev = null, last = 0;
-                function render(v) {
-                    if (v === last) return;
-                    last = v;
-                    var cur = String(v);
-                    while (cur.length < it.spans.length) cur = '0' + cur;
-                    for (var i = 0; i < it.spans.length; i++) {
-                        var d = cur.charAt(i);
-                        var old = prev ? prev.charAt(i) : '0';
-                        if (d !== old) {
-                            it.spans[i].textContent = d;
-                            it.spans[i].classList.remove('pop');
-                            void it.spans[i].offsetWidth;
-                            it.spans[i].classList.add('pop');
-                            if (old === '9' && d === '0') {
-                                it.el.classList.remove('carry');
-                                void it.el.offsetWidth;
-                                it.el.classList.add('carry');
-                            }
-                        }
-                    }
-                    prev = cur;
-                }
-                function tick(ts) {
+            Array.prototype.forEach.call(boxes, function (el) {
+                var to = parseInt(el.getAttribute('data-to') || '0', 10);
+                if (isNaN(to) || to <= 0) return;
+                var t0 = null, dur = 2800, last = 0;
+                function step(ts) {
                     if (!t0) t0 = ts;
-                    var el = ts - t0;
-                    if (el >= DUR) { render(to); return; }
-                    if (el < next) { requestAnimationFrame(tick); return; }
-                    next += STEP;
-                    var e = 1 - Math.pow(1 - el / DUR, 3);
+                    var p = Math.min((ts - t0) / dur, 1);
+                    var e = 1 - Math.pow(1 - p, 4);       // easeOutQuart:起步轻缓、收尾干脆
                     var v = Math.round(to * e);
-                    if (v <= last) v = Math.min(last + 1, to);
-                    render(v);
-                    requestAnimationFrame(tick);
+                    if (v <= last && p < 1) v = Math.min(last + 1, to);   // 单调推进
+                    last = v;
+                    el.textContent = String(v);
+                    if (p < 1) requestAnimationFrame(step);
                 }
-                requestAnimationFrame(tick);
+                requestAnimationFrame(step);
             });
         }
         if ('IntersectionObserver' in window) {
