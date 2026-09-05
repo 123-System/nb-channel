@@ -132,6 +132,12 @@
         .nav-menu a:hover::after { transform: scaleX(1); }
         .nav-menu a.active { color: var(--brand); font-weight: 600; }
         .nav-menu a.active::after { transform: scaleX(1); }
+        /* API 入口 */
+        .nav-menu a i { font-style: normal; font-size: .66em; margin-left: 2px; vertical-align: 5px; letter-spacing: 0; opacity: .75; }
+        .nav-menu a.nav-api { color: var(--brand); font-weight: 600; font-size: .86rem; }
+        .nav-menu a.nav-api:hover { color: var(--brand-deep); }
+        .nav-menu a.nav-api::after { background: var(--brand-deep); }
+        .d-item i { font-style: normal; }
         .nav-cta {
             padding: 9px 20px; border-radius: 999px;
             background: var(--brand); color: #fff; font-size: .9rem; font-weight: 600;
@@ -791,6 +797,7 @@
         <a href="product.html">我的产品</a>
         <a href="APP.html">软件/APP</a>
         <a href="#friends">友商</a>
+        <a class="nav-api" href="api-sdk/" target="_blank" rel="noopener noreferrer" title="NB频道 API 文档">API<i>↗</i></a>
     </div>
     <div class="nav-right-group">
         <div class="nav-clock" id="navClock" title="北京时间（UTC+8）">
@@ -1206,6 +1213,7 @@
     <a class="d-item" href="product.html">我的产品</a>
     <a class="d-item" href="APP.html">软件/APP</a>
     <a class="d-item" href="#friends">友商</a>
+    <a class="d-item" href="api-sdk/" target="_blank" rel="noopener noreferrer">API ↗</a>
     <div class="d-auth">
         <a class="ga" id="dProfileBtn" href="#">👤 个人中心</a>
         <a class="gab" id="dAuthBtn" href="#">登录 / 注册</a>
