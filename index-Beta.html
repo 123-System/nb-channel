@@ -111,6 +111,12 @@
             display: flex; align-items: center; gap: 10px;
             font-size: 1.15rem; font-weight: 800; letter-spacing: .3px;
         }
+        /* LOGO 图片 */
+        .logo-img { display: block; height: 32px; width: auto; }
+        .nav-logo .logo-img { height: 32px; }
+        .footer .brand .logo-img { height: 38px; margin-bottom: 4px; }
+        .drawer .d-brand .logo-img { height: 34px; }
+        html.dark .logo-img { filter: brightness(1.4) saturate(1.15); }
         .nav-logo .dot {
             width: 10px; height: 10px; border-radius: 3px;
             background: linear-gradient(135deg, var(--brand), #8b5cf6);
@@ -788,7 +794,7 @@
 
 <!-- 导航 -->
 <nav class="nav">
-    <a class="nav-logo" href="index-Beta.html"><span class="dot"></span>NB频道</a>
+    <a class="nav-logo" href="index-Beta.html"><img class="logo-img" src="images/NB频道LOGO.png" alt="NB频道"></a>
     <div class="nav-menu">
         <a href="index-Beta.html" class="active">首页</a>
         <a href="videos.html">视频</a>
@@ -1180,7 +1186,7 @@
 <footer class="footer">
     <div class="footer-grid">
         <div>
-            <div class="brand"><span class="dot"></span>NB频道</div>
+            <div class="brand"><img class="logo-img" src="images/NB频道LOGO.png" alt="NB频道"></div>
             <p class="desc">NB频道（NoBook频道）——热爱理科（和作死）的 UP主建立的虚拟公司。化学物理实验、日常作死、虚拟经济，一个有趣的数字世界</p>
         </div>
         <div>
@@ -1213,7 +1219,7 @@
 <div class="drawer-mask" id="drawerMask"></div>
 <aside class="drawer" id="drawer">
     <div class="d-head">
-        <span class="d-brand"><span class="dot"></span>NB频道</span>
+        <span class="d-brand"><img class="logo-img" src="images/NB频道LOGO.png" alt="NB频道"></span>
         <button class="d-close" id="drawerClose" aria-label="关闭菜单">✕</button>
     </div>
     <a class="d-item active" href="index-Beta.html">首页</a>
