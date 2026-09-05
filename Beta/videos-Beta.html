@@ -417,7 +417,7 @@ body.locked { overflow: hidden; }
     <div class="nav-menu">
         <a href="index-Beta.html">首页</a>
         <a href="videos-Beta.html" class="active">视频</a>
-        <a href="/about.html">关于</a>
+        <a href="about-Beta.html">关于</a>
         <a href="/changelog.html">更新日志</a>
         <a href="/product.html">我的产品</a>
         <a href="/APP.html">软件/APP</a>
@@ -517,7 +517,7 @@ body.locked { overflow: hidden; }
     </div>
     <a class="d-item" href="index-Beta.html">首页</a>
     <a class="d-item active" href="videos-Beta.html">视频</a>
-    <a class="d-item" href="/about.html">关于</a>
+    <a class="d-item" href="about-Beta.html">关于</a>
     <a class="d-item" href="/changelog.html">更新日志</a>
     <a class="d-item" href="/product.html">我的产品</a>
     <a class="d-item" href="/APP.html">软件/APP</a>
@@ -553,7 +553,10 @@ body.locked { overflow: hidden; }
     var grid = document.getElementById('vGrid');
     var countEl = document.getElementById('vCount');
     var emptyEl = document.getElementById('vEmpty');
-    var state = { cat: '__all__', q: '', sort: 'time' };
+    var urlCat = '';
+    try { urlCat = new URLSearchParams(location.search).get('cat') || ''; } catch (e) {}
+    if (CAT_ORDER.indexOf(urlCat) < 0) urlCat = '';
+    var state = { cat: urlCat || '__all__', q: '', sort: 'time' };
 
     function fmtDate(ts) {
         try {
@@ -642,8 +645,15 @@ body.locked { overflow: hidden; }
             b.className = 'vcat';
             b.dataset.k = k;
             b.textContent = k;
+            if (k === state.cat) b.classList.add('on');
             cats.appendChild(b);
         });
+        // ?cat=xxx 直达时:与"全部"高亮同步
+        if (state.cat !== '__all__') {
+            Array.prototype.forEach.call(cats.querySelectorAll('.vcat'), function (x) {
+                x.classList.toggle('on', x.dataset.k === state.cat);
+            });
+        }
         cats.addEventListener('click', function (e) {
             var b = e.target.closest('.vcat');
             if (!b) return;

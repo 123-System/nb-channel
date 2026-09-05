@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 不发送 referer:B站图床(hdslb)防盗链,带外部站 referer 会 403 -->
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="关于 NB频道（NoBook频道）——热爱理科（和作死）的 UP主建立的虚拟公司。了解频道的来历、栏目线与这个网站本身。">
+<meta property="og:title" content="关于我们 · NB频道官网">
+<meta property="og:description" content="NB频道（NoBook频道）——从一支试管到一家虚拟公司。">
+<meta name="theme-color" content="#0f172a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233b82f6'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='26' font-weight='800' fill='%23fff' text-anchor='middle'%3ENB%3C/text%3E%3C/svg%3E">
+<title>关于我们 - NB频道官网</title>
+<script>
+    // 夜间模式:第一帧前生效(无显式选择时跟随系统)
+    (function () {
+        try {
+            var t = localStorage.getItem('theme');
+            if (t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        } catch (e) {}
+    })();
+</script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+    --bg: #f7f8fa;
+    --ink: #1a1d23;
+    --ink-soft: #5a6270;
+    --ink-faint: #8b93a3;
+    --line: #e8eaee;
+    --brand: #3b82f6;
+    --brand-deep: #2563eb;
+    --card: #ffffff;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --shadow-1: 0 1px 2px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.06);
+    --shadow-2: 0 2px 4px rgba(16,24,40,.05), 0 24px 48px -20px rgba(16,24,40,.18);
+}
+html.dark { color-scheme: dark; }
+html.dark {
+    --bg: #0a101f;
+    --ink: #e5eaf3;
+    --ink-soft: #9aa7bd;
+    --ink-faint: #64748b;
+    --line: rgba(148,163,184,.16);
+    --card: #101a2e;
+    --shadow-1: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.28);
+    --shadow-2: 0 2px 6px rgba(0,0,0,.35), 0 28px 60px -24px rgba(0,0,0,.6);
+}
+html.dark .nav { background: rgba(10,16,31,.72); border-bottom-color: rgba(148,163,184,.12); }
+html.dark .nav.scrolled { background: rgba(10,16,31,.9); }
+html.dark .logo-img { filter: brightness(1.4) saturate(1.15); }
+html.dark .drawer { background: #0f1a30; }
+html.dark .drawer .d-close { background: rgba(255,255,255,.06); color: var(--ink); }
+html.dark .drawer a.d-item { color: var(--ink-soft); }
+html.dark .drawer a.d-item:hover, html.dark .drawer a.d-item.active { background: rgba(59,130,246,.14); color: #fff; }
+html.dark .drawer .d-brand { color: var(--ink); }
+html.dark .backtop { background: rgba(15,23,42,.85); color: #cbd5e1; border-color: rgba(148,163,184,.25); }
+html.dark .backtop:hover { background: var(--brand); color: #fff; }
+html.dark .footer-bottom { border-color: rgba(255,255,255,.06); }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+a { text-decoration: none; color: inherit; }
+::selection { background: rgba(59,130,246,.22); }
+
+/* ============ 导航 ============ */
+.nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 48px; height: 64px;
+    background: rgba(255,255,255,.72);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    backdrop-filter: blur(20px) saturate(1.5);
+    border-bottom: 1px solid var(--line);
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; font-weight: 800; letter-spacing: .3px; margin-left: 12px; }
+.logo-img { display: block; height: 32px; width: auto; }
+.logo-text { color: var(--ink); }
+.nav-menu { display: flex; gap: 2px; }
+.nav-menu a {
+    position: relative; padding: 10px 14px;
+    font-size: .92rem; font-weight: 500; letter-spacing: .4px;
+    color: var(--ink-soft); white-space: nowrap; transition: color .3s ease;
+}
+.nav-menu a:hover { color: var(--ink); }
+.nav-menu a.active { color: var(--brand); font-weight: 600; }
+.nav-menu a.active::after {
+    content: ''; position: absolute; left: 14px; right: 14px; bottom: 4px;
+    height: 1px; background: var(--brand);
+}
+.nav-menu a.nav-api { color: var(--brand); font-weight: 600; font-size: .86rem; }
+.nav-menu a.nav-api::after { background: var(--brand-deep); }
+.nav-right-group { display: flex; align-items: center; gap: 10px; }
+.theme-btn {
+    width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--bg); cursor: pointer; font-size: .95rem;
+    display: flex; align-items: center; justify-content: center; transition: all .25s ease;
+}
+.theme-btn:hover { border-color: rgba(59,130,246,.4); transform: translateY(-1px); }
+.nav-burger {
+    display: none; width: 38px; height: 38px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg);
+    font-size: .95rem; cursor: pointer; color: var(--ink);
+    align-items: center; justify-content: center;
+}
+@media (max-width: 900px) { .nav-menu { display: none; } .nav-burger { display: flex; } }
+
+/* ============ Hero(关于) ============ */
+.vhero {
+    position: relative; color: #fff; overflow: hidden;
+    padding: 110px 48px 150px;
+    background:
+        radial-gradient(760px 460px at 12% 4%, rgba(59,130,246,.16), transparent 62%),
+        radial-gradient(640px 420px at 96% 60%, rgba(139,92,246,.12), transparent 60%),
+        linear-gradient(168deg, #0b1220 0%, #101c33 58%, #1c1745 100%);
+}
+.vhero::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+    background-image: radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px);
+    background-size: 34px 34px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,.5), transparent 72%);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.5), transparent 72%);
+}
+.vhero-inner {
+    position: relative; z-index: 2; max-width: 1180px; margin: 0 auto;
+    display: grid; grid-template-columns: 1.05fr .95fr; gap: 70px; align-items: center;
+}
+.hero-eyebrow {
+    display: block; font-size: 11px; font-weight: 400;
+    letter-spacing: 8px; color: rgba(255,255,255,.42); margin-bottom: 40px;
+}
+.vhero h1 { font-size: clamp(2.7rem, 5.2vw, 4.6rem); font-weight: 800; letter-spacing: 8px; color: #fff; line-height: 1.12; }
+.vhero h1 .light { font-weight: 200; letter-spacing: 4px; color: #9cc0ff; }
+.vhero-sub {
+    margin: 34px 0 0; max-width: 470px;
+    font-size: .98rem; font-weight: 300; line-height: 2.15;
+    letter-spacing: .6px; color: rgba(255,255,255,.6);
+}
+.vhero-actions { margin-top: 48px; display: flex; gap: 44px; align-items: center; flex-wrap: wrap; }
+.hero-link {
+    font-size: .9rem; letter-spacing: 3px; font-weight: 600; color: #fff;
+    padding: 12px 2px; border-bottom: 1px solid rgba(255,255,255,.32);
+    transition: border-color .35s ease, color .35s ease;
+}
+.hero-link:hover { border-color: #7cb4ff; color: #7cb4ff; }
+/* 右侧:频道名片 */
+.acard {
+    background: rgba(255,255,255,.045);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 24px; padding: 30px;
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+.acard .a-logo { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.acard .a-logo img { height: 44px; width: auto; filter: brightness(1.4) saturate(1.15); }
+.acard .a-name { color: #fff; font-size: 1.3rem; font-weight: 800; letter-spacing: .5px; }
+.acard .a-alt { font-size: .76rem; color: rgba(255,255,255,.5); letter-spacing: 1px; margin-top: 2px; }
+.acard .a-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 0 26px; }
+.a-row { padding: 11px 0; border-bottom: 1px dashed rgba(255,255,255,.1); }
+.a-row:last-child, .a-row:nth-last-child(2) { border-bottom: none; }
+.a-row b { display: block; font-size: .9rem; font-weight: 600; color: rgba(255,255,255,.92); }
+.a-row span { display: block; font-size: .68rem; letter-spacing: 1.5px; color: rgba(255,255,255,.42); margin-bottom: 3px; }
+.a-fans {
+    margin-top: 16px; padding: 13px 16px; border-radius: 14px;
+    background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.28);
+    display: flex; align-items: baseline; gap: 10px;
+}
+.a-fans .k { font-size: .76rem; letter-spacing: 2px; color: rgba(255,255,255,.6); }
+.a-fans .v { font-size: 1.5rem; font-weight: 200; color: #9cc0ff; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+.a-fans .tag { font-size: .68rem; color: rgba(255,255,255,.5); letter-spacing: 1px; }
+.a-fans .tag i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #4ade80; margin-right: 5px; animation: aLive 2s ease-out infinite; }
+@keyframes aLive { 0% { box-shadow: 0 0 0 0 rgba(74,222,128,.5); } 70% { box-shadow: 0 0 0 6px rgba(74,222,128,0); } 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); } }
+.vhero-fade {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 130px; z-index: 1;
+    background: linear-gradient(to bottom, transparent, var(--bg));
+    pointer-events: none;
+}
+
+/* ============ 正文容器 ============ */
+.vwrap { max-width: 1080px; margin: 0 auto; padding: 70px 48px 100px; }
+
+/* 引言 */
+.leadq { text-align: center; max-width: 780px; margin: 0 auto 90px; }
+.leadq h2 { font-size: clamp(1.6rem, 3vw, 2.3rem); font-weight: 800; line-height: 1.6; letter-spacing: 1px; }
+.leadq h2 em { font-style: normal; color: var(--brand); }
+.leadq h2 .thin { font-weight: 200; color: var(--ink-soft); }
+.leadq .sig { margin-top: 30px; font-size: .9rem; color: var(--ink-faint); letter-spacing: 4px; }
+.leadq .sig b { color: var(--ink); font-weight: 700; letter-spacing: 1px; }
+
+/* 区块头 */
+.sec-h { margin-bottom: 44px; }
+.sec-h .eyebrow {
+    display: inline-flex; align-items: center; gap: 12px;
+    font-size: .78rem; font-weight: 700; letter-spacing: 3px; color: var(--brand);
+    text-transform: uppercase; margin-bottom: 14px;
+}
+.sec-h .eyebrow::before, .sec-h .eyebrow::after {
+    content: ''; width: 24px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--brand)); opacity: .55;
+}
+.sec-h .eyebrow::after { background: linear-gradient(90deg, var(--brand), transparent); }
+.sec-h h2 { font-size: 1.9rem; font-weight: 800; letter-spacing: .5px; margin-bottom: 12px; }
+.sec-h p { color: var(--ink-soft); font-size: .95rem; max-width: 640px; }
+
+/* 身份档案 */
+.profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.kv {
+    background: var(--card); border-radius: var(--radius-md);
+    padding: 20px 24px; border: 1px solid var(--line); box-shadow: var(--shadow-1);
+    display: flex; flex-direction: column; justify-content: center;
+}
+.kv b { display: block; font-size: .72rem; font-weight: 700; letter-spacing: 2.5px; color: var(--ink-faint); text-transform: uppercase; margin-bottom: 7px; }
+.kv span { font-size: 1.04rem; font-weight: 700; color: var(--ink); letter-spacing: .3px; line-height: 1.5; }
+.kv small { font-size: .8rem; color: var(--ink-soft); font-weight: 400; letter-spacing: .3px; }
+
+/* 栏目线 */
+.series-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.s-card {
+    position: relative; background: var(--card); border-radius: var(--radius-lg);
+    padding: 26px 24px 22px; border: 1px solid var(--line); box-shadow: var(--shadow-1);
+    display: block; overflow: hidden;
+    transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease, border-color .3s ease;
+}
+.s-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); border-color: rgba(59,130,246,.35); }
+.s-card .no {
+    position: absolute; top: 14px; right: 18px;
+    font-size: 1.5rem; font-weight: 800; color: var(--line); letter-spacing: 1px;
+}
+.s-card:hover .no { color: rgba(59,130,246,.25); }
+.s-card h3 { font-size: 1.12rem; font-weight: 800; margin-bottom: 5px; letter-spacing: .5px; }
+.s-card h3 small { display: block; font-size: .72rem; font-weight: 600; color: var(--brand); letter-spacing: 1.5px; margin-bottom: 8px; text-transform: uppercase; }
+.s-card p { font-size: .84rem; color: var(--ink-soft); line-height: 1.8; min-height: 4.6em; }
+.s-card .go { display: inline-block; margin-top: 14px; font-size: .82rem; font-weight: 600; color: var(--brand); letter-spacing: 1px; }
+.s-card:hover .go { color: var(--brand-deep); }
+
+/* 关于这个网站 */
+.stack { background: var(--card); border-radius: var(--radius-lg); border: 1px solid var(--line); box-shadow: var(--shadow-1); overflow: hidden; }
+.stack .st-row {
+    display: grid; grid-template-columns: 240px 1fr auto; gap: 18px; align-items: center;
+    padding: 20px 26px; border-bottom: 1px solid var(--line);
+    transition: background .25s ease;
+}
+.stack .st-row:last-child { border-bottom: none; }
+.stack .st-row:hover { background: rgba(59,130,246,.04); }
+.st-row b { font-size: 1rem; font-weight: 800; letter-spacing: .5px; }
+.st-row b small { display: block; font-size: .7rem; font-weight: 600; color: var(--ink-faint); letter-spacing: 2px; margin-top: 3px; text-transform: uppercase; }
+.st-row p { font-size: .86rem; color: var(--ink-soft); line-height: 1.7; }
+.st-row .lk { color: var(--brand); font-size: .84rem; font-weight: 600; letter-spacing: 1px; white-space: nowrap; }
+.st-row .lk:hover { color: var(--brand-deep); }
+
+/* 致谢与安全声明 */
+.dual { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.panel { background: var(--card); border-radius: var(--radius-lg); border: 1px solid var(--line); box-shadow: var(--shadow-1); padding: 30px 32px; }
+.panel h3 { font-size: 1.05rem; font-weight: 800; letter-spacing: .5px; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+.panel h3 i { font-style: normal; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); display: inline-block; }
+.panel ul { list-style: none; }
+.panel li { display: flex; gap: 14px; padding: 11px 0; border-bottom: 1px dashed var(--line); font-size: .9rem; color: var(--ink-soft); }
+.panel li:last-child { border-bottom: none; }
+.panel li b { color: var(--ink); font-weight: 700; white-space: nowrap; min-width: 96px; }
+.panel .thanks { font-size: .92rem; color: var(--ink-soft); line-height: 2.1; }
+.panel .thanks b { color: var(--ink); font-weight: 700; }
+.panel.warn { border-color: rgba(245,158,11,.4); }
+.panel.warn h3 i { background: #f59e0b; }
+.panel.warn .thanks { color: var(--ink-soft); }
+.panel.warn .thanks b { color: #b45309; }
+html.dark .panel.warn .thanks b { color: #fbbf24; }
+.sig-r { margin-top: 26px; text-align: right; font-size: .95rem; color: var(--ink-faint); letter-spacing: 2px; }
+.sig-r b { color: var(--ink); font-weight: 800; letter-spacing: 1px; }
+
+/* CTA */
+.cta {
+    text-align: center; padding: 90px 24px;
+    background: linear-gradient(170deg, #101c33 0%, #1c1745 100%);
+    color: #fff; margin-top: 90px;
+}
+.cta h2 { font-size: 1.8rem; font-weight: 800; letter-spacing: .5px; margin-bottom: 14px; }
+.cta p { color: rgba(255,255,255,.55); font-size: .95rem; font-weight: 300; letter-spacing: .5px; margin-bottom: 34px; }
+.cta .cta-actions { display: flex; gap: 44px; justify-content: center; align-items: center; flex-wrap: wrap; }
+
+/* 页脚 */
+.footer { background: linear-gradient(180deg, #0f172a 0%, #0a0f1e 100%); color: #94a3b8; padding: 64px 48px 30px; }
+.footer-grid { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 44px; }
+.footer .brand { font-size: 1.1rem; font-weight: 800; color: #fff; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; letter-spacing: .5px; }
+.footer .desc { font-size: .85rem; font-weight: 300; line-height: 2; margin-bottom: 20px; color: #7c8ba5; }
+.footer h5 { color: #e2e8f0; font-size: .88rem; font-weight: 700; margin-bottom: 18px; letter-spacing: 2px; }
+.footer a { display: block; color: #8fa0b8; font-size: .86rem; margin-bottom: 12px; transition: color .3s ease; }
+.footer a:hover { color: #fff; }
+.footer-bottom {
+    max-width: 1180px; margin: 44px auto 0; padding-top: 22px;
+    border-top: 1px solid rgba(255,255,255,.07);
+    font-size: .76rem; letter-spacing: 1px; color: #5b6a85; text-align: center;
+}
+
+/* 抽屉 / 回顶 */
+.drawer-mask { display: none; position: fixed; inset: 0; z-index: 9000; background: rgba(10,15,28,.5); }
+.drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 9001;
+    width: 300px; max-width: 84vw; background: #fff;
+    box-shadow: -20px 0 60px -30px rgba(0,0,0,.4);
+    transform: translateX(105%); transition: transform .35s cubic-bezier(.16,1,.3,1);
+    padding: 22px 20px; overflow-y: auto;
+}
+.drawer.open { transform: none; }
+.drawer .d-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.drawer .d-brand { font-weight: 800; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+.drawer .d-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: var(--bg); font-size: .95rem; cursor: pointer; color: var(--ink); }
+.drawer a.d-item { display: block; padding: 12px 16px; border-radius: 12px; color: var(--ink-soft); font-size: .98rem; font-weight: 600; }
+.drawer a.d-item:hover, .drawer a.d-item.active { background: rgba(59,130,246,.1); color: var(--brand); }
+.backtop {
+    position: fixed; right: 26px; bottom: 26px; z-index: 5000;
+    width: 46px; height: 46px; border-radius: 50%;
+    background: rgba(255,255,255,.92); color: var(--brand);
+    border: 1px solid var(--line); cursor: pointer; font-size: 1.05rem;
+    opacity: 0; transform: translateY(12px); transition: all .3s ease;
+    box-shadow: var(--shadow-1);
+}
+.backtop.show { opacity: 1; transform: none; }
+.backtop:hover { background: var(--brand); color: #fff; }
+
+/* 入场渐显 */
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
+
+/* ============ 响应式 ============ */
+@media (max-width: 900px) {
+    .vhero { padding: 84px 24px 120px; }
+    .vwrap { padding: 56px 24px 80px; }
+    .footer { padding: 48px 24px 26px; }
+    .series-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 760px) {
+    .nav { padding: 0 20px; }
+    .vhero { padding: 72px 20px 110px; }
+    .vhero-inner { grid-template-columns: 1fr; gap: 40px; }
+    .vhero h1 { font-size: 2.4rem; letter-spacing: 5px; }
+    .acard { display: none; }
+    .vwrap { padding: 40px 20px 70px; }
+    .leadq { margin-bottom: 60px; }
+    .profile-grid, .series-grid, .dual { grid-template-columns: 1fr; }
+    .stack .st-row { grid-template-columns: 1fr; gap: 8px; }
+    .sec-h h2 { font-size: 1.5rem; }
+    .cta { margin-top: 60px; padding: 64px 20px; }
+    .footer-grid { grid-template-columns: 1fr; gap: 26px; }
+    .backtop { right: 18px; bottom: 18px; width: 42px; height: 42px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 导航 -->
+<nav class="nav">
+    <a class="nav-logo" href="index-Beta.html"><img class="logo-img" src="/images/NB频道LOGO.png" alt="NB频道"><span class="logo-text">NB频道</span></a>
+    <div class="nav-menu">
+        <a href="index-Beta.html">首页</a>
+        <a href="videos-Beta.html">视频</a>
+        <a href="about-Beta.html" class="active">关于</a>
+        <a href="/changelog.html">更新日志</a>
+        <a href="/product.html">我的产品</a>
+        <a href="/APP.html">软件/APP</a>
+        <a class="nav-api" href="/api-sdk/" target="_blank" rel="noopener noreferrer" title="NB频道 API 文档">API<i>↗</i></a>
+    </div>
+    <div class="nav-right-group">
+        <button class="theme-btn" id="themeBtn" aria-label="切换夜间模式">🌙</button>
+    </div>
+    <button class="nav-burger" id="navBurger" aria-label="打开菜单">☰</button>
+</nav>
+
+<!-- Hero -->
+<header class="vhero">
+    <div class="vhero-inner">
+        <div class="hero-copy">
+            <span class="hero-eyebrow">ABOUT · NOBOOK CHANNEL</span>
+            <h1>关于<span class="light">我们</span></h1>
+            <p class="vhero-sub">NB频道，全名 NoBook 频道——一个由 UP主「NB搞事局」建立的虚拟公司。我们一边做化学物理实验，一边经营着属于所有人的数字世界</p>
+            <div class="vhero-actions">
+                <a class="hero-link" href="#identity">档案 ↓</a>
+                <a class="hero-link" href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">B站空间 ↗</a>
+            </div>
+        </div>
+        <div class="acard">
+            <div class="a-logo">
+                <img class="logo-img" src="/images/NB频道LOGO.png" alt="NB频道">
+                <div>
+                    <div class="a-name">NoBook 频道</div>
+                    <div class="a-alt">通称 NB频道 · 曾用名「NB实验室-作死」</div>
+                </div>
+            </div>
+            <div class="a-rows">
+                <div class="a-row"><span>创始人</span><b>NB搞事局</b></div>
+                <div class="a-row"><span>成立</span><b>2026.02 · 虚拟公司</b></div>
+                <div class="a-row"><span>总部</span><b>地球 · 网络</b></div>
+                <div class="a-row"><span>股东</span><b>全体粉丝</b></div>
+                <div class="a-row"><span>平台</span><b>bilibili.com</b></div>
+                <div class="a-row"><span>B站 UID</span><b>3493259582114264</b></div>
+            </div>
+            <div class="a-fans">
+                <span class="k">B站粉丝</span>
+                <span class="v" id="fansNum">112,363</span>
+                <span class="tag"><i></i>实时</span>
+            </div>
+        </div>
+    </div>
+    <div class="vhero-fade"></div>
+</header>
+
+<!-- 引言 -->
+<main class="vwrap">
+    <section class="leadq reveal">
+        <h2>从一支试管开始<br><em>作死</em><span class="thin">，是一门严肃的事业</span></h2>
+        <p class="sig">—— <b>NB搞事局</b> · 创始人 & 唯一的正式员工</p>
+    </section>
+
+    <!-- 身份档案 -->
+    <section id="identity" style="margin-bottom: 90px;">
+        <div class="sec-h reveal">
+            <span class="eyebrow">Identity</span>
+            <h2>频道档案</h2>
+            <p>关于这家「虚拟公司」，你能查到的官方口径都在这里</p>
+        </div>
+        <div class="profile-grid">
+            <div class="kv reveal"><b>Full Name</b><span>NoBook 频道</span><small>通称 NB频道</small></div>
+            <div class="kv reveal"><b>曾用名</b><span>NB实验室-作死</span><small>后更名 NB搞事局，再至今日的 NB频道</small></div>
+            <div class="kv reveal"><b>创始人</b><span>NB搞事局</span><small>创始人 & 唯一的正式员工</small></div>
+            <div class="kv reveal"><b>成立</b><span>2026.02.17</span><small>官网建站日，虚拟公司自此有了注册地址</small></div>
+            <div class="kv reveal"><b>性质</b><span>虚拟公司 · 粉丝全资持股</span><small>不发行股份，只发行快乐</small></div>
+            <div class="kv reveal"><b>第一条视频</b><span>2025.02.07</span><small>一盏酒精灯与一颗作死的心</small></div>
+            <div class="kv reveal"><b>总部</b><span>地球 · 网络</span><small>云端办公，评论区开会</small></div>
+            <div class="kv reveal"><b>B站 UID</b><span>3493259582114264</span><small>UP主：NB搞事局</small></div>
+        </div>
+    </section>
+
+    <!-- 栏目线 -->
+    <section id="series" style="margin-bottom: 90px;">
+        <div class="sec-h reveal">
+            <span class="eyebrow">Series</span>
+            <h2>内容栏目</h2>
+            <p>六条内容线，六个系列——全部收录于 B站 合集，点击直达视频档案的对应分类</p>
+        </div>
+        <div class="series-grid">
+            <a class="s-card reveal" href="videos-Beta.html?cat=化学">
+                <span class="no">01</span>
+                <h3>化学<small>《逝验室·化学》</small></h3>
+                <p>钠钾镁的暴脾气、坩埚里的浪漫与少量(真的只有少量)爆炸——每个实验都认真讲原理</p>
+                <span class="go">进入该系列 →</span>
+            </a>
+            <a class="s-card reveal" href="videos-Beta.html?cat=物理">
+                <span class="no">02</span>
+                <h3>物理<small>《逝验室·物理》</small></h3>
+                <p>电路、电流与高压放电的现场——屏前观赏即可，请勿模仿</p>
+                <span class="go">进入该系列 →</span>
+            </a>
+            <a class="s-card reveal" href="videos-Beta.html?cat=救人">
+                <span class="no">03</span>
+                <h3>救人<small>《"救"人》</small></h3>
+                <p>传说中能"救"人的系列——至于救的是谁，看了才知道</p>
+                <span class="go">进入该系列 →</span>
+            </a>
+            <a class="s-card reveal" href="videos-Beta.html?cat=官网">
+                <span class="no">04</span>
+                <h3>官网<small>《官网》</small></h3>
+                <p>这个网站是怎么一点点长出来的——版本号即年轮，全部记录在案</p>
+                <span class="go">进入该系列 →</span>
+            </a>
+            <a class="s-card reveal" href="videos-Beta.html?cat=产品">
+                <span class="no">05</span>
+                <h3>产品<small>《产品》</small></h3>
+                <p>做出来的软件、工具与各种奇怪成品——虚拟公司的货架，不定期上新</p>
+                <span class="go">进入该系列 →</span>
+            </a>
+            <a class="s-card reveal" href="videos-Beta.html?cat=其他">
+                <span class="no">06</span>
+                <h3>其他<small>《其他》</small></h3>
+                <p>没进合集的散装快乐——短篇、花絮与一切无法归类的东西</p>
+                <span class="go">进入该系列 →</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- 关于这个网站 -->
+    <section id="site" style="margin-bottom: 90px;">
+        <div class="sec-h reveal">
+            <span class="eyebrow">This Site</span>
+            <h2>关于这个网站</h2>
+            <p>你在看的这一版，是官网的「Beta 界面」——与主站同源同库，未来将逐步覆盖所有页面</p>
+        </div>
+        <div class="stack reveal">
+            <div class="st-row">
+                <b>nb-channel.top<small>导航总站</small></b>
+                <p>NB频道一切入口的起点，聚合四个子站与最新动态</p>
+                <a class="lk" href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">访问 ↗</a>
+            </div>
+            <div class="st-row">
+                <b>github.nb-channel.top<small>主站 · 本页</small></b>
+                <p>官网代码仓库的 GitHub Pages，你正在访问的就是这里</p>
+                <a class="lk" href="https://github.nb-channel.top" target="_blank" rel="noopener noreferrer">访问 ↗</a>
+            </div>
+            <div class="st-row">
+                <b>cloudflare.nb-channel.top<small>镜像站</small></b>
+                <p>同一套代码的 Cloudflare Pages 镜像，多一条路就多一分稳</p>
+                <a class="lk" href="https://cloudflare.nb-channel.top" target="_blank" rel="noopener noreferrer">访问 ↗</a>
+            </div>
+            <div class="st-row">
+                <b>pythonanywhere.nb-channel.top<small>后端站</small></b>
+                <p>PythonAnywhere 承载后端接口与作品存储代理，也镜像整站</p>
+                <a class="lk" href="https://pythonanywhere.nb-channel.top" target="_blank" rel="noopener noreferrer">访问 ↗</a>
+            </div>
+            <div class="st-row">
+                <b>api.nb-channel.top<small>开放接口</small></b>
+                <p>市值、评论、统计与实时粉丝等公开只读 API，SDK 示例见站内「API」</p>
+                <a class="lk" href="https://api.nb-channel.top/api/docs" target="_blank" rel="noopener noreferrer">文档 ↗</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 致谢与安全 -->
+    <section style="margin-bottom: 40px;">
+        <div class="dual">
+            <div class="panel reveal">
+                <h3><i></i>致谢 · Credits</h3>
+                <div class="thanks">
+                    本网站由 <b>DeepSeek Harness</b>（AI）参与 UI 设计、内容逻辑与技术维护<br>
+                    数据与账号体系由 <b>Supabase</b> 承载，访问统计来自 <b>Vercount</b><br>
+                    视频托管于 <b>bilibili</b>，图床与 CDN 由多家服务商共同支撑<br>
+                    以及每一位认真看完评论区的你——<b>你们是股东</b>
+                </div>
+            </div>
+            <div class="panel warn reveal">
+                <h3><i></i>安全声明 · Safety</h3>
+                <div class="thanks">
+                    频道内容涉及化学试剂、高压电与各类危险操作<br>
+                    全部由 UP主 <b>谨慎地</b>完成(大概)<br>
+                    屏幕前的你，请勿模仿<br>
+                    <b>现实世界，没有重开按钮</b>
+                </div>
+            </div>
+        </div>
+        <div class="sig-r reveal">感谢您的支持 —— <b>NB频道</b></div>
+    </section>
+</main>
+
+<!-- CTA -->
+<div class="cta">
+    <h2>欢迎来到 NB频道的数字世界</h2>
+    <p>关注 B站、看视频档案，或直接进入评论区报到</p>
+    <div class="cta-actions">
+        <a class="hero-link" href="videos-Beta.html">看视频 ↓</a>
+        <a class="hero-link" href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">在 B站关注 ↗</a>
+        <a class="hero-link" href="/comments-beta.html">进入评论区 ↓</a>
+    </div>
+</div>
+
+<!-- 页脚 -->
+<footer class="footer">
+    <div class="footer-grid">
+        <div>
+            <div class="brand"><img class="logo-img" src="/images/NB频道LOGO.png" alt="NB频道"><span class="logo-text">NB频道</span></div>
+            <p class="desc">NB频道（NoBook频道）——热爱理科（和作死）的 UP主建立的虚拟公司。化学物理实验、日常作死、虚拟经济，一个有趣的数字世界</p>
+        </div>
+        <div>
+            <h5>功能</h5>
+            <a href="/Virtual stock.html">虚拟股票</a><a href="/bank.html">NB银行</a><a href="/comments-beta.html">评论区</a><a href="/shop.html">NB商店</a><a href="/titles.html">称号系统</a>
+        </div>
+        <div>
+            <h5>友商</h5>
+            <a href="https://orgent.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">Orgent（已注销）</a>
+            <a href="https://45d.cn/AWM/" target="_blank" rel="noopener noreferrer">AWM</a>
+            <a href="https://fafat.uuk.pp.ua/" target="_blank" rel="noopener noreferrer">Fafat</a>
+            <a href="https://nb-qx.top/" target="_blank" rel="noopener noreferrer">Lemon（齐喜）</a>
+            <a href="https://gaohantu.cn/" target="_blank" rel="noopener noreferrer">GaoHanTu</a>
+            <a href="https://utw.pages.dev" target="_blank" rel="noopener noreferrer">Utw</a>
+            <a href="https://pipetrainingcamp.github.io/" target="_blank" rel="noopener noreferrer">PTC（GoodPTC）</a>
+            <a href="https://yoyo-user-awa.github.io/UVS/" target="_blank" rel="noopener noreferrer">UVS</a>
+            <a href="https://3f7ceb4e.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">UwLS</a>
+            <a href="https://45d.cn/nb-og.top/" target="_blank" rel="noopener noreferrer">Oganesson</a>
+            <a href="https://78439049.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">SOT</a>
+        </div>
+        <div>
+            <h5>联系</h5>
+            <a href="mailto:nbchannel@163.com">nbchannel@163.com</a><a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">B站：NB搞事局</a><a href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">nb-channel.top</a>
+        </div>
+    </div>
+    <div class="footer-bottom">© 2026 NB频道 · 虚拟公司 · 制作：NB搞事局 · 由 GitHub Pages / Cloudflare / PythonAnywhere 提供支持</div>
+</footer>
+
+<!-- 移动端抽屉 -->
+<div class="drawer-mask" id="drawerMask"></div>
+<aside class="drawer" id="drawer">
+    <div class="d-head">
+        <span class="d-brand"><img class="logo-img" src="/images/NB频道LOGO.png" alt="NB频道"><span class="logo-text">NB频道</span></span>
+        <button class="d-close" id="drawerClose" aria-label="关闭菜单">✕</button>
+    </div>
+    <a class="d-item" href="index-Beta.html">首页</a>
+    <a class="d-item" href="videos-Beta.html">视频</a>
+    <a class="d-item active" href="about-Beta.html">关于</a>
+    <a class="d-item" href="/changelog.html">更新日志</a>
+    <a class="d-item" href="/product.html">我的产品</a>
+    <a class="d-item" href="/APP.html">软件/APP</a>
+    <a class="d-item" href="/api-sdk/" target="_blank" rel="noopener noreferrer">API ↗</a>
+</aside>
+
+<!-- 回到顶部 -->
+<button class="backtop" id="backTop" aria-label="回到顶部">↑</button>
+
+<script>
+    // ===== 入场渐显 =====
+    (function () {
+        var io = new IntersectionObserver(function (es) {
+            es.forEach(function (e) {
+                if (e.isIntersecting) {
+                    var i = Array.prototype.indexOf.call(e.target.parentNode.children, e.target);
+                    e.target.style.transitionDelay = Math.min(i * 60, 240) + 'ms';
+                    e.target.classList.add('in');
+                    io.unobserve(e.target);
+                }
+            });
+        }, { threshold: 0.12 });
+        var els = document.querySelectorAll('.reveal');
+        // 首屏元素立即进入
+        els.forEach(function (el, i) {
+            var r = el.getBoundingClientRect();
+            if (r.top < window.innerHeight * 0.9) { el.style.transitionDelay = (i * 80) + 'ms'; el.classList.add('in'); }
+            else io.observe(el);
+        });
+        document.querySelector('.leadq') && document.querySelector('.leadq').classList.add('in');
+    })();
+
+    // ===== B站粉丝:一次拉取 + 每 30s 静默同步(原地更新,不打扰) =====
+    (function () {
+        var el = document.getElementById('fansNum');
+        if (!el) return;
+        function fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+        function poll() {
+            if (document.hidden) return;
+            fetch('https://nbchannel.pythonanywhere.com/api/bili-fans', { cache: 'no-store' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (j) { if (j && j.follower > 0) el.textContent = fmt(parseInt(j.follower, 10)); })
+                .catch(function () {});
+        }
+        poll();
+        setInterval(poll, 30000);
+    })();
+
+    // ===== 导航滚动态 + 回到顶部 =====
+    (function () {
+        var nav = document.querySelector('.nav');
+        var backTop = document.getElementById('backTop');
+        function onScroll() {
+            var y = window.scrollY || document.documentElement.scrollTop;
+            if (nav) nav.classList.toggle('scrolled', y > 10);
+            if (backTop) backTop.classList.toggle('show', y > 700);
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+        if (backTop) backTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    })();
+
+    // ===== 夜间模式切换 =====
+    (function () {
+        var btn = document.getElementById('themeBtn');
+        var root = document.documentElement;
+        function isDark() { return root.classList.contains('dark'); }
+        function render() {
+            if (btn) { btn.textContent = isDark() ? '☀️' : '🌙'; btn.title = isDark() ? '切换到日间模式' : '切换到夜间模式'; }
+        }
+        if (btn) btn.addEventListener('click', function () {
+            var dark = !isDark();
+            root.classList.toggle('dark', dark);
+            try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+            render();
+        });
+        render();
+    })();
+
+    // ===== 移动端抽屉 =====
+    (function () {
+        var burger = document.getElementById('navBurger');
+        var drawer = document.getElementById('drawer');
+        var mask = document.getElementById('drawerMask');
+        var closeBtn = document.getElementById('drawerClose');
+        if (!burger || !drawer || !mask) return;
+        function open() { drawer.classList.add('open'); mask.style.display = 'block'; document.body.classList.add('locked'); }
+        function close() { drawer.classList.remove('open'); mask.style.display = 'none'; document.body.classList.remove('locked'); }
+        burger.addEventListener('click', open);
+        closeBtn.addEventListener('click', close);
+        mask.addEventListener('click', close);
+        drawer.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', close); });
+    })();
+
+    // ===== 防查看代码(反调试,静默无提示) =====
+    (function () {
+        var DEV = window.__allowDevTools ||
+                  /(?:^|[?&#])dev=1(?=&|#|$)/.test(location.href) ||
+                  /#dev\b/.test(location.hash);
+        if (DEV) return;
+        document.addEventListener('keydown', function (e) {
+            var k = e.keyCode || e.which;
+            var ctrl = e.ctrlKey || e.metaKey;
+            if (k === 123 || e.key === 'F12' ||
+                (ctrl && e.shiftKey && (k === 73 || k === 74 || k === 67)) ||
+                (ctrl && k === 85)) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
+        document.addEventListener('contextmenu', function (e) { e.preventDefault(); return false; });
+        setInterval(function () { debugger; }, 600);
+    })();
+</script>
+</body>
+</html>
