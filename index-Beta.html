@@ -273,6 +273,19 @@
         .stat:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
         .stat .num { font-size: 1.7rem; font-weight: 800; color: var(--ink); letter-spacing: .5px; }
         .stat .num small { font-size: 1rem; font-weight: 700; color: var(--brand); }
+        /* 粉丝列:精确实时数字(6位数+千分位),字号略收以与邻卡协调 */
+        .stat-fans .num { font-size: 1.28rem; letter-spacing: .2px; }
+        .stat .label .live {
+            display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+            background: var(--brand); margin-left: 7px; vertical-align: 1px;
+            box-shadow: 0 0 0 0 rgba(59,130,246,.45);
+            animation: livePulse 1.8s ease-out infinite;
+        }
+        @keyframes livePulse {
+            0% { box-shadow: 0 0 0 0 rgba(59,130,246,.45); }
+            70% { box-shadow: 0 0 0 7px rgba(59,130,246,0); }
+            100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+        }
         .stat .label { font-size: .82rem; color: var(--ink-faint); margin-top: 2px; }
 
         /* ============ 区块通用 ============ */
@@ -843,7 +856,7 @@
 
 <!-- 数据条 -->
 <div class="stats">
-    <div class="stat"><div class="num"><span class="cn" data-to="10">0</span><small>w+</small></div><div class="label">B站粉丝</div></div>
+    <div class="stat stat-fans"><div class="num"><span class="cn" id="biliFans" data-to="112363">0</span></div><div class="label">B站粉丝<i class="live" title="实时同步,每30分钟自动更新"></i></div></div>
     <div class="stat"><div class="num"><span class="cn" data-to="11">0</span></div><div class="label">友商官网</div></div>
     <div class="stat"><div class="num"><span class="cn" data-to="0" id="siteDays">0</span></div><div class="label">建站天数</div></div>
     <div class="stat"><div class="num"><span class="cn" data-to="11">0</span></div><div class="label">核心功能</div></div>
@@ -1576,31 +1589,84 @@
         window.addEventListener('load', function () { measure(); refreshStageRect(); });
     })();
 
-    // ===== 数据条 count-up:平滑滚动(4.2s easeInOutQuart,单调递增,数字从容"跑"到目标) =====
+    // ===== 数据条 count-up + B站粉丝实时同步 =====
+    // 入场:0 → data-to(4.2s easeInOutQuart 平滑滚动);
+    // 之后每 60s 静默轮询 fans.json(GitHub Actions 每 30 分钟抓 B站接口写回仓库),
+    // 粉丝数有变化时数字就地平滑滚动到新值,无需刷新;接口/网络失败则保留当前值。
     (function () {
         var boxes = document.querySelectorAll('.stats .cn');
         if (!boxes.length) return;
-        // 清掉旧里程表样式注入(如存在)
-        var oldStyle = document.getElementById('nbOdStyle');
-        if (oldStyle) oldStyle.parentNode && oldStyle.parentNode.removeChild(oldStyle);
+        var fansEl = document.getElementById('biliFans');
+        function fmt(v, comma) {
+            return comma ? String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : String(v);
+        }
+        function anim(el, from, to, dur, done) {
+            var comma = el.id === 'biliFans';
+            var t0 = null, last = 0;
+            function step(ts) {
+                if (!t0) t0 = ts;
+                var p = Math.min((ts - t0) / dur, 1);
+                // easeInOutQuart:起步收尾都缓、中段匀速,数字从容"跑"到目标
+                var e = p < 0.5 ? 8 * p * p * p * p : 1 - Math.pow(-2 * p + 2, 4) / 2;
+                var v = Math.round(from + (to - from) * e);
+                if (v <= last && p < 1) v = Math.min(last + 1, to);   // 单调推进
+                last = v;
+                el.textContent = fmt(v, comma);
+                if (p < 1) requestAnimationFrame(step);
+                else if (done) done();
+            }
+            requestAnimationFrame(step);
+        }
+        // 粉丝缓存回填:以最近一次同步值为首屏目标(比静态默认更贴近当前)
+        try {
+            var cached = parseInt(localStorage.getItem('nb_bili_fans') || '', 10);
+            if (cached > 0 && fansEl) fansEl.setAttribute('data-to', cached);
+        } catch (e) {}
+        var entryDone = false;   // 入场动画是否全部完成
+        var fanPending = null;   // 入场期间取回的更新值:完成后补一次短动画
+        var remain = boxes.length;
+        function fanDone() {
+            remain--;
+            if (remain > 0) return;
+            entryDone = true;
+            if (fanPending != null && fansEl) {
+                var cur = parseInt(String(fansEl.textContent).replace(/[^\d]/g, ''), 10) || 0;
+                var v = fanPending;
+                fanPending = null;
+                if (v !== cur) anim(fansEl, cur, v, 900, null);
+            }
+        }
         function run() {
             Array.prototype.forEach.call(boxes, function (el) {
                 var to = parseInt(el.getAttribute('data-to') || '0', 10);
-                if (isNaN(to) || to <= 0) return;
-                var t0 = null, dur = 4200, last = 0;
-                function step(ts) {
-                    if (!t0) t0 = ts;
-                    var p = Math.min((ts - t0) / dur, 1);
-                    // easeInOutQuart:起步收尾都缓、中段匀速,数字"慢慢爬"更从容
-                    var e = p < 0.5 ? 8 * p * p * p * p : 1 - Math.pow(-2 * p + 2, 4) / 2;
-                    var v = Math.round(to * e);
-                    if (v <= last && p < 1) v = Math.min(last + 1, to);   // 单调推进
-                    last = v;
-                    el.textContent = String(v);
-                    if (p < 1) requestAnimationFrame(step);
-                }
-                requestAnimationFrame(step);
+                if (isNaN(to) || to <= 0) { el.textContent = '0'; fanDone(); return; }
+                anim(el, 0, to, 4200, fanDone);
             });
+        }
+        // 轮询间隔默认 60s;?fansPoll=ms 可调(测试用)
+        var pollMs = 60000;
+        try {
+            var pm = /[?&]fansPoll=(\d+)/.exec(location.search);
+            if (pm) pollMs = Math.max(2000, parseInt(pm[1], 10));
+        } catch (e) {}
+        function curFans() {
+            return parseInt(String(fansEl.textContent).replace(/[^\d]/g, ''), 10) || 0;
+        }
+        function applyFans(n) {
+            if (!fansEl || !(n > 0)) return;
+            try { localStorage.setItem('nb_bili_fans', String(n)); } catch (e) {}
+            if (!entryDone) { fanPending = n; return; }   // 入场动画未结束:记下,结束时补动
+            var cur = curFans();
+            if (n === cur) return;
+            var dur = Math.min(600 + Math.abs(n - cur) * 6, 2600);
+            anim(fansEl, cur, n, dur, null);
+        }
+        function pollFans() {
+            if (document.hidden) return;   // 标签页在后台时不打扰
+            fetch('fans.json', { cache: 'no-store' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (j) { if (j) applyFans(parseInt(j.follower, 10)); })
+                .catch(function () {});
         }
         if ('IntersectionObserver' in window) {
             var statsBox = document.querySelector('.stats');
@@ -1611,10 +1677,13 @@
                     });
                 }, { threshold: 0.4 });
                 io2.observe(statsBox);
-                return;
             }
-        }
-        run();
+        } else run();
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) pollFans();
+        });
+        pollFans();
+        setInterval(pollFans, pollMs);
     })();
 
     // ===== 导航滚动态(吸顶加深) + 回到顶部按钮 =====
