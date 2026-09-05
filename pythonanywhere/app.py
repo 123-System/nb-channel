@@ -1333,6 +1333,13 @@ def serve_site(path):
     if not path:
         path = 'index.html'
     full = os.path.join(SITE_DIR, path)
+    # 目录请求(/api-sdk/ 等):与 GitHub Pages 一致,自动找目录内 index.html
+    if os.path.isdir(full):
+        idx = os.path.join(full, 'index.html')
+        if os.path.isfile(idx):
+            full = idx
+        else:
+            return '404 Not Found - %s' % path, 404
     if not os.path.isfile(full):
         # 支持无 .html 后缀的访问（/about -> about.html）
         alt = full + '.html'
