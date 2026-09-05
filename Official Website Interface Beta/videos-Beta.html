@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 不发送 referer:B站图床(hdslb)防盗链,带外部站 referer 会 403 导致封面不显示 -->
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="NB频道（NoBook频道）视频档案——化学物理实验、日常作死、官网与产品记录，全部来自B站「NB搞事局」。">
+<meta property="og:title" content="视频档案 · NB频道官网">
+<meta property="og:description" content="化学物理实验、日常作死、官网与产品记录——全部视频一站直达。">
+<meta name="theme-color" content="#0f172a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233b82f6'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='26' font-weight='800' fill='%23fff' text-anchor='middle'%3ENB%3C/text%3E%3C/svg%3E">
+<title>视频档案 - NB频道官网</title>
+<script>
+    // 夜间模式:第一帧前生效(无显式选择时跟随系统)
+    (function () {
+        try {
+            var t = localStorage.getItem('theme');
+            if (t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        } catch (e) {}
+    })();
+</script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+    --bg: #f7f8fa;
+    --ink: #1a1d23;
+    --ink-soft: #5a6270;
+    --ink-faint: #8b93a3;
+    --line: #e8eaee;
+    --brand: #3b82f6;
+    --brand-deep: #2563eb;
+    --card: #ffffff;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --shadow-1: 0 1px 2px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.06);
+    --shadow-2: 0 2px 4px rgba(16,24,40,.05), 0 24px 48px -20px rgba(16,24,40,.18);
+}
+html.dark { color-scheme: dark; }
+html.dark {
+    --bg: #0a101f;
+    --ink: #e5eaf3;
+    --ink-soft: #9aa7bd;
+    --ink-faint: #64748b;
+    --line: rgba(148,163,184,.16);
+    --card: #101a2e;
+    --shadow-1: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.28);
+    --shadow-2: 0 2px 6px rgba(0,0,0,.35), 0 28px 60px -24px rgba(0,0,0,.6);
+}
+html.dark .nav { background: rgba(10,16,31,.72); border-bottom-color: rgba(148,163,184,.12); }
+html.dark .nav.scrolled { background: rgba(10,16,31,.9); }
+html.dark .logo-img { filter: brightness(1.4) saturate(1.15); }
+html.dark .vcat { background: rgba(255,255,255,.04); border-color: rgba(148,163,184,.22); color: var(--ink-soft); }
+html.dark .vcat.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+html.dark .vcard .thumb { background: #0d1526; }
+html.dark .vsearch input { color: var(--ink); }
+html.dark .drawer { background: #0f1a30; }
+html.dark .drawer .d-close { background: rgba(255,255,255,.06); color: var(--ink); }
+html.dark .drawer a.d-item { color: var(--ink-soft); }
+html.dark .drawer a.d-item:hover, html.dark .drawer a.d-item.active { background: rgba(59,130,246,.14); color: #fff; }
+html.dark .drawer .d-brand { color: var(--ink); }
+html.dark .backtop { background: rgba(15,23,42,.85); color: #cbd5e1; border-color: rgba(148,163,184,.25); }
+html.dark .backtop:hover { background: var(--brand); color: #fff; }
+html.dark .footer-bottom { border-color: rgba(255,255,255,.06); }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+a { text-decoration: none; color: inherit; }
+::selection { background: rgba(59,130,246,.22); }
+
+/* ============ 导航 ============ */
+.nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 48px; height: 64px;
+    background: rgba(255,255,255,.72);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    backdrop-filter: blur(20px) saturate(1.5);
+    border-bottom: 1px solid var(--line);
+}
+.nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 1.15rem; font-weight: 800; letter-spacing: .3px;
+    margin-left: 12px;
+}
+.logo-img { display: block; height: 32px; width: auto; }
+.logo-text { color: var(--ink); }
+.nav-menu { display: flex; gap: 2px; }
+.nav-menu a {
+    position: relative; padding: 10px 14px;
+    font-size: .92rem; font-weight: 500; letter-spacing: .4px;
+    color: var(--ink-soft); white-space: nowrap;
+    transition: color .3s ease;
+}
+.nav-menu a:hover { color: var(--ink); }
+.nav-menu a.active { color: var(--brand); font-weight: 600; }
+.nav-menu a.active::after {
+    content: ''; position: absolute; left: 14px; right: 14px; bottom: 4px;
+    height: 1px; background: var(--brand);
+}
+.nav-menu a.nav-api { color: var(--brand); font-weight: 600; font-size: .86rem; }
+.nav-menu a.nav-api::after { background: var(--brand-deep); }
+.nav-right-group { display: flex; align-items: center; gap: 10px; }
+.theme-btn {
+    width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--bg); cursor: pointer; font-size: .95rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .25s ease;
+}
+.theme-btn:hover { border-color: rgba(59,130,246,.4); transform: translateY(-1px); }
+.nav-burger {
+    display: none; width: 38px; height: 38px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg);
+    font-size: .95rem; cursor: pointer; color: var(--ink);
+    align-items: center; justify-content: center;
+}
+@media (max-width: 900px) {
+    .nav-menu { display: none; }
+    .nav-burger { display: flex; }
+}
+
+/* ============ Hero(视频档案) ============ */
+.vhero {
+    position: relative; color: #fff; overflow: hidden;
+    padding: 110px 48px 150px;
+    background:
+        radial-gradient(760px 460px at 12% 4%, rgba(59,130,246,.16), transparent 62%),
+        radial-gradient(640px 420px at 96% 60%, rgba(139,92,246,.12), transparent 60%),
+        linear-gradient(168deg, #0b1220 0%, #101c33 58%, #1c1745 100%);
+}
+.vhero::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+    background-image: radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px);
+    background-size: 34px 34px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,.5), transparent 72%);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.5), transparent 72%);
+}
+.vhero-inner {
+    position: relative; z-index: 2; max-width: 1180px; margin: 0 auto;
+    display: grid; grid-template-columns: 1.05fr .95fr; gap: 70px; align-items: center;
+}
+.hero-eyebrow {
+    display: block; font-size: 11px; font-weight: 400;
+    letter-spacing: 8px; color: rgba(255,255,255,.42);
+    margin-bottom: 40px;
+}
+.vhero h1 {
+    font-size: clamp(2.7rem, 5.2vw, 4.6rem);
+    font-weight: 800; letter-spacing: 10px; color: #fff; line-height: 1.12;
+}
+.vhero h1 .light { font-weight: 200; letter-spacing: 4px; color: #9cc0ff; }
+.vhero-sub {
+    margin: 34px 0 0; max-width: 460px;
+    font-size: .98rem; font-weight: 300; line-height: 2.15;
+    letter-spacing: .6px; color: rgba(255,255,255,.6);
+}
+.vhero-actions { margin-top: 48px; display: flex; gap: 44px; align-items: center; flex-wrap: wrap; }
+.hero-link {
+    font-size: .9rem; letter-spacing: 3px; font-weight: 600; color: #fff;
+    padding: 12px 2px; border-bottom: 1px solid rgba(255,255,255,.32);
+    transition: border-color .35s ease, color .35s ease;
+}
+.hero-link:hover { border-color: #7cb4ff; color: #7cb4ff; }
+/* 右侧档案卡 */
+.vhcard {
+    background: rgba(255,255,255,.045);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 24px; padding: 32px 30px 26px;
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+.vhcard .vh-eyebrow {
+    font-size: 10px; letter-spacing: 5px; font-weight: 700;
+    color: rgba(255,255,255,.38); text-transform: uppercase; margin-bottom: 22px;
+}
+.vh-cardrows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 26px; }
+.vh-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding-bottom: 9px; border-bottom: 1px dashed rgba(255,255,255,.1);
+}
+.vh-row b { font-size: 1.02rem; font-weight: 700; color: #fff; letter-spacing: .5px; }
+.vh-row span { font-size: .74rem; color: rgba(255,255,255,.5); letter-spacing: 1.5px; }
+.vh-row .cnt { color: #9cc0ff; font-size: 1.18rem; font-weight: 300; }
+.vh-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 22px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.08);
+}
+.vh-foot .u { font-size: .78rem; color: rgba(255,255,255,.5); letter-spacing: 1px; }
+.vh-foot .d { font-size: .88rem; color: #fff; font-weight: 600; letter-spacing: .5px; }
+/* Hero → 正文柔和过渡 */
+.vhero-fade {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 130px; z-index: 1;
+    background: linear-gradient(to bottom, transparent, var(--bg));
+    pointer-events: none;
+}
+
+/* ============ 正文容器 ============ */
+.vwrap { max-width: 1180px; margin: 0 auto; padding: 60px 48px 110px; }
+
+/* 档案工具条:分类 + 搜索 + 排序 */
+.vtoolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 22px;
+}
+.vcats { display: flex; gap: 6px; flex-wrap: wrap; }
+.vcat {
+    border: 1px solid var(--line); background: var(--card); color: var(--ink-soft);
+    font-size: .86rem; font-weight: 600; letter-spacing: .5px;
+    padding: 7px 17px; border-radius: 999px; cursor: pointer;
+    transition: all .3s ease;
+}
+.vcat:hover { border-color: var(--brand); color: var(--brand); }
+.vcat.on { background: var(--brand); border-color: var(--brand); color: #fff; box-shadow: 0 8px 18px -8px rgba(59,130,246,.55); }
+.vright { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.vsearch {
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--line); padding: 5px 2px; min-width: 220px;
+    transition: border-color .3s ease;
+}
+.vsearch:focus-within { border-color: var(--brand); }
+.vsearch input { border: none; outline: none; background: transparent; font: inherit; font-size: .9rem; color: var(--ink); width: 100%; }
+.vsearch input::placeholder { color: var(--ink-faint); }
+.vsort { display: flex; gap: 2px; }
+.vsort button {
+    border: none; background: none; font: inherit; font-size: .84rem;
+    color: var(--ink-faint); cursor: pointer; padding: 6px 13px; border-radius: 999px;
+    letter-spacing: 1.5px; transition: all .25s ease;
+}
+.vsort button:hover { color: var(--ink); }
+.vsort button.on { background: rgba(59,130,246,.12); color: var(--brand); font-weight: 700; }
+.vcount {
+    font-size: .78rem; color: var(--ink-faint); letter-spacing: 2px;
+    margin-bottom: 18px; text-transform: uppercase;
+}
+.vcount b { color: var(--brand); font-weight: 700; }
+
+/* 视频网格 */
+.video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 20px; }
+.vcard {
+    background: var(--card); border-radius: var(--radius-lg); overflow: hidden;
+    box-shadow: var(--shadow-1); cursor: pointer; user-select: none;
+    transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease;
+}
+.vcard:hover { transform: translateY(-5px); box-shadow: var(--shadow-2); }
+.vcard .thumb {
+    position: relative; aspect-ratio: 16 / 10;
+    background: #eef1f6; overflow: hidden;
+}
+.vcard .thumb img {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+    transition: transform .9s cubic-bezier(.16,1,.3,1);
+}
+.vcard:hover .thumb img { transform: scale(1.06); }
+.vcard .thumb .dur {
+    position: absolute; right: 8px; bottom: 8px; z-index: 2;
+    background: rgba(0,0,0,.72); color: #fff;
+    font-size: .72rem; padding: 2px 8px; border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+}
+.vcard .thumb .play {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.82);
+    width: 46px; height: 46px; border-radius: 50%;
+    background: rgba(255,255,255,.92); color: var(--brand);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .92rem; box-shadow: 0 10px 26px -8px rgba(0,0,0,.45);
+    opacity: 0; transition: all .32s cubic-bezier(.16,1,.3,1); z-index: 2;
+}
+.vcard:hover .thumb .play { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.vcard:active .thumb img { transform: scale(1.03); }
+.vcard .body { padding: 15px 16px 17px; }
+.vcard h4 {
+    font-size: .95rem; font-weight: 700; line-height: 1.45; color: var(--ink);
+    margin-bottom: 9px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; min-height: 2.76em;
+}
+.vcard .meta {
+    display: flex; align-items: center; gap: 12px;
+    font-size: .78rem; color: var(--ink-faint); font-variant-numeric: tabular-nums;
+}
+.vcard .meta .cat {
+    margin-left: auto; font-weight: 700; letter-spacing: 1px; color: var(--ink-soft);
+    font-size: .72rem;
+}
+.empty {
+    text-align: center; padding: 90px 20px; color: var(--ink-faint);
+    font-size: .95rem; letter-spacing: 2px;
+}
+.empty b { color: var(--ink-soft); font-weight: 700; }
+
+/* 卡片入场 */
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ============ 播放弹窗 ============ */
+.vmodal { position: fixed; inset: 0; z-index: 9000; display: none; align-items: center; justify-content: center; padding: 24px; }
+.vmodal.open { display: flex; }
+.vmask { position: absolute; inset: 0; background: rgba(7,10,20,.82); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.vbox {
+    position: relative; width: min(920px, 100%); background: #0b1220;
+    border-radius: 20px; border: 1px solid rgba(255,255,255,.1); overflow: hidden;
+    box-shadow: 0 70px 140px -40px rgba(0,0,0,.85);
+    animation: vUp .38s cubic-bezier(.16,1,.3,1);
+}
+@keyframes vUp { from { opacity: 0; transform: translateY(26px) scale(.97); } to { opacity: 1; transform: none; } }
+.vhead { display: flex; align-items: center; gap: 12px; padding: 13px 18px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.vhead .vt2 { color: #fff; font-size: .95rem; font-weight: 700; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vclose {
+    width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer;
+    background: rgba(255,255,255,.08); color: rgba(255,255,255,.85); font-size: .85rem;
+    display: flex; align-items: center; justify-content: center; transition: background .25s ease;
+}
+.vclose:hover { background: rgba(255,255,255,.18); }
+.vframe { position: relative; padding-top: 56.25%; background: #000; }
+.vframe iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.vact { display: flex; align-items: center; gap: 10px; padding: 13px 18px; }
+.vact .hint { font-size: .74rem; color: rgba(255,255,255,.45); letter-spacing: 1px; }
+.vopen {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 20px; border-radius: 999px; font-size: .84rem; font-weight: 600; color: #fff;
+    background: rgba(0,161,214,.9); transition: background .25s ease;
+}
+.vopen:hover { background: #00a1d6; }
+body.locked { overflow: hidden; }
+
+/* ============ 页脚 ============ */
+.footer { background: linear-gradient(180deg, #0f172a 0%, #0a0f1e 100%); color: #94a3b8; padding: 64px 48px 30px; }
+.footer-grid {
+    max-width: 1180px; margin: 0 auto;
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 44px;
+}
+.footer .brand { font-size: 1.1rem; font-weight: 800; color: #fff; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; letter-spacing: .5px; }
+.footer .desc { font-size: .85rem; font-weight: 300; line-height: 2; margin-bottom: 20px; color: #7c8ba5; }
+.footer h5 { color: #e2e8f0; font-size: .88rem; font-weight: 700; margin-bottom: 18px; letter-spacing: 2px; }
+.footer a { display: block; color: #8fa0b8; font-size: .86rem; margin-bottom: 12px; transition: color .3s ease; }
+.footer a:hover { color: #fff; }
+.footer-bottom {
+    max-width: 1180px; margin: 44px auto 0; padding-top: 22px;
+    border-top: 1px solid rgba(255,255,255,.07);
+    font-size: .76rem; letter-spacing: 1px; color: #5b6a85; text-align: center;
+}
+
+/* ============ 移动端抽屉 ============ */
+.drawer-mask { display: none; position: fixed; inset: 0; z-index: 9000; background: rgba(10,15,28,.5); }
+.drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 9001;
+    width: 300px; max-width: 84vw; background: #fff;
+    box-shadow: -20px 0 60px -30px rgba(0,0,0,.4);
+    transform: translateX(105%); transition: transform .35s cubic-bezier(.16,1,.3,1);
+    padding: 22px 20px; overflow-y: auto;
+}
+.drawer.open { transform: none; }
+.drawer .d-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.drawer .d-brand { font-weight: 800; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+.drawer .d-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: var(--bg); font-size: .95rem; cursor: pointer; color: var(--ink); }
+.drawer a.d-item { display: block; padding: 12px 16px; border-radius: 12px; color: var(--ink-soft); font-size: .98rem; font-weight: 600; }
+.drawer a.d-item:hover, .drawer a.d-item.active { background: rgba(59,130,246,.1); color: var(--brand); }
+
+/* ============ 回到顶部 ============ */
+.backtop {
+    position: fixed; right: 26px; bottom: 26px; z-index: 5000;
+    width: 46px; height: 46px; border-radius: 50%;
+    background: rgba(255,255,255,.92); color: var(--brand);
+    border: 1px solid var(--line); cursor: pointer; font-size: 1.05rem;
+    opacity: 0; transform: translateY(12px); transition: all .3s ease;
+    box-shadow: var(--shadow-1);
+}
+.backtop.show { opacity: 1; transform: none; }
+.backtop:hover { background: var(--brand); color: #fff; }
+
+/* ============ 响应式 ============ */
+@media (max-width: 900px) {
+    .vhero { padding: 84px 24px 120px; }
+    .vwrap { padding: 44px 24px 90px; }
+    .footer { padding: 48px 24px 26px; }
+}
+@media (max-width: 760px) {
+    .nav { padding: 0 20px; }
+    .vhero { padding: 72px 20px 110px; }
+    .vhero-inner { grid-template-columns: 1fr; gap: 44px; }
+    .vhero h1 { font-size: 2.4rem; letter-spacing: 6px; }
+    .vhcard { display: none; }
+    .vhero-actions { margin-top: 38px; }
+    .vwrap { padding: 36px 20px 80px; }
+    .video-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .vcard .body { padding: 11px 12px 13px; }
+    .vcard h4 { font-size: .82rem; min-height: 0; -webkit-line-clamp: 2; margin-bottom: 6px; }
+    .vcard .meta { gap: 6px; font-size: .68rem; flex-wrap: wrap; }
+    .vcard .meta .cat { margin-left: 0; }
+    .vcard .thumb .play { width: 34px; height: 34px; font-size: .72rem; opacity: .92; transform: translate(-50%, -50%) scale(1); }
+    .vcount { margin-bottom: 14px; }
+    .vsearch { min-width: 100%; order: 3; }
+    .vtoolbar { margin-bottom: 16px; }
+    .vmodal { padding: 10px; }
+    .vbox { border-radius: 14px; }
+    .vact .hint { display: none; }
+    .vhero::before { background-size: 26px 26px; }
+    .footer-grid { grid-template-columns: 1fr; gap: 26px; }
+    .backtop { right: 18px; bottom: 18px; width: 42px; height: 42px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 导航 -->
+<nav class="nav">
+    <a class="nav-logo" href="index-Beta.html"><img class="logo-img" src="/images/NB频道LOGO.png" alt="NB频道"><span class="logo-text">NB频道</span></a>
+    <div class="nav-menu">
+        <a href="index-Beta.html">首页</a>
+        <a href="videos-Beta.html" class="active">视频</a>
+        <a href="/about.html">关于</a>
+        <a href="/changelog.html">更新日志</a>
+        <a href="/product.html">我的产品</a>
+        <a href="/APP.html">软件/APP</a>
+        <a class="nav-api" href="/api-sdk/" target="_blank" rel="noopener noreferrer" title="NB频道 API 文档">API<i>↗</i></a>
+    </div>
+    <div class="nav-right-group">
+        <button class="theme-btn" id="themeBtn" aria-label="切换夜间模式">🌙</button>
+    </div>
+    <button class="nav-burger" id="navBurger" aria-label="打开菜单">☰</button>
+</nav>
+
+<!-- Hero -->
+<header class="vhero">
+    <div class="vhero-inner">
+        <div class="hero-copy">
+            <span class="hero-eyebrow">VIDEO ARCHIVE · BILIBILI</span>
+            <h1>视频<span class="light">档案</span></h1>
+            <p class="vhero-sub">化学与物理实验、日常作死、官网与产品记录——每一条都认真搞事。点击任意封面即可播放，或在 B站 给个三连</p>
+            <div class="vhero-actions">
+                <a class="hero-link" href="#vlist">进入档案 ↓</a>
+                <a class="hero-link" href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">B站空间 ↗</a>
+            </div>
+        </div>
+        <div class="vhcard" id="vhCard">
+            <div class="vh-eyebrow">Collection</div>
+            <div class="vh-cardrows" id="vhRows"><!-- JS 填充:分类与数量 --></div>
+            <div class="vh-foot">
+                <span class="u">LATEST UPDATE</span>
+                <span class="d" id="vhLatest">--</span>
+            </div>
+        </div>
+    </div>
+    <div class="vhero-fade"></div>
+</header>
+
+<!-- 视频档案主区 -->
+<main class="vwrap" id="vlist">
+    <div class="vtoolbar">
+        <div class="vcats" id="vCats">
+            <button class="vcat on" data-k="__all__">全部</button>
+        </div>
+        <div class="vright">
+            <div class="vsort">
+                <button class="on" data-sort="time">最新</button>
+                <button data-sort="hot">最热</button>
+            </div>
+            <label class="vsearch">
+                <span style="font-size:.8rem;color:var(--ink-faint);">⌕</span>
+                <input type="text" id="vSearch" placeholder="搜索视频标题" autocomplete="off">
+            </label>
+        </div>
+    </div>
+    <div class="vcount" id="vCount">正在读取视频档案…</div>
+    <div class="video-grid" id="vGrid"></div>
+    <div id="vEmpty" class="empty" style="display:none;"><b>没有找到匹配的视频</b><br>换个关键词或分类试试</div>
+</main>
+
+<!-- 页脚 -->
+<footer class="footer">
+    <div class="footer-grid">
+        <div>
+            <div class="brand"><img class="logo-img" src="/images/NB频道LOGO.png" alt="NB频道"><span class="logo-text">NB频道</span></div>
+            <p class="desc">NB频道（NoBook频道）——热爱理科（和作死）的 UP主建立的虚拟公司。化学物理实验、日常作死、虚拟经济，一个有趣的数字世界</p>
+        </div>
+        <div>
+            <h5>功能</h5>
+            <a href="/Virtual stock.html">虚拟股票</a><a href="/bank.html">NB银行</a><a href="/comments-beta.html">评论区</a><a href="/shop.html">NB商店</a><a href="/titles.html">称号系统</a>
+        </div>
+        <div>
+            <h5>友商</h5>
+            <a href="https://orgent.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">Orgent（已注销）</a>
+            <a href="https://45d.cn/AWM/" target="_blank" rel="noopener noreferrer">AWM</a>
+            <a href="https://fafat.uuk.pp.ua/" target="_blank" rel="noopener noreferrer">Fafat</a>
+            <a href="https://nb-qx.top/" target="_blank" rel="noopener noreferrer">Lemon（齐喜）</a>
+            <a href="https://gaohantu.cn/" target="_blank" rel="noopener noreferrer">GaoHanTu</a>
+            <a href="https://utw.pages.dev" target="_blank" rel="noopener noreferrer">Utw</a>
+            <a href="https://pipetrainingcamp.github.io/" target="_blank" rel="noopener noreferrer">PTC（GoodPTC）</a>
+            <a href="https://yoyo-user-awa.github.io/UVS/" target="_blank" rel="noopener noreferrer">UVS</a>
+            <a href="https://3f7ceb4e.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">UwLS</a>
+            <a href="https://45d.cn/nb-og.top/" target="_blank" rel="noopener noreferrer">Oganesson</a>
+            <a href="https://78439049.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">SOT</a>
+        </div>
+        <div>
+            <h5>联系</h5>
+            <a href="mailto:nbchannel@163.com">nbchannel@163.com</a><a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">B站：NB搞事局</a><a href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">nb-channel.top</a>
+        </div>
+    </div>
+    <div class="footer-bottom">© 2026 NB频道 · 虚拟公司 · 制作：NB搞事局 · 由 GitHub Pages / Cloudflare / PythonAnywhere 提供支持 · 视频数据由 B站 API 同步</div>
+</footer>
+
+<!-- 移动端抽屉 -->
+<div class="drawer-mask" id="drawerMask"></div>
+<aside class="drawer" id="drawer">
+    <div class="d-head">
+        <span class="d-brand"><img class="logo-img" src="/images/NB频道LOGO.png" alt="NB频道"><span class="logo-text">NB频道</span></span>
+        <button class="d-close" id="drawerClose" aria-label="关闭菜单">✕</button>
+    </div>
+    <a class="d-item" href="index-Beta.html">首页</a>
+    <a class="d-item active" href="videos-Beta.html">视频</a>
+    <a class="d-item" href="/about.html">关于</a>
+    <a class="d-item" href="/changelog.html">更新日志</a>
+    <a class="d-item" href="/product.html">我的产品</a>
+    <a class="d-item" href="/APP.html">软件/APP</a>
+    <a class="d-item" href="/api-sdk/" target="_blank" rel="noopener noreferrer">API ↗</a>
+</aside>
+
+<!-- 播放弹窗 -->
+<div class="vmodal" id="vModal">
+    <div class="vmask" id="vMask"></div>
+    <div class="vbox" role="dialog" aria-modal="true">
+        <div class="vhead">
+            <div class="vt2" id="vTitle">--</div>
+            <button class="vclose" id="vClose" aria-label="关闭">✕</button>
+        </div>
+        <div class="vframe"><iframe id="vFrame" src="about:blank" title="B站播放器" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture"></iframe></div>
+        <div class="vact">
+            <span class="hint">如播放器空白,请直接前往 B站 观看</span>
+            <a class="vopen" id="vOpen" href="#" target="_blank" rel="noopener noreferrer">在 B站打开 ↗</a>
+        </div>
+    </div>
+</div>
+
+<!-- 回到顶部 -->
+<button class="backtop" id="backTop" aria-label="回到顶部">↑</button>
+
+<!-- 视频数据(data/videos.js 由同步脚本自动更新,勿手改) -->
+<script src="/data/videos.js"></script>
+<script>
+(function () {
+    'use strict';
+    var LIST = window.VIDEOS || [];
+    var CAT_ORDER = ['化学', '物理', '救人', '官网', '产品', '其他'];
+    var grid = document.getElementById('vGrid');
+    var countEl = document.getElementById('vCount');
+    var emptyEl = document.getElementById('vEmpty');
+    var state = { cat: '__all__', q: '', sort: 'time' };
+
+    function fmtDate(ts) {
+        try {
+            return new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' })
+                .format(new Date(ts * 1000)).replace(/\//g, '.');
+        } catch (e) { return ''; }
+    }
+    function norm(s) { return String(s || '').replace(/\s+/g, '').toLowerCase(); }
+    function parsePlay(p) {
+        var s = String(p || '0');
+        if (/万/.test(s)) { var n = parseFloat(s) || 0; return Math.round(n * 10000); }
+        return parseInt(s, 10) || 0;
+    }
+    function esc(s) {
+        return String(s).replace(/[&<>"']/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]; });
+    }
+
+    // ---- Hero 档案卡:分类计数与最近更新 ----
+    function fillHero() {
+        var rows = document.getElementById('vhRows');
+        var latest = 0;
+        var counts = {};
+        LIST.forEach(function (v) {
+            counts[v.category_key] = (counts[v.category_key] || 0) + 1;
+            if (v.pubdate > latest) latest = v.pubdate;
+        });
+        if (rows) {
+            rows.innerHTML = CAT_ORDER.map(function (k) {
+                return '<div class="vh-row"><b>' + k + '</b><span class="cnt">' + (counts[k] || 0) + ' 部</span></div>';
+            }).join('');
+        }
+        var lt = document.getElementById('vhLatest');
+        if (lt) lt.textContent = latest ? fmtDate(latest) : '--';
+    }
+
+    // ---- 筛选后的视频列表 ----
+    function filtered() {
+        var q = norm(state.q);
+        return LIST.filter(function (v) {
+            if (state.cat !== '__all__' && v.category_key !== state.cat) return false;
+            if (q && norm(v.title).indexOf(q) < 0) return false;
+            return true;
+        }).sort(function (a, b) {
+            return state.sort === 'hot' ? parsePlay(b.play) - parsePlay(a.play) : b.pubdate - a.pubdate;
+        });
+    }
+
+    // ---- 渲染 ----
+    var io = null;
+    function ensureIO() {
+        if (io) return;
+        io = new IntersectionObserver(function (es) {
+            es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.05 });
+    }
+    function render() {
+        var list = filtered();
+        if (countEl) {
+            countEl.innerHTML = LIST.length
+                ? (state.cat === '__all__' && !state.q ? '' : '') + '共 <b>' + list.length + '</b> 部' + (state.q ? ' 匹配「' + esc(state.q) + '」' : '') + (state.cat !== '__all__' ? ' · ' + esc(state.cat) + ' 系列' : '')
+                : '视频档案整理中…';
+        }
+        if (emptyEl) emptyEl.style.display = (LIST.length && !list.length) ? 'block' : 'none';
+        if (!LIST.length) {
+            if (grid) grid.innerHTML = '<div class="empty"><b>视频档案暂时无法读取</b><br>请稍后刷新重试</div>';
+            return;
+        }
+        if (grid) {
+            grid.innerHTML = list.map(function (v, i) {
+                return '<div class="vcard reveal" role="button" tabindex="0" data-bvid="' + esc(v.bvid) + '" data-title="' + esc(v.title) + '" style="transition-delay:' + Math.min(i * 22, 320) + 'ms">' +
+                    '<div class="thumb"><img loading="lazy" decoding="async" src="' + esc(v.cover) + '" alt="' + esc(v.title) + '"><span class="dur">' + esc(v.duration) + '</span><span class="play">▶</span></div>' +
+                    '<div class="body"><h4>' + esc(v.title) + '</h4>' +
+                    '<div class="meta"><span>' + esc(v.play) + ' 次播放</span><span>' + fmtDate(v.pubdate) + '</span><span class="cat">' + esc(v.category_name || v.category_key) + '</span></div></div>' +
+                    '</div>';
+            }).join('');
+            ensureIO();
+            Array.prototype.forEach.call(grid.querySelectorAll('.reveal'), function (el) { io.observe(el); });
+        }
+    }
+
+    // ---- 分类 chips ----
+    var cats = document.getElementById('vCats');
+    if (cats) {
+        CAT_ORDER.forEach(function (k) {
+            var b = document.createElement('button');
+            b.className = 'vcat';
+            b.dataset.k = k;
+            b.textContent = k;
+            cats.appendChild(b);
+        });
+        cats.addEventListener('click', function (e) {
+            var b = e.target.closest('.vcat');
+            if (!b) return;
+            state.cat = b.dataset.k;
+            Array.prototype.forEach.call(cats.querySelectorAll('.vcat'), function (x) { x.classList.toggle('on', x === b); });
+            render();
+        });
+    }
+
+    // ---- 排序 ----
+    document.querySelectorAll('.vsort button').forEach(function (b) {
+        b.addEventListener('click', function () {
+            state.sort = b.dataset.sort;
+            document.querySelectorAll('.vsort button').forEach(function (x) { x.classList.toggle('on', x === b); });
+            render();
+        });
+    });
+
+    // ---- 搜索(去空格匹配,标题带字间空格也能搜到) ----
+    var search = document.getElementById('vSearch');
+    if (search) {
+        var st = null;
+        search.addEventListener('input', function () {
+            clearTimeout(st);
+            st = setTimeout(function () { state.q = search.value.trim(); render(); }, 180);
+        });
+    }
+
+    // ---- 播放弹窗 ----
+    var modal = document.getElementById('vModal');
+    var frame = document.getElementById('vFrame');
+    var mTitle = document.getElementById('vTitle');
+    var mOpen = document.getElementById('vOpen');
+    function openPlayer(bvid, title) {
+        if (!modal || !frame) return;
+        frame.src = 'https://player.bilibili.com/player.html?bvid=' + encodeURIComponent(bvid) + '&autoplay=1&high_quality=1';
+        if (mTitle) mTitle.textContent = title || '';
+        if (mOpen) mOpen.href = 'https://www.bilibili.com/video/' + encodeURIComponent(bvid);
+        modal.classList.add('open');
+        document.body.classList.add('locked');
+    }
+    function closePlayer() {
+        if (!modal) return;
+        modal.classList.remove('open');
+        document.body.classList.remove('locked');
+        if (frame) frame.src = 'about:blank';   // 停止播放
+    }
+    if (grid) {
+        grid.addEventListener('click', function (e) {
+            var card = e.target.closest('.vcard');
+            if (!card) return;
+            openPlayer(card.dataset.bvid, card.dataset.title);
+        });
+        grid.addEventListener('keydown', function (e) {
+            if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('vcard')) {
+                e.preventDefault();
+                openPlayer(e.target.dataset.bvid, e.target.dataset.title);
+            }
+        });
+    }
+    var mask = document.getElementById('vMask');
+    if (mask) mask.addEventListener('click', closePlayer);
+    var vc = document.getElementById('vClose');
+    if (vc) vc.addEventListener('click', closePlayer);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePlayer(); });
+
+    // ---- 入场渐显(容器与标题) ----
+    (function () {
+        var els = document.querySelectorAll('.hero-copy, .vhcard, .vtoolbar, .vcount');
+        els.forEach(function (el) { el.classList.add('reveal'); });
+        requestAnimationFrame(function () {
+            els.forEach(function (el, i) { el.style.transitionDelay = (i * 90) + 'ms'; el.classList.add('in'); });
+        });
+    })();
+
+    fillHero();
+    render();
+})();
+</script>
+<script>
+    // ===== 导航滚动态(吸顶加深) + 回到顶部按钮 =====
+    (function () {
+        var nav = document.querySelector('.nav');
+        var backTop = document.getElementById('backTop');
+        function onScroll() {
+            var y = window.scrollY || document.documentElement.scrollTop;
+            if (nav) nav.classList.toggle('scrolled', y > 10);
+            if (backTop) backTop.classList.toggle('show', y > 700);
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+        if (backTop) backTop.addEventListener('click', function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    })();
+
+    // ===== 夜间模式切换 =====
+    (function () {
+        var btn = document.getElementById('themeBtn');
+        var root = document.documentElement;
+        function isDark() { return root.classList.contains('dark'); }
+        function render() {
+            if (btn) { btn.textContent = isDark() ? '☀️' : '🌙'; btn.title = isDark() ? '切换到日间模式' : '切换到夜间模式'; }
+        }
+        if (btn) btn.addEventListener('click', function () {
+            var dark = !isDark();
+            root.classList.toggle('dark', dark);
+            try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+            render();
+        });
+        render();
+    })();
+
+    // ===== 移动端抽屉 =====
+    (function () {
+        var burger = document.getElementById('navBurger');
+        var drawer = document.getElementById('drawer');
+        var mask = document.getElementById('drawerMask');
+        var closeBtn = document.getElementById('drawerClose');
+        if (!burger || !drawer || !mask) return;
+        function open() { drawer.classList.add('open'); mask.style.display = 'block'; document.body.classList.add('locked'); }
+        function close() { drawer.classList.remove('open'); mask.style.display = 'none'; document.body.classList.remove('locked'); }
+        burger.addEventListener('click', open);
+        closeBtn.addEventListener('click', close);
+        mask.addEventListener('click', close);
+        drawer.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', close); });
+    })();
+
+    // ===== 防查看代码(反调试,静默无提示) =====
+    // 逃生门:URL 含 ?dev=1 或 #dev 完全放行;另支持 window.__allowDevTools = true
+    (function () {
+        var DEV = window.__allowDevTools ||
+                  /(?:^|[?&#])dev=1(?=&|#|$)/.test(location.href) ||
+                  /#dev\b/.test(location.hash);
+        if (DEV) return;
+        document.addEventListener('keydown', function (e) {
+            var k = e.keyCode || e.which;
+            var ctrl = e.ctrlKey || e.metaKey;
+            if (k === 123 || e.key === 'F12' ||
+                (ctrl && e.shiftKey && (k === 73 || k === 74 || k === 67)) ||
+                (ctrl && k === 85)) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
+        document.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+            return false;
+        });
+        setInterval(function () { debugger; }, 600);
+    })();
+</script>
+</body>
+</html>
