@@ -276,6 +276,8 @@
         .stat .num small { font-size: 1rem; font-weight: 700; color: var(--brand); }
         /* 粉丝列:精确实时数字(6位数+千分位),字号略收以与邻卡协调 */
         .stat-fans .num { font-size: 1.28rem; letter-spacing: .2px; }
+        /* 预设 7 字符宽度:入场 0→112,363 全程卡片不再因位数增长而跳宽重排 */
+        .stat-fans .cn { display: inline-block; min-width: 7.2ch; text-align: center; }
         .stat .label .live {
             display: inline-block; width: 6px; height: 6px; border-radius: 50%;
             background: var(--brand); margin-left: 7px; vertical-align: 1px;
@@ -1604,9 +1606,11 @@
         }
         function anim(el, from, to, dur, done) {
             var comma = el.id === 'biliFans';
-            var t0 = null, last = 0;
+            var t0 = null, last = 0, skip = false;
             function step(ts) {
                 if (!t0) t0 = ts;
+                skip = !skip;
+                if (skip) { requestAnimationFrame(step); return; }   // 隔帧渲染≈30fps:肉眼足够顺滑,主线程开销减半
                 var p = Math.min((ts - t0) / dur, 1);
                 // easeInOutQuart:起步收尾都缓、中段匀速,数字从容"跑"到目标
                 var e = p < 0.5 ? 8 * p * p * p * p : 1 - Math.pow(-2 * p + 2, 4) / 2;
