@@ -1673,9 +1673,11 @@
     })();
 
     // ===== 防查看代码(反调试):屏蔽 F12 / Ctrl+Shift+I·J·C / Ctrl+U / 右键;开发者工具打开时提示 =====
-    // 若需临时关闭:注释本 IIFE,或控制台执行 window.__allowDevTools = true
+    // 逃生门:URL 加 ?dev=1(或 ?dev=1&... )完全放行,去掉参数即自动恢复屏蔽;
+    // 另支持 window.__allowDevTools = true(仅当前页内存,刷新即失效)
     (function () {
-        if (window.__allowDevTools) return;
+        var DEV = window.__allowDevTools || /[?&]dev=1(\b|&|$)/.test(location.search);
+        if (DEV) return;
         // 提示气泡(注入样式与容器)
         var toastEl = null, toastTimer = null;
         function ensureToast() {
