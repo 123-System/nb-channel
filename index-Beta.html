@@ -1673,11 +1673,16 @@
     })();
 
     // ===== 防查看代码(反调试):屏蔽 F12 / Ctrl+Shift+I·J·C / Ctrl+U / 右键;开发者工具打开时提示 =====
-    // 逃生门:URL 加 ?dev=1(或 ?dev=1&... )完全放行,去掉参数即自动恢复屏蔽;
-    // 另支持 window.__allowDevTools = true(仅当前页内存,刷新即失效)
+    // 逃生门:URL 含 ?dev=1 或 #dev 完全放行(F12/右键/debugger 陷阱全跳过),去掉即自动恢复屏蔽;
+    // 另支持 window.__allowDevTools = true(当前页内存,刷新失效)
     (function () {
-        var DEV = window.__allowDevTools || /[?&]dev=1(\b|&|$)/.test(location.search);
-        if (DEV) return;
+        var DEV = window.__allowDevTools ||
+                  /(?:^|[?&#])dev=1(?=&|#|$)/.test(location.href) ||
+                  /#dev\b/.test(location.hash);
+        if (DEV) {
+            try { console.log('[NB] dev 模式已放行(去掉 ?dev=1 恢复屏蔽)'); } catch (e) {}
+            return;
+        }
         // 提示气泡(注入样式与容器)
         var toastEl = null, toastTimer = null;
         function ensureToast() {
