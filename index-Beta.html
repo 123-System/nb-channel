@@ -1591,8 +1591,8 @@
 
     // ===== 数据条 count-up + B站粉丝实时同步 =====
     // 入场:0 → data-to(4.2s easeInOutQuart 平滑滚动);
-    // 之后每 60s 静默轮询后端 /api/bili-fans(PythonAnywhere 进程内 60s 缓存 + 直连 B站官方接口,
-    // 平均新鲜度约 1 分钟),粉丝数有变化时数字就地平滑滚动到新值,无需刷新;
+    // 之后每 30s 静默轮询后端 /api/bili-fans(PythonAnywhere 进程内 30s 缓存 + 直连 B站官方接口,
+    // 平均新鲜度约 30 秒),粉丝数有变化时数字就地平滑滚动到新值,无需刷新;
     // 后端失败则静默保留当前值(首屏另有 localStorage 缓存兜底)。
     (function () {
         var boxes = document.querySelectorAll('.stats .cn');
@@ -1644,8 +1644,8 @@
                 anim(el, 0, to, 4200, fanDone);
             });
         }
-        // 轮询间隔默认 60s;?fansPoll=ms 可调(测试用)
-        var pollMs = 60000;
+        // 轮询间隔默认 30s;?fansPoll=ms 可调(测试用)
+        var pollMs = 30000;
         try {
             var pm = /[?&]fansPoll=(\d+)/.exec(location.search);
             if (pm) pollMs = Math.max(2000, parseInt(pm[1], 10));

@@ -168,7 +168,7 @@ def _has_bad_words(text):
 
 # ---------- B站粉丝实时同步(首页数据条;需在 PythonAnywhere 出站白名单加入 api.bilibili.com) ----------
 BILI_UID = 3493259582114264              # NB搞事局(原NB实验室-作死)
-BILI_FANS_TTL = 60                        # 进程内缓存秒数:60s 内不重复请求 B站
+BILI_FANS_TTL = 30                        # 进程内缓存秒数:30s 内不重复请求 B站
 _bili_fans_cache = {'ts': 0.0, 'data': None}
 _bili_fans_lock = threading.Lock()
 
