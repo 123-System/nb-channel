@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -1404,6 +1404,18 @@
             }
             return d;
         }
+        var nodesLen = [];   // 各节点在曲线上的弧长位置(用于"到弯道顶点才切换")
+        function nearestLen(pt) {
+            if (!basePath || !basePath.getPointAtLength) return 0;
+            var best = 0, bestD2 = 1e18, N = 320;
+            for (var i = 0; i <= N; i++) {
+                var q = basePath.getPointAtLength(totalLen * i / N);
+                var dx = q.x - pt.x, dy = q.y - pt.y;
+                var d2 = dx * dx + dy * dy;
+                if (d2 < bestD2) { bestD2 = d2; best = i / N; }
+            }
+            return best * totalLen;
+        }
         function buildSvg() {
             var r = stage.getBoundingClientRect();
             var W = r.width, H = r.height;
@@ -1428,22 +1440,30 @@
                 goPathEl.style.strokeDasharray = totalLen;
                 goPathEl.style.strokeDashoffset = totalLen;
             }
+            // 记录每个节点在曲线上的弧长位置(核心驶过该位置即"到顶点")
+            nodesLen = pts.map(function (pt) { return nearestLen(pt); });
+            nodesLen[0] = 0;
+            nodesLen[nodesLen.length - 1] = totalLen;
         }
         // 渲染一个滚动进度 p(滚动与拖拽共用)
         function renderP(p) {
-            var seg = p * (n - 1);
-            var active = Math.round(seg);
+            var dist = totalLen * p;
+            // 核心真正驶过的节点数(精确到曲线弧长 → 到 S 弯顶点瞬间切换)
+            var k = 0;
+            while (k < n && nodesLen[k] <= dist) k++;
+            var active = Math.min(k - 1, n - 1);
+            if (active < 0) active = 0;
             if (basePath && totalLen > 1 && basePath.getPointAtLength) {
-                var pt = basePath.getPointAtLength(totalLen * p);
+                var pt = basePath.getPointAtLength(Math.min(dist, totalLen));
                 batt.style.left = pt.x + 'px';
                 batt.style.top = pt.y + 'px';
-                goPathEl.style.strokeDashoffset = totalLen * (1 - p);
+                goPathEl.style.strokeDashoffset = totalLen - Math.min(dist, totalLen);
             }
-            nodes.forEach(function (nd, k) {
-                nd.classList.toggle('lit', k <= active);
-                nd.classList.toggle('dim', k > active);
+            nodes.forEach(function (nd, kk) {
+                nd.classList.toggle('lit', kk <= active);
+                nd.classList.toggle('dim', kk > active);
             });
-            cards.forEach(function (c, k) { c.classList.toggle('on', k === active); });
+            cards.forEach(function (c, kk) { c.classList.toggle('on', kk === active); });
             var ap = pts[Math.min(active, pts.length - 1)];
             if (bgEl && ap) bgEl.style.transform = 'translate(' + (ap.x - 400) * -0.22 + 'px,' + (ap.y - 220) * -0.22 + 'px)';
             var pb = stage.querySelector('.jny-progress .bar i');
