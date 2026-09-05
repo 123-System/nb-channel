@@ -105,13 +105,53 @@ a { text-decoration: none; color: inherit; }
     display: flex; align-items: center; justify-content: center; transition: all .25s ease;
 }
 .theme-btn:hover { border-color: rgba(59,130,246,.4); transform: translateY(-1px); }
+        /* ============ 导航登录区 + 北京时间时钟(与首页一致) ============ */
+        .nav-auth-group { display: flex; gap: 8px; align-items: center; }
+        .nav-clock {
+            display: flex; flex-direction: column; align-items: flex-end;
+            margin-right: 8px; flex-shrink: 0; user-select: none; line-height: 1.35;
+        }
+        .nav-clock .nc-time {
+            font-size: 15.5px; font-weight: 800; letter-spacing: 1.5px;
+            color: var(--ink); font-variant-numeric: tabular-nums;
+        }
+        .nav-clock .nc-row { display: flex; align-items: baseline; gap: 6px; font-style: normal; }
+        .nav-clock .nc-date {
+            font-size: 10.5px; font-weight: 600; letter-spacing: .4px;
+            color: var(--ink-soft); font-variant-numeric: tabular-nums;
+        }
+        .nav-clock .nc-label {
+            font-size: 8.5px; font-weight: 600; letter-spacing: 2px;
+            color: var(--ink-faint);
+        }
+        .nav-auth {
+            padding: 8px 18px; border-radius: 999px;
+            background: rgba(255,255,255,.6); color: var(--ink);
+            border: 1px solid var(--line);
+            font-size: .88rem; font-weight: 600; cursor: pointer;
+            transition: all .25s ease; white-space: nowrap;
+        }
+        .nav-auth:hover { background: #fff; border-color: rgba(59,130,246,.4); }
+        .nav-auth.primary {
+            background: linear-gradient(135deg, var(--brand), #6366f1);
+            border-color: transparent; color: #fff;
+            box-shadow: 0 8px 20px -8px rgba(59,130,246,.5);
+        }
+        .nav-auth.primary:hover { background: linear-gradient(135deg, #2563eb, #4f46e5); color: #fff; }
+        html.dark .nav-auth { background: rgba(255,255,255,.05); color: var(--ink); border-color: rgba(148,163,184,.25); }
+        html.dark .nav-auth:hover { background: rgba(255,255,255,.1); border-color: rgba(59,130,246,.5); }
+        .drawer .d-auth { margin-top: 14px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; }
+        .drawer .d-auth a { flex: 1; text-align: center; padding: 11px; border-radius: 999px; font-size: .9rem; font-weight: 600; }
+        .drawer .d-auth .ga { background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+        .drawer .d-auth .gab { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; }
+
 .nav-burger {
     display: none; width: 38px; height: 38px; border-radius: 10px;
     border: 1px solid var(--line); background: var(--bg);
     font-size: .95rem; cursor: pointer; color: var(--ink);
     align-items: center; justify-content: center;
 }
-@media (max-width: 900px) { .nav-menu { display: none; } .nav-burger { display: flex; } }
+@media (max-width: 900px) { .nav-menu { display: none; } .nav-burger { display: flex; } .nav-clock, .nav-auth-group { display: none; } }
 
 /* ============ Hero(关于) ============ */
 .vhero {
@@ -365,10 +405,19 @@ html.dark .panel.warn .thanks b { color: #fbbf24; }
         <a href="changelog-Beta.html">更新日志</a>
         <a href="/product.html">我的产品</a>
         <a href="/APP.html">软件/APP</a>
+        <a href="index-Beta.html#friends">友商</a>
         <a class="nav-api" href="/api-sdk/" target="_blank" rel="noopener noreferrer" title="NB频道 API 文档">API<i>↗</i></a>
     </div>
     <div class="nav-right-group">
+        <div class="nav-clock" id="navClock" title="北京时间（UTC+8）">
+            <span class="nc-time" id="bjTime">--:--:--</span>
+            <span class="nc-row"><i class="nc-date" id="bjDate">----.--.--</i><em class="nc-label">北京时间</em></span>
+        </div>
         <button class="theme-btn" id="themeBtn" aria-label="切换夜间模式">🌙</button>
+        <div class="nav-auth-group" id="betaAuthGroup">
+            <a class="nav-auth" id="betaProfileBtn" href="#">👤 个人中心</a>
+            <a class="nav-auth primary" id="betaAuthBtn" href="#">登录 / 注册</a>
+        </div>
     </div>
     <button class="nav-burger" id="navBurger" aria-label="打开菜单">☰</button>
 </nav>
@@ -603,7 +652,12 @@ html.dark .panel.warn .thanks b { color: #fbbf24; }
     <a class="d-item" href="changelog-Beta.html">更新日志</a>
     <a class="d-item" href="/product.html">我的产品</a>
     <a class="d-item" href="/APP.html">软件/APP</a>
+    <a class="d-item" href="index-Beta.html#friends">友商</a>
     <a class="d-item" href="/api-sdk/" target="_blank" rel="noopener noreferrer">API ↗</a>
+    <div class="d-auth">
+        <a class="ga" id="dProfileBtn" href="#">👤 个人中心</a>
+        <a class="gab" id="dAuthBtn" href="#">登录 / 注册</a>
+    </div>
 </aside>
 
 <!-- 回到顶部 -->
@@ -646,6 +700,51 @@ html.dark .panel.warn .thanks b { color: #fbbf24; }
         }
         poll();
         setInterval(poll, 30000);
+    })();
+
+    // ===== 登录区绑定(与首页一致:导航 + 移动端抽屉两处共用) =====
+    function bindAuthPair(pbEl, abEl) {
+        if (!pbEl && !abEl) return;
+        var storedU = null;
+        try { storedU = JSON.parse(localStorage.getItem('nb_user')); } catch (e) {}
+        if (storedU && storedU.id) {
+            if (abEl) {
+                abEl.textContent = '登出账号';
+                abEl.onclick = function () { localStorage.removeItem('nb_user'); location.reload(); };
+            }
+            if (pbEl) {
+                pbEl.textContent = '👤 ' + (storedU.username || storedU.name || '个人中心');
+                pbEl.href = '/profile.html';
+            }
+        } else {
+            var loginHref = '/login.html?redirect=' + encodeURIComponent(location.href);
+            if (abEl) { abEl.href = loginHref; abEl.textContent = '登录 / 注册'; }
+            if (pbEl) { pbEl.href = loginHref; pbEl.textContent = '👤 个人中心'; }
+        }
+    }
+    bindAuthPair(document.getElementById('betaProfileBtn'), document.getElementById('betaAuthBtn'));
+    bindAuthPair(document.getElementById('dProfileBtn'), document.getElementById('dAuthBtn'));
+
+    // ===== 导航栏北京时间(与首页一致:UTC+8,日期+秒) =====
+    (function () {
+        var tEl = document.getElementById('bjTime');
+        var dEl = document.getElementById('bjDate');
+        if (!tEl) return;
+        var fmtT = new Intl.DateTimeFormat('zh-CN', {
+            timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit',
+            second: '2-digit', hour12: false, hourCycle: 'h23'
+        });
+        var fmtD = new Intl.DateTimeFormat('zh-CN', {
+            timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit',
+            day: '2-digit', weekday: 'short'
+        });
+        function tick() {
+            var now = new Date();
+            tEl.textContent = fmtT.format(now);
+            if (dEl) dEl.textContent = fmtD.format(now).replace(/\//g, '.');
+        }
+        tick();
+        setInterval(tick, 1000);
     })();
 
     // ===== 导航滚动态 + 回到顶部 =====
