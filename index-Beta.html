@@ -23,7 +23,6 @@
             } catch (e) {}
         })();
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* ============ 基础 ============ */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1288,7 +1287,8 @@
     bindAuthPair(document.getElementById('dProfileBtn'), document.getElementById('dAuthBtn'));
 
     // ===== 公告区:从 admin_config 拉取,单行无缝滚动,链接可点击,无公告隐藏 =====
-    (function () {
+    // 注册为回调:supabase-js 由本段末尾异步加载,就绪后才执行——绝不阻塞首屏渲染
+    function initAnnounce() {
         var bar = document.getElementById('betaAnnounce');
         if (!bar || !window.supabase) return;
         function esc(s) {
@@ -1329,6 +1329,31 @@
                 }
             })
             .catch(function () {});
+    }
+    (window.__supaCallbacks = window.__supaCallbacks || []).push(initAnnounce);
+
+    // ===== supabase-js 异步加载器:双源容错(jsDelivr → unpkg),全失败则静默放弃 =====
+    (function () {
+        var cbs = window.__supaCallbacks || [];
+        if (!cbs.length) return;
+        var srcs = [
+            'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+            'https://unpkg.com/@supabase/supabase-js@2'
+        ];
+        var i = 0;
+        function fire() {
+            cbs.forEach(function (f) { try { f(); } catch (e) {} });
+        }
+        function load() {
+            if (i >= srcs.length) return;
+            var s = document.createElement('script');
+            s.async = true;
+            s.src = srcs[i++];
+            s.onload = fire;
+            s.onerror = load;      // 当前源失败/被墙 → 自动换下一个
+            document.head.appendChild(s);
+        }
+        load();
     })();
 
     // ===== 鼠标特效:跟随光晕 + 点击波纹与彩色粒子(仅鼠标设备) =====
@@ -1551,7 +1576,7 @@
         window.addEventListener('load', function () { measure(); refreshStageRect(); });
     })();
 
-    // ===== 数据条 count-up:平滑滚动(2.8s easeOutQuart,单调递增,数字平滑"跑"到目标) =====
+    // ===== 数据条 count-up:平滑滚动(4.2s easeInOutQuart,单调递增,数字从容"跑"到目标) =====
     (function () {
         var boxes = document.querySelectorAll('.stats .cn');
         if (!boxes.length) return;
