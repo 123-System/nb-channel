@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="NB频道开放接口 SDK 与示例——市值、评论、统计等公开只读 API。">
+<title>NB频道 · API SDK</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+    --bg: #f7f8fa; --ink: #1a1d23; --soft: #5a6270; --faint: #8b93a3;
+    --line: #e8eaee; --card: #fff; --brand: #3b82f6; --brand-deep: #2563eb;
+    --code: #0f172a;
+}
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: radial-gradient(1100px 620px at 82% -14%, rgba(59,130,246,.05), transparent 62%), var(--bg);
+    color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+a { text-decoration: none; color: var(--brand); }
+.wrap { max-width: 900px; margin: 0 auto; padding: 40px 24px 90px; }
+.top {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding-bottom: 26px; border-bottom: 1px solid var(--line); margin-bottom: 44px;
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.05rem; letter-spacing: .3px; color: var(--ink); }
+.brand img { height: 30px; width: auto; }
+.brand .back { font-size: .85rem; font-weight: 500; color: var(--soft); }
+.brand .back:hover { color: var(--brand); }
+h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: .5px; margin-bottom: 14px; }
+h1 em { font-style: normal; font-weight: 200; color: var(--brand); }
+.lead { color: var(--soft); max-width: 620px; margin-bottom: 34px; }
+.lead b { color: var(--ink); font-weight: 600; }
+.pill {
+    display: inline-flex; align-items: center; gap: 7px; padding: 5px 14px;
+    border-radius: 999px; font-size: .8rem; font-weight: 600; letter-spacing: .4px;
+    background: #eef3fe; color: var(--brand); margin-bottom: 22px;
+}
+.pill::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 0 rgba(34,197,94,.4); animation: pulse 2s ease-out infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,.45); } 70% { box-shadow: 0 0 0 6px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
+h2 { font-size: 1.15rem; font-weight: 800; margin: 44px 0 16px; letter-spacing: .3px; display: flex; align-items: center; gap: 10px; }
+h2 .no { font-size: .8rem; font-weight: 700; color: var(--brand); border: 1.5px solid var(--brand); border-radius: 8px; padding: 1px 7px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; box-shadow: 0 1px 2px rgba(16,24,40,.03); }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th { text-align: left; font-size: .78rem; font-weight: 700; letter-spacing: 1px; color: var(--faint); text-transform: uppercase; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+code.m { font-family: "Cascadia Code", Consolas, "Courier New", monospace; font-size: .85rem; color: var(--brand-deep); background: #eef3fe; border-radius: 6px; padding: 2px 8px; white-space: nowrap; }
+.desc { color: var(--soft); font-size: .9rem; }
+.desc small { display: block; color: var(--faint); font-size: .8rem; margin-top: 2px; }
+pre {
+    background: var(--code); color: #dbe7ff; border-radius: 14px; padding: 18px 20px;
+    font-size: .84rem; line-height: 1.7; overflow-x: auto; margin: 12px 0;
+    font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+}
+pre .c { color: #64748b; }
+pre .k { color: #93c5fd; }
+pre .s { color: #a5d6a5; }
+.dl { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+.dl a {
+    display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
+    border-radius: 12px; font-size: .92rem; font-weight: 600;
+    background: var(--bg); border: 1px solid var(--line); color: var(--ink);
+    transition: all .25s ease;
+}
+.dl a:hover { border-color: var(--brand); color: var(--brand); transform: translateY(-1px); }
+.cta { margin-top: 48px; text-align: center; }
+.cta a.btn {
+    display: inline-block; padding: 14px 34px; border-radius: 999px;
+    background: linear-gradient(135deg, var(--brand), #2563eb); color: #fff;
+    font-size: .95rem; font-weight: 700; letter-spacing: .5px;
+    box-shadow: 0 12px 28px -10px rgba(59,130,246,.55);
+    transition: transform .25s ease, box-shadow .25s ease;
+}
+.cta a.btn:hover { transform: translateY(-2px); box-shadow: 0 18px 36px -12px rgba(59,130,246,.6); }
+.foot { margin-top: 56px; text-align: center; font-size: .8rem; color: var(--faint); border-top: 1px solid var(--line); padding-top: 22px; }
+.note { font-size: .82rem; color: var(--faint); margin-top: 10px; }
+@media (max-width: 640px) {
+    h1 { font-size: 1.7rem; }
+    .wrap { padding: 26px 16px 70px; }
+    .brand .back { display: none; }
+    code.m { white-space: normal; word-break: break-all; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="top">
+        <a class="brand" href="../index-Beta.html"><img src="../images/NB频道LOGO.png" alt="NB频道" onerror="this.style.display='none'">NB频道 · API SDK</a>
+        <a class="back" href="../index-Beta.html">← 返回官网</a>
+    </div>
+
+    <h1>开发者接口 <em>API SDK</em></h1>
+    <p class="lead">NB频道的公开只读数据接口：虚拟股票市值、评论、站点统计、实时粉丝数。适合友商、插件、脚本与一切想与 NB 频道互通的小伙伴。<b>无需鉴权</b>，随取随用。</p>
+
+    <span class="pill">Base URL: api.nb-channel.top</span>
+
+    <h2><span class="no">1</span>端点一览</h2>
+    <div class="card">
+        <table>
+            <tr><th>端点</th><th>说明</th></tr>
+            <tr><td><code class="m">GET /api/market</code></td><td class="desc">全市场快照：公司列表 + 总市值 + 公司数<small>?name=关键词 可选，按公司名模糊查询（最多 50 家）</small></td></tr>
+            <tr><td><code class="m">GET /api/market/&lt;公司ID&gt;</code></td><td class="desc">单家公司市值</td></tr>
+            <tr><td><code class="m">GET /api/market/&lt;ID&gt;/history?days=7</code></td><td class="desc">历史市值走势点（days 1~30）</td></tr>
+            <tr><td><code class="m">GET /api/market/export?format=csv</code></td><td class="desc">全市场 CSV 导出</td></tr>
+            <tr><td><code class="m">GET /api/comments</code></td><td class="desc">最新评论（只读）<small>?page=1&limit=20&page_path=comments-beta.html</small></td></tr>
+            <tr><td><code class="m">GET /api/stats</code></td><td class="desc">接口用量统计（开发用）</td></tr>
+            <tr><td><code class="m">GET /api/bili-fans</code></td><td class="desc">B站实时粉丝数（官网首页数据条同源，约 30 秒缓存）</td></tr>
+        </table>
+    </div>
+
+    <h2><span class="no">2</span>快速上手</h2>
+    <div class="card">
+        <pre><span class="c"># 命令行直接试</span>
+curl "<span class="s">https://api.nb-channel.top/api/market</span>"          <span class="c"># 全市场</span>
+curl "<span class="s">https://api.nb-channel.top/api/market?name=NB</span>"   <span class="c"># 找 NB 相关的公司</span>
+curl "<span class="s">https://api.nb-channel.top/api/market/1/history?days=7</span>"</pre>
+        <pre><span class="k">const</span> m = <span class="k">await</span> NBMarket.market();
+console.log(<span class="s">'总市值'</span>, m.total_market_value, <span class="s">'公司数'</span>, m.count);</pre>
+    </div>
+
+    <h2><span class="no">3</span>语言示例包</h2>
+    <div class="dl">
+        <a href="js_example.js" download>⬇ JavaScript 示例（js_example.js）</a>
+        <a href="python_example.py" download>⬇ Python 示例（python_example.py）</a>
+        <a href="README.md" download>⬇ 使用说明（README.md）</a>
+    </div>
+    <p class="note">浏览器直接用 <code>&lt;script src="js_example.js"&gt;&lt;/script&gt;</code> 即可获得全局 <code>window.NBMarket</code>；Node.js 与 Python 用法见各文件头部注释。</p>
+
+    <div class="cta">
+        <a class="btn" href="https://api.nb-channel.top/api/docs" target="_blank" rel="noopener noreferrer">查看完整接口文档 ↗</a>
+    </div>
+
+    <div class="foot">© 2026 NB频道 · 虚拟公司 · 接口数据与官网实时一致 · <a href="../index-Beta.html">官网首页</a></div>
+</div>
+</body>
+</html>
