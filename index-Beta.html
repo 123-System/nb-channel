@@ -706,8 +706,9 @@
         }
         /* 能量核心(可拖拽) */
         .jny-batt {
-            position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px;
+            position: absolute; left: 0; top: 0; width: 30px; height: 30px; margin: -15px 0 0 -15px;
             z-index: 5; pointer-events: none;
+            will-change: transform;
         }
         .jny-batt i, .jny-batt b { position: absolute; border-radius: 50%; }
         .jny-batt i { inset: 0; background: #fff; box-shadow: 0 0 22px rgba(96,165,250,.9), 0 0 46px rgba(59,130,246,.5); }
@@ -771,11 +772,16 @@
         .jny-node .jm { font-size: .58rem; letter-spacing: 2px; }
         @media (max-width: 760px) {
             .jny-spacer { height: 180vh; }
+            .jny-stage { border-radius: 20px; }
             .jny-cardwrap { bottom: 2%; height: 190px; width: 90%; }
             .jny-card { padding: 12px 14px; }
             .jny-h { font-size: 1.02rem; }
             .jny-d { font-size: .78rem; line-height: 1.65; }
             .jny-progress { display: none; }
+            /* 窄屏三排之字:节点整体缩小,年份压紧,避免"2025"们叠在一起 */
+            .jny-node .jy { font-size: 1.08rem; letter-spacing: .5px; }
+            .jny-node .jm { font-size: .5rem; letter-spacing: 1.4px; margin-top: 4px; }
+            .jny-node.lit { text-shadow: 0 0 14px rgba(96,165,250,.6); }
         }
         /* ===== 回到顶部 ===== */
         .backtop {
@@ -795,14 +801,20 @@
             .nav-menu { display: none; }
             .hero { padding: 96px 24px 130px; }
             .hero h1 { font-size: 2.3rem; }
-            .hero-inner { grid-template-columns: 1fr; gap: 60px; }
+            .hero-inner { grid-template-columns: 1fr; gap: 44px; }
             .hero-eyebrow { margin-bottom: 30px; letter-spacing: 5px; }
             .hero-sub { max-width: none; }
+            .hero-video { max-width: 380px; margin: 0 auto; }
             .stats { gap: 12px; }
             .stat { min-width: 120px; padding: 14px 18px; }
+            .section { padding: 84px 20px; }
+            .section-head { margin-bottom: 40px; }
+            .section-head h2 { font-size: 1.72rem; }
             .about-grid { grid-template-columns: 1fr; gap: 36px; }
             .friends-grid { grid-template-columns: 1fr; }
+            .footer { padding: 44px 20px 24px; }
             .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+            .backtop { right: 18px; bottom: 18px; width: 42px; height: 42px; }
         }
     </style>
 </head>
@@ -1382,11 +1394,16 @@
         document.addEventListener('mousemove', function (e) { tx = e.clientX; ty = e.clientY; });
         document.addEventListener('mouseenter', function () { glow.style.opacity = '1'; });
         document.addEventListener('mouseleave', function () { glow.style.opacity = '0'; });
+        var lx = -1e9, ly = -1e9;
         (function loop() {
             gx += (tx - gx) * 0.14;
             gy += (ty - gy) * 0.14;
-            glow.style.left = gx + 'px';
-            glow.style.top = gy + 'px';
+            // 静止时跳过写入:避免每帧重复改 style 白白触发样式计算
+            if (Math.abs(gx - lx) > 0.2 || Math.abs(gy - ly) > 0.2) {
+                glow.style.left = gx + 'px';
+                glow.style.top = gy + 'px';
+                lx = gx; ly = gy;
+            }
             requestAnimationFrame(loop);
         })();
         var colors = ['#3b82f6', '#8b5cf6', '#6366f1', '#06b6d4', '#f59e0b'];
@@ -1494,6 +1511,7 @@
             nodesLen[nodesLen.length - 1] = totalLen;
         }
         // 渲染一个滚动进度 p(滚动与拖拽共用)
+        var lastActive = -1;   // 节点/卡片 class 只在"驶过节点"那一帧更新,日常滚动不再反复切换
         function renderP(p) {
             var dist = totalLen * p;
             // 核心真正驶过的节点数(精确到曲线弧长 → 到 S 弯顶点瞬间切换)
@@ -1503,17 +1521,20 @@
             if (active < 0) active = 0;
             if (basePath && totalLen > 1 && basePath.getPointAtLength) {
                 var pt = basePath.getPointAtLength(Math.min(dist, totalLen));
-                batt.style.left = pt.x + 'px';
-                batt.style.top = pt.y + 'px';
+                // 用 transform 移动(合成层),不用 left/top(避免每帧布局)——移动端流畅的关键
+                batt.style.transform = 'translate(' + pt.x + 'px,' + pt.y + 'px)';
                 goPathEl.style.strokeDashoffset = totalLen - Math.min(dist, totalLen);
             }
-            nodes.forEach(function (nd, kk) {
-                nd.classList.toggle('lit', kk <= active);
-                nd.classList.toggle('dim', kk > active);
-            });
-            cards.forEach(function (c, kk) { c.classList.toggle('on', kk === active); });
-            var ap = pts[Math.min(active, pts.length - 1)];
-            if (bgEl && ap) bgEl.style.transform = 'translate(' + (ap.x - 400) * -0.22 + 'px,' + (ap.y - 220) * -0.22 + 'px)';
+            if (active !== lastActive) {
+                lastActive = active;
+                nodes.forEach(function (nd, kk) {
+                    nd.classList.toggle('lit', kk <= active);
+                    nd.classList.toggle('dim', kk > active);
+                });
+                cards.forEach(function (c, kk) { c.classList.toggle('on', kk === active); });
+                var ap = pts[Math.min(active, pts.length - 1)];
+                if (bgEl && ap) bgEl.style.transform = 'translate(' + (ap.x - 400) * -0.22 + 'px,' + (ap.y - 220) * -0.22 + 'px)';
+            }
             var pb = stage.querySelector('.jny-progress .bar i');
             if (pb) pb.style.width = (p * 100).toFixed(1) + '%';
         }
@@ -1548,10 +1569,14 @@
             batt.classList.add('dragging');
             e.preventDefault();
         });
+        var dragLastX = -1e9, dragLastY = -1e9;
         batt.addEventListener('pointermove', function (e) {
             if (!dragging || !stageRect) return;
             var px = e.clientX - stageRect.left;
             var py = e.clientY - stageRect.top;
+            // 位移过小则忽略:拖动采样(260 点全曲线搜索)较贵,别让每个像素都算一遍
+            if (Math.abs(px - dragLastX) + Math.abs(py - dragLastY) < 4) return;
+            dragLastX = px; dragLastY = py;
             var k = nearestDist(px, py);
             if (k < 0) return;
             renderP(k);
@@ -1567,7 +1592,31 @@
         }
         batt.addEventListener('pointerup', endDrag);
         batt.addEventListener('pointercancel', endDrag);
+        // ---- 窄屏三排之字布局:13 节点两排(4%~96%)在窄屏必然重叠,改为 5/4/4 三排 ----
+        // 第2排从右往左排布,S 曲线连续转折;第1、3排从左往右。
+        // 横向边界取 9%~91%:节点带 -50% 偏移,要留足半个节点宽,避免被 stage 裁边。
+        nodes.forEach(function (nd) {
+            nd._ol = nd.style.left; nd._ot = nd.style.top;   // 记住桌面原位置,宽屏时还原
+        });
+        var ROW_TOPS = ['12.5%', '33.5%', '54.5%'];
+        var ROW_IDX = [[0, 1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]];
+        function layoutNodes() {
+            if (stage.clientWidth > 700) {
+                nodes.forEach(function (nd) { nd.style.left = nd._ol; nd.style.top = nd._ot; });
+                return;
+            }
+            ROW_IDX.forEach(function (row, ri) {
+                var span = row.length - 1;
+                var step = 82 / span;
+                row.forEach(function (idx, j) {
+                    var x = ri === 1 ? 91 - j * step : 9 + j * step;
+                    nodes[idx].style.left = x.toFixed(2) + '%';
+                    nodes[idx].style.top = ROW_TOPS[ri];
+                });
+            });
+        }
         function measure() {
+            layoutNodes();
             vh = window.innerHeight || document.documentElement.clientHeight;
             var run = Math.max(vh * 2.1, 1500);
             var stageH = stage.offsetHeight || Math.min(vh * 0.72, 720);
@@ -1586,7 +1635,20 @@
         function refreshStageRect() { stageRect = stage.getBoundingClientRect(); }
         window.addEventListener('scroll', function () { refreshStageRect(); }, { passive: true });
         window.addEventListener('scroll', onScroll, { passive: true });
-        window.addEventListener('resize', function () { measure(); refreshStageRect(); });
+        // resize 防抖:手机地址栏收起/旋转会连发 resize,每次都重建 SVG 是移动端卡顿源之一
+        var rt = null;
+        function onResize() {
+            if (rt) clearTimeout(rt);
+            rt = setTimeout(function () { rt = null; measure(); refreshStageRect(); }, 160);
+        }
+        window.addEventListener('resize', onResize);
+        if (window.matchMedia) {
+            try {
+                var mq = window.matchMedia('(max-width: 700px)');
+                if (mq.addEventListener) mq.addEventListener('change', onResize);
+                else if (mq.addListener) mq.addListener(onResize);
+            } catch (e) {}
+        }
         refreshStageRect();
         measure();
         window.addEventListener('load', function () { measure(); refreshStageRect(); });
