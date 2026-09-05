@@ -1591,8 +1591,9 @@
 
     // ===== 数据条 count-up + B站粉丝实时同步 =====
     // 入场:0 → data-to(4.2s easeInOutQuart 平滑滚动);
-    // 之后每 60s 静默轮询 fans.json(GitHub Actions 每 30 分钟抓 B站接口写回仓库),
-    // 粉丝数有变化时数字就地平滑滚动到新值,无需刷新;接口/网络失败则保留当前值。
+    // 之后每 60s 静默轮询后端 /api/bili-fans(PythonAnywhere 进程内 60s 缓存 + 直连 B站官方接口,
+    // 平均新鲜度约 1 分钟),粉丝数有变化时数字就地平滑滚动到新值,无需刷新;
+    // 后端失败则静默保留当前值(首屏另有 localStorage 缓存兜底)。
     (function () {
         var boxes = document.querySelectorAll('.stats .cn');
         if (!boxes.length) return;
@@ -1663,7 +1664,7 @@
         }
         function pollFans() {
             if (document.hidden) return;   // 标签页在后台时不打扰
-            fetch('fans.json', { cache: 'no-store' })
+            fetch('https://nbchannel.pythonanywhere.com/api/bili-fans', { cache: 'no-store' })
                 .then(function (r) { return r.ok ? r.json() : null; })
                 .then(function (j) { if (j) applyFans(parseInt(j.follower, 10)); })
                 .catch(function () {});

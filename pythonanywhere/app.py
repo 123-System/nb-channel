@@ -19,11 +19,14 @@ import os
 import re
 import io
 import csv
+import json
 import uuid
 import hmac
 import hashlib
 import datetime
 import subprocess
+import threading
+import urllib.request
 
 from flask import Flask, request, jsonify, send_from_directory, Response
 from supabase import create_client, Client
@@ -162,6 +165,56 @@ def _has_bad_words(text):
 
 
 # ==================== 接口 ====================
+
+# ---------- B站粉丝实时同步(首页数据条;需在 PythonAnywhere 出站白名单加入 api.bilibili.com) ----------
+BILI_UID = 3493259582114264              # NB搞事局(原NB实验室-作死)
+BILI_FANS_TTL = 60                        # 进程内缓存秒数:60s 内不重复请求 B站
+_bili_fans_cache = {'ts': 0.0, 'data': None}
+_bili_fans_lock = threading.Lock()
+
+
+def _fetch_bili_fans():
+    """抓取 B站粉丝数(带 60s 缓存与锁)。返回 (data, error)。"""
+    now = datetime.datetime.now().timestamp()
+    if _bili_fans_cache['data'] and now - _bili_fans_cache['ts'] < BILI_FANS_TTL:
+        return _bili_fans_cache['data'], None
+    with _bili_fans_lock:
+        now = datetime.datetime.now().timestamp()
+        if _bili_fans_cache['data'] and now - _bili_fans_cache['ts'] < BILI_FANS_TTL:
+            return _bili_fans_cache['data'], None
+        url = 'https://api.bilibili.com/x/relation/stat?vmid=%d' % BILI_UID
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+            'Referer': 'https://www.bilibili.com/',
+            'Accept': 'application/json',
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                payload = json.loads(resp.read().decode('utf-8'))
+        except Exception as e:
+            return None, str(e)
+        if not isinstance(payload, dict) or payload.get('code') != 0 or not payload.get('data'):
+            return None, 'bilibili api code=%s' % (payload.get('code') if isinstance(payload, dict) else 'bad-resp')
+        data = {
+            'follower': int(payload['data'].get('follower') or 0),
+            'updated_at': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+        }
+        _bili_fans_cache['ts'] = datetime.datetime.now().timestamp()
+        _bili_fans_cache['data'] = data
+        return data, None
+
+
+@app.route('/api/bili-fans')
+def api_bili_fans():
+    """公开只读:当前 B站粉丝数。首页每 60s 轮询,无需刷新即可看到数字变化。"""
+    data, err = _fetch_bili_fans()
+    if data:
+        return jsonify({'success': True, **data})
+    if _bili_fans_cache['data']:
+        # 上游暂时失败:降级返回最近一次成功值(标记 stale,首页仍可用)
+        return jsonify({'success': True, 'stale': True, **_bili_fans_cache['data']})
+    return _err('UPSTREAM_ERROR', 'B站接口暂时不可用: %s' % err, 502)
+
 
 @app.route('/health')
 def health():
