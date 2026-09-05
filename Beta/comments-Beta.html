@@ -573,6 +573,8 @@ textarea, .reply-form textarea, .edit-form textarea { border-radius: 12px; }
             .vhero .hero-eyebrow, .vhero h1, .vhero .vhero-sub, .vhero .vhero-actions,
             .vhero .pd-stats, .vhero .cl-stats, .vhero .acard, .vhero .vhcard, .vhero .com-rules { animation: none; }
         }
+        html { scroll-behavior: smooth; }
+        [id] { scroll-margin-top: 86px; }
 </style>
 </head>
 <body>
@@ -624,7 +626,7 @@ textarea, .reply-form textarea, .edit-form textarea { border-radius: 12px; }
 </header>
 
 
-<div class="comment-section">
+<div class="comment-section" id="comments">
         <!-- 公告栏（内容在 Supabase admin_config 表，key=announcement） -->
         <div id="announcementBar" class="announcement-bar" style="display:none;"></div>
 

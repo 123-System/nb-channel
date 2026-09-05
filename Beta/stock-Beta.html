@@ -648,7 +648,9 @@ button { border-radius: 999px; }
             border-radius: 30px;
             background: var(--count-bg);
         }
-    </style>
+            html { scroll-behavior: smooth; }
+        [id] { scroll-margin-top: 86px; }
+</style>
 </head>
 <body>
 <nav class="nav">
@@ -682,7 +684,7 @@ button { border-radius: 999px; }
         <div class="hero-copy">
             <span class="hero-eyebrow">VIRTUAL MARKET · NB币</span>
             <h1>虚拟<span class="light">股票</span></h1>
-            <p class="vhero-sub">NB币经济的主战场——公司市值实时跳动,每 30 秒自动刷新,支持买入、卖出与配平,市场 8:00-20:00 自主运转</p>
+            <p class="vhero-sub">NB币经济的主战场——公司市值实时跳动,每 10 秒自动刷新,支持买入、卖出与配平,市场 8:00-20:00 自主运转</p>
             <div class="vhero-actions">
                 <a class="hero-link" href="#market">进入行情 ↓</a>
                 <a class="hero-link" href="https://nbchannel.pythonanywhere.com/api/docs" target="_blank" rel="noopener noreferrer">行情 API ↗</a>
@@ -690,7 +692,7 @@ button { border-radius: 999px; }
         </div>
         <div class="pd-stats">
             <div class="pd-row"><span class="k">交易时段</span><b>8:00 - 20:00</b></div>
-            <div class="pd-row"><span class="k">自动刷新</span><b>30 秒</b></div>
+            <div class="pd-row"><span class="k">自动刷新</span><b>10 秒</b></div>
             <div class="pd-row"><span class="k">图表</span><b>市值 · K线 · 占比</b></div>
             <div class="pd-row"><span class="k">数据</span><b>Supabase 实时</b></div>
         </div>
@@ -699,7 +701,7 @@ button { border-radius: 999px; }
 </header>
 
 
-<div class="home-card">
+<div class="home-card" id="market">
         <!-- 用户信息栏 -->
         <div class="user-info">
             <span id="userStatusSpan">未登录</span>
