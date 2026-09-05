@@ -1562,11 +1562,12 @@
             Array.prototype.forEach.call(boxes, function (el) {
                 var to = parseInt(el.getAttribute('data-to') || '0', 10);
                 if (isNaN(to) || to <= 0) return;
-                var t0 = null, dur = 2800, last = 0;
+                var t0 = null, dur = 4200, last = 0;
                 function step(ts) {
                     if (!t0) t0 = ts;
                     var p = Math.min((ts - t0) / dur, 1);
-                    var e = 1 - Math.pow(1 - p, 4);       // easeOutQuart:起步轻缓、收尾干脆
+                    // easeInOutQuart:起步收尾都缓、中段匀速,数字"慢慢爬"更从容
+                    var e = p < 0.5 ? 8 * p * p * p * p : 1 - Math.pow(-2 * p + 2, 4) / 2;
                     var v = Math.round(to * e);
                     if (v <= last && p < 1) v = Math.min(last + 1, to);   // 单调推进
                     last = v;
