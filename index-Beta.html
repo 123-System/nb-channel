@@ -1514,20 +1514,64 @@
         window.addEventListener('load', function () { measure(); refreshStageRect(); });
     })();
 
-    // ===== 数据条 count-up(进入视口后数字滚动) =====
+    // ===== 数据条 count-up:数字跳动 + 进位(里程表式逐位跳变,9→0 进位整串轻抖) =====
     (function () {
-        var nums = document.querySelectorAll('.stats .cn');
-        if (!nums.length) return;
+        var boxes = document.querySelectorAll('.stats .cn');
+        if (!boxes.length) return;
+        // 数字位数动画样式(一次性注入)
+        var st = document.createElement('style');
+        st.textContent =
+            '.od-d{display:inline-block;} ' +
+            '.od-d.pop{animation:odPop .18s cubic-bezier(.16,1,.3,1);} ' +
+            '@keyframes odPop{0%{transform:translateY(-2px) scale(1.25);color:var(--brand)}100%{transform:none}} ' +
+            '.cn.carry{animation:odCarry .3s cubic-bezier(.16,1,.3,1);} ' +
+            '@keyframes odCarry{0%{transform:translateY(0)}30%{transform:translateY(-3px)}60%{transform:translateY(2px)}100%{transform:none}}';
+        document.head.appendChild(st);
+        var items = Array.prototype.map.call(boxes, function (el) {
+            var to = parseInt(el.getAttribute('data-to') || '0', 10);
+            var spans = [];
+            var digits = String(Math.max(to, 1)).length;
+            el.innerHTML = '';
+            for (var i = 0; i < digits; i++) {
+                var s = document.createElement('span');
+                s.className = 'od-d';
+                s.textContent = '0';
+                el.appendChild(s);
+                spans.push(s);
+            }
+            return { el: el, to: to, spans: spans };
+        });
         function run() {
-            nums.forEach(function (el) {
-                var to = parseInt(el.getAttribute('data-to') || '0', 10);
-                if (isNaN(to) || to <= 0) return;
-                var dur = 2800, t0 = null;
+            items.forEach(function (it) {
+                var to = it.to;
+                if (to <= 0) return;
+                var t0 = null, dur = 2800, prev = null, last = 0;
                 function step(ts) {
                     if (!t0) t0 = ts;
                     var p = Math.min((ts - t0) / dur, 1);
-                    var e = 1 - Math.pow(1 - p, 4);   // easeOutQuart:起步轻缓、收尾干脆,数字"慢慢跑"更有仪式感
-                    el.textContent = Math.round(to * e);
+                    var e = 1 - Math.pow(1 - p, 4);       // easeOutQuart
+                    var v = Math.round(to * e);
+                    if (v <= last && p < 1) v = Math.min(last + 1, to);   // 保证单调推进
+                    last = v;
+                    var cur = String(v);
+                    while (cur.length < it.spans.length) cur = '0' + cur;
+                    for (var i = 0; i < it.spans.length; i++) {
+                        var d = cur.charAt(i);
+                        var old = prev ? prev.charAt(i) : '0';
+                        if (d !== old) {
+                            it.spans[i].textContent = d;
+                            it.spans[i].classList.remove('pop');
+                            void it.spans[i].offsetWidth;   // 重启动画
+                            it.spans[i].classList.add('pop');
+                            // 9 → 0 进位:整串轻抖
+                            if (old === '9' && d === '0') {
+                                it.el.classList.remove('carry');
+                                void it.el.offsetWidth;
+                                it.el.classList.add('carry');
+                            }
+                        }
+                    }
+                    prev = cur;
                     if (p < 1) requestAnimationFrame(step);
                 }
                 requestAnimationFrame(step);
