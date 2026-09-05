@@ -57,7 +57,7 @@
             background:
                 radial-gradient(900px 520px at 85% -10%, rgba(59,130,246,.06), transparent 60%),
                 var(--bg);
-            background-attachment: fixed;
+            /* 不用 background-attachment:fixed:与吸顶导航 backdrop-filter 叠加时刷新首帧合成卡顿 */
         }
         html.dark .nav { background: rgba(10,16,31,.72); border-bottom-color: rgba(148,163,184,.12); }
         html.dark .nav.scrolled { background: rgba(10,16,31,.9); }
@@ -89,7 +89,7 @@
             background:
                 radial-gradient(1100px 620px at 82% -14%, rgba(59,130,246,.05), transparent 62%),
                 var(--bg);
-            background-attachment: fixed;
+            /* 同上:不使用 background-attachment:fixed,避免首帧/滚动重采样开销 */
             color: var(--ink);
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
@@ -220,7 +220,8 @@
             box-shadow: 0 70px 140px -60px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.06);
             background: #0b1220;
         }
-        .hero-video video { display: block; width: 100%; }
+        .hero-video video { display: block; width: 100%; opacity: 0; transition: opacity .8s ease .1s; }
+        .hero-video video.ready { opacity: 1; }
         /* 微小探索指引(竖线脉冲) */
         .hero-scroll {
             position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%);
@@ -856,7 +857,7 @@
 
 <!-- 数据条 -->
 <div class="stats">
-    <div class="stat stat-fans"><div class="num"><span class="cn" id="biliFans" data-to="112363">0</span></div><div class="label">B站粉丝<i class="live" title="实时同步,每30分钟自动更新"></i></div></div>
+    <div class="stat stat-fans"><div class="num"><span class="cn" id="biliFans" data-to="112363">0</span></div><div class="label">B站粉丝<i class="live" title="实时同步,每30秒自动更新"></i></div></div>
     <div class="stat"><div class="num"><span class="cn" data-to="11">0</span></div><div class="label">友商官网</div></div>
     <div class="stat"><div class="num"><span class="cn" data-to="0" id="siteDays">0</span></div><div class="label">建站天数</div></div>
     <div class="stat"><div class="num"><span class="cn" data-to="11">0</span></div><div class="label">核心功能</div></div>
@@ -1685,6 +1686,18 @@
         });
         pollFans();
         setInterval(pollFans, pollMs);
+    })();
+
+    // ===== Hero LOGO 视频:就绪后淡入(避免刷新时视频区先黑、就绪瞬间"突然跳出") =====
+    (function () {
+        var box = document.querySelector('.hero-video');
+        var vid = box && box.querySelector('video');
+        if (!vid) return;
+        function show() { vid.classList.add('ready'); }
+        if (vid.readyState >= 2) { show(); return; }
+        vid.addEventListener('loadeddata', show);
+        vid.addEventListener('error', function () { vid.classList.add('ready'); });
+        setTimeout(show, 6000);   // 兜底:网络极慢/自动播放被拦时不至于一直透明
     })();
 
     // ===== 导航滚动态(吸顶加深) + 回到顶部按钮 =====
