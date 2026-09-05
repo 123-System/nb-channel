@@ -1545,13 +1545,10 @@
             items.forEach(function (it) {
                 var to = it.to;
                 if (to <= 0) return;
-                var t0 = null, dur = 2800, prev = null, last = 0;
-                function step(ts) {
-                    if (!t0) t0 = ts;
-                    var p = Math.min((ts - t0) / dur, 1);
-                    var e = 1 - Math.pow(1 - p, 4);       // easeOutQuart
-                    var v = Math.round(to * e);
-                    if (v <= last && p < 1) v = Math.min(last + 1, to);   // 保证单调推进
+                // 离散"嗒嗒"跳动:仅每 STEP(120ms)渲染一次,全程约 21 跳,从容不急促
+                var t0 = null, next = 0, STEP = 120, DUR = 2500, prev = null, last = 0;
+                function render(v) {
+                    if (v === last) return;
                     last = v;
                     var cur = String(v);
                     while (cur.length < it.spans.length) cur = '0' + cur;
@@ -1561,9 +1558,8 @@
                         if (d !== old) {
                             it.spans[i].textContent = d;
                             it.spans[i].classList.remove('pop');
-                            void it.spans[i].offsetWidth;   // 重启动画
+                            void it.spans[i].offsetWidth;
                             it.spans[i].classList.add('pop');
-                            // 9 → 0 进位:整串轻抖
                             if (old === '9' && d === '0') {
                                 it.el.classList.remove('carry');
                                 void it.el.offsetWidth;
@@ -1572,9 +1568,20 @@
                         }
                     }
                     prev = cur;
-                    if (p < 1) requestAnimationFrame(step);
                 }
-                requestAnimationFrame(step);
+                function tick(ts) {
+                    if (!t0) t0 = ts;
+                    var el = ts - t0;
+                    if (el >= DUR) { render(to); return; }
+                    if (el < next) { requestAnimationFrame(tick); return; }
+                    next += STEP;
+                    var e = 1 - Math.pow(1 - el / DUR, 3);
+                    var v = Math.round(to * e);
+                    if (v <= last) v = Math.min(last + 1, to);
+                    render(v);
+                    requestAnimationFrame(tick);
+                }
+                requestAnimationFrame(tick);
             });
         }
         if ('IntersectionObserver' in window) {
