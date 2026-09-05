@@ -345,6 +345,14 @@ a { text-decoration: none; color: inherit; }
     .footer-grid { grid-template-columns: 1fr; gap: 26px; }
     .backtop { right: 18px; bottom: 18px; width: 42px; height: 42px; }
 }
+        .ui-fx-glow {
+            position: fixed; left: -999px; top: -999px; width: 240px; height: 240px;
+            border-radius: 50%; pointer-events: none; z-index: 9997;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(59,130,246,.18), rgba(139,92,246,.10) 45%, transparent 65%);
+            opacity: 0;
+        }
+
 </style>
 </head>
 <body>
@@ -618,11 +626,16 @@ a { text-decoration: none; color: inherit; }
         function render() {
             if (btn) { btn.textContent = isDark() ? '☀️' : '🌙'; btn.title = isDark() ? '切换到日间模式' : '切换到夜间模式'; }
         }
-        if (btn) btn.addEventListener('click', function () {
-            var dark = !isDark();
+        function apply(dark) {
             root.classList.toggle('dark', dark);
             try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
             render();
+        }
+        if (btn) btn.addEventListener('click', function () {
+            var dark = !isDark();
+            if (document.startViewTransition) {
+                try { document.startViewTransition(function () { apply(dark); }); } catch (e) { apply(dark); }
+            } else apply(dark);
         });
         render();
     })();
@@ -659,6 +672,63 @@ a { text-decoration: none; color: inherit; }
         });
         document.addEventListener('contextmenu', function (e) { e.preventDefault(); return false; });
         setInterval(function () { debugger; }, 600);
+    })();
+</script>
+<script>
+// ===== 鼠标特效:跟随光晕 + 点击波纹与彩色粒子(仅鼠标设备) =====
+    (function () {
+        if (!(window.matchMedia && window.matchMedia('(pointer: fine)').matches)) return;
+        var glow = document.createElement('div');
+        glow.className = 'ui-fx-glow';
+        document.body.appendChild(glow);
+        var gx = -999, gy = -999, tx = -999, ty = -999;
+        document.addEventListener('mousemove', function (e) { tx = e.clientX; ty = e.clientY; });
+        document.addEventListener('mouseenter', function () { glow.style.opacity = '1'; });
+        document.addEventListener('mouseleave', function () { glow.style.opacity = '0'; });
+        var lx = -1e9, ly = -1e9;
+        (function loop() {
+            gx += (tx - gx) * 0.14;
+            gy += (ty - gy) * 0.14;
+            // 静止时跳过写入:避免每帧重复改 style 白白触发样式计算
+            if (Math.abs(gx - lx) > 0.2 || Math.abs(gy - ly) > 0.2) {
+                glow.style.left = gx + 'px';
+                glow.style.top = gy + 'px';
+                lx = gx; ly = gy;
+            }
+            requestAnimationFrame(loop);
+        })();
+        var colors = ['#3b82f6', '#8b5cf6', '#6366f1', '#06b6d4', '#f59e0b'];
+        document.addEventListener('click', function (e) {
+            var ring = document.createElement('div');
+            ring.style.cssText = 'position:fixed; left:' + e.clientX + 'px; top:' + e.clientY + 'px; width:12px; height:12px; border:2px solid rgba(59,130,246,.75); border-radius:50%; pointer-events:none; z-index:9999; transform:translate(-50%,-50%);';
+            document.body.appendChild(ring);
+            setTimeout(function () { if (ring.parentNode) ring.remove(); }, 900);
+            try {
+                ring.animate([
+                    { transform: 'translate(-50%,-50%) scale(1)', opacity: 0.9 },
+                    { transform: 'translate(-50%,-50%) scale(5.5)', opacity: 0 }
+                ], { duration: 600, easing: 'ease-out', fill: 'forwards' });
+            } catch (err) { ring.remove(); }
+            for (var i = 0; i < 8; i++) {
+                var p = document.createElement('div');
+                var size = 4 + Math.random() * 6;
+                var ang = Math.random() * Math.PI * 2;
+                var dist = 28 + Math.random() * 52;
+                p.style.cssText = 'position:fixed; left:' + e.clientX + 'px; top:' + e.clientY + 'px; width:' + size + 'px; height:' + size + 'px; border-radius:50%; background:' + colors[i % colors.length] + '; pointer-events:none; z-index:9999;';
+                document.body.appendChild(p);
+                var dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
+                var dur = 500 + Math.random() * 250;
+                setTimeout(function (el) {
+                    return function () { if (el.parentNode) el.remove(); };
+                }(p), dur + 250);
+                try {
+                    p.animate([
+                        { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                        { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(0.1)', opacity: 0 }
+                    ], { duration: dur, easing: 'cubic-bezier(0.15,0.8,0.25,1)', fill: 'forwards' });
+                } catch (err) { p.remove(); }
+            }
+        });
     })();
 </script>
 </body>

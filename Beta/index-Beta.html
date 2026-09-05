@@ -1810,14 +1810,18 @@
         var root = document.documentElement;
         function isDark() { return root.classList.contains('dark'); }
         function render() {
-            if (btn) btn.textContent = isDark() ? '☀️' : '🌙';
-            if (btn) btn.title = isDark() ? '切换到日间模式' : '切换到夜间模式';
+            if (btn) { btn.textContent = isDark() ? '☀️' : '🌙'; btn.title = isDark() ? '切换到日间模式' : '切换到夜间模式'; }
         }
-        if (btn) btn.addEventListener('click', function () {
-            var dark = !isDark();
+        function apply(dark) {
             root.classList.toggle('dark', dark);
             try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
             render();
+        }
+        if (btn) btn.addEventListener('click', function () {
+            var dark = !isDark();
+            if (document.startViewTransition) {
+                try { document.startViewTransition(function () { apply(dark); }); } catch (e) { apply(dark); }
+            } else apply(dark);
         });
         render();
     })();
