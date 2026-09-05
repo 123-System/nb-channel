@@ -1,0 +1,1366 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233b82f6'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='26' font-weight='800' fill='%23fff' text-anchor='middle'%3ENB%3C/text%3E%3C/svg%3E">
+<title>作品分享 - NB频道官网</title>
+    <script>
+    (function () {
+        try {
+            var tt = localStorage.getItem('theme');
+            if (tt === 'dark' || (!tt && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        } catch (e) {}
+    })();
+</script><style>:root {
+    --card-bg: #ffffff; --bg-color: #f7f8fa; --text-color: #1a1d23;
+    --card-border: #e8eaee; --count-text: #8b93a3; --count-bg: #eef2f8;
+    --status-border: #3b82f6;
+    --nav-btn-bg: #eef2f8; --nav-btn-text: #1a1d23;
+    --nav-btn-hover-bg: #3b82f6; --nav-btn-hover-text: #ffffff;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+    --bg: #f7f8fa;
+    --ink: #1a1d23;
+    --ink-soft: #5a6270;
+    --ink-faint: #8b93a3;
+    --line: #e8eaee;
+    --brand: #3b82f6;
+    --brand-deep: #2563eb;
+    --card: #ffffff;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --shadow-1: 0 1px 2px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.06);
+    --shadow-2: 0 2px 4px rgba(16,24,40,.05), 0 24px 48px -20px rgba(16,24,40,.18);
+}
+html.dark { color-scheme: dark; }
+html.dark {
+    --bg: #0a101f;
+    --ink: #e5eaf3;
+    --ink-soft: #9aa7bd;
+    --ink-faint: #64748b;
+    --line: rgba(148,163,184,.16);
+    --card: #101a2e;
+    --shadow-1: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.28);
+    --shadow-2: 0 2px 6px rgba(0,0,0,.35), 0 28px 60px -24px rgba(0,0,0,.6);
+}
+html.dark .nav { background: rgba(10,16,31,.72); border-bottom-color: rgba(148,163,184,.12); }
+html.dark .nav.scrolled { background: rgba(10,16,31,.9); }
+html.dark .logo-img { filter: brightness(1.4) saturate(1.15); }
+html.dark .drawer { background: #0f1a30; }
+html.dark .drawer .d-close { background: rgba(255,255,255,.06); color: var(--ink); }
+html.dark .drawer a.d-item { color: var(--ink-soft); }
+html.dark .drawer a.d-item:hover, html.dark .drawer a.d-item.active { background: rgba(59,130,246,.14); color: #fff; }
+html.dark .drawer .d-brand { color: var(--ink); }
+html.dark .backtop { background: rgba(15,23,42,.85); color: #cbd5e1; border-color: rgba(148,163,184,.25); }
+html.dark .backtop:hover { background: var(--brand); color: #fff; }
+html.dark .footer-bottom { border-color: rgba(255,255,255,.06); }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+a { text-decoration: none; color: inherit; }
+::selection { background: rgba(59,130,246,.22); }
+
+/* ============ 导航 ============ */
+.nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 48px; height: 64px;
+    background: rgba(255,255,255,.72);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    backdrop-filter: blur(20px) saturate(1.5);
+    border-bottom: 1px solid var(--line);
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; font-weight: 800; letter-spacing: .3px; margin-left: 12px; }
+.logo-img { display: block; height: 32px; width: auto; }
+.logo-text { color: var(--ink); }
+.nav-menu { display: flex; gap: 2px; }
+.nav-menu a {
+    position: relative; padding: 10px 14px;
+    font-size: .92rem; font-weight: 500; letter-spacing: .4px;
+    color: var(--ink-soft); white-space: nowrap; transition: color .3s ease;
+}
+.nav-menu a:hover { color: var(--ink); }
+.nav-menu a.active { color: var(--brand); font-weight: 600; }
+.nav-menu a.active::after {
+    content: ''; position: absolute; left: 14px; right: 14px; bottom: 4px;
+    height: 1px; background: var(--brand);
+}
+.nav-menu a.nav-api { color: var(--brand); font-weight: 600; font-size: .86rem; }
+.nav-right-group { display: flex; align-items: center; gap: 10px; }
+.nav-auth-group { display: flex; gap: 8px; align-items: center; }
+.nav-clock {
+    display: flex; flex-direction: column; align-items: flex-end;
+    margin-right: 8px; flex-shrink: 0; user-select: none; line-height: 1.35;
+}
+.nav-clock .nc-time { font-size: 15.5px; font-weight: 800; letter-spacing: 1.5px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.nav-clock .nc-row { display: flex; align-items: baseline; gap: 6px; font-style: normal; }
+.nav-clock .nc-date { font-size: 10.5px; font-weight: 600; letter-spacing: .4px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.nav-clock .nc-label { font-size: 8.5px; font-weight: 600; letter-spacing: 2px; color: var(--ink-faint); }
+.nav-auth {
+    padding: 8px 18px; border-radius: 999px;
+    background: rgba(255,255,255,.6); color: var(--ink);
+    border: 1px solid var(--line);
+    font-size: .88rem; font-weight: 600; cursor: pointer;
+    transition: all .25s ease; white-space: nowrap;
+}
+.nav-auth:hover { background: #fff; border-color: rgba(59,130,246,.4); }
+.nav-auth.primary {
+    background: linear-gradient(135deg, var(--brand), #6366f1);
+    border-color: transparent; color: #fff;
+    box-shadow: 0 8px 20px -8px rgba(59,130,246,.5);
+}
+.nav-auth.primary:hover { background: linear-gradient(135deg, #2563eb, #4f46e5); color: #fff; }
+html.dark .nav-auth { background: rgba(255,255,255,.05); color: var(--ink); border-color: rgba(148,163,184,.25); }
+html.dark .nav-auth:hover { background: rgba(255,255,255,.1); border-color: rgba(59,130,246,.5); }
+.theme-btn {
+    width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--bg); cursor: pointer; font-size: .95rem;
+    display: flex; align-items: center; justify-content: center; transition: all .25s ease;
+}
+.theme-btn:hover { border-color: rgba(59,130,246,.4); transform: translateY(-1px); }
+.nav-burger {
+    display: none; width: 38px; height: 38px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg);
+    font-size: .95rem; cursor: pointer; color: var(--ink);
+    align-items: center; justify-content: center;
+}
+@media (max-width: 900px) { .nav-menu { display: none; } .nav-burger { display: flex; } .nav-clock, .nav-auth-group { display: none; } }
+
+/* ============ Hero(产品) ============ */
+.vhero {
+    position: relative; color: #fff; overflow: hidden;
+    padding: 110px 48px 150px;
+    background:
+        radial-gradient(760px 460px at 12% 4%, rgba(59,130,246,.16), transparent 62%),
+        radial-gradient(640px 420px at 96% 60%, rgba(139,92,246,.12), transparent 60%),
+        linear-gradient(168deg, #0b1220 0%, #101c33 58%, #1c1745 100%);
+}
+.vhero::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+    background-image: radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px);
+    background-size: 34px 34px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,.5), transparent 72%);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.5), transparent 72%);
+}
+.vhero-inner {
+    position: relative; z-index: 2; max-width: 1180px; margin: 0 auto;
+    display: grid; grid-template-columns: 1.05fr .95fr; gap: 70px; align-items: center;
+}
+.hero-eyebrow {
+    display: block; font-size: 11px; font-weight: 400;
+    letter-spacing: 8px; color: rgba(255,255,255,.42); margin-bottom: 40px;
+}
+.vhero h1 { font-size: clamp(2.7rem, 5.2vw, 4.6rem); font-weight: 800; letter-spacing: 8px; color: #fff; line-height: 1.12; }
+.vhero h1 .light { font-weight: 200; letter-spacing: 4px; color: #9cc0ff; }
+.vhero-sub {
+    margin: 34px 0 0; max-width: 470px;
+    font-size: .98rem; font-weight: 300; line-height: 2.15;
+    letter-spacing: .6px; color: rgba(255,255,255,.6);
+}
+.vhero-actions { margin-top: 48px; display: flex; gap: 44px; align-items: center; flex-wrap: wrap; }
+.hero-link {
+    font-size: .9rem; letter-spacing: 3px; font-weight: 600; color: #fff;
+    padding: 12px 2px; border-bottom: 1px solid rgba(255,255,255,.32);
+    transition: border-color .35s ease, color .35s ease;
+}
+.hero-link:hover { border-color: #7cb4ff; color: #7cb4ff; }
+/* 右侧统计卡 */
+.pd-stats {
+    background: rgba(255,255,255,.045);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 24px; padding: 10px 26px;
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+.pd-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 13px 0; border-bottom: 1px dashed rgba(255,255,255,.1);
+}
+.pd-row:last-child { border-bottom: none; }
+.pd-row .k { font-size: .72rem; letter-spacing: 2.5px; color: rgba(255,255,255,.5); }
+.pd-row b { font-size: 1.12rem; font-weight: 700; color: #fff; letter-spacing: .5px; }
+.pd-row b small { font-size: .72rem; font-weight: 400; color: rgba(255,255,255,.55); letter-spacing: 1px; }
+.pd-tip { margin-top: 14px; font-size: .74rem; color: rgba(255,255,255,.4); letter-spacing: 1.2px; text-align: center; }
+.vhero-fade {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 130px; z-index: 1;
+    background: linear-gradient(to bottom, transparent, var(--bg));
+    pointer-events: none;
+}
+
+/* ============ 正文 ============ */
+.vwrap { max-width: 1080px; margin: 0 auto; padding: 70px 48px 60px; }
+.leadq { text-align: center; max-width: 760px; margin: 0 auto 80px; }
+.leadq h2 { font-size: clamp(1.5rem, 2.8vw, 2.1rem); font-weight: 800; line-height: 1.6; letter-spacing: 1px; }
+.leadq h2 em { font-style: normal; color: var(--brand); }
+.leadq h2 .thin { font-weight: 200; color: var(--ink-soft); }
+.leadq .sig { margin-top: 26px; font-size: .9rem; color: var(--ink-faint); letter-spacing: 3px; }
+.leadq .sig b { color: var(--ink); font-weight: 700; letter-spacing: 1px; }
+
+/* 产品网格 */
+.pd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.p-card {
+    background: var(--card); border-radius: var(--radius-lg); overflow: hidden;
+    border: 1px solid var(--line); box-shadow: var(--shadow-1);
+    display: flex; flex-direction: column;
+    transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease;
+}
+.p-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); }
+.p-media {
+    position: relative; aspect-ratio: 16 / 9.4; overflow: hidden;
+    background: linear-gradient(140deg, rgba(59,130,246,.12), rgba(139,92,246,.12));
+}
+.p-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .9s cubic-bezier(.16,1,.3,1); }
+.p-card:hover .p-media img { transform: scale(1.045); }
+.p-media .p-no {
+    position: absolute; top: 14px; left: 16px; z-index: 2;
+    font-size: 11px; font-weight: 700; letter-spacing: 3px; color: #fff;
+    background: rgba(10,16,31,.55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.2);
+}
+.p-body { padding: 22px 24px 24px; display: flex; flex-direction: column; flex: 1; }
+.p-body h3 { font-size: 1.25rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 9px; }
+.p-body .p-sub { font-size: .92rem; color: var(--ink-soft); line-height: 1.85; flex: 1; }
+.p-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+.p-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border-radius: 999px;
+    font-size: .84rem; font-weight: 700; letter-spacing: .8px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink-soft);
+    transition: all .25s ease;
+}
+.p-link:hover { border-color: var(--brand); color: var(--brand); transform: translateY(-1px); }
+.p-link.go { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; border-color: transparent; box-shadow: 0 8px 20px -8px rgba(59,130,246,.55); }
+.p-link.go:hover { color: #fff; box-shadow: 0 12px 26px -8px rgba(59,130,246,.6); }
+
+.p-note { text-align: center; color: var(--ink-faint); font-size: .82rem; letter-spacing: 1px; line-height: 2; padding: 26px 20px 0; }
+
+/* CTA */
+.cta {
+    text-align: center; padding: 84px 24px;
+    background: linear-gradient(170deg, #101c33 0%, #1c1745 100%);
+    color: #fff; margin-top: 70px;
+}
+.cta h2 { font-size: 1.7rem; font-weight: 800; letter-spacing: .5px; margin-bottom: 13px; }
+.cta p { color: rgba(255,255,255,.55); font-size: .93rem; font-weight: 300; margin-bottom: 32px; }
+.cta .cta-actions { display: flex; gap: 44px; justify-content: center; align-items: center; flex-wrap: wrap; }
+
+/* 页脚 */
+.footer { background: linear-gradient(180deg, #0f172a 0%, #0a0f1e 100%); color: #94a3b8; padding: 64px 48px 30px; }
+.footer-grid { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 44px; }
+.footer .brand { font-size: 1.1rem; font-weight: 800; color: #fff; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; letter-spacing: .5px; }
+.footer .desc { font-size: .85rem; font-weight: 300; line-height: 2; margin-bottom: 20px; color: #7c8ba5; }
+.footer h5 { color: #e2e8f0; font-size: .88rem; font-weight: 700; margin-bottom: 18px; letter-spacing: 2px; }
+.footer a { display: block; color: #8fa0b8; font-size: .86rem; margin-bottom: 12px; transition: color .3s ease; }
+.footer a:hover { color: #fff; }
+.footer-bottom {
+    max-width: 1180px; margin: 44px auto 0; padding-top: 22px;
+    border-top: 1px solid rgba(255,255,255,.07);
+    font-size: .76rem; letter-spacing: 1px; color: #5b6a85; text-align: center;
+}
+
+/* 抽屉 */
+.drawer-mask { display: none; position: fixed; inset: 0; z-index: 9000; background: rgba(10,15,28,.5); }
+.drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 9001;
+    width: 300px; max-width: 84vw; background: #fff;
+    box-shadow: -20px 0 60px -30px rgba(0,0,0,.4);
+    transform: translateX(105%); transition: transform .35s cubic-bezier(.16,1,.3,1);
+    padding: 22px 20px; overflow-y: auto;
+}
+.drawer.open { transform: none; }
+.drawer .d-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.drawer .d-brand { font-weight: 800; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+.drawer .d-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: var(--bg); font-size: .95rem; cursor: pointer; color: var(--ink); }
+.drawer a.d-item { display: block; padding: 12px 16px; border-radius: 12px; color: var(--ink-soft); font-size: .98rem; font-weight: 600; }
+.drawer a.d-item:hover, .drawer a.d-item.active { background: rgba(59,130,246,.1); color: var(--brand); }
+.drawer .d-auth { margin-top: 14px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; }
+.drawer .d-auth a { flex: 1; text-align: center; padding: 11px; border-radius: 999px; font-size: .9rem; font-weight: 600; }
+.drawer .d-auth .ga { background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+.drawer .d-auth .gab { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; }
+
+/* 回到顶部 */
+.backtop {
+    position: fixed; right: 26px; bottom: 26px; z-index: 5000;
+    width: 46px; height: 46px; border-radius: 50%;
+    background: rgba(255,255,255,.92); color: var(--brand);
+    border: 1px solid var(--line); cursor: pointer; font-size: 1.05rem;
+    opacity: 0; transform: translateY(12px); transition: all .3s ease;
+    box-shadow: var(--shadow-1);
+}
+.backtop.show { opacity: 1; transform: none; }
+.backtop:hover { background: var(--brand); color: #fff; }
+
+/* 入场 */
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
+
+/* 响应式 */
+@media (max-width: 900px) {
+    .vhero { padding: 84px 24px 120px; }
+    .vwrap { padding: 56px 24px 40px; }
+    .footer { padding: 48px 24px 26px; }
+}
+@media (max-width: 760px) {
+    .nav { padding: 0 20px; }
+    .vhero { padding: 72px 20px 110px; }
+    .vhero-inner { grid-template-columns: 1fr; gap: 40px; }
+    .vhero h1 { font-size: 2.4rem; letter-spacing: 5px; }
+    .pd-stats { display: none; }
+    .vwrap { padding: 40px 20px 30px; }
+    .leadq { margin-bottom: 54px; }
+    .pd-grid { grid-template-columns: 1fr; }
+    .p-body { padding: 17px 18px 19px; }
+    .cta { margin-top: 50px; padding: 60px 20px; }
+    .footer-grid { grid-template-columns: 1fr; gap: 26px; }
+    .backtop { right: 18px; bottom: 18px; width: 42px; height: 42px; }
+}
+        .ui-fx-glow {
+            position: fixed; left: -999px; top: -999px; width: 240px; height: 240px;
+            border-radius: 50%; pointer-events: none; z-index: 9997;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(59,130,246,.18), rgba(139,92,246,.10) 45%, transparent 65%);
+            opacity: 0;
+        }
+
+
+        /* ===== Hero 入场动画(全站统一,与首页一致的错峰淡入) ===== */
+        @keyframes heroFadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+        .vhero .hero-eyebrow, .vhero h1, .vhero .vhero-sub, .vhero .vhero-actions,
+        .vhero .pd-stats, .vhero .cl-stats, .vhero .acard, .vhero .vhcard, .vhero .com-rules {
+            animation: heroFadeUp .95s cubic-bezier(.16,1,.3,1) both;
+        }
+        .vhero .hero-eyebrow { animation-delay: .08s; }
+        .vhero h1 { animation-delay: .2s; }
+        .vhero .vhero-sub { animation-delay: .34s; }
+        .vhero .vhero-actions { animation-delay: .48s; }
+        .vhero .pd-stats, .vhero .cl-stats, .vhero .acard, .vhero .vhcard, .vhero .com-rules { animation-delay: .32s; }
+        @media (prefers-reduced-motion: reduce) {
+            .vhero .hero-eyebrow, .vhero h1, .vhero .vhero-sub, .vhero .vhero-actions,
+            .vhero .pd-stats, .vhero .cl-stats, .vhero .acard, .vhero .vhcard, .vhero .com-rules { animation: none; }
+        }
+
+        /* ===== 全站公告条(与首页一致) ===== */
+        .beta-announce {
+            display: flex; align-items: center; gap: 14px;
+            max-width: 1080px; margin: 34px auto 0; padding: 15px 24px;
+            background: var(--card);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-1);
+            position: relative;
+        }
+        .beta-announce::before {
+            content: ''; position: absolute; left: 0; top: 18px; bottom: 18px; width: 3px;
+            border-radius: 3px; background: var(--brand);
+        }
+        .beta-announce .ba-title {
+            flex-shrink: 0; font-size: .82rem; font-weight: 700; color: var(--brand);
+            background: rgba(59,130,246,.08); border-radius: 999px; padding: 4px 12px;
+        }
+        .beta-announce .ba-track-wrap { flex: 1; overflow: hidden; min-width: 0; }
+        .beta-announce .ba-track { display: inline-block; white-space: nowrap; will-change: transform; }
+        .beta-announce .ba-item {
+            display: inline-block; white-space: nowrap; padding-right: 80px;
+            font-size: .92rem; color: var(--ink-soft);
+        }
+        .beta-announce a { color: var(--brand); text-decoration: underline; }
+        .beta-announce a:hover { color: var(--brand-deep); }
+        html.dark .beta-announce { background: var(--card); }
+        html.dark .beta-announce .ba-item { color: var(--ink-soft); }
+        @media (max-width: 760px) { .beta-announce { align-items: flex-start; flex-wrap: wrap; } }
+        html { scroll-behavior: smooth; }
+        [id] { scroll-margin-top: 86px; }
+</style>
+<style>html.dark {
+    --card-bg: #101a2e; --bg-color: #0a101f; --text-color: #e5eaf3;
+    --card-border: rgba(148,163,184,.16); --count-text: #64748b; --count-bg: rgba(255,255,255,.06);
+    --status-border: #60a5fa;
+    --nav-btn-bg: rgba(255,255,255,.07); --nav-btn-text: #e5eaf3;
+    --nav-btn-hover-bg: #3b82f6; --nav-btn-hover-text: #ffffff;
+}
+
+/* ===== 作品分享页官网化打磨 ===== */
+html { scroll-behavior: smooth; }
+[id] { scroll-margin-top: 86px; }
+body { padding: 0 !important; }
+.home-card { max-width: 1080px; margin: 0 auto; padding: 6px 24px 90px; }
+button { border-radius: 999px; }
+input[type="text"], input[type="number"], textarea, select {
+    border: 1px solid var(--card-border); border-radius: 12px; padding: 10px 14px;
+    background: var(--bg-color); color: var(--text-color); font: inherit;
+    box-sizing: border-box;
+}
+
+        .ui-fx-glow {
+            position: fixed; left: -999px; top: -999px; width: 240px; height: 240px;
+            border-radius: 50%; pointer-events: none; z-index: 9997;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(59,130,246,.18), rgba(139,92,246,.10) 45%, transparent 65%);
+            opacity: 0;
+        }
+</style>
+    <style>
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 30px;
+        }
+        .product-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 18px;
+            border: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            transition: 0.2s;
+        }
+        .product-card:hover {
+            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+        }
+        .product-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .product-meta {
+            font-size: 0.85rem;
+            color: var(--count-text);
+            margin-bottom: 8px;
+        }
+        .product-desc {
+            flex: 1;
+            margin: 10px 0;
+            word-break: break-word;
+        }
+        .product-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+        }
+        .upload-section {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            border: 1px solid var(--card-border);
+        }
+        .upload-section input, .upload-section textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 30px;
+            border: 1px solid var(--card-border);
+            background: var(--bg-color);
+            color: var(--text-color);
+            margin-bottom: 12px;
+        }
+        .upload-section textarea {
+            border-radius: 16px;
+            resize: vertical;
+        }
+        .upload-section button {
+            background: var(--nav-btn-hover-bg);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+        .upload-section button:hover {
+            filter: brightness(0.9);
+        }
+        .file-input-wrapper {
+            margin-bottom: 12px;
+        }
+        .action-btn {
+            background: var(--nav-btn-bg);
+            color: var(--nav-btn-text);
+            border: none;
+            padding: 6px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .action-btn:hover {
+            background: var(--nav-btn-hover-bg);
+            color: white;
+        }
+        .free-badge { color: #4caf50; font-weight: bold; }
+        .price-tag { font-weight: bold; color: var(--status-border); }
+        .no-data { text-align: center; padding: 40px; color: var(--count-text); }
+        .loading-spinner { text-align: center; padding: 20px; }
+        .owner-badge { font-size: 0.8rem; color: var(--count-text); }
+        /* 分类筛选 */
+        .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .filter-btn {
+            background: var(--nav-btn-bg); color: var(--nav-btn-text);
+            border: 1px solid var(--card-border); border-radius: 30px;
+            padding: 6px 18px; font-size: 0.9rem; cursor: pointer; transition: 0.2s;
+        }
+        .filter-btn.active { background: var(--nav-btn-hover-bg); color: white; }
+        .filter-btn:hover { background: var(--nav-btn-hover-bg); color: white; }
+        /* 支付方式弹窗 */
+        .pay-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .pay-modal { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 24px; width: min(420px, 92vw); max-height: 86vh; overflow-y: auto; }
+        .pay-option { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--card-border); border-radius: 12px; margin: 8px 0; cursor: pointer; transition: 0.15s; }
+        .pay-option:hover { border-color: var(--status-border); }
+        .pay-option.selected { border-color: var(--status-border); background: rgba(0,0,0,0.05); }
+        .pay-option .pay-ico { font-size: 1.4rem; }
+        .pay-company-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; margin-left: 38px; font-size: 0.9rem; cursor: pointer; }
+        .pay-modal .pay-btn { width: 100%; padding: 10px; border: none; border-radius: 40px; background: var(--nav-btn-hover-bg); color: white; cursor: pointer; font-size: 1rem; margin-top: 10px; }
+        .pay-modal .pay-btn:hover { filter: brightness(0.9); }
+        .pay-modal .pay-cancel { width: 100%; padding: 8px; border: none; border-radius: 40px; background: transparent; color: var(--count-text); cursor: pointer; margin-top: 6px; }
+    
+        @keyframes heroFadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+        .vhero .hero-eyebrow, .vhero h1, .vhero .vhero-sub, .vhero .vhero-actions, .vhero .pd-stats {
+            animation: heroFadeUp .95s cubic-bezier(.16,1,.3,1) both;
+        }
+        .vhero .hero-eyebrow { animation-delay: .08s; }
+        .vhero h1 { animation-delay: .2s; }
+        .vhero .vhero-sub { animation-delay: .34s; }
+        .vhero .vhero-actions { animation-delay: .48s; }
+        .vhero .pd-stats { animation-delay: .32s; }
+        @media (prefers-reduced-motion: reduce) { .vhero .hero-eyebrow, .vhero h1, .vhero .vhero-sub, .vhero .vhero-actions, .vhero .pd-stats { animation: none; } }
+</style>
+</head>
+<body>
+<nav class="nav">
+    <a class="nav-logo" href="index-Beta.html"><img class="logo-img" src="/images/NB频道LOGO.png" alt="NB频道"><span class="logo-text">NB频道</span></a>
+    <div class="nav-menu">
+        <a href="index-Beta.html">首页</a>
+        <a href="videos-Beta.html">视频</a>
+        <a href="about-Beta.html">关于</a>
+        <a href="changelog-Beta.html">更新日志</a>
+        <a href="product-Beta.html" class="active">我的产品</a>
+        <a href="APP-Beta.html">软件/APP</a>
+        <a href="index-Beta.html#friends">友商</a>
+        <a class="nav-api" href="/api-sdk/" target="_blank" rel="noopener noreferrer" title="NB频道 API 文档">API<i>↗</i></a>
+    </div>
+    <div class="nav-right-group">
+        <div class="nav-clock" id="navClock" title="北京时间（UTC+8）">
+            <span class="nc-time" id="bjTime">--:--:--</span>
+            <span class="nc-row"><i class="nc-date" id="bjDate">----.--.--</i><em class="nc-label">北京时间</em></span>
+        </div>
+        <button class="theme-btn" id="themeBtn" aria-label="切换夜间模式">🌙</button>
+        <div class="nav-auth-group" id="betaAuthGroup">
+            <a class="nav-auth" id="betaProfileBtn" href="#">👤 个人中心</a>
+            <a class="nav-auth primary" id="betaAuthBtn" href="#">登录 / 注册</a>
+        </div>
+    </div>
+    <button class="nav-burger" id="navBurger" aria-label="打开菜单">☰</button>
+</nav>
+<!-- Hero -->
+<header class="vhero">
+    <div class="vhero-inner">
+        <div class="hero-copy">
+            <span class="hero-eyebrow">SHARING · CREATORS MARKET</span>
+            <h1>作品<span class="light">分享</span></h1>
+            <p class="vhero-sub">虚拟公司的货架——上传你的作品,或淘一件别人的。支持 NB币购买与"加市值"支持作者,单个文件不超过 50MB</p>
+            <div class="vhero-actions">
+                <a class="hero-link" href="#productList">浏览作品 ↓</a>
+                <a class="hero-link" href="product-Beta.html">我的产品 ↗</a>
+            </div>
+        </div>
+        <div class="pd-stats">
+            <div class="pd-row"><span class="k">发布</span><b>≤50MB · 自由定价</b></div>
+            <div class="pd-row"><span class="k">支付</span><b>NB币 · 加市值</b></div>
+            <div class="pd-row"><span class="k">筛选</span><b>全部 · 免费 · 已拥有</b></div>
+            <div class="pd-row"><span class="k">登录</span><b>全站统一账号</b></div>
+        </div>
+    </div>
+    <div class="vhero-fade"></div>
+</header>
+
+
+<!-- 全站公告 -->
+<div class="beta-announce" id="betaAnnounce" style="display:none;">
+    <div class="ba-title">公告</div>
+    <div class="ba-track-wrap"><div class="ba-track" id="baTrack"></div></div>
+</div>
+
+<div class="home-card">
+        <div class="user-info" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <span id="userStatusSpan">未登录</span>
+            <span id="balanceDisplay" style="font-weight:bold;">💰 NB币: --</span>
+        </div>
+        <hr style="margin: 20px 0; border-color: var(--card-border);">
+
+        <div id="uploadSection" class="upload-section" style="display:none;">
+            <h3 id="uploadSectionTitle">📤 上传你的作品</h3>
+            <input type="text" id="productTitle" placeholder="作品标题（最多20字）" maxlength="20">
+            <textarea id="productDesc" rows="3" placeholder="作品简介（最多100字、10行）" maxlength="100"></textarea>
+            <input type="number" id="productPrice" placeholder="定价（NB币，0为免费）" min="0" max="999999999" value="0">
+            <div class="file-input-wrapper">
+                <input type="file" id="productFile" accept="*/*">
+                <span style="font-size:0.8rem; color:var(--count-text);">单个文件不超过 50 MB</span>
+            </div>
+            <button id="uploadBtn">📤 发布作品</button>
+            <button id="cancelEditBtn" style="display:none; background:#6c757d; color:white; border:none; padding:10px 24px; border-radius:40px; cursor:pointer; margin-left:10px;">取消编辑</button>
+            <div id="uploadStatus" style="margin-top:10px; color:var(--status-border);"></div>
+        </div>
+
+        <h3>📚 所有作品</h3>
+        <div class="filter-bar">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="owned">已拥有</button>
+            <button class="filter-btn" data-filter="free">免费</button>
+            <button class="filter-btn" data-filter="not_owned">未拥有</button>
+        </div>
+        <div id="productList" class="product-grid">
+            <div class="loading-spinner">⏳ 加载中...</div>
+        </div>
+    </div>
+</div>
+
+<!-- 支付方式选择弹窗（付费作品） -->
+<div class="pay-modal-overlay" id="payModal">
+    <div class="pay-modal">
+        <h3 style="margin-top:0;">💳 购买作品</h3>
+        <div id="payProductInfo" style="color:var(--count-text); margin-bottom:10px;"></div>
+        <div class="pay-option selected" id="payOptNb" onclick="selectPayType('nb')">
+            <span class="pay-ico">💰</span>
+            <div><div style="font-weight:600;">用 NB币支付</div><div style="font-size:0.8rem; color:var(--count-text);">金额直接给作者</div></div>
+        </div>
+        <div id="payMarketWrap">
+            <div class="pay-option" id="payOptMarket" onclick="selectPayType('market')">
+                <span class="pay-ico">📈</span>
+                <div><div style="font-weight:600;">加市值支持</div><div style="font-size:0.8rem; color:var(--count-text);">金额加到作者的公司市值（帮作者冲榜）</div></div>
+            </div>
+            <div id="payCompanyList" style="display:none;"></div>
+        </div>
+        <button class="pay-btn" id="payConfirmBtn">确认支付</button>
+        <button class="pay-cancel" id="payCancelBtn">取消</button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    // ========== 配置 ==========
+    const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
+    // ⚠️ 替换为你的 PythonAnywhere 后端地址
+    const API_BASE = 'https://nbchannel.pythonanywhere.com';  // 例如 https://yourname.pythonanywhere.com
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ========== 辅助函数 ==========
+    function getCurrentUser() {
+        const stored = localStorage.getItem('nb_user');
+        if (!stored) return null;
+        try { return JSON.parse(stored); } catch { return null; }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;');
+    }
+
+    // ========== 用户信息更新 ==========
+    async function fetchUserBalance() {
+        const user = getCurrentUser();
+        if (!user) return 0;
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('nb_balance')
+            .eq('id', user.id)
+            .single();
+        if (error) return 0;
+        return data.nb_balance || 0;
+    }
+
+    async function updateUserUI() {
+        const user = getCurrentUser();
+        const statusSpan = document.getElementById('userStatusSpan');
+        const balanceSpan = document.getElementById('balanceDisplay');
+        const uploadSection = document.getElementById('uploadSection');
+
+        if (user) {
+            statusSpan.innerHTML = `欢迎，${user.username} <button id="logoutBtn" style="background:none;border:none;color:var(--status-border);cursor:pointer;">登出</button>`;
+            document.getElementById('logoutBtn')?.addEventListener('click', () => {
+                localStorage.removeItem('nb_user');
+                window.location.reload();
+            });
+            uploadSection.style.display = 'block';
+            const balance = await fetchUserBalance();
+            balanceSpan.innerHTML = `💰 NB币: ${balance}`;
+        } else {
+            statusSpan.innerHTML = `<a href="/login.html?redirect=${encodeURIComponent(window.location.href)}" style="color:var(--status-border);">登录</a> / <a href="login.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="color:var(--status-border);">注册</a>`;
+            balanceSpan.innerHTML = '💰 NB币: --';
+            uploadSection.style.display = 'none';
+        }
+    }
+
+    // ========== 加载作品列表 ==========
+    let productsData = [];
+    let purchasedIdsSet = new Set();   // 当前用户已拥有（购买）的作品ID
+    let currentFilter = 'all';         // 当前分类：all/owned/free/not_owned
+
+    function formatFileSize(bytes) {
+        if (!bytes) return '';
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+    }
+
+    function renderProducts() {
+        const container = document.getElementById('productList');
+        if (!productsData.length) {
+            container.innerHTML = '<div class="no-data">暂无作品，快来上传你的第一个作品吧！</div>';
+            return;
+        }
+        const user = getCurrentUser();
+
+        let filtered = productsData;
+        if (currentFilter === 'owned') {
+            filtered = productsData.filter(p => user && (p.author_id === user.id || purchasedIdsSet.has(p.id)));
+        } else if (currentFilter === 'free') {
+            filtered = productsData.filter(p => p.price === 0);
+        } else if (currentFilter === 'not_owned') {
+            filtered = productsData.filter(p => !user || (p.author_id !== user.id && !purchasedIdsSet.has(p.id)));
+        }
+
+        if (!filtered.length) {
+            container.innerHTML = '<div class="no-data">该分类下暂无作品</div>';
+            return;
+        }
+
+        let html = '';
+        for (const p of filtered) {
+            const isOwner = user && user.id === p.author_id;
+            const isPurchased = purchasedIdsSet.has(p.id);
+            const priceText = p.price === 0 ? '<span class="free-badge">免费</span>' : `<span class="price-tag">${p.price} NB币</span>`;
+            const sizeText = p.file_size ? ` · 📦 ${formatFileSize(p.file_size)}` : (p.file_name ? ` · 📄 ${escapeHtml(p.file_name)}` : '');
+
+            let actionHtml = '';
+            if (isOwner) {
+                actionHtml = `<span class="owner-badge">[你的作品]</span>
+                    <button class="action-btn download-btn" data-id="${p.id}">📥 下载</button>
+                    <button class="action-btn edit-btn" data-id="${p.id}">✏️ 编辑</button>
+                    <button class="action-btn delete-btn" data-id="${p.id}" style="background:#e74c3c; color:white;">🗑️ 删除</button>`;
+            } else if (user) {
+                if (isPurchased && p.price > 0) {
+                    actionHtml = `<button class="action-btn download-btn" data-id="${p.id}">📥 已购买，下载</button>`;
+                } else {
+                    const btnText = p.price === 0 ? '📥 免费下载' : `💳 购买（${p.price} NB币）`;
+                    const btnClass = p.price === 0 ? 'download-btn' : 'buy-btn';
+                    actionHtml = `<button class="action-btn ${btnClass}" data-id="${p.id}">${btnText}</button>`;
+                }
+            } else {
+                actionHtml = `<span style="color:var(--count-text);">请登录后下载</span>`;
+            }
+
+            html += `
+                <div class="product-card">
+                    <div class="product-title">${escapeHtml(p.title)}</div>
+                    <div class="product-meta">👤 ${escapeHtml(p.author_username)} · 📅 ${new Date(p.created_at).toLocaleDateString()} · 📥 ${p.downloads || 0} 次下载${sizeText}</div>
+                    <div class="product-desc">${escapeHtml(p.description || '无简介')}</div>
+                    <div style="margin-top:auto;">
+                        <span>${priceText}</span>
+                        <div class="product-actions">
+                            ${actionHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+
+        container.querySelectorAll('.download-btn, .buy-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const productId = parseInt(btn.dataset.id);
+                const p = productsData.find(x => x.id === productId);
+                const isOwner = user && user.id === p.author_id;
+                // 自己的作品：直接下载（不弹付费）
+                // 付费且未购买（非自己）：弹支付方式选择；免费/已购买：直接下载
+                if (!isOwner && p && p.price > 0 && !purchasedIdsSet.has(productId)) {
+                    openPayModal(productId, p);
+                } else {
+                    purchaseProduct(productId);
+                }
+            });
+        });
+
+        // 编辑 / 删除自己的作品
+        container.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const productId = parseInt(btn.dataset.id);
+                const p = productsData.find(x => x.id === productId);
+                if (p) startEdit(p);
+            });
+        });
+        container.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const productId = parseInt(btn.dataset.id);
+                deleteProduct(productId);
+            });
+        });
+    }
+
+    async function loadProducts() {
+        const container = document.getElementById('productList');
+        container.innerHTML = '<div class="loading-spinner">⏳ 加载中...</div>';
+
+        const { data, error } = await supabaseClient.rpc('get_products');
+        if (error) {
+            console.error('加载失败:', error);
+            container.innerHTML = '<div class="no-data">加载失败，请刷新重试</div>';
+            return;
+        }
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="no-data">暂无作品，快来上传你的第一个作品吧！</div>';
+            return;
+        }
+        productsData = data;
+
+        const user = getCurrentUser();
+
+        // 查询当前用户已购买/已下载过的作品（一次性批量查询，真实表用 buyer_id）
+        purchasedIdsSet = new Set();
+        if (user) {
+            const ids = data.map(p => p.id);
+            const { data: purchases, error: purErr } = await supabaseClient
+                .from('product_purchases')
+                .select('product_id')
+                .in('product_id', ids)
+                .eq('buyer_id', user.id);
+            if (!purErr && purchases) {
+                purchases.forEach(x => purchasedIdsSet.add(x.product_id));
+            }
+        }
+
+        renderProducts();
+    }
+
+    // ========== 分类筛选 ==========
+    function initFilterBar() {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentFilter = btn.dataset.filter;
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b === btn));
+                renderProducts();
+            });
+        });
+    }
+
+    // ========== 编辑作品 ==========
+    let editingProductId = null;
+
+    function startEdit(p) {
+        editingProductId = p.id;
+        document.getElementById('uploadSectionTitle').innerText = '✏️ 编辑作品（不选文件则保留原文件）';
+        document.getElementById('productTitle').value = p.title || '';
+        document.getElementById('productDesc').value = p.description || '';
+        document.getElementById('productPrice').value = p.price || 0;
+        document.getElementById('productFile').value = '';
+        document.getElementById('uploadBtn').innerText = '💾 保存修改';
+        document.getElementById('cancelEditBtn').style.display = 'inline-block';
+        document.getElementById('uploadStatus').innerText = '';
+        document.getElementById('uploadSection').style.display = 'block';
+        document.getElementById('uploadSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+        editingProductId = null;
+        document.getElementById('uploadSectionTitle').innerText = '📤 上传你的作品';
+        document.getElementById('productTitle').value = '';
+        document.getElementById('productDesc').value = '';
+        document.getElementById('productPrice').value = '0';
+        document.getElementById('productFile').value = '';
+        document.getElementById('uploadBtn').innerText = '📤 发布作品';
+        document.getElementById('cancelEditBtn').style.display = 'none';
+        document.getElementById('uploadStatus').innerText = '';
+    }
+
+    async function deleteProduct(productId) {
+        const user = getCurrentUser();
+        if (!user) { alert('请先登录'); return; }
+        if (!confirm('确定删除这个作品吗？文件将一并删除，且无法恢复！')) return;
+        try {
+            const response = await fetch(`${API_BASE}/delete-product`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-User-Id': user.id },
+                body: JSON.stringify({ product_id: productId })
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert('✅ 作品已删除');
+                if (editingProductId === productId) cancelEdit();
+                await loadProducts();
+            } else {
+                alert(result.message || '删除失败');
+            }
+        } catch (err) {
+            alert('网络错误：' + err.message);
+        }
+    }
+
+    // ========== 上传 / 编辑作品 ==========
+    let isUploading = false;   // 防连点：上传中锁定按钮，避免重复发布
+    const PRODUCT_BAD_WORDS = ['操你妈','傻逼','垃圾','废物','脑残','智障','滚','去死','sb','nmsl',
+        '他妈','特么','尼玛','妈逼','操蛋','王八蛋','混蛋','杂种','狗日的','法克','fuck','shit','bitch',
+        '黑鬼','白皮猪','支那','台巴子','回子','圣母婊','娘炮','人妖','五毛','美分','带节奏','洗地',
+        '脑残粉','水军','喷子','网暴','卖淫','嫖娼','约炮','裸聊','毒品','海洛因','办证','加微信',
+        '兼职刷单','返利','垃圾频道','SB频道','脑残UP','gay','Gay','GAY','吃屎','大粪','蟑螂','臭水沟',
+        '呕吐物','引战','造谣','无家可归','乱封号'];
+    function containsBadWords(text) {
+        const low = text.toLowerCase();
+        return PRODUCT_BAD_WORDS.some(w => low.includes(w.toLowerCase()));
+    }
+    async function uploadProduct() {
+        if (isUploading) { alert('正在上传中，请稍候...'); return; }
+        const user = getCurrentUser();
+        if (!user) { alert('请先登录'); return; }
+
+        const title = document.getElementById('productTitle').value.trim();
+        const desc = document.getElementById('productDesc').value.trim();
+        const price = parseInt(document.getElementById('productPrice').value) || 0;
+        const fileInput = document.getElementById('productFile');
+        const file = fileInput.files[0];
+        const statusDiv = document.getElementById('uploadStatus');
+
+        if (!title) { alert('请输入作品标题'); return; }
+        if (title.length > 20) { alert('标题不能超过20字'); return; }
+        if (title.split('\n').length > 2) { alert('标题最多2行'); return; }
+        if (desc.length > 100) { alert('简介不能超过100字'); return; }
+        if (desc.split('\n').length > 10) { alert('简介最多10行'); return; }
+        if (containsBadWords(title) || containsBadWords(desc)) { alert('标题或简介包含违禁词，禁止发布'); return; }
+        if (price < 0 || price > 999999999) { alert('价格需在 0~999999999 之间'); return; }
+
+        const isEdit = editingProductId !== null;
+        if (!isEdit && !file) { alert('请选择要上传的文件'); return; }
+        if (file && file.size > 50 * 1024 * 1024) { alert('文件不能超过 50 MB'); return; }
+
+        const formData = new FormData();
+        if (isEdit) formData.append('product_id', editingProductId);
+        formData.append('title', title);
+        formData.append('description', desc);
+        formData.append('price', price);
+        if (file) formData.append('file', file);
+
+        // 锁定按钮，防止手滑连点产生重复作品
+        isUploading = true;
+        const uploadBtn = document.getElementById('uploadBtn');
+        uploadBtn.disabled = true;
+        statusDiv.innerText = isEdit ? '⏳ 保存中...' : '⏳ 上传中...';
+
+        try {
+            const response = await fetch(`${API_BASE}/${isEdit ? 'edit-product' : 'upload'}`, {
+                method: 'POST',
+                headers: { 'X-User-Id': user.id },
+                body: formData
+            });
+            const result = await response.json();
+            if (result.success) {
+                statusDiv.innerText = isEdit ? '✅ 修改已保存！' : '✅ 发布成功！';
+                cancelEdit();
+                await loadProducts();
+                await updateUserUI();
+            } else {
+                statusDiv.innerText = '❌ ' + result.message;
+            }
+        } catch (err) {
+            console.error(err);
+            statusDiv.innerText = '❌ 网络错误：' + err.message;
+        } finally {
+            isUploading = false;
+            uploadBtn.disabled = false;
+            uploadBtn.innerText = editingProductId !== null ? '💾 保存修改' : '📤 发布作品';
+        }
+    }
+
+    // ========== 购买/下载 ==========
+    // ========== 支付方式选择弹窗 ==========
+    let payState = { productId: null, companies: [], payType: 'nb', companyId: null };
+
+    function selectPayType(t) {
+        payState.payType = t;
+        document.getElementById('payOptNb').classList.toggle('selected', t === 'nb');
+        document.getElementById('payOptMarket').classList.toggle('selected', t === 'market');
+        const list = document.getElementById('payCompanyList');
+        list.style.display = t === 'market' ? 'block' : 'none';
+    }
+
+    function renderPayCompanies() {
+        const list = document.getElementById('payCompanyList');
+        list.innerHTML = payState.companies.map(c => `
+            <label class="pay-company-item">
+                <input type="radio" name="payCompany" value="${c.id}" ${c.id === payState.companyId ? 'checked' : ''}>
+                <span>🏢 ${escapeHtml(c.company_name)}（市值 ${c.market_value}）</span>
+            </label>`).join('');
+        list.querySelectorAll('input[name=payCompany]').forEach(r => {
+            r.onchange = () => { payState.companyId = parseInt(r.value); };
+        });
+    }
+
+    async function openPayModal(productId, p) {
+        payState = { productId, companies: [], payType: 'nb', companyId: null };
+        document.getElementById('payProductInfo').innerText = `《${p.title}》 · 价格 ${p.price} NB币`;
+        const { data, error } = await supabaseClient.rpc('get_author_companies', { p_author_id: p.author_id });
+        payState.companies = data || [];
+        const marketWrap = document.getElementById('payMarketWrap');
+        if (!payState.companies.length) {
+            // 作者无公司：隐藏"加市值"选项，只能选 NB币
+            marketWrap.style.display = 'none';
+        } else {
+            marketWrap.style.display = 'block';
+            payState.companyId = payState.companies[0].id;
+            renderPayCompanies();
+        }
+        selectPayType('nb');
+        document.getElementById('payModal').style.display = 'flex';
+    }
+
+    function closePayModal() {
+        document.getElementById('payModal').style.display = 'none';
+    }
+
+    async function purchaseProduct(productId, payType, companyId) {
+        const user = getCurrentUser();
+        if (!user) { alert('请先登录'); return; }
+
+        try {
+            const response = await fetch(`${API_BASE}/download`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-Id': user.id
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    pay_type: payType || 'nb',
+                    company_id: companyId || null
+                })
+            });
+            const result = await response.json();
+            if (result.success) {
+                if (result.message) alert(result.message);
+                if (result.file_url) window.open(result.file_url, '_blank');
+                await loadProducts();
+                await updateUserUI();
+            } else {
+                alert(result.message || '操作失败');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('网络错误：' + err.message + '\n（如果持续失败，可能是 PythonAnywhere 后端未部署或未配置 CORS）');
+        }
+    }
+
+    // ========== 后端连通性检查 ==========
+    // 若 PythonAnywhere 后端未部署，页面给出明确提示，避免"上传总是失败"无从排查
+    async function checkBackendHealth() {
+        const statusDiv = document.getElementById('uploadStatus');
+        try {
+            const response = await fetch(`${API_BASE}/health`, { method: 'GET' });
+            if (response.ok) {
+                return true;
+            }
+        } catch (e) { /* 后端不可达，走下方提示 */ }
+        if (statusDiv) {
+            statusDiv.style.color = '#ff6b6b';
+            statusDiv.innerText = '⚠️ 上传/下载服务未连接：请确认 PythonAnywhere 后端已部署（见 pythonanywhere/README.md），否则无法上传和下载作品';
+        }
+        return false;
+    }
+
+    // ========== 初始化 ==========
+    async function init() {
+        await updateUserUI();
+        await loadProducts();
+        initFilterBar();
+        document.getElementById('uploadBtn').addEventListener('click', uploadProduct);
+        document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
+        document.getElementById('payConfirmBtn').addEventListener('click', async () => {
+            if (payState.payType === 'market' && !payState.companyId) { alert('请选择要加市值的公司'); return; }
+            const pid = payState.productId;
+            const pType = payState.payType;
+            const cid = payState.companyId;
+            closePayModal();
+            await purchaseProduct(pid, pType, cid);
+        });
+        document.getElementById('payCancelBtn').addEventListener('click', closePayModal);
+        checkBackendHealth();
+    }
+
+    init();
+</script>
+<footer class="footer">
+    <div class="footer-grid">
+        <div>
+            <div class="brand"><img class="logo-img" src="/images/NB频道LOGO.png" alt="NB频道"><span class="logo-text">NB频道</span></div>
+            <p class="desc">NB频道（NoBook频道）——热爱理科（和作死）的 UP主建立的虚拟公司。化学物理实验、日常作死、虚拟经济，一个有趣的数字世界</p>
+        </div>
+        <div>
+            <h5>功能</h5>
+            <a href="stock-Beta.html">虚拟股票</a><a href="/bank.html">NB银行</a><a href="comments-Beta.html">评论区</a><a href="/shop.html">NB商店</a><a href="/titles.html">称号系统</a>
+        </div>
+        <div>
+            <h5>友商</h5>
+            <a href="https://orgent.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">Orgent（已注销）</a>
+            <a href="https://45d.cn/AWM/" target="_blank" rel="noopener noreferrer">AWM</a>
+            <a href="https://fafat.uuk.pp.ua/" target="_blank" rel="noopener noreferrer">Fafat</a>
+            <a href="https://nb-qx.top/" target="_blank" rel="noopener noreferrer">Lemon（齐喜）</a>
+            <a href="https://gaohantu.cn/" target="_blank" rel="noopener noreferrer">GaoHanTu</a>
+            <a href="https://utw.pages.dev" target="_blank" rel="noopener noreferrer">Utw</a>
+            <a href="https://pipetrainingcamp.github.io/" target="_blank" rel="noopener noreferrer">PTC（GoodPTC）</a>
+            <a href="https://yoyo-user-awa.github.io/UVS/" target="_blank" rel="noopener noreferrer">UVS</a>
+            <a href="https://3f7ceb4e.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">UwLS</a>
+            <a href="https://45d.cn/nb-og.top/" target="_blank" rel="noopener noreferrer">Oganesson</a>
+            <a href="https://78439049.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">SOT</a>
+        </div>
+        <div>
+            <h5>联系</h5>
+            <a href="mailto:nbchannel@163.com">nbchannel@163.com</a><a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">B站：NB搞事局</a><a href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">nb-channel.top</a>
+        </div>
+    </div>
+    <div class="footer-bottom">© 2026 NB频道 · 虚拟公司 · 制作：NB搞事局 · 由 GitHub Pages / Cloudflare / PythonAnywhere 提供支持</div>
+</footer><div class="drawer-mask" id="drawerMask"></div>
+<aside class="drawer" id="drawer">
+    <div class="d-head">
+        <span class="d-brand"><img class="logo-img" src="/images/NB频道LOGO.png" alt="NB频道"><span class="logo-text">NB频道</span></span>
+        <button class="d-close" id="drawerClose" aria-label="关闭菜单">✕</button>
+    </div>
+    <a class="d-item" href="index-Beta.html">首页</a>
+    <a class="d-item" href="videos-Beta.html">视频</a>
+    <a class="d-item" href="about-Beta.html">关于</a>
+    <a class="d-item" href="changelog-Beta.html">更新日志</a>
+    <a class="d-item active" href="product-Beta.html">我的产品</a>
+    <a class="d-item" href="APP-Beta.html">软件/APP</a>
+    <a class="d-item" href="index-Beta.html#friends">友商</a>
+    <a class="d-item" href="/api-sdk/" target="_blank" rel="noopener noreferrer">API ↗</a>
+    <div class="d-auth">
+        <a class="ga" id="dProfileBtn" href="#">👤 个人中心</a>
+        <a class="gab" id="dAuthBtn" href="#">登录 / 注册</a>
+    </div>
+</aside><button class="backtop" id="backTop" aria-label="回到顶部">↑</button>
+<script>
+// ===== 鼠标特效:跟随光晕 + 点击波纹与彩色粒子(仅鼠标设备) =====
+    (function () {
+        if (!(window.matchMedia && window.matchMedia('(pointer: fine)').matches)) return;
+        var glow = document.createElement('div');
+        glow.className = 'ui-fx-glow';
+        document.body.appendChild(glow);
+        var gx = -999, gy = -999, tx = -999, ty = -999;
+        document.addEventListener('mousemove', function (e) { tx = e.clientX; ty = e.clientY; });
+        document.addEventListener('mouseenter', function () { glow.style.opacity = '1'; });
+        document.addEventListener('mouseleave', function () { glow.style.opacity = '0'; });
+        var lx = -1e9, ly = -1e9;
+        (function loop() {
+            gx += (tx - gx) * 0.14;
+            gy += (ty - gy) * 0.14;
+            // 静止时跳过写入:避免每帧重复改 style 白白触发样式计算
+            if (Math.abs(gx - lx) > 0.2 || Math.abs(gy - ly) > 0.2) {
+                glow.style.left = gx + 'px';
+                glow.style.top = gy + 'px';
+                lx = gx; ly = gy;
+            }
+            requestAnimationFrame(loop);
+        })();
+        var colors = ['#3b82f6', '#8b5cf6', '#6366f1', '#06b6d4', '#f59e0b'];
+        document.addEventListener('click', function (e) {
+            var ring = document.createElement('div');
+            ring.style.cssText = 'position:fixed; left:' + e.clientX + 'px; top:' + e.clientY + 'px; width:12px; height:12px; border:2px solid rgba(59,130,246,.75); border-radius:50%; pointer-events:none; z-index:9999; transform:translate(-50%,-50%);';
+            document.body.appendChild(ring);
+            setTimeout(function () { if (ring.parentNode) ring.remove(); }, 900);
+            try {
+                ring.animate([
+                    { transform: 'translate(-50%,-50%) scale(1)', opacity: 0.9 },
+                    { transform: 'translate(-50%,-50%) scale(5.5)', opacity: 0 }
+                ], { duration: 600, easing: 'ease-out', fill: 'forwards' });
+            } catch (err) { ring.remove(); }
+            for (var i = 0; i < 8; i++) {
+                var p = document.createElement('div');
+                var size = 4 + Math.random() * 6;
+                var ang = Math.random() * Math.PI * 2;
+                var dist = 28 + Math.random() * 52;
+                p.style.cssText = 'position:fixed; left:' + e.clientX + 'px; top:' + e.clientY + 'px; width:' + size + 'px; height:' + size + 'px; border-radius:50%; background:' + colors[i % colors.length] + '; pointer-events:none; z-index:9999;';
+                document.body.appendChild(p);
+                var dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
+                var dur = 500 + Math.random() * 250;
+                setTimeout(function (el) {
+                    return function () { if (el.parentNode) el.remove(); };
+                }(p), dur + 250);
+                try {
+                    p.animate([
+                        { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                        { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(0.1)', opacity: 0 }
+                    ], { duration: dur, easing: 'cubic-bezier(0.15,0.8,0.25,1)', fill: 'forwards' });
+                } catch (err) { p.remove(); }
+            }
+        });
+    })();
+</script>
+<script>
+    (function () {
+        var bar = document.getElementById('betaAnnounce');
+        var track = document.getElementById('baTrack');
+        if (!bar || !track) return;
+        function esc(s) {
+            return String(s).replace(/[&<>"']/g, function (m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
+        function linkify(s) {
+            return s.replace(/(https?:\/\/[^\s<>"']+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:var(--brand); text-decoration:underline;">$1</a>');
+        }
+        fetch('https://pbaafgjkwdbwcmsikcmg.supabase.co/rest/v1/admin_config?select=value&key=eq.announcement', {
+            headers: {
+                'apikey': 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg',
+                'Authorization': 'Bearer sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg'
+            }
+        })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (rows) {
+            if (!rows || !rows.length) return;
+            var raw = String(rows[0].value || '').trim();
+            if (!raw) return;
+            bar.style.display = 'flex';
+            var one = '<span class="ba-item">' + linkify(esc(raw)) + '</span>';
+            track.innerHTML = one;
+            var item = track.querySelector('.ba-item');
+            var itemW = item ? item.offsetWidth : 0;
+            if (itemW <= 0) return;
+            var wrapEl = bar.querySelector('.ba-track-wrap');
+            var barW = wrapEl ? wrapEl.clientWidth : 0;
+            var copies = Math.max(2, Math.ceil(barW / itemW) + 1);
+            var all = '';
+            for (var ci = 0; ci < copies; ci++) all += '<span class="ba-item">' + linkify(esc(raw)) + '</span>';
+            track.innerHTML = all;
+            var dur = Math.max(8, itemW / 45);
+            if (track.animate) {
+                track.animate(
+                    [{ transform: 'translateX(0)' }, { transform: 'translateX(-' + itemW + 'px)' }],
+                    { duration: dur * 1000, iterations: Infinity, easing: 'linear' }
+                );
+            }
+        })
+        .catch(function () {});
+    })();
+</script>
+<script>
+    function bindAuthPair(pbEl, abEl) {
+        if (!pbEl && !abEl) return;
+        var storedU = null;
+        try { storedU = JSON.parse(localStorage.getItem('nb_user')); } catch (e) {}
+        if (storedU && storedU.id) {
+            if (abEl) {
+                abEl.textContent = '登出账号';
+                abEl.onclick = function () { localStorage.removeItem('nb_user'); location.reload(); };
+            }
+            if (pbEl) {
+                pbEl.textContent = '👤 ' + (storedU.username || storedU.name || '个人中心');
+                pbEl.href = '/profile.html';
+            }
+        } else {
+            var loginHref = '/login.html?redirect=' + encodeURIComponent(location.href);
+            if (abEl) { abEl.href = loginHref; abEl.textContent = '登录 / 注册'; }
+            if (pbEl) { pbEl.href = loginHref; pbEl.textContent = '👤 个人中心'; }
+        }
+    }
+    bindAuthPair(document.getElementById('betaProfileBtn'), document.getElementById('betaAuthBtn'));
+    bindAuthPair(document.getElementById('dProfileBtn'), document.getElementById('dAuthBtn'));
+
+    // ===== 导航栏北京时间(与全站一致) =====
+    (function () {
+        var tEl = document.getElementById('bjTime');
+        var dEl = document.getElementById('bjDate');
+        if (!tEl) return;
+        var fmtT = new Intl.DateTimeFormat('zh-CN', {
+            timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit',
+            second: '2-digit', hour12: false, hourCycle: 'h23'
+        });
+        var fmtD = new Intl.DateTimeFormat('zh-CN', {
+            timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit',
+            day: '2-digit', weekday: 'short'
+        });
+        function tick() {
+            var now = new Date();
+            tEl.textContent = fmtT.format(now);
+            if (dEl) dEl.textContent = fmtD.format(now).replace(/\//g, '.');
+        }
+        tick();
+        setInterval(tick, 1000);
+    })();
+
+    // ===== 导航滚动态 + 回到顶部 =====
+    (function () {
+        var nav = document.querySelector('.nav');
+        var backTop = document.getElementById('backTop');
+        function onScroll() {
+            var y = window.scrollY || document.documentElement.scrollTop;
+            if (nav) nav.classList.toggle('scrolled', y > 10);
+            if (backTop) backTop.classList.toggle('show', y > 700);
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+        if (backTop) backTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    })();
+
+    // ===== 夜间模式切换 =====
+    (function () {
+        var btn = document.getElementById('themeBtn');
+        var root = document.documentElement;
+        function isDark() { return root.classList.contains('dark'); }
+        function render() {
+            if (btn) { btn.textContent = isDark() ? '☀️' : '🌙'; btn.title = isDark() ? '切换到日间模式' : '切换到夜间模式'; }
+        }
+        function apply(dark) {
+            root.classList.toggle('dark', dark);
+            try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+            render();
+        }
+        if (btn) btn.addEventListener('click', function () {
+            var dark = !isDark();
+            if (document.startViewTransition) {
+                try { document.startViewTransition(function () { apply(dark); }); } catch (e) { apply(dark); }
+            } else apply(dark);
+        });
+        render();
+    })();
+
+    // ===== 移动端抽屉 =====
+    (function () {
+        var burger = document.getElementById('navBurger');
+        var drawer = document.getElementById('drawer');
+        var mask = document.getElementById('drawerMask');
+        var closeBtn = document.getElementById('drawerClose');
+        if (!burger || !drawer || !mask) return;
+        function open() { drawer.classList.add('open'); mask.style.display = 'block'; document.body.classList.add('locked'); }
+        function close() { drawer.classList.remove('open'); mask.style.display = 'none'; document.body.classList.remove('locked'); }
+        burger.addEventListener('click', open);
+        closeBtn.addEventListener('click', close);
+        mask.addEventListener('click', close);
+        drawer.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', close); });
+    })();
+
+    // ===== 防查看代码(反调试,静默无提示) =====
+    (function () {
+        var DEV = window.__allowDevTools ||
+                  /(?:^|[?&#])dev=1(?=&|#|$)/.test(location.href) ||
+                  /#dev\b/.test(location.hash);
+        if (DEV) return;
+        document.addEventListener('keydown', function (e) {
+            var k = e.keyCode || e.which;
+            var ctrl = e.ctrlKey || e.metaKey;
+            if (k === 123 || e.key === 'F12' ||
+                (ctrl && e.shiftKey && (k === 73 || k === 74 || k === 67)) ||
+                (ctrl && k === 85)) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
+        document.addEventListener('contextmenu', function (e) { e.preventDefault(); return false; });
+        setInterval(function () { debugger; }, 600);
+    })();
+</script>
+</body>
