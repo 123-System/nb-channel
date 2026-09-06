@@ -932,7 +932,7 @@ button { border-radius: 999px; }
             if (!friendsList.length) { body.innerHTML = '<div class="empty-tip">还没有好友，去"🔍 找人"添加吧</div>'; return; }
             body.innerHTML = friendsList.map(f => `
                 <div class="side-item" data-act="msg" data-id="${f.user_id}" data-name="${escapeHtml(f.username)}" data-avatar="${f.avatar_url || ''}">
-                    <a href="'/profile.html?username='${encodeURIComponent(f.username)}" onclick="event.stopPropagation();" title="查看主页" style="display:flex; flex-shrink:0;">
+                    <a href="'profile-Beta.html?username='${encodeURIComponent(f.username)}" onclick="event.stopPropagation();" title="查看主页" style="display:flex; flex-shrink:0;">
                         <img src="${avatarOf(f)}" alt="">
                     </a>
                     <span class="name">${escapeHtml(f.username)}</span>
@@ -982,7 +982,7 @@ button { border-radius: 999px; }
         if (!convs.length) { body.innerHTML = '<div class="empty-tip">暂无会话，去"👥 好友"找人聊天吧</div>'; return; }
         body.innerHTML = convs.map(c => `
             <div class="side-item ${c.conversation_id === currentConvId ? 'active' : ''}" data-conv="${c.conversation_id}" data-uid="${c.other_user_id}" data-name="${escapeHtml(c.other_username)}" data-avatar="${c.other_avatar || ''}">
-                <a href="'/profile.html?username='${encodeURIComponent(c.other_username)}" onclick="event.stopPropagation();" title="查看主页" style="display:flex; flex-shrink:0;">
+                <a href="'profile-Beta.html?username='${encodeURIComponent(c.other_username)}" onclick="event.stopPropagation();" title="查看主页" style="display:flex; flex-shrink:0;">
                     <img src="${avatarOf(c)}" alt="">
                 </a>
                 <span class="name">${escapeHtml(c.other_username)}</span>
@@ -2175,7 +2175,7 @@ button { border-radius: 999px; }
             }
             if (pbEl) {
                 pbEl.textContent = '👤 ' + (storedU.username || storedU.name || '个人中心');
-                pbEl.href = '/profile.html';
+                pbEl.href = 'profile-Beta.html';
             }
         } else {
             var loginHref = '/login.html?redirect=' + encodeURIComponent(location.href);
