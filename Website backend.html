@@ -1345,8 +1345,9 @@
             const btn = banned
                 ? '<span style="font-size:0.75rem;color:#e74c3c;border:1px solid #f5c6c6;border-radius:20px;padding:1px 8px;">已封禁</span>'
                 : '<button class="ban-ip-btn" data-ip="' + r.ip + '" style="border:none;background:#e74c3c;color:#fff;border-radius:20px;padding:2px 10px;font-size:0.75rem;cursor:pointer;">封禁</button>';
-            return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 0;border-bottom:1px dashed #e2e8f0;font-size:0.86rem;"><span style="color:#6c757d;word-break:break-all;flex:1;">' + (r.ip || '(空)') + ' <b style="color:#333;">' + r.n + '</b></span>' + btn + '</div>';
+            return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 0;border-bottom:1px dashed #e2e8f0;font-size:0.86rem;"><span style="color:#6c757d;word-break:break-all;flex:1;">' + (r.ip || '(空)') + ' <b style="color:#333;">' + r.n + '</b> <span data-geo="' + (r.ip || '') + '" style="color:#8a94a6;font-size:0.75rem;"></span></span>' + btn + '</div>';
         }).join('');
+        fillGeo(el);
     }
     function bindBanActions() {
         const panel = document.getElementById('apiPanel');
@@ -1390,10 +1391,51 @@
         data.rows.forEach(function (r) { window.__bannedIpsMap[r.ip] = true; });
         box.style.display = 'block';
         list.innerHTML = data.rows.map(function (r) {
-            return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed #e2e8f0;font-size:0.86rem;"><span style="color:#6c757d;word-break:break-all;flex:1;"><b style="color:#333;">' + r.ip + '</b> · ' + (r.reason || '') + ' · <span style="color:#8a94a6;">' + (r.created_at || '') + '</span></span><button class="unban-ip-btn" data-ip="' + r.ip + '" style="border:none;background:#6c757d;color:#fff;border-radius:20px;padding:2px 12px;font-size:0.75rem;cursor:pointer;">解封</button></div>';
+            return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed #e2e8f0;font-size:0.86rem;"><span style="color:#6c757d;word-break:break-all;flex:1;"><b style="color:#333;">' + r.ip + '</b> <span data-geo="' + r.ip + '" style="color:#8a94a6;font-size:0.75rem;"></span> · ' + (r.reason || '') + ' · <span style="color:#8a94a6;">' + (r.created_at || '') + '</span></span><button class="unban-ip-btn" data-ip="' + r.ip + '" style="border:none;background:#6c757d;color:#fff;border-radius:20px;padding:2px 12px;font-size:0.75rem;cursor:pointer;">解封</button></div>';
         }).join('');
+        fillGeo(document.getElementById('topIps'));
+        fillGeo(document.getElementById('bannedIpsList'));
+    }
+    function fillGeo(root) {
+        if (!root) return;
+        root.querySelectorAll('[data-geo]').forEach(function (el) {
+            const ip = el.dataset.geo;
+            if (!ip) { el.textContent = ''; return; }
+            const key = 'nb_geo:' + ip;
+            let cached = null;
+            try { cached = localStorage.getItem(key); } catch (e) {}
+            if (cached) { el.textContent = cached; return; }
+            el.textContent = '…';
+            const urls = [
+                'https://ipwho.is/' + encodeURIComponent(ip),
+                'https://api.vore.top/api/IPdata?ip=' + encodeURIComponent(ip)
+            ];
+            function next(i) {
+                if (i >= urls.length) { el.textContent = ''; return; }
+                fetch(urls[i], { cache: 'no-store' })
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (j) {
+                        let name = '';
+                        if (j && j.country && (j.success === undefined || j.success)) {
+                            name = [j.country, j.city].filter(Boolean).join(' · ');
+                        } else if (j && j.code === 200 && j.ipdata) {
+                            name = [j.ipdata.province, j.ipdata.city].filter(Boolean).join(' · ');
+                        }
+                        if (name && name !== '  ') {
+                            el.textContent = name;
+                            try { localStorage.setItem(key, name); } catch (e) {}
+                        } else {
+                            next(i + 1);
+                        }
+                    })
+                    .catch(function () { next(i + 1); });
+            }
+            next(0);
+        });
     }
     bindBanActions();
+    fillGeo(document.getElementById('topIps'));
+    fillGeo(document.getElementById('bannedIpsList'));
     async function loadLogs() {
         const body = document.getElementById('apiBody');
         if (body) body.innerHTML = '<tr><td colspan="6">加载中...</td></tr>';
