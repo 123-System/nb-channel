@@ -855,6 +855,24 @@ _api_stats = {
 def count_api_requests():
     if not request.path.startswith('/api/') or request.path == '/api/stats':
         return
+    # ---- IP 黑名单(全站封禁;缓存 60s;查询失败放行,不影响 API) ----
+    try:
+        ip = (request.headers.get('X-Forwarded-For', '') or request.remote_addr or '')
+        if ',' in ip:
+            ip = ip.split(',')[0].strip()
+        now = datetime.datetime.now().timestamp()
+        if now - _api_ban_cache['ts'] > 60:
+            try:
+                rows = _exec_rows(supabase.table('banned_ips').select('ip'))
+                _api_ban_cache['ips'] = {str(r['ip']) for r in rows}
+                _api_ban_cache['ts'] = now
+            except Exception:
+                _api_ban_cache['ts'] = now  # 查询失败也等 60s 再试,避免打爆
+        if ip in _api_ban_cache['ips']:
+            return jsonify({'success': False, 'code': 'IP_BANNED',
+                            'message': '该 IP 已被封禁,如有疑问请联系 nbchannel@163.com'}), 403
+    except Exception:
+        pass
     today = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
     if _api_stats['day'] != today:
         _api_stats['day'] = today
@@ -862,6 +880,9 @@ def count_api_requests():
         _api_stats['by_endpoint'] = {}
     _api_stats['day_total'] += 1
     _api_stats['by_endpoint'][request.path] = _api_stats['by_endpoint'].get(request.path, 0) + 1
+
+# IP 黑名单缓存(与 _api_stats 同级定义)
+_api_ban_cache = {'ts': 0.0, 'ips': set()}
 
 def _rate_limited(ip, limit=60, window=60):
     """返回 (是否受限, 剩余次数)。"""

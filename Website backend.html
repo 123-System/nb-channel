@@ -332,8 +332,8 @@
             <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;"><div id="sLast" style="font-size:0.95rem;font-weight:700;color:#333;padding-top:4px;">-</div><div style="font-size:0.8rem;color:#6c757d;">最近记录(北京)</div></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;"><div style="font-weight:600;margin-bottom:6px;font-size:0.92rem;">请求最多的端点</div><div id="topEndpoints">加载中...</div></div>
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;"><div style="font-weight:600;margin-bottom:6px;font-size:0.92rem;">请求最多的 IP(疑似爬虫)</div><div id="topIps">加载中...</div></div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;"><div style="font-weight:600;margin-bottom:6px;font-size:0.92rem;">请求最多的端点(已剔除官网自用)</div><div style="font-size:0.82rem;color:#6c757d;margin-bottom:6px;">官网自用(首页/导航页实时粉丝): <b id="fansSelf" style="color:#00a1d6;">…</b></div><div id="topEndpoints">加载中...</div></div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;"><div style="font-weight:600;margin-bottom:6px;font-size:0.92rem;">请求最多的 IP(点击行尾按钮可封禁)</div><div id="topIps">加载中...</div></div>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
             <input type="text" id="fEndpoint" placeholder="端点包含,如 /api/market" style="padding:8px 12px;border:1px solid #ddd;border-radius:30px;font-size:0.9rem;min-width:170px;">
@@ -350,7 +350,7 @@
                 <tbody id="apiBody"><tr><td colspan="6">登录后此处显示日志</td></tr></tbody>
             </table>
         </div>
-        <div style="font-size:0.78rem;color:#8a94a6;margin-top:8px;">后端每 20 秒批量写入表 api_logs;进程内存统计见 /api/stats。本页为持久历史。</div>
+        <div style="font-size:0.78rem;color:#8a94a6;margin-top:8px;">后端每 20 秒批量写入表 api_logs;进程内存统计见 /api/stats;IP 封禁复用全站 banned_ips(封禁后该 IP 的 API 与评论区均受限,缓存约 1 分钟生效)。<div id="bannedIpsBox" style="display:none; margin-top:14px;"><b style="color:#e74c3c;">🚫 已封禁 IP(全站)</b><div id="bannedIpsList" style="margin-top:8px;"></div></div></div>
     </div>
 
     <div class="unban-section">
@@ -1331,8 +1331,69 @@
         if (error || !data || !data.ok) return;
         const set = function (id, v) { const el = document.getElementById(id); if (el) el.textContent = v; };
         set('sToday', data.today); set('s429', data.rate_limited); set('sTotal', data.total); set('sLast', data.last || '暂无');
-        renderKV('topEndpoints', data.endpoints); renderKV('topIps', data.ips);
+        set('fansSelf', (data.fans_total || 0) + ' 次(30秒/次页面轮询)');
+        renderKV('topEndpoints', data.endpoints);
+        renderIpsTop('topIps', data.ips);
+        loadBannedList();
     }
+    function renderIpsTop(elId, rows) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        if (!rows || !rows.length) { el.innerHTML = '<div style="padding:6px 0;color:#8a94a6;">暂无数据</div>'; return; }
+        el.innerHTML = rows.map(function (r) {
+            const banned = (window.__bannedIpsMap || {})[r.ip] ? true : false;
+            const btn = banned
+                ? '<span style="font-size:0.75rem;color:#e74c3c;border:1px solid #f5c6c6;border-radius:20px;padding:1px 8px;">已封禁</span>'
+                : '<button class="ban-ip-btn" data-ip="' + r.ip + '" style="border:none;background:#e74c3c;color:#fff;border-radius:20px;padding:2px 10px;font-size:0.75rem;cursor:pointer;">封禁</button>';
+            return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 0;border-bottom:1px dashed #e2e8f0;font-size:0.86rem;"><span style="color:#6c757d;word-break:break-all;flex:1;">' + (r.ip || '(空)') + ' <b style="color:#333;">' + r.n + '</b></span>' + btn + '</div>';
+        }).join('');
+    }
+    function bindBanActions() {
+        const panel = document.getElementById('apiPanel');
+        if (!panel || panel.__banBound) return;
+        panel.__banBound = true;
+        panel.addEventListener('click', async function (e) {
+            const banBtn = e.target.closest ? e.target.closest('.ban-ip-btn') : null;
+            if (banBtn) {
+                const ip = banBtn.dataset.ip;
+                const reason = prompt('封禁 IP ' + ip + ' 的原因(默认:API 频繁访问/疑似爬虫):', 'API 频繁访问/疑似爬虫');
+                if (reason === null) return;
+                const { data, error } = await supabaseClient.rpc('admin_ban_api_ip', { p_ip: ip, p_reason: reason.trim() || 'API 频繁访问/疑似爬虫', p_token: getToken() });
+                if (error || !data || !data.success) { alert('封禁失败: ' + ((error && error.message) || (data && data.message) || '未知')); return; }
+                alert(data.message || '已封禁');
+                await loadBannedList();
+                loadSummary();
+                return;
+            }
+            const unb = e.target.closest ? e.target.closest('.unban-ip-btn') : null;
+            if (unb) {
+                const ip = unb.dataset.ip;
+                if (!confirm('确定解封 IP ' + ip + ' 吗?')) return;
+                const { data, error } = await supabaseClient.rpc('admin_unban_api_ip', { p_ip: ip, p_token: getToken() });
+                if (error || !data || !data.success) { alert('解封失败: ' + ((error && error.message) || (data && data.message) || '未知')); return; }
+                alert(data.message || '已解封');
+                await loadBannedList();
+                loadSummary();
+            }
+        });
+    }
+    async function loadBannedList() {
+        const { data, error } = await supabaseClient.rpc('admin_list_banned_api_ips', { p_token: getToken() });
+        window.__bannedIpsMap = {};
+        const box = document.getElementById('bannedIpsBox');
+        const list = document.getElementById('bannedIpsList');
+        if (!box || !list) return;
+        if (error || !data || !data.ok || !data.rows || !data.rows.length) {
+            box.style.display = 'none';
+            return;
+        }
+        data.rows.forEach(function (r) { window.__bannedIpsMap[r.ip] = true; });
+        box.style.display = 'block';
+        list.innerHTML = data.rows.map(function (r) {
+            return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed #e2e8f0;font-size:0.86rem;"><span style="color:#6c757d;word-break:break-all;flex:1;"><b style="color:#333;">' + r.ip + '</b> · ' + (r.reason || '') + ' · <span style="color:#8a94a6;">' + (r.created_at || '') + '</span></span><button class="unban-ip-btn" data-ip="' + r.ip + '" style="border:none;background:#6c757d;color:#fff;border-radius:20px;padding:2px 12px;font-size:0.75rem;cursor:pointer;">解封</button></div>';
+        }).join('');
+    }
+    bindBanActions();
     async function loadLogs() {
         const body = document.getElementById('apiBody');
         if (body) body.innerHTML = '<tr><td colspan="6">加载中...</td></tr>';
