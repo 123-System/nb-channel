@@ -286,7 +286,21 @@
     <div id="pagination" class="pagination"></div>
 
     <div id="companyReportsContainer" style="display: none;">加载中...</div>
+    <div id="companyBatch" class="batch-actions" style="display:none;">
+        <span>已选 <b id="companySelCount">0</b> 条公司举报</span>
+        <button id="cbIgnore" class="success">🙈 批量忽略</button>
+        <button id="cbBan" class="danger">🚫 批量封禁所有者</button>
+        <button id="cbDel" class="warning">🗑️ 批量删除公司</button>
+        <button id="cbClear">清空选择</button>
+    </div>
+
     <div id="verificationContainer" style="display: none;">加载中...</div>
+    <div id="verifyBatch" class="batch-actions" style="display:none;">
+        <span>已选 <b id="verifySelCount">0</b> 家公司</span>
+        <button id="vbApprove" class="success">✅ 批量通过认证</button>
+        <button id="vbReject" class="danger">❌ 批量驳回认证</button>
+        <button id="vbClear">清空选择</button>
+    </div>
 
     <div id="announcePanel" style="display:none;">
         <div style="background:#fff8e6;border:1px solid #ffd591;border-left:4px solid #ff9800;border-radius:12px;padding:10px 16px;font-size:0.9rem;margin-bottom:16px;">💡 公告显示在首页与全站页面顶部的滚动公告条。留空保存 = 清除公告。</div>
@@ -648,6 +662,8 @@
     async function loadCompanyReports() {
     const container = document.getElementById('companyReportsContainer');
     container.innerHTML = '<div class="loading">加载中...</div>';
+    companySel.clear();
+    document.getElementById('companySelCount').textContent = 0;
     try {
         const { data, error } = await supabaseClient
             .from('reports')
@@ -684,6 +700,7 @@
             html += `
                 <div class="report-card" data-report-id="${report.id}">
                     <div class="card-header">
+                        <label style="margin-right:12px; cursor:pointer; user-select:none;"><input type="checkbox" class="cb-company" data-id="${report.id}" data-cid="${companyId}" data-owner="${company?.user_id || ''}" title="选择用于批量操作"> 选择</label>
                         <strong>🏢 公司举报 #${report.id}</strong>
                         <div class="report-time">📅 ${formatDate(report.created_at)}</div>
                     </div>
@@ -776,6 +793,8 @@
     async function loadVerificationRequests() {
         const container = document.getElementById('verificationContainer');
         container.innerHTML = '<div class="loading">加载中...</div>';
+        verifySel.clear();
+        document.getElementById('verifySelCount').textContent = 0;
         try {
             const { data, error } = await supabaseClient
                 .from('user_companies')
@@ -784,7 +803,7 @@
                     profiles!inner(username)
                 `)
                 .eq('verification_status', 'pending')
-                .order('created_at', { ascending: true });
+                .order('created_at', { ascending: false });
             if (error) throw error;
             if (!data || data.length === 0) {
                 container.innerHTML = '<div class="loading">暂无待认证的公司</div>';
@@ -795,6 +814,7 @@
                 html += `
                     <div class="report-card" data-company-id="${company.id}">
                         <div class="card-header">
+                            <label style="margin-right:12px; cursor:pointer; user-select:none;"><input type="checkbox" class="cb-verify" data-id="${company.id}" title="选择用于批量操作"> 选择</label>
                             <strong>🏢 公司名称：${escapeHtml(company.company_name)}</strong>
                             <div class="report-time">📅 申请时间：${formatDate(company.created_at)}</div>
                         </div>
@@ -855,6 +875,95 @@
                 loadDashboard();
             };
         });
+    }
+
+    // ==================== 公司举报 & 认证审核:批量选择与操作 ====================
+    let companySel = new Set();
+    let verifySel = new Set();
+    (function initBatchUI() {
+        const cCont = document.getElementById('companyReportsContainer');
+        if (cCont) cCont.addEventListener('change', function (e) {
+            const box = e.target;
+            if (!box || !box.classList || !box.classList.contains('cb-company')) return;
+            if (box.checked) companySel.add(box.dataset.id); else companySel.delete(box.dataset.id);
+            const el = document.getElementById('companySelCount');
+            if (el) el.textContent = companySel.size;
+        });
+        const vCont = document.getElementById('verificationContainer');
+        if (vCont) vCont.addEventListener('change', function (e) {
+            const box = e.target;
+            if (!box || !box.classList || !box.classList.contains('cb-verify')) return;
+            if (box.checked) verifySel.add(box.dataset.id); else verifySel.delete(box.dataset.id);
+            const el = document.getElementById('verifySelCount');
+            if (el) el.textContent = verifySel.size;
+        });
+        document.getElementById('cbClear').onclick = function () {
+            companySel.clear();
+            document.querySelectorAll('.cb-company').forEach(function (b) { b.checked = false; });
+            document.getElementById('companySelCount').textContent = 0;
+        };
+        document.getElementById('vbClear').onclick = function () {
+            verifySel.clear();
+            document.querySelectorAll('.cb-verify').forEach(function (b) { b.checked = false; });
+            document.getElementById('verifySelCount').textContent = 0;
+        };
+        document.getElementById('cbIgnore').onclick = async function () {
+            if (!companySel.size) { alert('请先勾选要忽略的举报'); return; }
+            if (!confirm('忽略选中的 ' + companySel.size + ' 条公司举报?')) return;
+            const ids = Array.from(companySel).map(Number);
+            const { data, error } = await supabaseClient.rpc('admin_batch_ignore', { p_report_ids: ids, p_token: getToken() });
+            if (error || !data || !data.success) {
+                if (!handleAdminError(error || (data && data.message))) alert('忽略失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+                return;
+            }
+            alert('已忽略'); loadCompanyReports(); loadDashboard();
+        };
+        document.getElementById('cbBan').onclick = async function () {
+            if (!companySel.size) { alert('请先勾选要处理的举报'); return; }
+            const owners = Array.from(document.querySelectorAll('.cb-company:checked'))
+                .map(function (b) { return b.dataset.owner; })
+                .filter(function (v) { return !!v; });
+            if (!owners.length) { alert('所选举报缺少所有者信息,无法封禁'); return; }
+            if (!confirm('封禁 ' + owners.length + ' 位公司所有者,并忽略对应举报?')) return;
+            const { data, error } = await supabaseClient.rpc('admin_batch_ban_users', { p_user_ids: owners, p_token: getToken() });
+            if (error || !data || !data.success) {
+                if (!handleAdminError(error || (data && data.message))) alert('封禁失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+                return;
+            }
+            const ids = Array.from(companySel).map(Number);
+            await supabaseClient.rpc('admin_batch_ignore', { p_report_ids: ids, p_token: getToken() });
+            alert('已封禁'); loadCompanyReports(); loadDashboard(); loadBannedUsers();
+        };
+        document.getElementById('cbDel').onclick = async function () {
+            if (!companySel.size) { alert('请先勾选要删除的公司'); return; }
+            if (!confirm('删除选中的 ' + companySel.size + ' 家公司(连同举报记录)?此操作不可恢复!')) return;
+            const boxes = Array.from(document.querySelectorAll('.cb-company:checked'));
+            for (const b of boxes) {
+                const cid = parseInt(b.dataset.cid, 10);
+                if (isNaN(cid) || cid <= 0) continue;
+                await supabaseClient.rpc('admin_delete_company', { p_company_id: cid, p_token: getToken() });
+            }
+            const ids = Array.from(companySel).map(Number);
+            await supabaseClient.rpc('admin_batch_ignore', { p_report_ids: ids, p_token: getToken() });
+            alert('已删除'); loadCompanyReports(); loadDashboard(); loadBannedUsers();
+        };
+        document.getElementById('vbApprove').onclick = function () { batchVerify(true); };
+        document.getElementById('vbReject').onclick = function () { batchVerify(false); };
+    })();
+    async function batchVerify(approved) {
+        if (!verifySel.size) { alert('请先勾选公司'); return; }
+        if (!confirm((approved ? '通过' : '驳回') + '选中的 ' + verifySel.size + ' 家公司的认证申请?')) return;
+        for (const id of Array.from(verifySel)) {
+            await supabaseClient.rpc('admin_verify_company', {
+                p_company_id: parseInt(id, 10),
+                p_approved: approved,
+                p_token: getToken()
+            });
+        }
+        verifySel.clear();
+        alert('操作完成');
+        loadVerificationRequests();
+        loadDashboard();
     }
 
     // ==================== 封禁用户列表 ====================
@@ -943,7 +1052,7 @@
 
     function switchTab(tab) {
         currentTab = tab;
-        const panels = ['commentFilters','batchActions','reportsContainer','pagination','companyReportsContainer','verificationContainer'];
+        const panels = ['commentFilters','batchActions','reportsContainer','pagination','companyReportsContainer','verificationContainer','companyBatch','verifyBatch'];
         const tabs = ['tabComments','tabCompanies','tabVerification','tabAnnounce','tabApi'];
         function hideAll() { panels.forEach(function (id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }); }
         function hidePanels() { ['announcePanel','apiPanel'].forEach(function (id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }); }
@@ -959,9 +1068,11 @@
             loadCommentReports();
         } else if (tab === 'companies') {
             document.getElementById('companyReportsContainer').style.display = 'block';
+            document.getElementById('companyBatch').style.display = 'flex';
             loadCompanyReports();
         } else if (tab === 'verification') {
             document.getElementById('verificationContainer').style.display = 'block';
+            document.getElementById('verifyBatch').style.display = 'flex';
             loadVerificationRequests();
         } else if (tab === 'announce') {
             document.getElementById('announcePanel').style.display = 'block';
