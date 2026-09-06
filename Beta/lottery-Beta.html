@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="NB频道幸运转盘抽奖记录——查看你的总抽奖次数、中奖次数、中奖总额与净收益。">
+<meta name="description" content="每日签到领 NB币,幸运转盘赢大奖——每次抽奖消耗 50 NB币,今日剩余次数实时显示。">
 <meta name="theme-color" content="#0f172a">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233b82f6'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='26' font-weight='800' fill='%23fff' text-anchor='middle'%3ENB%3C/text%3E%3C/svg%3E">
-<title>我的抽奖记录 - NB频道官网</title>
+<title>签到 · 幸运转盘 - NB频道官网</title>
 <script>
     (function () {
         try {
@@ -668,89 +668,163 @@ html.dark .bk-toast { background: #1e293b; border: 1px solid rgba(148,163,184,.2
 html.dark .bk-toast.err { background: #991b1b; }
 
 
-/* ==================== 抽奖记录 页面样式 ==================== */
-.lr-wrap { max-width: 860px; margin: 0 auto; padding: 46px 24px 80px; }
-@media (max-width: 760px) { .lr-wrap { padding: 26px 12px 60px; } }
-.lr-toolbar {
+/* ==================== 签到 · 幸运转盘 页面样式 ==================== */
+.lt-wrap { max-width: 1020px; margin: 0 auto; padding: 46px 24px 80px; }
+@media (max-width: 760px) { .lt-wrap { padding: 26px 12px 60px; } }
+.lt-toolbar {
     display: flex; align-items: center; justify-content: space-between; gap: 14px;
-    flex-wrap: wrap; margin: 0 0 22px; padding: 16px 20px;
+    flex-wrap: wrap; margin: 0 0 24px; padding: 16px 20px;
     background: var(--card); border: 1px solid var(--line);
     border-radius: var(--radius-lg); box-shadow: var(--shadow-1);
 }
-.lr-tb-title { font-size: 1.12rem; font-weight: 800; letter-spacing: 1px; }
-.lr-tb-sub { font-size: .8rem; color: var(--ink-faint); margin-top: 3px; }
-.lr-tb-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.lr-go {
+.lt-tb-title { font-size: 1.1rem; font-weight: 800; letter-spacing: 1px; }
+.lt-tb-sub { font-size: .8rem; color: var(--ink-faint); margin-top: 3px; }
+.lt-tb-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.lt-balance {
     display: inline-flex; align-items: center; gap: 6px;
-    background: linear-gradient(135deg, #f59e0b, #f97316); color: #fff;
-    border-radius: 999px; padding: 8px 18px; font-size: .85rem; font-weight: 700;
-    box-shadow: 0 8px 20px -8px rgba(245,158,11,.5); transition: all .22s ease;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 16px; font-size: .86rem; color: var(--ink-soft); font-weight: 600;
 }
-.lr-go:hover { transform: translateY(-1px); color: #fff; }
-.lr-refresh {
+.lt-balance b { color: #d97706; font-weight: 800; }
+html.dark .lt-balance b { color: #fbbf24; }
+.lt-records {
+    display: inline-flex; align-items: center; gap: 5px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink-soft);
+    padding: 8px 18px; border-radius: 999px; font-size: .85rem; font-weight: 700; transition: all .25s ease;
+}
+.lt-records:hover { border-color: var(--brand); color: var(--brand); transform: translateY(-1px); }
+.lt-refresh {
     display: inline-flex; align-items: center; gap: 6px;
     border: 1px solid var(--line); background: var(--bg); color: var(--ink-soft);
     padding: 8px 18px; border-radius: 999px; cursor: pointer;
     font-size: .85rem; font-weight: 700; transition: all .25s ease;
 }
-.lr-refresh:hover { border-color: var(--brand); color: var(--brand); transform: translateY(-1px); }
-.lr-refresh.spin { animation: lrSpin .6s linear; }
-@keyframes lrSpin { to { transform: rotate(360deg); } }
+.lt-refresh:hover { border-color: var(--brand); color: var(--brand); transform: translateY(-1px); }
+.lt-refresh.spin { animation: ltSpin .6s linear; }
+@keyframes ltSpin { to { transform: rotate(360deg); } }
 
-.lr-state { text-align: center; padding: 70px 20px; color: var(--ink-faint); }
-.lr-state .lr-st-ico { font-size: 3rem; margin-bottom: 16px; }
-.lr-state h3 { color: var(--ink); font-size: 1.2rem; margin-bottom: 10px; letter-spacing: 1px; }
-.lr-state p { font-size: .92rem; line-height: 2; margin-bottom: 24px; }
-.lr-st-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-.lr-st-btn { display: inline-block; padding: 11px 30px; border-radius: 999px; font-size: .92rem; font-weight: 700; letter-spacing: 1px; }
-.lr-st-btn.login { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; box-shadow: 0 10px 24px -10px rgba(59,130,246,.6); }
-.lr-st-btn.ghost { background: var(--bg); color: var(--ink-soft); border: 1px solid var(--line); }
-.lr-dot { animation: lrDot 1.2s infinite both; }
-.lr-dot:nth-child(2) { animation-delay: .15s; }
-.lr-dot:nth-child(3) { animation-delay: .3s; }
-@keyframes lrDot { 0%, 60%, 100% { opacity: .2; } 30% { opacity: 1; } }
+.lt-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+@media (max-width: 900px) { .lt-cols { grid-template-columns: 1fr; } }
+.lt-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 24px;
+    box-shadow: var(--shadow-1); padding: 24px 26px 28px; position: relative;
+    display: flex; flex-direction: column; align-items: center; gap: 8px; overflow: hidden;
+}
+.lt-card-h {
+    font-size: 1.15rem; font-weight: 900; letter-spacing: 1px; align-self: flex-start;
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+}
+/* 签到戳 */
+.lt-stamp { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0 4px; }
+.lt-stamp-ico { font-size: 3.4rem; line-height: 1.1; filter: drop-shadow(0 6px 12px rgba(0,0,0,.12)); }
+.lt-stamp-name { font-size: 1rem; font-weight: 800; color: var(--ink-soft); letter-spacing: 1px; }
+.lt-next { font-size: .9rem; color: #d97706; font-weight: 700; margin-bottom: 10px; }
+html.dark .lt-next { color: #fbbf24; }
+.lt-checkin-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.lt-note { font-size: .74rem; color: var(--ink-faint); line-height: 1.9; margin-top: 10px; text-align: center; }
 
-.lr-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
-@media (max-width: 860px) { .lr-stats { grid-template-columns: repeat(2, 1fr); } }
-.lr-stat {
-    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-md);
-    box-shadow: var(--shadow-1); padding: 18px 10px; text-align: center;
-    transition: transform .25s ease, box-shadow .25s ease;
+/* 通用按钮 */
+.lt-btn {
+    border: none; border-radius: 999px; padding: 11px 30px; cursor: pointer; font-family: inherit;
+    font-size: .95rem; font-weight: 800; letter-spacing: 1px;
+    background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff;
+    box-shadow: 0 8px 20px -8px rgba(59,130,246,.55); transition: all .22s ease;
 }
-.lr-stat:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
-.lr-stat b { display: block; font-size: 1.55rem; font-weight: 900; line-height: 1.3; }
-.lr-stat span { display: block; font-size: .76rem; color: var(--ink-faint); margin-top: 5px; letter-spacing: 2px; }
-.lr-stat.times b { color: var(--brand); }
-.lr-stat.wins b { color: #d97706; }
-.lr-stat.total b { color: var(--ink); }
-.lr-stat.net b { font-size: 1.3rem; }
-.lr-stat.net.pos b { color: #16a34a; }
-.lr-stat.net.neg b { color: #e11d48; }
-html.dark .lr-stat.wins b { color: #fbbf24; }
-html.dark .lr-stat.net.pos b { color: #4ade80; }
-html.dark .lr-stat.net.neg b { color: #fb7185; }
+.lt-btn:hover { transform: translateY(-1px); }
+.lt-btn:disabled { opacity: .55; cursor: not-allowed; transform: none !important; }
+.lt-btn.green { background: linear-gradient(135deg, #22c55e, #16a34a); box-shadow: 0 8px 20px -8px rgba(34,197,94,.5); }
+.lt-btn.gold { background: linear-gradient(135deg, #f59e0b, #f97316); box-shadow: 0 8px 20px -8px rgba(245,158,11,.55); width: 100%; margin-top: 8px; }
+.lt-btn.ghost { background: var(--bg); color: var(--ink-soft); box-shadow: none; border: 1px solid var(--line); }
+.lt-btn.ghost:hover { border-color: #a855f7; color: #a855f7; }
 
-.lr-list {
-    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-1); overflow: hidden;
+/* 转盘 */
+.wheel-wrap { position: relative; width: 250px; height: 250px; margin: 10px auto 4px; }
+.lt-wheel {
+    width: 100%; height: 100%; border-radius: 50%;
+    transition: transform 3.8s cubic-bezier(0.15, 0.8, 0.25, 1);
+    border: 6px solid #475569; box-shadow: 0 10px 28px rgba(0,0,0,.25);
+    background: #64748b;
 }
-.lr-row {
-    display: flex; justify-content: space-between; align-items: center; gap: 10px;
-    padding: 13px 18px; border-bottom: 1px dashed var(--line); font-size: .92rem; flex-wrap: wrap;
-    animation: lrRow .35s ease both;
+.wheel-pointer {
+    position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
+    font-size: 20px; color: #ef4444; z-index: 10; line-height: 1;
+    text-shadow: 0 2px 5px rgba(0,0,0,.5); filter: drop-shadow(0 0 4px rgba(239,68,68,.5));
 }
-@keyframes lrRow { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
-.lr-row:last-child { border-bottom: none; }
-.lr-result { font-weight: 800; letter-spacing: .5px; }
-.lr-result.win { color: #d97706; }
-.lr-result.none { color: var(--ink-faint); }
-html.dark .lr-result.win { color: #fbbf24; }
-.lr-amount { font-weight: 900; }
-.lr-amount.win { color: #16a34a; }
-.lr-amount.zero { color: var(--ink-faint); }
-html.dark .lr-amount.win { color: #4ade80; }
-.lr-time { color: var(--ink-faint); font-size: .78rem; margin-left: auto; }
-.lr-empty { text-align: center; color: var(--ink-faint); padding: 46px 20px; font-size: .95rem; line-height: 2; }
+.lt-wheel-center {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 50px; height: 50px; border-radius: 50%; z-index: 6;
+    background: radial-gradient(circle at 35% 30%, #f8fafc, #475569);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; font-weight: 900; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.5);
+    border: 3px solid #64748b; letter-spacing: .5px;
+}
+.lt-remain { font-size: .95rem; color: var(--ink-soft); font-weight: 700; }
+.lt-remain b { color: var(--brand); font-size: 1.2rem; }
+.lt-remain span { font-size: .76rem; color: #a855f7; margin-left: 4px; font-weight: 700; }
+.lt-result {
+    min-height: 28px; margin: 8px 0 2px; font-size: .98rem; font-weight: 700;
+    color: var(--ink-soft); text-align: center; line-height: 1.7;
+}
+.lt-result.win { color: #d97706; }
+html.dark .lt-result.win { color: #fbbf24; }
+
+.lt-login-mask {
+    position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+    background: color-mix(in srgb, var(--card) 82%, transparent);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    border-radius: 24px;
+}
+.lt-login-mask p { color: var(--ink-soft); font-weight: 700; }
+.lt-st-btn {
+    display: inline-block; padding: 10px 26px; border-radius: 999px;
+    background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff;
+    font-weight: 700; box-shadow: 0 8px 20px -8px rgba(59,130,246,.6);
+}
+
+.lt-toast {
+    position: fixed; top: 84px; left: 50%; transform: translateX(-50%) translateY(-8px);
+    background: #0f172a; color: #fff; border-radius: 999px;
+    padding: 12px 26px; font-size: .92rem; font-weight: 600;
+    box-shadow: 0 12px 30px rgba(0,0,0,.28); z-index: 9998;
+    opacity: 0; pointer-events: none; transition: all .3s ease;
+    max-width: 92vw; text-align: center; letter-spacing: .3px; line-height: 1.7;
+}
+.lt-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.lt-toast.good { background: linear-gradient(135deg, #16a34a, #15803d); }
+.lt-toast.bad { background: #dc2626; }
+html.dark .lt-toast { background: #1e293b; border: 1px solid rgba(148,163,184,.2); }
+
+/* 弹窗 */
+.lt-ov {
+    display: none; position: fixed; inset: 0; z-index: 10000;
+    background: rgba(10,15,28,.55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    justify-content: center; align-items: center; padding: 22px;
+}
+.lt-ov.show { display: flex; }
+.lt-box {
+    background: var(--card); border-radius: 22px; padding: 26px 28px;
+    width: min(420px, 94vw); box-shadow: var(--shadow-2); border: 1px solid var(--line);
+    text-align: center; max-height: 86vh; overflow-y: auto;
+    animation: ltPop .28s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes ltPop { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+.lt-box h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: 14px; }
+.lt-box .lt-msg { font-size: .94rem; line-height: 1.9; color: var(--ink-soft); margin: 6px 0 14px; }
+.lt-dates { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 14px; }
+.lt-date-btn {
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    border-radius: 14px; padding: 11px; cursor: pointer; font-size: .92rem; font-weight: 600; font-family: inherit;
+    transition: all .2s ease;
+}
+.lt-date-btn:hover { border-color: #a855f7; color: #a855f7; }
+.lt-btns { display: flex; gap: 10px; justify-content: center; }
+.lt-mbtn {
+    border: none; border-radius: 999px; padding: 9px 26px; cursor: pointer; font-family: inherit;
+    font-size: .92rem; font-weight: 700;
+}
+.lt-mbtn.primary { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; }
+.lt-mbtn.gray { background: var(--bg); color: var(--ink-soft); border: 1px solid var(--line); }
 
 </style>
 </head>
@@ -784,20 +858,20 @@ html.dark .lr-amount.win { color: #4ade80; }
 <header class="vhero">
     <div class="vhero-inner">
         <div class="hero-copy">
-            <span class="hero-eyebrow">LOTTERY · 幸运转盘账本</span>
-            <h1>抽奖<span class="light">记录</span></h1>
-            <p class="vhero-sub">每一次转动都有记录:消耗、结果、进账清清楚楚——中奖靠手气,账目靠这本</p>
+            <span class="hero-eyebrow">DAILY · 签到与好运</span>
+            <h1>签到<span class="light">· 转盘</span></h1>
+            <p class="vhero-sub">每天来点一下,连续签到拿递增奖励;手痒了转一次幸运转盘,10~2000 NB 全凭运气——今天的手气怎么样?</p>
             <div class="vhero-actions">
-                <a class="hero-link" href="#content">查看记录 ↓</a>
-                <a class="hero-link" href="lottery-Beta.html">去抽奖 ↗</a>
+                <a class="hero-link" href="#checkin">每日签到 ↓</a>
+                <a class="hero-link" href="#wheel">幸运转盘 ↓</a>
             </div>
         </div>
         <div class="pd-stats">
             <div class="pd-row"><span class="k">转盘消耗</span><b>50 NB币 / 次</b></div>
-            <div class="pd-row"><span class="k">记录范围</span><b>全部抽奖明细</b></div>
-            <div class="pd-row"><span class="k">统计</span><b>次数 · 中奖 · 净收益</b></div>
-            <div class="pd-row"><span class="k">入口</span><b>首页 · 幸运转盘</b></div>
-            <div class="pd-tip">净收益 = 中奖总额 − 消耗</div>
+            <div class="pd-row"><span class="k">每日次数</span><b>10 次(可用券加成)</b></div>
+            <div class="pd-row"><span class="k">签到奖励</span><b>连续签到逐日递增</b></div>
+            <div class="pd-row"><span class="k">补签道具</span><b>📝 补签卡(商店)</b></div>
+            <div class="pd-tip">中奖即时入账 · 记录见抽奖页</div>
         </div>
     </div>
     <div class="vhero-fade"></div>
@@ -807,21 +881,59 @@ html.dark .lr-amount.win { color: #4ade80; }
     <div class="ba-title">公告</div>
     <div class="ba-track-wrap"><div class="ba-track" id="baTrack"></div></div>
 </div>
-<main class="lr-wrap">
-    <div class="lr-toolbar" id="content">
+<main class="lt-wrap">
+    <div class="lt-toolbar" id="ltTop">
         <div>
-            <div class="lr-tb-title">🎰 我的抽奖记录</div>
-            <div class="lr-tb-sub" id="lrUserNote">幸运转盘 · 每次消耗 50 NB币</div>
+            <div class="lt-tb-title">📅 每日签到 · 🎰 幸运转盘</div>
+            <div class="lt-tb-sub" id="ltUserNote">登录后签到领 NB币,转动转盘碰运气</div>
         </div>
-        <div class="lr-tb-right">
-            <a class="lr-go" href="lottery-Beta.html">🎡 去抽奖</a>
-            <button class="lr-refresh" id="refreshBtn" type="button">↻ 刷新</button>
+        <div class="lt-tb-right">
+            <span class="lt-balance" title="账户 NB币余额">💰 NB币: <b id="balanceDisplay">--</b></span>
+            <a class="lt-records" href="lottery_records-Beta.html">📜 抽奖记录</a>
+            <button class="lt-refresh" id="refreshBtn" type="button">↻ 刷新</button>
         </div>
     </div>
-    <div id="lrBody">
-        <div class="lr-state"><div class="lr-st-ico">🎰</div><h3>记录加载中<span class="lr-dot">.</span><span class="lr-dot">.</span><span class="lr-dot">.</span></h3><p>正在翻账本</p></div>
+
+    <div class="lt-cols">
+        <!-- 签到卡 -->
+        <section class="lt-card" id="checkin">
+            <div class="lt-card-h">📅 每日签到</div>
+            <div class="lt-stamp" id="ltStamp">
+                <div class="lt-stamp-ico" id="ltStampIco">📅</div>
+                <div class="lt-stamp-name" id="ltStampName">今日签到</div>
+            </div>
+            <div class="lt-next" id="nextBonusText">✨ 明天签到: +10 NB</div>
+            <div class="lt-checkin-actions">
+                <button class="lt-btn green" id="checkinBtn" type="button">📅 签到</button>
+                <button class="lt-btn ghost" id="fixCheckinBtn" type="button" style="display:none;">📝 补签</button>
+            </div>
+            <div class="lt-note">连续签到奖励逐日增加,中断后重新累计;补签卡可补最近 5 天内的漏签</div>
+            <div class="lt-login-mask" id="ltCheckinLogin" style="display:none;">
+                <p>登录后开始签到</p>
+                <a class="lt-st-btn" href="login-Beta.html?redirect=" id="ltLoginLink">去登录</a>
+            </div>
+        </section>
+
+        <!-- 转盘卡 -->
+        <section class="lt-card" id="wheel">
+            <div class="lt-card-h">🎰 幸运转盘</div>
+            <div class="wheel-wrap">
+                <div class="wheel-pointer">▼</div>
+                <canvas id="ltWheel" class="lt-wheel" width="250" height="250"></canvas>
+                <div class="lt-wheel-center">NB</div>
+            </div>
+            <div class="lt-remain">今日剩余: <b id="lotteryRemain">?</b><span id="lotteryExtra"></span></div>
+            <div id="lotteryResult" class="lt-result">转动一次试试手气</div>
+            <button class="lt-btn gold" id="lotterySpinBtn" type="button">🎰 抽一次(50 NB币)</button>
+            <div class="lt-note">奖池:10 / 50 / 100 / 200 / 500 / 2000 NB币,中奖即时入账;每天 10 次,可用「抽奖次数增加券」叠加</div>
+            <div class="lt-login-mask" id="ltWheelLogin" style="display:none;">
+                <p>登录后开始抽奖</p>
+                <a class="lt-st-btn" href="login-Beta.html?redirect=">去登录</a>
+            </div>
+        </section>
     </div>
 </main>
+<div class="lt-toast" id="ltToast"></div>
 <footer class="footer">
     <div class="footer-grid">
         <div>
@@ -912,7 +1024,7 @@ html.dark .lr-amount.win { color: #4ade80; }
             }
             if (pbEl) {
                 pbEl.textContent = '👤 ' + (storedU.username || storedU.name || '个人中心');
-                pbEl.href = 'profile-Beta.html';
+                pbEl.href = '/profile.html';
             }
         } else {
             var loginHref = '/login.html?redirect=' + encodeURIComponent(location.href);
@@ -1020,7 +1132,7 @@ html.dark .lr-amount.win { color: #4ade80; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 
-    // ===== 我的抽奖记录(与经典版一致) =====
+    // ===== 每日签到 + 幸运转盘(与经典首页逻辑一致) =====
     var supabaseClient = null;
     try {
         supabaseClient = supabase.createClient(
@@ -1028,6 +1140,7 @@ html.dark .lr-amount.win { color: #4ade80; }
             'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg'
         );
     } catch (e) { supabaseClient = null; }
+
     function getUser() {
         var stored = localStorage.getItem('nb_user');
         if (!stored) return null;
@@ -1039,69 +1152,295 @@ html.dark .lr-amount.win { color: #4ade80; }
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
         });
     }
-    function formatTime(ts) {
-        try { return new Date(ts).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }); }
-        catch (e) { return new Date(ts).toLocaleString(); }
+    var toastTimer = null;
+    function showToast(text, tone) {
+        var t = document.getElementById('ltToast');
+        if (!t) { alert(text); return; }
+        t.innerHTML = text;
+        t.className = 'lt-toast show' + (tone ? ' ' + tone : '');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { t.classList.remove('show'); }, 4200);
     }
-    function lrLoginButtons() {
-        return '<div class="lr-st-actions">' +
-            '<a class="lr-st-btn login" href="login-Beta.html?redirect=' + encodeURIComponent(location.href) + '">去登录</a>' +
-            '<a class="lr-st-btn ghost" href="login-Beta.html?register=1&redirect=' + encodeURIComponent(location.href) + '">注册新账号</a>' +
-            '</div>';
+    function ltModal(html) {
+        var ov = document.createElement('div');
+        ov.className = 'lt-ov';
+        ov.innerHTML = '<div class="lt-box">' + html + '</div>';
+        document.body.appendChild(ov);
+        requestAnimationFrame(function () { ov.classList.add('show'); });
+        function close() { ov.classList.remove('show'); setTimeout(function () { ov.remove(); }, 200); }
+        ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+        return { el: ov, close: close };
     }
-    function loadRecords() {
-        var body = document.getElementById('lrBody');
-        var note = document.getElementById('lrUserNote');
+    function showMessage(title, msg, tone) {
+        return new Promise(function (resolve) {
+            var m = ltModal('<h3>' + esc(title) + '</h3><div class="lt-msg">' + esc(msg) + '</div>' +
+                '<div class="lt-btns"><button class="lt-mbtn primary" id="ltMsgOk">确定</button></div>');
+            m.el.querySelector('#ltMsgOk').addEventListener('click', function () { m.close(); resolve(); });
+        });
+    }
+
+    // ---------- 登录区遮罩 ----------
+    function applyLoginState() {
         var user = getUser();
+        var loginHref = 'login-Beta.html?redirect=' + encodeURIComponent(location.href);
+        var ck = document.getElementById('ltCheckinLogin');
+        var wh = document.getElementById('ltWheelLogin');
+        var note = document.getElementById('ltUserNote');
         if (!user) {
-            note.textContent = '未登录';
-            body.innerHTML = '<div class="lr-state"><div class="lr-st-ico">🔒</div><h3>登录后查看抽奖记录</h3>' +
-                '<p>每一次转动都有记录</p>' + lrLoginButtons() + '</div>';
-            return;
+            if (note) note.textContent = '未登录';
+            if (ck) { ck.style.display = 'flex'; ck.querySelector('#ltLoginLink').href = loginHref; }
+            if (wh) wh.style.display = 'flex';
+            return false;
         }
-        note.textContent = '当前账号: ' + user.username;
-        body.innerHTML = '<div class="lr-state"><div class="lr-st-ico">🎰</div><h3>记录加载中<span class="lr-dot">.</span><span class="lr-dot">.</span><span class="lr-dot">.</span></h3><p>正在翻账本</p></div>';
-        supabaseClient.rpc('get_my_lottery_records', { p_user_id: user.id })
+        if (ck) ck.style.display = 'none';
+        if (wh) wh.style.display = 'none';
+        if (note) note.textContent = '当前账号: ' + user.username;
+        return true;
+    }
+
+    // ---------- 余额 ----------
+    function loadBalance() {
+        var user = getUser();
+        var el = document.getElementById('balanceDisplay');
+        if (!user || !el) return;
+        supabaseClient.from('profiles').select('nb_balance').eq('id', user.id).single()
+            .then(function (res) { if (res.data) el.innerText = Number(res.data.nb_balance).toLocaleString('zh-CN'); })
+            .catch(function () {});
+    }
+
+    // ---------- 签到状态 ----------
+    function loadCheckin() {
+        var user = getUser();
+        if (!user) return;
+        supabaseClient.rpc('get_checkin_status', { p_user_id: user.id })
+            .then(function (res) {
+                var st = res.data || {};
+                var btn = document.getElementById('checkinBtn');
+                var next = document.getElementById('nextBonusText');
+                var stampIco = document.getElementById('ltStampIco');
+                var stampName = document.getElementById('ltStampName');
+                if (st.can_checkin) {
+                    if (btn) { btn.disabled = false; btn.innerHTML = '📅 签到'; }
+                    if (next) next.innerHTML = '✨ 签到获得 ' + (st.today_bonus != null ? st.today_bonus : st.next_bonus) + ' NB · 明日 +' + (st.next_bonus || 10) + ' NB';
+                } else {
+                    if (btn) { btn.disabled = true; btn.innerHTML = '✅ 今日已签到'; }
+                    if (next) next.innerHTML = '✨ 明天签到: +' + (st.next_bonus || 10) + ' NB';
+                    if (stampIco) stampIco.textContent = '✅';
+                    if (stampName) stampName.textContent = '今日已签到';
+                }
+            })
+            .catch(function () {});
+        // 补签按钮:有补签卡即显示
+        supabaseClient.rpc('get_active_shop_effects', { p_user_id: user.id })
+            .then(function (res) {
+                var fx = res.data || {};
+                var n = (fx.success && fx.checkin_fix_count) ? fx.checkin_fix_count : 0;
+                var btn = document.getElementById('fixCheckinBtn');
+                if (btn) {
+                    if (n > 0) { btn.style.display = 'inline-block'; btn.textContent = '📝 补签(卡×' + n + ')'; }
+                    else btn.style.display = 'none';
+                }
+            })
+            .catch(function () {});
+    }
+
+    function doCheckin() {
+        var user = getUser();
+        if (!user) { showToast('请先登录', 'bad'); return; }
+        var btn = document.getElementById('checkinBtn');
+        btn.disabled = true;
+        supabaseClient.rpc('do_check_in', { p_user_id: user.id })
             .then(function (res) {
                 if (res.error) throw res.error;
-                var records = res.data || [];
-                var wins = 0, totalWin = 0;
-                records.forEach(function (r) { if (r.result === 'win') { wins++; totalWin += (Number(r.amount) || 0); } });
-                var cost = records.length * 50;
-                var net = totalWin - cost;
-                var h = '<div class="lr-stats">' +
-                    '<div class="lr-stat times"><b>' + records.length + '</b><span>总抽奖次数</span></div>' +
-                    '<div class="lr-stat wins"><b>' + wins + '</b><span>中奖次数</span></div>' +
-                    '<div class="lr-stat total"><b>' + totalWin + '</b><span>中奖总额(NB)</span></div>' +
-                    '<div class="lr-stat net ' + (net >= 0 ? 'pos' : 'neg') + '"><b>' + (net >= 0 ? '+' : '') + net + '</b><span>净收益(NB)</span></div>' +
-                    '</div>';
-                if (!records.length) {
-                    h += '<div class="lr-empty">还没有抽过奖,快去试试手气吧～ 🎡</div>';
-                } else {
-                    h += '<div class="lr-list">' + records.map(function (r, i) {
-                        var isWin = r.result === 'win';
-                        return '<div class="lr-row" style="animation-delay:' + Math.min(i * 35, 400) + 'ms">' +
-                            '<span class="lr-result ' + (isWin ? 'win' : 'none') + '">' + (isWin ? '🎉 中奖' : '😅 谢谢惠顾') + '</span>' +
-                            '<span class="lr-amount ' + (isWin ? 'win' : 'zero') + '">' + (isWin ? '+' + (Number(r.amount) || 0) + ' NB' : '0 NB') + '</span>' +
-                            '<span class="lr-time">' + formatTime(r.created_at) + '</span>' +
-                            '</div>';
-                    }).join('') + '</div>';
+                if (!res.data || res.data.success === false) {
+                    showToast((res.data && res.data.message) || '签到失败', 'bad');
+                    btn.disabled = false;
+                    return;
                 }
-                body.innerHTML = h;
+                showToast('✅ 签到成功!获得 ' + (res.data.reward || 0) + ' NB币,连续签到 ' + (res.data.consecutive || 1) + ' 天', 'good');
+                var ico = document.getElementById('ltStampIco');
+                var name = document.getElementById('ltStampName');
+                if (ico) ico.textContent = '✅';
+                if (name) name.textContent = '今日已签到';
+                loadCheckin();
+                loadBalance();
             })
-            .catch(function (err) {
-                console.error(err);
-                body.innerHTML = '<div class="lr-state"><div class="lr-st-ico">😵</div><h3>加载失败</h3><p>' + esc((err && err.message) || err) + ',请稍后重试</p></div>';
+            .catch(function (e) { showToast('❌ ' + (e.message || e), 'bad'); btn.disabled = false; });
+    }
+
+    function openFixPick() {
+        var user = getUser();
+        if (!user) return;
+        supabaseClient.rpc('get_active_shop_effects', { p_user_id: user.id })
+            .then(function (res) {
+                var fx = res.data || {};
+                var n = (fx.success && fx.checkin_fix_count) ? fx.checkin_fix_count : 0;
+                if (n <= 0) { showToast('没有可用的补签卡,去商店购买吧', 'bad'); return; }
+                var opts = [];
+                var today = new Date();
+                for (var i = 1; i <= 5; i++) {
+                    var d = new Date(today);
+                    d.setDate(d.getDate() - i);
+                    var mm = d.getMonth() + 1 < 10 ? '0' + (d.getMonth() + 1) : '' + (d.getMonth() + 1);
+                    var dd = d.getDate() < 10 ? '0' + d.getDate() : '' + d.getDate();
+                    opts.push(d.getFullYear() + '-' + mm + '-' + dd);
+                }
+                var m = ltModal('<h3>📝 补签(补签卡 ×' + n + ')</h3>' +
+                    '<div class="lt-msg">选择要补签的日期(消耗 1 张补签卡,只补记录,接上连续签到)</div>' +
+                    '<div class="lt-dates">' + opts.map(function (d) {
+                        return '<button type="button" class="lt-date-btn" data-d="' + d + '">📅 ' + d + '</button>';
+                    }).join('') + '</div>' +
+                    '<div class="lt-btns"><button class="lt-mbtn gray" id="ltPickNo">取消</button></div>');
+                m.el.querySelector('#ltPickNo').addEventListener('click', function () { m.close(); });
+                m.el.querySelectorAll('.lt-date-btn').forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        m.close();
+                        var pick = b.dataset.d;
+                        supabaseClient.rpc('use_checkin_fix', { p_user_id: user.id, p_target_date: pick })
+                            .then(function (res) {
+                                if (res.error || !res.data || !res.data.success) {
+                                    return showMessage('补签失败', (res.error && res.error.message) || (res.data && res.data.message) || '未知错误');
+                                }
+                                showToast('✅ 补签成功(' + pick + ')', 'good');
+                                loadCheckin();
+                            })
+                            .catch(function (e) { showToast('❌ ' + (e.message || e), 'bad'); });
+                    });
+                });
+            })
+            .catch(function () {});
+    }
+
+    // ---------- 幸运转盘 ----------
+    var LOTTERY_SECTORS = [
+        { name: '谢谢惠顾', color: '#94a3b8' },
+        { name: '10', color: '#ef4444' },
+        { name: '50', color: '#f59e0b' },
+        { name: '100', color: '#22c55e' },
+        { name: '谢谢惠顾', color: '#94a3b8' },
+        { name: '200', color: '#3b82f6' },
+        { name: '500', color: '#a855f7' },
+        { name: '2000', color: '#ea580c' }
+    ];
+    var wheelRotation = 0;
+    var spinning = false;
+    function buildWheel() {
+        var wheel = document.getElementById('ltWheel');
+        if (!wheel || !wheel.getContext) return;
+        var ctx = wheel.getContext('2d');
+        var cx = 125, cy = 125, R = 118;
+        LOTTERY_SECTORS.forEach(function (s, i) {
+            var start = (i * 45 - 90) * Math.PI / 180;
+            var end = ((i + 1) * 45 - 90) * Math.PI / 180;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, R, start, end);
+            ctx.closePath();
+            ctx.fillStyle = s.color;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,.9)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            var mid = (start + end) / 2;
+            var tx = cx + R * 0.62 * Math.cos(mid);
+            var ty = cy + R * 0.62 * Math.sin(mid);
+            ctx.save();
+            ctx.translate(tx, ty);
+            ctx.rotate(mid + Math.PI / 2);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 13px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(s.name, 0, 0);
+            ctx.restore();
+        });
+    }
+    function spinTo(sector) {
+        var wheel = document.getElementById('ltWheel');
+        var targetAngle = (360 - (sector * 45 + 22.5)) % 360;
+        var current = wheelRotation % 360;
+        var delta = targetAngle - current;
+        if (delta < 0) delta += 360;
+        wheelRotation += 360 * 5 + delta;
+        wheel.style.transform = 'rotate(' + wheelRotation + 'deg)';
+    }
+    function loadRemain() {
+        var user = getUser();
+        if (!user) return;
+        var el = document.getElementById('lotteryRemain');
+        var ex = document.getElementById('lotteryExtra');
+        supabaseClient.rpc('get_lottery_today', { p_user_id: user.id })
+            .then(function (res) {
+                var d = res.data || {};
+                if (d && d.success) {
+                    if (el) el.innerText = d.remaining + '/' + (d.limit + d.extra);
+                    if (ex) ex.textContent = d.extra > 0 ? '(券 +' + d.extra + ')' : '';
+                }
+            })
+            .catch(function () {});
+    }
+    function spin() {
+        var user = getUser();
+        if (!user) { showToast('请先登录', 'bad'); return; }
+        if (spinning) return;
+        var btn = document.getElementById('lotterySpinBtn');
+        var resultEl = document.getElementById('lotteryResult');
+        spinning = true;
+        btn.disabled = true;
+        resultEl.textContent = '🎡 转盘转动中...';
+        resultEl.classList.remove('win');
+        supabaseClient.rpc('do_lottery', { p_user_id: user.id })
+            .then(function (res) {
+                if (res.error || !res.data || !res.data.success) {
+                    throw new Error((res.error && res.error.message) || (res.data && res.data.message) || '抽奖失败');
+                }
+                var d = res.data;
+                spinTo(d.sector);
+                var remainEl = document.getElementById('lotteryRemain');
+                if (remainEl) remainEl.innerText = Math.max(0, (d.daily_limit || 10) - (d.today_count || 0)) + '/' + (d.daily_limit || 10);
+                setTimeout(function () {
+                    if (d.result === 'win') {
+                        resultEl.innerHTML = '🎉 恭喜中奖 <b style="color:#d97706;">' + d.amount + ' NB币</b>!当前余额:' + d.balance;
+                        resultEl.classList.add('win');
+                        showToast('🎉 中奖 ' + d.amount + ' NB币,已入账', 'good');
+                    } else {
+                        resultEl.innerHTML = '😅 谢谢惠顾,下次好运!当前余额:' + d.balance;
+                    }
+                    var bal = document.getElementById('balanceDisplay');
+                    if (bal && d.balance != null) bal.innerText = Number(d.balance).toLocaleString('zh-CN');
+                    spinning = false;
+                    btn.disabled = false;
+                    loadRemain();
+                }, 3900);
+            })
+            .catch(function (e) {
+                spinning = false;
+                btn.disabled = false;
+                resultEl.textContent = '';
+                showToast('❌ ' + (e.message || e), 'bad');
             });
     }
+
+    // ---------- 绑定 ----------
+    document.getElementById('checkinBtn').addEventListener('click', doCheckin);
+    document.getElementById('fixCheckinBtn').addEventListener('click', openFixPick);
+    document.getElementById('lotterySpinBtn').addEventListener('click', spin);
     document.getElementById('refreshBtn').addEventListener('click', function () {
         var btn = document.getElementById('refreshBtn');
         btn.classList.remove('spin');
         void btn.offsetWidth;
         btn.classList.add('spin');
-        loadRecords();
+        loadBalance(); loadCheckin(); loadRemain();
     });
-    loadRecords();
+
+    function initAll() {
+        applyLoginState();
+        buildWheel();
+        loadBalance();
+        if (getUser()) { loadCheckin(); loadRemain(); }
+    }
+    initAll();
+    window.addEventListener('storage', function (e) { if (e.key === 'nb_user') initAll(); });
 
 </script>
 <script>
