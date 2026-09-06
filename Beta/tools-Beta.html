@@ -272,24 +272,17 @@ html.dark .tl-out .big.gold { color: #fbbf24; }
 .pt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
 .pt-note { font-size: .76rem; color: var(--ink-faint); }
 .pt-scroll { overflow-x: auto; padding: 4px 0 8px; -webkit-overflow-scrolling: touch; }
+.pt-frame { position: relative; padding-top: 24px; }
 .ptable {
     display: grid; grid-template-columns: 30px repeat(18, minmax(42px, 1fr)); gap: 4px;
     min-width: 880px;
 }
-/* 行列坐标:顶部族号(高大表头格,站在每列元素上方) + 左侧周期号 */
-.pcorner { height: 38px; }
-.pgrp {
-    height: 38px; display: grid; place-items: center;
-    font-size: .82rem; font-weight: 800; color: var(--ink-soft);
-    user-select: none; letter-spacing: .4px;
-    border-bottom: 1px solid var(--line);
-    align-self: stretch; min-width: 0;
-    padding: 0 2px; overflow: hidden; white-space: nowrap;
-}
-.pgrp-wide {
-    font-size: 1rem; letter-spacing: 1.5px;
-    box-shadow: inset 0 0 0 1px var(--line);
-    border-radius: 8px 8px 0 0;
+/* 族标:绝对定位,各自贴到该列第一个真实元素的头上 */
+.pgrp-f {
+    position: absolute; height: 20px; line-height: 20px;
+    font-size: .76rem; font-weight: 800; color: var(--ink-soft);
+    text-align: center; white-space: nowrap; letter-spacing: .3px;
+    user-select: none; cursor: default;
 }
 .pper {
     display: grid; place-items: center;
@@ -597,7 +590,9 @@ html.dark .pcell.empty, html.dark .pcell.hole { color: var(--ink-faint); }
                 <div class="pt-note">点击任意元素查看详情 · 手机端可左右滑动</div>
             </div>
             <div class="pt-scroll">
-                <div id="periodicTable" class="ptable"></div>
+                <div class="pt-frame" id="ptFrame">
+                    <div id="periodicTable" class="ptable"></div>
+                </div>
             </div>
             <div class="pt-legend">
                 <span><i style="background:#ff8a80;"></i>碱金属</span>
@@ -1058,32 +1053,7 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
             if (!cells[row]) cells[row] = {};
             cells[row][col] = el;
         });
-        // 顶部族标:旧式 A/B 制 + 0 族(Ⅷ族跨第 8-10 列),悬停显示现代编号
-        var GROUP_HEADS = [
-            { t: 'IA', span: 1, tip: '第 1 族（IA · 碱金属）' },
-            { t: 'IIA', span: 1, tip: '第 2 族（IIA · 碱土金属）' },
-            { t: 'IIIB', span: 1, tip: '第 3 族（IIIB）' },
-            { t: 'IVB', span: 1, tip: '第 4 族（IVB）' },
-            { t: 'VB', span: 1, tip: '第 5 族（VB）' },
-            { t: 'VIB', span: 1, tip: '第 6 族（VIB）' },
-            { t: 'VIIB', span: 1, tip: '第 7 族（VIIB）' },
-            { t: 'VIII', span: 3, tip: '第 8–10 族（Ⅷ族）' },
-            { t: 'IB', span: 1, tip: '第 11 族（IB）' },
-            { t: 'IIB', span: 1, tip: '第 12 族（IIB）' },
-            { t: 'IIIA', span: 1, tip: '第 13 族（IIIA · 硼族）' },
-            { t: 'IVA', span: 1, tip: '第 14 族（IVA · 碳族）' },
-            { t: 'VA', span: 1, tip: '第 15 族（VA · 氮族）' },
-            { t: 'VIA', span: 1, tip: '第 16 族（VIA · 氧族）' },
-            { t: 'VIIA', span: 1, tip: '第 17 族（VIIA · 卤素）' },
-            { t: '0', span: 1, tip: '第 18 族（0 族 · 稀有气体）' }
-        ];
-        var html = '<div class="pcorner" title="列=族 · 行=周期"></div>';
-        for (var hi = 0; hi < GROUP_HEADS.length; hi++) {
-            var gh = GROUP_HEADS[hi];
-            html += '<div class="pgrp' + (gh.span > 1 ? ' pgrp-wide' : '') + '"' +
-                (gh.span > 1 ? ' style="grid-column: span ' + gh.span + ';"' : '') +
-                ' title="' + gh.tip + '">' + gh.t + '</div>';
-        }
+        var html = '';
         for (var r = 1; r <= 10; r++) {
             // 行首:周期号(1-7),第8行为分隔留空,9/10 行标镧系/锕系
             if (r === 8) {
@@ -1118,6 +1088,55 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
             var open = function () { showElement(parseInt(cell.dataset.n)); };
             cell.addEventListener('click', open);
             cell.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+        });
+        placeGroupLabels();
+    }
+
+    // ========== 族标:站在各自列第一个真实元素的头上(参差对齐,旧式 A/B + 0 族) ==========
+    // 每列取"从上往下第一个真实元素"作锚点;VIII 以第8列锚点起、跨至第11列左侧
+    var GROUP_LABELS = [
+        { col: 1, t: 'IA', tip: '第 1 族（IA · 碱金属）' },
+        { col: 2, t: 'IIA', tip: '第 2 族（IIA · 碱土金属）' },
+        { col: 3, t: 'IIIB', tip: '第 3 族（IIIB）' },
+        { col: 4, t: 'IVB', tip: '第 4 族（IVB）' },
+        { col: 5, t: 'VB', tip: '第 5 族（VB）' },
+        { col: 6, t: 'VIB', tip: '第 6 族（VIB）' },
+        { col: 7, t: 'VIIB', tip: '第 7 族（VIIB）' },
+        { col: 8, t: 'VIII', wide: true, tip: '第 8–10 族（Ⅷ族）' },
+        { col: 11, t: 'IB', tip: '第 11 族（IB）' },
+        { col: 12, t: 'IIB', tip: '第 12 族（IIB）' },
+        { col: 13, t: 'IIIA', tip: '第 13 族（IIIA · 硼族）' },
+        { col: 14, t: 'IVA', tip: '第 14 族（IVA · 碳族）' },
+        { col: 15, t: 'VA', tip: '第 15 族（VA · 氮族）' },
+        { col: 16, t: 'VIA', tip: '第 16 族（VIA · 氧族）' },
+        { col: 17, t: 'VIIA', tip: '第 17 族（VIIA · 卤素）' },
+        { col: 18, t: '0', tip: '第 18 族（0 族 · 稀有气体）' }
+    ];
+    var COL_ANCHOR = { 1: 1, 2: 4, 3: 21, 4: 22, 5: 23, 6: 24, 7: 25, 8: 26, 11: 29, 12: 30, 13: 5, 14: 6, 15: 7, 16: 8, 17: 9, 18: 2 };
+    function placeGroupLabels() {
+        var frame = document.getElementById('ptFrame');
+        if (!frame) return;
+        var old = frame.querySelectorAll('.pgrp-f');
+        for (var oi = 0; oi < old.length; oi++) old[oi].parentNode.removeChild(old[oi]);
+        var fr = frame.getBoundingClientRect();
+        GROUP_LABELS.forEach(function (g) {
+            var anchor = PT.querySelector('.pcell[data-n="' + COL_ANCHOR[g.col] + '"]');
+            if (!anchor) return;
+            var ar = anchor.getBoundingClientRect();
+            var d = document.createElement('div');
+            d.className = 'pgrp-f';
+            d.textContent = g.t;
+            d.title = g.tip;
+            d.style.left = (ar.left - fr.left) + 'px';
+            d.style.top = (ar.top - fr.top - 24) + 'px';   // 20px 标签 + 4px 间隙
+            if (g.wide) {
+                // 跨第 8-10 列:左贴 Fe 列左沿,右止于 IB(Cu)列左沿(减一个列间隙)
+                var right = PT.querySelector('.pcell[data-n="29"]').getBoundingClientRect().left;
+                d.style.width = (right - ar.left - 4) + 'px';
+            } else {
+                d.style.width = ar.width + 'px';
+            }
+            frame.appendChild(d);
         });
     }
 
