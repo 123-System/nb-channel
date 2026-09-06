@@ -732,6 +732,8 @@ html.dark .bk-toast.err { background: #991b1b; }
 .avatar-actions button:hover { transform: translateY(-1px); filter: brightness(1.05); }
 .avatar-actions button#avatarRemoveBtn { background: var(--bg); color: var(--ink-soft); border: 1px solid var(--line); }
 #avatarStatus { font-size: .74rem; color: var(--ink-faint); text-align: center; line-height: 1.6; }
+/* 隐藏原生文件输入框(上传按钮触发) */
+input[type="file"] { display: none !important; }
 /* 统计条 */
 .home-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin: 0 0 20px; }
 @media (max-width: 860px) { .home-stats { grid-template-columns: repeat(3, 1fr); } }
@@ -1130,7 +1132,7 @@ input:focus { border-color: rgba(59,130,246,.55); box-shadow: 0 0 0 3px rgba(59,
             }
             if (pbEl) {
                 pbEl.textContent = '👤 ' + (storedU.username || storedU.name || '个人中心');
-                pbEl.href = 'profile-Beta.html';
+                pbEl.href = '/profile.html';
             }
         } else {
             var loginHref = '/login.html?redirect=' + encodeURIComponent(location.href);
