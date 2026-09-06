@@ -1167,7 +1167,7 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
             s += '<circle class="sh-ring" cx="' + CX + '" cy="' + CY + '" r="' + r + '"></circle>';
             var cnt = shells[i];
             // 每层电子包进独立轨道组:开启转动时整组绕中心旋转(内层快外层慢)
-            var dur = (0.9 + i * 0.55).toFixed(1);
+            var dur = (0.45 + i * 0.2).toFixed(2);
             s += '<g class="sh-orbit" style="--t:' + dur + 's">';
             for (var j = 0; j < cnt; j++) {
                 var ang = (j / cnt) * Math.PI * 2 - Math.PI / 2 + (i % 2) * 0.06;
