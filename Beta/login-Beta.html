@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="NB频道称号大全——达成条件自动解锁、NB币购买升星、管理员颁发,佩戴后在评论区/私信/主页展示你的排面。">
+<meta name="description" content="登录 NB频道账号,或注册新账号——注册后即可评论、佩戴称号、开公司、玩游戏。">
 <meta name="theme-color" content="#0f172a">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233b82f6'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='26' font-weight='800' fill='%23fff' text-anchor='middle'%3ENB%3C/text%3E%3C/svg%3E">
-<title>称号大全 - NB频道官网</title>
+<title>登录 / 注册 - NB频道官网</title>
 <script>
     (function () {
         try {
@@ -132,7 +132,7 @@ html.dark .nav-auth:hover { background: rgba(255,255,255,.1); border-color: rgba
 }
 @media (max-width: 900px) { .nav-menu { display: none; } .nav-burger { display: flex; } .nav-clock, .nav-auth-group { display: none; } }
 
-/* ============ Hero(称号) ============ */
+/* ============ Hero(化学工具) ============ */
 .vhero {
     position: relative; color: #fff; overflow: hidden;
     padding: 110px 48px 150px;
@@ -159,7 +159,7 @@ html.dark .nav-auth:hover { background: rgba(255,255,255,.1); border-color: rgba
 .vhero h1 { font-size: clamp(2.7rem, 5.2vw, 4.6rem); font-weight: 800; letter-spacing: 8px; color: #fff; line-height: 1.12; }
 .vhero h1 .light { font-weight: 200; letter-spacing: 4px; color: #9cc0ff; }
 .vhero-sub {
-    margin: 34px 0 0; max-width: 470px;
+    margin: 34px 0 0; max-width: 480px;
     font-size: .98rem; font-weight: 300; line-height: 2.15;
     letter-spacing: .6px; color: rgba(255,255,255,.6);
 }
@@ -170,7 +170,6 @@ html.dark .nav-auth:hover { background: rgba(255,255,255,.1); border-color: rgba
     transition: border-color .35s ease, color .35s ease;
 }
 .hero-link:hover { border-color: #7cb4ff; color: #7cb4ff; }
-/* 右侧统计卡 */
 .pd-stats {
     background: rgba(255,255,255,.045);
     border: 1px solid rgba(255,255,255,.1);
@@ -193,167 +192,203 @@ html.dark .nav-auth:hover { background: rgba(255,255,255,.1); border-color: rgba
 }
 
 /* ============ 正文 ============ */
-.tt-wrap { max-width: 1080px; margin: 0 auto; padding: 70px 48px 60px; }
-.tt-head { text-align: center; margin-bottom: 34px; }
-.tt-head h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 800; letter-spacing: 1px; line-height: 1.5; }
-.tt-head h2 em { font-style: normal; color: var(--brand); }
-.tt-head .tt-sig { margin-top: 12px; font-size: .95rem; color: var(--ink-soft); line-height: 2; }
-.tt-head .tt-sig b { color: var(--ink); }
-.tt-toolbar {
-    display: flex; align-items: center; justify-content: space-between; gap: 14px;
-    flex-wrap: wrap; margin: 6px 0 18px; padding: 14px 18px;
+.bk-wrap { max-width: 1180px; margin: 0 auto; padding: 66px 40px 70px; }
+/* Tab 切换(品牌胶囊) */
+.bk-tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 30px; flex-wrap: wrap; }
+.bk-tab {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 34px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink-soft);
+    font-size: 1rem; font-weight: 700; letter-spacing: .5px;
+    box-shadow: var(--shadow-1); transition: all .25s ease;
+}
+.bk-tab:hover { border-color: rgba(59,130,246,.45); color: var(--brand); transform: translateY(-1px); }
+.bk-tab.active {
+    background: linear-gradient(135deg, var(--brand), #6366f1);
+    color: #fff; border-color: transparent;
+    box-shadow: 0 12px 28px -12px rgba(59,130,246,.65);
+}
+.bk-panel { display: none; }
+.bk-panel.active { display: block; animation: tlfade .45s cubic-bezier(.16,1,.3,1) both; }
+@keyframes tlfade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* 通用卡片 */
+.bk-card {
     background: var(--card); border: 1px solid var(--line);
-    border-radius: var(--radius-md); box-shadow: var(--shadow-1);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow-1);
+    padding: 24px;
 }
-.tt-toolbar .tb-title { font-size: 1.05rem; font-weight: 800; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
-.tt-toolbar .tb-sub { font-size: .8rem; color: var(--ink-faint); margin-top: 3px; }
-.tt-refresh {
-    display: inline-flex; align-items: center; gap: 6px;
+.bk-card h3 { font-size: 1.12rem; font-weight: 800; letter-spacing: .5px; display: flex; align-items: center; gap: 8px; }
+.bk-help { font-size: .8rem; color: var(--ink-faint); margin: 8px 0 4px; line-height: 1.8; }
+.bk-inrow { display: flex; gap: 10px; margin: 12px 0 4px; flex-wrap: wrap; align-items: center; }
+.bk-field {
+    flex: 1; min-width: 190px; padding: 11px 18px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    font-size: .98rem; font-family: Consolas, Menlo, monospace; outline: none;
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+.bk-field:focus { border-color: rgba(59,130,246,.55); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+.bk-field.num { flex: none; width: 128px; }
+.bk-field.wide { flex: 1; min-width: 190px; }
+.bk-btn {
+    border: none; border-radius: 999px; padding: 11px 26px; cursor: pointer;
+    background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff;
+    font-size: .95rem; font-weight: 700; letter-spacing: 1px;
+    box-shadow: 0 8px 20px -8px rgba(59,130,246,.55);
+    transition: all .22s ease; flex-shrink: 0;
+}
+.bk-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 26px -8px rgba(59,130,246,.6); }
+.bk-out {
+    margin-top: 14px; padding: 15px 18px; border-radius: 16px;
+    background: var(--bg); border: 1px solid var(--line);
+    font-size: .9rem; line-height: 2; min-height: 26px; white-space: pre-wrap;
+    color: var(--ink-soft); word-break: break-word;
+}
+.bk-out .big { font-size: 1.28rem; font-weight: 800; color: var(--brand); letter-spacing: .3px; }
+.bk-out .big.gold { color: #d97706; }
+html.dark .bk-out .big.gold { color: #fbbf24; }
+.bk-out sub { font-size: .72em; }
+.bk-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 2px; }
+.bk-chip {
     border: 1px solid var(--line); background: var(--bg); color: var(--ink-soft);
-    padding: 8px 18px; border-radius: 999px; cursor: pointer;
-    font-size: .85rem; font-weight: 700; transition: all .25s ease;
+    border-radius: 999px; padding: 5px 14px; font-size: .78rem;
+    cursor: pointer; font-family: Consolas, Menlo, monospace;
+    transition: all .2s ease;
 }
-.tt-refresh:hover { border-color: var(--brand); color: var(--brand); transform: translateY(-1px); }
-.tt-refresh.spin svg, .tt-refresh.spin { animation: ttspin .6s linear; }
-@keyframes ttspin { to { transform: rotate(360deg); } }
+.bk-chip:hover { border-color: rgba(59,130,246,.5); color: var(--brand); background: rgba(59,130,246,.06); }
 
-/* 佩戴预览面板 */
-.tt-preview { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 22px; }
-.tt-pzone {
-    flex: 1 1 300px; background: var(--card); border-radius: var(--radius-md);
-    border: 1px dashed var(--line); box-shadow: var(--shadow-1);
-    padding: 16px 18px; position: relative;
+/* 计算器宫格 */
+.bk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+/* 溶液换算模式段选 */
+.bk-seg { display: inline-flex; gap: 6px; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 5px; }
+.bk-seg button {
+    border: none; background: transparent; color: var(--ink-soft);
+    border-radius: 999px; padding: 8px 18px; cursor: pointer; font-size: .86rem; font-weight: 700;
+    transition: all .22s ease;
 }
-.tt-pzone.eq-active { border-style: solid; border-color: #ffd700; background: linear-gradient(135deg, rgba(255,215,0,.07), rgba(255,152,0,.03)); }
-html.dark .tt-pzone.eq-active { background: linear-gradient(135deg, rgba(255,215,0,.09), rgba(255,152,0,.04)); }
-.tt-pzone .pz-label {
-    font-size: .72rem; font-weight: 700; letter-spacing: 2px; color: var(--ink-faint);
-    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
-}
-.tt-pzone.eq-active .pz-label { color: #d4a017; }
-.tt-pzone .pz-body { display: flex; align-items: center; gap: 14px; min-height: 56px; flex-wrap: wrap; }
-.tt-pzone .pz-imgbox { background: #fff; border-radius: 10px; overflow: hidden; line-height: 0; }
-.tt-pzone .pz-imgbox img { display: block; height: 52px; max-width: 240px; object-fit: contain; }
-.tt-pzone .pz-name { font-weight: 800; font-size: 1rem; }
-.tt-pzone .pz-stars { color: #ffb300; letter-spacing: 3px; font-size: .85rem; margin-top: 2px; }
-.tt-pzone .pz-none { color: var(--ink-faint); font-size: .88rem; line-height: 1.9; }
-.tt-pzone .pz-clear {
-    border: none; background: none; color: var(--brand);
-    font-size: .82rem; font-weight: 700; cursor: pointer; padding: 0; text-decoration: underline;
-}
-.tt-pzone .pz-clear:hover { color: var(--brand-deep); }
+.bk-seg button.on { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; box-shadow: 0 6px 16px -8px rgba(59,130,246,.6); }
 
-/* 统计 */
-.tt-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 30px; }
-.tt-stat {
-    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-md);
-    box-shadow: var(--shadow-1); padding: 20px 12px; text-align: center;
-    transition: transform .3s ease, box-shadow .3s ease;
+/* ============ 周期表 ============ */
+.pt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.pt-note { font-size: .76rem; color: var(--ink-faint); }
+.pt-scroll { overflow-x: auto; padding: 4px 0 8px; -webkit-overflow-scrolling: touch; }
+.pt-frame { position: relative; padding-top: 24px; }
+.ptable {
+    display: grid; grid-template-columns: 30px repeat(18, minmax(42px, 1fr)); gap: 4px;
+    min-width: 880px;
 }
-.tt-stat:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
-.tt-stat b { display: block; font-size: 1.85rem; font-weight: 800; letter-spacing: .5px; color: var(--ink); line-height: 1.3; }
-.tt-stat b small { font-size: .95rem; font-weight: 600; color: var(--ink-faint); }
-.tt-stat.owned b { color: var(--brand); }
-.tt-stat.locked b { color: #22c55e; }
-.tt-stat.cur b { color: #f59e0b; }
-.tt-stat span { display: block; font-size: .8rem; color: var(--ink-faint); letter-spacing: 2px; margin-top: 6px; }
+/* 族标:绝对定位,各自贴到该列第一个真实元素的头上 */
+.pgrp-f {
+    position: absolute; height: 20px; line-height: 20px;
+    font-size: .76rem; font-weight: 800; color: var(--ink-soft);
+    text-align: center; white-space: nowrap; letter-spacing: .3px;
+    user-select: none; cursor: default;
+}
+.pper {
+    display: grid; place-items: center;
+    font-size: .74rem; font-weight: 800; color: var(--ink-faint);
+    user-select: none; letter-spacing: .5px; min-height: 52px;
+}
+.pper.per-f { writing-mode: vertical-rl; font-size: 11px; font-weight: 700; letter-spacing: 3px; opacity: .9; }
+.pper.spacer { min-height: 12px; }
+.psep { min-height: 12px; }
+.pcell {
+    position: relative; min-height: 52px; border-radius: 8px; padding: 5px 3px 3px;
+    text-align: center; cursor: pointer; color: #172033;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    transition: transform .15s ease, box-shadow .15s ease;
+    user-select: none;
+}
+.pcell:hover { transform: scale(1.14); box-shadow: 0 6px 16px rgba(0,0,0,.28); z-index: 6; }
+.pcell .pnum { position: absolute; top: 2px; left: 4px; font-size: .58rem; opacity: .72; font-weight: 600; }
+.pcell .psym { font-size: .95rem; font-weight: 800; line-height: 1.15; }
+.pcell .pmass { font-size: .56rem; opacity: .82; line-height: 1; }
+.pcell.empty, .pcell.hole { background: transparent; cursor: default; box-shadow: none; transition: none; }
+.pcell.empty:hover, .pcell.hole:hover { transform: none; box-shadow: none; }
+.pcell.hole { border: 1px dashed var(--line); }
+.pcell.hole .psym { font-size: .62rem; opacity: .6; }
+html.dark .pcell { color: #0f172a; }
+html.dark .pcell.empty, html.dark .pcell.hole { color: var(--ink-faint); }
+.cat-alkali { background: #ff8a80; } .cat-alkaline { background: #ffcc80; }
+.cat-transition { background: #80d8ff; } .cat-post { background: #b9f6ca; }
+.cat-metalloid { background: #a5d6a7; } .cat-nonmetal { background: #e1bee7; }
+.cat-halogen { background: #80cbc4; } .cat-noble { background: #cfd8dc; }
+.cat-lanthanide { background: #ffd1dc; } .cat-actinide { background: #ffb3ba; }
+.pt-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); font-size: .76rem; color: var(--ink-faint); }
+.pt-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.pt-legend i { width: 13px; height: 13px; border-radius: 4px; display: inline-block; }
 
-/* 称号卡片 */
-.tt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(315px, 1fr)); gap: 18px; }
-.tt-card {
-    display: flex; flex-direction: column;
-    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-1); overflow: hidden;
-    transition: transform .3s ease, box-shadow .3s ease;
-    animation: ttfade .5s cubic-bezier(.16,1,.3,1) both;
+/* 元素详情弹窗 */
+.el-ov {
+    display: none; position: fixed; inset: 0; z-index: 9500;
+    background: rgba(10,15,28,.55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    justify-content: center; align-items: center; padding: 24px;
 }
-@keyframes ttfade { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-.tt-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); }
-.tt-card.equipped { border-color: #ffd700; box-shadow: 0 0 0 1px rgba(255,215,0,.35), 0 18px 40px -18px rgba(255,200,0,.45); }
-.tt-card .tc-imgbox { background: #fff; text-align: center; line-height: 0; }
-.tt-card .tc-imgbox img { width: 100%; max-height: 158px; object-fit: contain; display: block; margin: 0 auto; }
-.tt-card.locked .tc-imgbox img { filter: grayscale(.9); opacity: .5; }
-.tt-card .tc-body { padding: 15px 17px 16px; display: flex; flex-direction: column; flex: 1; }
-.tt-card .tc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.tt-card .tc-name { font-size: 1.12rem; font-weight: 800; letter-spacing: .5px; }
-.tt-card .tc-stars { font-size: .9rem; letter-spacing: 2px; white-space: nowrap; padding-top: 2px; }
-.tt-card .tc-stars .lit { color: #ffb300; }
-.tt-card .tc-stars .dim { color: #cbd5e1; }
-html.dark .tt-card .tc-stars .dim { color: #334155; }
-.tt-card .tc-stars .zero { color: var(--ink-faint); font-size: .72rem; font-weight: 600; }
-.tt-card .tc-desc { font-size: .84rem; color: var(--ink-soft); line-height: 1.85; margin-top: 8px; flex: 1; }
-.tt-card .tc-type {
-    align-self: flex-start; margin-top: 10px;
-    font-size: .72rem; font-weight: 700; letter-spacing: 1px;
-    border-radius: 999px; padding: 3px 12px;
+.el-ov.show { display: flex; }
+.el-box {
+    background: var(--card); border-radius: 24px; padding: 30px 34px;
+    width: min(400px, 92vw); text-align: center;
+    box-shadow: var(--shadow-2); border: 1px solid var(--line);
+    animation: tlfade .3s cubic-bezier(.16,1,.3,1) both;
 }
-.tt-card .tc-type.auto { background: rgba(34,197,94,.13); color: #16a34a; }
-.tt-card .tc-type.buy { background: rgba(245,158,11,.15); color: #d97706; }
-.tt-card .tc-type.manual { background: rgba(168,85,247,.14); color: #9333ea; }
-html.dark .tt-card .tc-type.auto { color: #4ade80; }
-html.dark .tt-card .tc-type.buy { color: #fbbf24; }
-html.dark .tt-card .tc-type.manual { color: #c084fc; }
-/* 星级进度 */
-.tt-req { margin-top: 12px; padding-top: 11px; border-top: 1px dashed var(--line); }
-.tt-req .rq-title { font-size: .74rem; font-weight: 700; color: var(--ink-faint); letter-spacing: 1.5px; margin-bottom: 6px; }
-.tt-req .rq-row {
-    display: flex; align-items: center; gap: 9px;
-    font-size: .8rem; line-height: 1.95; min-width: 0;
+.el-box .el-sym { font-size: 3.4rem; font-weight: 900; letter-spacing: 2px; color: var(--brand); line-height: 1.2; }
+.el-box .el-name { font-size: 1.15rem; color: var(--ink-soft); margin-bottom: 6px; letter-spacing: 2px; }
+/* 电子层示意图 */
+.el-shellbox { display: flex; justify-content: center; margin: 2px 0 0; position: relative; }
+.sh-svg { width: min(100%, 290px); height: auto; display: block; margin: 0 auto; }
+.sh-ring { stroke: var(--ink-faint); stroke-width: 1.3; fill: none; opacity: .5; }
+.sh-dot { fill: var(--brand); }
+.sh-core { fill: var(--ink); }
+.sh-sym { fill: var(--bg); font-weight: 800; font-size: 15px; }
+.sh-letter { fill: var(--ink-faint); font-size: 8.5px; font-weight: 700; }
+.sh-note {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; flex-wrap: wrap;
+    font-size: .68rem; color: var(--ink-faint); margin: 0 0 8px; letter-spacing: 1px;
 }
-.tt-req .rq-lv { flex-shrink: 0; width: 30px; color: #ffb300; font-weight: 800; text-align: center; }
-.tt-req .rq-txt { color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tt-req .rq-txt.done { color: #16a34a; }
-.tt-req .rq-txt.next { color: #d97706; font-weight: 700; }
-.tt-req .rq-txt.now { color: var(--ink-soft); font-weight: 700; }
-html.dark .tt-req .rq-txt.done { color: #4ade80; }
-html.dark .tt-req .rq-txt.next { color: #fbbf24; }
-/* 操作按钮 */
-.tt-actions { margin-top: 13px; display: flex; gap: 8px; flex-wrap: wrap; }
-.tt-actions button {
-    flex: 1; min-width: max-content; border: none; border-radius: 999px; padding: 9px 14px;
-    font-size: .84rem; font-weight: 700; cursor: pointer; letter-spacing: .3px;
-    white-space: nowrap; transition: all .22s ease;
+.sh-note .sh-txt { opacity: .92; }
+.sh-disclaimer {
+    font-size: .63rem; color: var(--ink-faint); opacity: .85;
+    text-align: center; line-height: 1.8; letter-spacing: .2px;
+    margin: -2px 0 10px; padding: 0 6px;
 }
-.tt-btn-equip { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; box-shadow: 0 6px 16px -6px rgba(59,130,246,.55); }
-.tt-btn-equip:hover { transform: translateY(-1px); box-shadow: 0 10px 22px -6px rgba(59,130,246,.6); }
-.tt-btn-unequip { background: var(--bg); color: var(--ink-soft); border: 1px solid var(--line) !important; }
-.tt-btn-unequip:hover { border-color: #ef4444 !important; color: #ef4444; }
-.tt-btn-buy { background: linear-gradient(135deg, #f59e0b, #f97316); color: #fff; box-shadow: 0 6px 16px -6px rgba(245,158,11,.5); }
-.tt-btn-buy:hover { transform: translateY(-1px); }
-.tt-btn-slot { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff; box-shadow: 0 6px 16px -6px rgba(139,92,246,.5); }
-.tt-btn-slot:hover { transform: translateY(-1px); }
-.tt-btn-disabled { background: var(--line) !important; color: var(--ink-faint) !important; cursor: default !important; box-shadow: none !important; }
-
-/* 加载 / 未登录 / 失败 */
-.tt-state { text-align: center; padding: 90px 20px; color: var(--ink-faint); }
-.tt-state .st-ico { font-size: 3rem; margin-bottom: 16px; }
-.tt-state h3 { color: var(--ink); font-size: 1.25rem; margin-bottom: 10px; letter-spacing: 1px; }
-.tt-state p { font-size: .92rem; line-height: 2; margin-bottom: 26px; }
-.tt-state .st-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-.tt-state a.st-btn {
-    display: inline-block; padding: 11px 30px; border-radius: 999px;
-    font-size: .92rem; font-weight: 700; letter-spacing: 1px;
+/* 运动速度三档段选 */
+.sh-seg {
+    display: inline-flex; gap: 3px;
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: 999px; padding: 3px;
 }
-.tt-state a.st-btn.login { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; box-shadow: 0 10px 24px -10px rgba(59,130,246,.6); }
-.tt-state a.st-btn.login:hover { box-shadow: 0 14px 30px -10px rgba(59,130,246,.7); transform: translateY(-1px); }
-.tt-state a.st-btn.ghost { background: var(--bg); color: var(--ink-soft); border: 1px solid var(--line); }
-.tt-state .loading-dot { display: inline-block; animation: ttdot 1.2s infinite both; }
-.tt-state .loading-dot:nth-child(2) { animation-delay: .15s; }
-.tt-state .loading-dot:nth-child(3) { animation-delay: .3s; }
-@keyframes ttdot { 0%, 60%, 100% { opacity: .2; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
-.tt-empty { text-align: center; padding: 40px 0; color: var(--ink-faint); font-size: .9rem; }
-
-/* 提示气泡 */
-.tt-toast {
-    position: fixed; top: 84px; left: 50%; transform: translateX(-50%) translateY(-8px);
-    background: #0f172a; color: #fff; border-radius: 999px;
-    padding: 12px 26px; font-size: .92rem; font-weight: 600;
-    box-shadow: 0 12px 30px rgba(0,0,0,.28); z-index: 9998;
-    opacity: 0; pointer-events: none; transition: all .3s ease;
-    max-width: 92vw; text-align: center; letter-spacing: .3px;
+.sh-opt {
+    border: none; background: transparent; color: var(--ink-soft);
+    border-radius: 999px; padding: 5px 13px; cursor: pointer;
+    font-size: .72rem; font-weight: 700; letter-spacing: .3px;
+    transition: all .2s ease; white-space: nowrap;
 }
-.tt-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-html.dark .tt-toast { background: #1e293b; border: 1px solid rgba(148,163,184,.2); }
+.sh-opt:hover { color: var(--brand); }
+.sh-opt.on {
+    background: linear-gradient(135deg, var(--brand), #6366f1);
+    color: #fff; box-shadow: 0 5px 14px -6px rgba(59,130,246,.6);
+}
+/* 电子公转动画:默认静止;快速=各环基准周期 --t;慢速=2 倍 */
+.sh-orbit { transform-box: view-box; transform-origin: 50% 50%; }
+.sh-svg.spd-fast .sh-orbit { animation: shspin var(--t, 4s) linear infinite; }
+.sh-svg.spd-slow .sh-orbit { animation: shspin calc(var(--t, 4s) * 2) linear infinite; }
+@keyframes shspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .sh-svg.spd-fast .sh-orbit, .sh-svg.spd-slow .sh-orbit { animation: none; }
+}
+.el-box table { width: 100%; font-size: .9rem; border-collapse: collapse; margin: 4px 0 16px; }
+.el-box td { padding: 9px 8px; border-bottom: 1px dashed var(--line); text-align: left; }
+.el-box tr:last-child td { border-bottom: none; }
+.el-box td:first-child { color: var(--ink-faint); width: 38%; font-size: .82rem; }
+.el-box td:last-child { font-weight: 700; text-align: right; }
+.el-close {
+    border: none; border-radius: 999px; padding: 10px 38px; cursor: pointer;
+    background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff;
+    font-size: .92rem; font-weight: 700; letter-spacing: 2px;
+    box-shadow: 0 8px 20px -8px rgba(59,130,246,.55); transition: all .22s ease;
+}
+.el-close:hover { transform: translateY(-1px); }
 
 /* 页脚 */
 .footer { background: linear-gradient(180deg, #0f172a 0%, #0a0f1e 100%); color: #94a3b8; padding: 64px 48px 30px; }
@@ -409,7 +444,7 @@ html.dark .tt-toast { background: #1e293b; border: 1px solid rgba(148,163,184,.2
 /* 响应式 */
 @media (max-width: 900px) {
     .vhero { padding: 84px 24px 120px; }
-    .tt-wrap { padding: 56px 24px 40px; }
+    .bk-wrap { padding: 50px 22px 40px; }
     .footer { padding: 48px 24px 26px; }
 }
 @media (max-width: 760px) {
@@ -418,9 +453,9 @@ html.dark .tt-toast { background: #1e293b; border: 1px solid rgba(148,163,184,.2
     .vhero-inner { grid-template-columns: 1fr; gap: 40px; }
     .vhero h1 { font-size: 2.4rem; letter-spacing: 5px; }
     .pd-stats { display: none; }
-    .tt-wrap { padding: 40px 20px 30px; }
-    .tt-stats { grid-template-columns: 1fr; }
-    .tt-grid { grid-template-columns: 1fr; }
+    .bk-wrap { padding: 36px 14px 30px; }
+    .bk-grid { grid-template-columns: 1fr; }
+    .bk-card { padding: 18px 16px; }
     .footer-grid { grid-template-columns: 1fr; gap: 26px; }
     .backtop { right: 18px; bottom: 18px; width: 42px; height: 42px; }
 }
@@ -479,11 +514,206 @@ html.dark .tt-toast { background: #1e293b; border: 1px solid rgba(148,163,184,.2
         @media (max-width: 760px) { .beta-announce { align-items: flex-start; flex-wrap: wrap; } }
         html { scroll-behavior: smooth; }
         [id] { scroll-margin-top: 86px; }
+
+/* ==================== NB银行 页面专用样式 ==================== */
+.bk-toolbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    flex-wrap: wrap; margin: 0 0 20px; padding: 16px 20px;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow-1);
+}
+.bk-tb-title { font-size: 1.12rem; font-weight: 800; letter-spacing: 1px; }
+.bk-tb-sub { font-size: .8rem; color: var(--ink-faint); margin-top: 3px; }
+.bk-tb-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.bk-balance-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 16px; font-size: .86rem; color: var(--ink-soft); font-weight: 600;
+}
+.bk-balance-chip b { color: #d97706; font-weight: 800; }
+html.dark .bk-balance-chip b { color: #fbbf24; }
+.bk-refresh {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink-soft);
+    padding: 8px 18px; border-radius: 999px; cursor: pointer;
+    font-size: .85rem; font-weight: 700; transition: all .25s ease;
+}
+.bk-refresh:hover { border-color: var(--brand); color: var(--brand); transform: translateY(-1px); }
+.bk-refresh.spin { animation: bkSpin .6s linear; }
+@keyframes bkSpin { to { transform: rotate(360deg); } }
+
+.bk-state { text-align: center; padding: 80px 20px; color: var(--ink-faint); }
+.bk-state .bk-st-ico { font-size: 3rem; margin-bottom: 16px; }
+.bk-state h3 { color: var(--ink); font-size: 1.25rem; margin-bottom: 10px; letter-spacing: 1px; }
+.bk-state p { font-size: .92rem; line-height: 2; margin-bottom: 26px; }
+.bk-st-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.bk-st-btn { display: inline-block; padding: 11px 30px; border-radius: 999px; font-size: .92rem; font-weight: 700; letter-spacing: 1px; }
+.bk-st-btn.login { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; box-shadow: 0 10px 24px -10px rgba(59,130,246,.6); }
+.bk-st-btn.ghost { background: var(--bg); color: var(--ink-soft); border: 1px solid var(--line); }
+.bk-dot { animation: bkDot 1.2s infinite both; }
+.bk-dot:nth-child(2) { animation-delay: .15s; }
+.bk-dot:nth-child(3) { animation-delay: .3s; }
+@keyframes bkDot { 0%, 60%, 100% { opacity: .2; } 30% { opacity: 1; } }
+
+.bk-ov { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 22px; }
+@media (max-width: 1000px) { .bk-ov { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 640px) { .bk-ov { grid-template-columns: repeat(2, 1fr); } }
+.bk-ovc {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-1); padding: 18px 10px; text-align: center;
+    transition: transform .3s ease, box-shadow .3s ease;
+    border-top: 3px solid var(--brand);
+}
+.bk-ovc:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
+.bk-ovc.dep { border-top-color: #22c55e; }
+.bk-ovc.fx { border-top-color: var(--brand); }
+.bk-ovc.loan { border-top-color: #f97316; }
+.bk-num { font-size: 1.5rem; font-weight: 800; color: var(--ink); word-break: break-all; line-height: 1.4; }
+.bk-num.long { font-size: 1.05rem; }
+.bk-lbl { font-size: .8rem; color: var(--ink-soft); margin-top: 5px; letter-spacing: 1px; }
+.bk-tip { font-size: .68rem; color: var(--ink-faint); margin-top: 3px; }
+
+.bk-sec {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-1); padding: 22px 24px; margin-bottom: 20px;
+}
+.bk-sec-h { font-size: 1.08rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 14px; }
+.bk-table { width: 100%; border-collapse: collapse; font-size: .88rem; min-width: 560px; }
+.bk-table th { padding: 9px 12px; text-align: left; background: var(--bg); border-bottom: 1px solid var(--line); color: var(--ink-faint); font-size: .8rem; letter-spacing: 1px; }
+.bk-table td { padding: 8px 12px; border-bottom: 1px dashed var(--line); color: var(--ink-soft); }
+.bk-table tr:last-child td { border-bottom: none; }
+.bk-table .td-up { color: #16a34a; font-weight: 700; white-space: nowrap; }
+.bk-table .td-down { color: #e11d48; font-weight: 700; white-space: nowrap; }
+html.dark .bk-table .td-up { color: #4ade80; }
+html.dark .bk-table .td-down { color: #fb7185; }
+.bk-alert {
+    background: rgba(231,76,60,.08); border: 1px solid rgba(231,76,60,.25);
+    color: #e11d48; border-radius: var(--radius-lg); padding: 12px 16px;
+    font-size: .86rem; line-height: 1.8; margin-bottom: 20px;
+}
+html.dark .bk-alert { color: #fb7185; }
+
+.bk-inrow { display: flex; gap: 10px; margin: 0 0 12px; flex-wrap: wrap; align-items: center; }
+.bk-field {
+    padding: 10px 16px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    font-size: .95rem; outline: none; min-width: 150px;
+    transition: border-color .2s ease, box-shadow .2s ease;
+    font-family: inherit;
+}
+.bk-field:focus { border-color: rgba(59,130,246,.55); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+.bk-field.num { min-width: 130px; }
+.bk-field.sel { min-width: 170px; cursor: pointer; }
+.bk-btn {
+    border: none; border-radius: 999px; padding: 10px 22px; cursor: pointer;
+    background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff;
+    font-size: .9rem; font-weight: 700; letter-spacing: .5px; font-family: inherit;
+    box-shadow: 0 8px 20px -8px rgba(59,130,246,.55); transition: all .22s ease;
+}
+.bk-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 26px -8px rgba(59,130,246,.6); }
+.bk-btn.green { background: linear-gradient(135deg, #22c55e, #16a34a); box-shadow: 0 8px 20px -8px rgba(34,197,94,.5); }
+.bk-btn.green:hover { box-shadow: 0 12px 26px -8px rgba(34,197,94,.6); }
+.bk-btn.gold { background: linear-gradient(135deg, #f59e0b, #f97316); box-shadow: 0 8px 20px -8px rgba(245,158,11,.5); }
+.bk-btn.gold:hover { box-shadow: 0 12px 26px -8px rgba(245,158,11,.6); }
+.bk-btn.ghost { background: var(--bg); color: var(--ink-soft); box-shadow: none; border: 1px solid var(--line); }
+.bk-btn.ghost:hover { border-color: var(--brand); color: var(--brand); }
+.bk-btn:disabled { opacity: .45; cursor: not-allowed; transform: none !important; }
+.bk-help { font-size: .8rem; color: var(--ink-faint); line-height: 1.9; }
+.bk-help.bk-red { color: #e11d48; }
+html.dark .bk-help.bk-red { color: #fb7185; }
+.bk-tag { display: inline-block; border-radius: 999px; padding: 2px 12px; font-size: .78rem; font-weight: 700; margin: 0 2px; }
+.bk-tag.green { background: rgba(34,197,94,.12); color: #16a34a; }
+.bk-tag.orange { background: rgba(245,158,11,.15); color: #d97706; }
+html.dark .bk-tag.green { color: #4ade80; }
+html.dark .bk-tag.orange { color: #fbbf24; }
+
+.bk-credit { background: var(--bg); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; }
+.bk-crow { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bk-cscore { font-size: 2.2rem; font-weight: 900; color: var(--ink); line-height: 1.2; }
+.bk-cmax { color: var(--ink-faint); font-size: .9rem; }
+.bk-level { font-size: .95rem; font-weight: 800; padding: 4px 16px; border-radius: 999px; letter-spacing: 1px; }
+.bk-level.lv-red { background: rgba(231,76,60,.14); color: #e11d48; }
+.bk-level.lv-orange { background: rgba(255,152,0,.15); color: #d97706; }
+.bk-level.lv-yellow { background: rgba(255,193,7,.18); color: #b45309; }
+.bk-level.lv-green { background: rgba(34,197,94,.14); color: #16a34a; }
+html.dark .bk-level.lv-red { color: #f87171; }
+html.dark .bk-level.lv-orange { color: #fbbf24; }
+html.dark .bk-level.lv-yellow { color: #fcd34d; }
+html.dark .bk-level.lv-green { color: #4ade80; }
+.bk-cbar { height: 10px; background: var(--line); border-radius: 10px; margin-top: 12px; overflow: hidden; }
+.bk-cfill { height: 100%; background: linear-gradient(90deg, #ef4444, #f59e0b, #eab308, #22c55e); border-radius: 10px; transition: width .6s ease; }
+.bk-crules { font-size: .76rem; color: var(--ink-faint); line-height: 1.9; margin-top: 12px; }
+
+.bk-logs { max-height: 320px; overflow-y: auto; }
+.bk-log { display: flex; justify-content: space-between; gap: 12px; padding: 8px 4px; border-bottom: 1px dashed var(--line); font-size: .84rem; }
+.bk-log:last-child { border-bottom: none; }
+.bk-ld { color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; }
+.bk-la { font-weight: 800; white-space: nowrap; }
+.bk-la.in { color: #16a34a; }
+.bk-la.out { color: #e11d48; }
+html.dark .bk-la.in { color: #4ade80; }
+html.dark .bk-la.out { color: #fb7185; }
+
+.bk-toast {
+    position: fixed; top: 84px; left: 50%; transform: translateX(-50%) translateY(-8px);
+    background: #0f172a; color: #fff; border-radius: 999px;
+    padding: 12px 26px; font-size: .92rem; font-weight: 600;
+    box-shadow: 0 12px 30px rgba(0,0,0,.28); z-index: 9998;
+    opacity: 0; pointer-events: none; transition: all .3s ease;
+    max-width: 92vw; text-align: center; letter-spacing: .3px;
+}
+.bk-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.bk-toast.err { background: #dc2626; }
+html.dark .bk-toast { background: #1e293b; border: 1px solid rgba(148,163,184,.2); }
+html.dark .bk-toast.err { background: #991b1b; }
+
+
+/* ==================== 登录 / 注册 页面样式 ==================== */
+.lg-main { display: flex; justify-content: center; padding: 40px 18px 80px; }
+.lg-card {
+    width: min(430px, 100%); background: var(--card);
+    border: 1px solid var(--line); border-radius: 26px; box-shadow: var(--shadow-2);
+    padding: 32px 34px; align-self: flex-start;
+}
+.lg-logo { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 6px; }
+.lg-logo span { font-size: 1.25rem; font-weight: 900; letter-spacing: 1px; color: var(--ink); }
+.lg-title { text-align: center; color: var(--ink-soft); font-size: .95rem; letter-spacing: 2px; margin-bottom: 16px; }
+.lg-seg { display: flex; gap: 4px; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 5px; margin-bottom: 22px; }
+.lg-opt {
+    flex: 1; border: none; background: transparent; color: var(--ink-soft);
+    border-radius: 999px; padding: 10px 8px; cursor: pointer;
+    font-size: .95rem; font-weight: 700; letter-spacing: 1px; font-family: inherit;
+    transition: all .22s ease;
+}
+.lg-opt.on {
+    background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff;
+    box-shadow: 0 8px 18px -8px rgba(59,130,246,.6);
+}
+.lg-field-wrap { position: relative; margin-bottom: 14px; }
+.lg-ic { position: absolute; left: 17px; top: 50%; transform: translateY(-50%); font-size: .95rem; opacity: .85; pointer-events: none; }
+.lg-field {
+    width: 100%; padding: 13px 16px 13px 44px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    font-size: .98rem; font-family: inherit; outline: none; box-sizing: border-box;
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+.lg-field:focus { border-color: rgba(59,130,246,.55); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+.lg-err { min-height: 20px; font-size: .82rem; color: #ef4444; margin: 2px 4px 8px; text-align: center; line-height: 1.6; }
+.lg-btn {
+    width: 100%; border: none; border-radius: 999px; padding: 13px 10px; cursor: pointer;
+    background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff;
+    font-size: 1.02rem; font-weight: 800; letter-spacing: 4px; font-family: inherit;
+    box-shadow: 0 10px 24px -10px rgba(59,130,246,.6); transition: all .22s ease;
+}
+.lg-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.lg-btn:disabled { opacity: .6; cursor: wait; }
+.lg-back { text-align: center; margin-top: 18px; }
+.lg-back a { color: var(--ink-faint); text-decoration: none; font-size: .86rem; }
+.lg-back a:hover { color: var(--brand); }
+
 </style>
 </head>
 <body>
-
-<!-- 导航 -->
 <nav class="nav">
     <a class="nav-logo" href="index-Beta.html"><img class="logo-img" src="/images/NB频道LOGO.png" alt="NB频道"><span class="logo-text">NB频道</span></a>
     <div class="nav-menu">
@@ -509,61 +739,79 @@ html.dark .tt-toast { background: #1e293b; border: 1px solid rgba(148,163,184,.2
     </div>
     <button class="nav-burger" id="navBurger" aria-label="打开菜单">☰</button>
 </nav>
-
 <!-- Hero -->
 <header class="vhero">
     <div class="vhero-inner">
         <div class="hero-copy">
-            <span class="hero-eyebrow">TITLE HALL · NB CHANNEL</span>
-            <h1>称号<span class="light">大全</span></h1>
-            <p class="vhero-sub">达成条件自动解锁、NB币购买升星、管理员至尊颁发——收藏 12 种排面,佩戴后在评论区、私信与主页里闪闪发光</p>
+            <span class="hero-eyebrow">ACCOUNT · 账号中心</span>
+            <h1>登录<span class="light">/ 注册</span></h1>
+            <p class="vhero-sub">登录后可评论、佩戴称号、经营公司、炒股存钱——登录后自动回到刚才的页面;注册每天每 IP 限 3 个账号</p>
             <div class="vhero-actions">
-                <a class="hero-link" href="#content">我的称号 ↓</a>
-                <a class="hero-link" href="shop-Beta.html">商店道具 ↗</a>
+                <a class="hero-link" href="#lgCard">开始登录 ↓</a>
+                <a class="hero-link" href="index-Beta.html">先逛逛 ↗</a>
             </div>
         </div>
         <div class="pd-stats">
-            <div class="pd-row"><span class="k">解锁方式</span><b>自动 · 购买 · 颁发</b></div>
-            <div class="pd-row"><span class="k">星级上限</span><b>★★★★★ 5 星</b></div>
-            <div class="pd-row"><span class="k">佩戴展示</span><b>评论 / 私信 / 主页</b></div>
-            <div class="pd-row"><span class="k">特别道具</span><b>🎖️ 展示位称号</b></div>
-            <div class="pd-tip">登录后查看你的称号与进度</div>
+            <div class="pd-row"><span class="k">账号用途</span><b>全站通用</b></div>
+            <div class="pd-row"><span class="k">注册限制</span><b>每 IP 每日 3 次</b></div>
+            <div class="pd-row"><span class="k">用户名规则</span><b>中文 · 字母 · 数字</b></div>
+            <div class="pd-row"><span class="k">登录安全</span><b>封禁账号拒绝登录</b></div>
+            <div class="pd-tip">?register=1 直达注册表单</div>
         </div>
     </div>
     <div class="vhero-fade"></div>
 </header>
-
-<!-- 全站公告(与首页一致;admin_config key=announcement) -->
+<!-- 全站公告(与全站一致;admin_config key=announcement) -->
 <div class="beta-announce" id="betaAnnounce" style="display:none;">
     <div class="ba-title">公告</div>
     <div class="ba-track-wrap"><div class="ba-track" id="baTrack"></div></div>
 </div>
-
-<!-- 正文 -->
-<main class="tt-wrap">
-    <div class="tt-head reveal">
-        <h2>这里的每枚称号,都替你<em>说了一句话</em></h2>
-        <p class="tt-sig">自动称号按 <b>达成进度</b> 解锁升星 · 购买称号 <b>NB币</b> 付费升级 · 至尊皇冠由 <b>管理员颁发</b>(固定 5 星)<br>佩戴后展示于评论区与私信;🎖️ 展示位称号(商店道具)可额外展示在主页</p>
-    </div>
-
-    <div class="tt-toolbar" id="content">
-        <div>
-            <div class="tb-title">🏅 我的称号</div>
-            <div class="tb-sub" id="ttUserNote">加载用户信息…</div>
+<main class="lg-main" id="lgCard">
+    <div class="lg-card">
+        <div class="lg-logo">
+            <img class="logo-img" src="/images/NB频道LOGO.png" alt="NB频道"><span>NB频道</span>
         </div>
-        <button class="tt-refresh" id="refreshBtn">↻ 刷新</button>
-    </div>
-
-    <div id="ttBody">
-        <div class="tt-state" id="ttLoading">
-            <div class="st-ico">🏅</div>
-            <h3>称号加载中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></h3>
-            <p>正在同步解锁进度与星级</p>
+        <div class="lg-title" id="lgTitle">登录账号</div>
+        <div class="lg-seg" role="tablist">
+            <button type="button" class="lg-opt on" id="loginTab">🔑 登录</button>
+            <button type="button" class="lg-opt" id="registerTab">✨ 注册</button>
         </div>
+
+        <!-- 登录表单 -->
+        <form id="loginForm" autocomplete="off">
+            <div class="lg-field-wrap">
+                <span class="lg-ic">👤</span>
+                <input type="text" id="loginUsername" class="lg-field" placeholder="用户名" maxlength="20">
+            </div>
+            <div class="lg-field-wrap">
+                <span class="lg-ic">🔒</span>
+                <input type="password" id="loginPassword" class="lg-field" placeholder="密码" maxlength="40">
+            </div>
+            <div id="loginError" class="lg-err"></div>
+            <button type="button" class="lg-btn" id="doLogin">登录</button>
+        </form>
+
+        <!-- 注册表单 -->
+        <form id="registerForm" style="display:none;" autocomplete="off">
+            <div class="lg-field-wrap">
+                <span class="lg-ic">👤</span>
+                <input type="text" id="regUsername" class="lg-field" placeholder="用户名(1-20字,中文/字母/数字)" maxlength="20">
+            </div>
+            <div class="lg-field-wrap">
+                <span class="lg-ic">🔒</span>
+                <input type="password" id="regPassword" class="lg-field" placeholder="密码(至少4位)" maxlength="40">
+            </div>
+            <div class="lg-field-wrap">
+                <span class="lg-ic">🔒</span>
+                <input type="password" id="regPassword2" class="lg-field" placeholder="确认密码" maxlength="40">
+            </div>
+            <div id="regError" class="lg-err"></div>
+            <button type="button" class="lg-btn" id="doRegister">注册并登录</button>
+        </form>
+
+        <div class="lg-back"><a href="javascript:history.back()">← 返回上一页</a></div>
     </div>
 </main>
-
-<!-- 页脚 -->
 <footer class="footer">
     <div class="footer-grid">
         <div>
@@ -619,7 +867,7 @@ html.dark .tt-toast { background: #1e293b; border: 1px solid rgba(148,163,184,.2
 
 <!-- 回到顶部 -->
 <button class="backtop" id="backTop" aria-label="回到顶部">↑</button>
-<div class="tt-toast" id="ttToast"></div>
+
 
 <script>
     // ===== 入场渐显 =====
@@ -654,7 +902,7 @@ html.dark .tt-toast { background: #1e293b; border: 1px solid rgba(148,163,184,.2
             }
             if (pbEl) {
                 pbEl.textContent = '👤 ' + (storedU.username || storedU.name || '个人中心');
-                pbEl.href = 'profile-Beta.html';
+                pbEl.href = '/profile.html';
             }
         } else {
             var loginHref = 'login-Beta.html?redirect=' + encodeURIComponent(location.href);
@@ -761,295 +1009,126 @@ html.dark .tt-toast { background: #1e293b; border: 1px solid rgba(148,163,184,.2
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-    // ===== 称号大全:数据与应用逻辑 =====
-    var SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
-    var SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
-    var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    function getUser() {
-        var stored = localStorage.getItem('nb_user');
-        if (!stored) return null;
-        try { return JSON.parse(stored); } catch (e) { return null; }
+    // ===== 登录 / 注册(与经典版一致;回跳白名单改为同源/相对) =====
+    var supabaseClient = null;
+    try {
+        supabaseClient = supabase.createClient(
+            'https://pbaafgjkwdbwcmsikcmg.supabase.co',
+            'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg'
+        );
+    } catch (e) { supabaseClient = null; }
+
+    function safeRedirect(raw) {
+        if (!raw) return null;
+        if (raw.indexOf('\\') !== -1 || /[\r\n]/.test(raw)) return null;
+        try {
+            var u = new URL(raw, window.location.href);   // 以当前页为基准解析相对路径
+            if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+            if (u.origin !== window.location.origin) return null;
+            return u.pathname + u.search + u.hash;
+        } catch (e) { return null; }
     }
-    function esc(s) {
-        if (s === null || s === undefined) return '';
-        return String(s).replace(/[&<>"']/g, function (m) {
-            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
-        });
+    var redirectUrl = safeRedirect(new URLSearchParams(window.location.search).get('redirect'));
+
+    function setMode(reg) {
+        document.getElementById('loginTab').classList.toggle('on', !reg);
+        document.getElementById('registerTab').classList.toggle('on', reg);
+        document.getElementById('loginForm').style.display = reg ? 'none' : 'block';
+        document.getElementById('registerForm').style.display = reg ? 'block' : 'none';
+        document.getElementById('lgTitle').textContent = reg ? '注册新账号' : '登录账号';
     }
-    function jsAttr(s) {
-        return String(s === null || s === undefined ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;');
-    }
-    var toastTimer = null;
-    function showToast(text) {
-        var t = document.getElementById('ttToast');
-        if (!t) { alert(text); return; }
-        t.innerHTML = text;
-        t.classList.add('show');
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(function () { t.classList.remove('show'); }, 3200);
-    }
-    function fmtBig(n) {
-        if (n >= 100000000) return (n / 100000000).toFixed(1).replace(/\.0$/, '') + '亿';
-        if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, '') + '万';
-        return String(n);
-    }
-    function nextBuyPrice(t, cur) {
-        if (cur === 0) return t.price;
-        if (cur >= 5) return null;
-        return (t.star_prices && t.star_prices[cur - 1]) || null;
-    }
-    function renderStars(stars, owned) {
-        if (!owned || stars === 0) return '<span class="tc-stars"><span class="zero">🔒 未解锁</span></span>';
-        var html = '<span class="tc-stars">';
-        for (var i = 1; i <= 5; i++) {
-            html += i <= stars ? '<span class="lit">★</span>' : '<span class="dim">★</span>';
+    document.getElementById('loginTab').addEventListener('click', function () { setMode(false); });
+    document.getElementById('registerTab').addEventListener('click', function () { setMode(true); });
+    var qp = new URLSearchParams(window.location.search);
+    if (qp.get('register') === '1') setMode(true);
+
+    async function getClientIP() {
+        var services = ['https://icanhazip.com', 'https://api.ipify.org?format=text'];
+        for (var i = 0; i < services.length; i++) {
+            try {
+                var resp = await fetch(services[i]);
+                if (resp.ok) return (await resp.text()).trim();
+            } catch (e) { console.warn(services[i], e); }
         }
-        html += '</span>';
-        return html;
-    }
-    function loginButtons() {
-        var base = 'login-Beta.html?redirect=' + encodeURIComponent(location.href);
-        return '<div class="st-actions">' +
-            '<a class="st-btn login" href="' + base + '">去登录</a>' +
-            '<a class="st-btn ghost" href="login-Beta.html?register=1&redirect=' + encodeURIComponent(location.href) + '">注册新账号</a>' +
-            '</div>';
+        throw new Error('无法获取IP地址');
     }
 
-    function loadTitles() {
-        var body = document.getElementById('ttBody');
-        var note = document.getElementById('ttUserNote');
-        var user = getUser();
-        if (!user) {
-            note.textContent = '未登录';
-            body.innerHTML = '<div class="tt-state">' +
-                '<div class="st-ico">🔒</div>' +
-                '<h3>登录后查看称号</h3>' +
-                '<p>称号是你的第二张名片——登录即可查看解锁进度、佩戴或购买</p>' +
-                loginButtons() + '</div>';
-            return;
+    function onLoginSuccess(user) {
+        localStorage.setItem('nb_user', JSON.stringify({ id: user.id, username: user.username }));
+        if (redirectUrl) { window.location.href = redirectUrl; }
+        else { window.location.href = 'stock-Beta.html'; }
+    }
+
+    async function doLogin() {
+        var btn = document.getElementById('doLogin');
+        var username = document.getElementById('loginUsername').value.trim();
+        var password = document.getElementById('loginPassword').value;
+        var errorDiv = document.getElementById('loginError');
+        errorDiv.innerText = '';
+        if (!username || !password) { errorDiv.innerText = '请输入用户名和密码'; return; }
+        btn.disabled = true; btn.textContent = '登录中…';
+        try {
+            var userId = await supabaseClient.rpc('login_user', { input_username: username, input_password: password });
+            if (userId.error) throw new Error(userId.error.message);
+            if (!userId.data) throw new Error('用户名或密码错误');
+            var prof = await supabaseClient.from('profiles').select('id, username, is_banned, banned_reason').eq('id', userId.data).single();
+            if (prof.error || !prof.data) throw new Error('用户资料异常');
+            if (prof.data.is_banned) throw new Error('账号已被封禁,有任何问题请联系管理员');
+            onLoginSuccess({ id: prof.data.id, username: prof.data.username });
+        } catch (err) {
+            errorDiv.innerText = err.message;
+            btn.disabled = false; btn.textContent = '登录';
         }
-        note.textContent = '当前账号: ' + user.username;
-        body.innerHTML = '<div class="tt-state"><div class="st-ico">🏅</div><h3>称号加载中<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></h3><p>正在同步解锁进度与星级</p></div>';
-        supabaseClient.rpc('sync_my_titles', { p_user_id: user.id })
-            .then(function () { return supabaseClient.rpc('get_my_titles', { p_user_id: user.id }); })
-            .then(function (res) {
-                if (res.error) throw res.error;
-                var list = res.data || [];
-                var ownedCount = list.filter(function (t) { return t.owned; }).length;
-                var equipped = null;
-                for (var i = 0; i < list.length; i++) { if (list[i].equipped) { equipped = list[i]; break; } }
-                var curMaxStars = equipped ? Math.min(equipped.equipped_stars || 1, 5) : (function () {
-                    var m = 0;
-                    list.forEach(function (t) { if (t.owned && t.stars > m) m = t.stars; });
-                    return m;
-                })();
-                // 展示位道具信息
-                var slotInfo = { count: 0, chosen_title_key: null };
-                return supabaseClient.rpc('get_active_shop_effects', { p_user_id: user.id }).then(function (fx) {
-                    if (fx && fx.data && fx.data.success && fx.data.title_slot && fx.data.title_slot.count) {
-                        slotInfo = fx.data.title_slot;
-                    }
-                    return { list: list, ownedCount: ownedCount, equipped: equipped, curMaxStars: curMaxStars, slotInfo: slotInfo };
-                }).catch(function () {
-                    return { list: list, ownedCount: ownedCount, equipped: equipped, curMaxStars: curMaxStars, slotInfo: slotInfo };
-                });
-            })
-            .then(function (S) {
-                var html = renderPage(S);
-                body.innerHTML = html;
-            })
-            .catch(function (err) {
-                console.error(err);
-                body.innerHTML = '<div class="tt-state"><div class="st-ico">😵</div><h3>加载失败</h3><p>' + esc((err && err.message) || err || '未知错误') + '，请稍后刷新重试</p>' + loginButtons() + '</div>';
-            });
     }
 
-    function renderPage(S) {
-        var list = S.list, equipped = S.equipped, slotInfo = S.slotInfo;
-        var hasSlot = slotInfo.count > 0;
-        var slotTitle = null;
-        if (slotInfo.chosen_title_key) {
-            for (var i = 0; i < list.length; i++) {
-                if (list[i].title_key === slotInfo.chosen_title_key) { slotTitle = list[i]; break; }
-            }
+    async function doRegister() {
+        var btn = document.getElementById('doRegister');
+        var rawName = document.getElementById('regUsername').value.trim();
+        var username = rawName.replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF\u00AD]/g, '').trim();
+        var password = document.getElementById('regPassword').value;
+        var password2 = document.getElementById('regPassword2').value;
+        var errorDiv = document.getElementById('regError');
+        errorDiv.innerText = '';
+        if (!/^[\u4e00-\u9fa5a-zA-Z0-9]+$/.test(username)) { errorDiv.innerText = '用户名只能包含中文、字母和数字'; return; }
+        if (password !== password2) { errorDiv.innerText = '两次输入的密码不一致'; return; }
+        if (password.length < 4) { errorDiv.innerText = '密码长度至少4位'; return; }
+        btn.disabled = true; btn.textContent = '注册中…';
+        try {
+            var ip;
+            try { ip = await getClientIP(); } catch (e) { throw new Error('无法验证注册限制'); }
+            var canReg = await supabaseClient.rpc('can_register', { ip: ip });
+            if (canReg.error || !canReg.data) throw new Error('您的IP今日注册次数已达上限(3次)');
+            var reg = await supabaseClient.rpc('register_user', { input_username: username, input_password: password });
+            if (reg.error) throw new Error(reg.error.message);
+            if (!reg.data) throw new Error('用户名已存在');
+            await supabaseClient.rpc('record_registration', { ip: ip });
+            var user = await supabaseClient.rpc('login_user', { input_username: username, input_password: password });
+            if (!user.data) throw new Error('注册成功但自动登录失败,请手动登录');
+            var prof = await supabaseClient.from('profiles').select('id, username, is_banned').eq('id', user.data).single();
+            onLoginSuccess({ id: prof.data.id, username: prof.data.username });
+        } catch (err) {
+            errorDiv.innerText = err.message;
+            btn.disabled = false; btn.textContent = '注册并登录';
         }
-        // 佩戴预览
-        var pz1 = equipped
-            ? '<div class="pz-body"><div class="pz-imgbox"><img src="' + esc(equipped.image_url) + '" alt="' + esc(equipped.name) + '" onerror="this.parentNode.style.display=\'none\'"></div>' +
-              '<div><div class="pz-name">' + esc(equipped.name) + '</div><div class="pz-stars">' + '★'.repeat(Math.min(equipped.equipped_stars || 1, 5)) + '</div></div></div>'
-            : '<div class="pz-none">暂未佩戴 —— 点下方卡片上的「佩戴」,在评论区/私信展示你的称号</div>';
-        var pz2 = hasSlot
-            ? (slotTitle
-                ? '<div class="pz-body"><div class="pz-imgbox"><img src="' + esc(slotTitle.image_url) + '" alt="' + esc(slotTitle.name) + '" onerror="this.parentNode.style.display=\'none\'"></div>' +
-                  '<div><div class="pz-name">' + esc(slotTitle.name) + '</div><div class="pz-stars">' + '★'.repeat(Math.min(slotTitle.stars || 1, 5)) + '</div>' +
-                  '<button class="pz-clear" onclick="clearTitleSlot()">取消展示</button></div></div>'
-                : '<div class="pz-none">未设置 —— 点已拥有称号卡上的「设为展示位」(到期自动消失)</div>')
-            : null;
-        var total = list.length;
-        var pending = total - S.ownedCount;
-        var preview = '<div class="tt-preview">' +
-            '<div class="tt-pzone' + (equipped ? ' eq-active' : '') + '"><div class="pz-label">👑 当前佩戴</div>' + pz1 + '</div>' +
-            (hasSlot
-                ? '<div class="tt-pzone' + (slotTitle ? ' eq-active' : '') + '"><div class="pz-label">🎖️ 展示位称号（主页额外展示）</div>' + pz2 + '</div>'
-                : '<div class="tt-pzone"><div class="pz-label">🎖️ 展示位称号</div><div class="pz-none">商店购买道具后解锁第二个展示位,主页与评论区同步展示</div></div>') +
-            '</div>';
-        var stats = '<div class="tt-stats">' +
-            '<div class="tt-stat owned"><b>' + S.ownedCount + '<small> / ' + total + '</small></b><span>已拥有称号</span></div>' +
-            '<div class="tt-stat locked"><b>' + pending + '</b><span>待解锁</span></div>' +
-            '<div class="tt-stat cur"><b>' + (S.curMaxStars > 0 ? '★ ' + S.curMaxStars : '—') + '</b><span>当前最高星级</span></div>' +
-            '</div>';
-        var cards = '<div class="tt-grid">';
-        list.forEach(function (t, idx) {
-            cards += renderCard(t, hasSlot, slotInfo.chosen_title_key, idx);
-        });
-        cards += '</div>';
-        return preview + stats + cards;
     }
 
-    function renderCard(t, slotActive, slotChosen, idx) {
-        var typeCls = t.acquire_type === 'buy' ? 'buy' : (t.acquire_type === 'manual' ? 'manual' : 'auto');
-        var typeLabel = t.acquire_type === 'buy' ? '💎 购买' : (t.acquire_type === 'manual' ? '👑 颁发' : '✨ 自动');
-        var actions = '';
-        if (slotActive && t.owned && !t.equipped) {
-            var isSlot = slotChosen === t.title_key;
-            actions += isSlot
-                ? '<button class="tt-btn-disabled" disabled>🎖️ 展示中</button>'
-                : '<button class="tt-btn-slot" onclick="setTitleSlot(\'' + jsAttr(t.title_key) + '\')">🎖️ 设为展示位</button>';
-        }
-        if (t.acquire_type === 'buy') {
-            if (t.stars >= 5) {
-                actions += '<button class="tt-btn-disabled" disabled>👑 已满级</button>';
-            } else {
-                var price = nextBuyPrice(t, t.stars);
-                actions += '<button class="tt-btn-buy" onclick="buyTitle(\'' + jsAttr(t.title_key) + '\')">💎 ' + (t.owned ? '升星' : '购买') + '（' + fmtBig(price) + ' NB币）</button>';
-            }
-            actions += t.equipped
-                ? '<button class="tt-btn-unequip" onclick="unequipTitle()">取消佩戴</button>'
-                : (t.owned ? '<button class="tt-btn-equip" onclick="equipTitle(\'' + jsAttr(t.title_key) + '\')">佩戴</button>' : '');
-        } else if (t.equipped) {
-            actions += '<button class="tt-btn-unequip" onclick="unequipTitle()">取消佩戴</button>';
-        } else if (t.owned) {
-            actions += '<button class="tt-btn-equip" onclick="equipTitle(\'' + jsAttr(t.title_key) + '\')">佩戴</button>';
-        } else if (t.acquire_type === 'manual') {
-            actions += '<button class="tt-btn-disabled" disabled>👑 管理员颁发</button>';
-        } else {
-            actions += '<button class="tt-btn-disabled" disabled>达成条件自动解锁</button>';
-        }
-        if (!actions) actions = '<button class="tt-btn-disabled" disabled>—</button>';
+    document.getElementById('doLogin').addEventListener('click', doLogin);
+    document.getElementById('doRegister').addEventListener('click', doRegister);
+    function keyGo(e, fn) { if (e.key === 'Enter') { e.preventDefault(); fn(); } }
+    document.getElementById('loginUsername').addEventListener('keydown', function (e) { keyGo(e, doLogin); });
+    document.getElementById('loginPassword').addEventListener('keydown', function (e) { keyGo(e, doLogin); });
+    document.getElementById('regUsername').addEventListener('keydown', function (e) { keyGo(e, doRegister); });
+    document.getElementById('regPassword').addEventListener('keydown', function (e) { keyGo(e, doRegister); });
+    document.getElementById('regPassword2').addEventListener('keydown', function (e) { keyGo(e, doRegister); });
 
-        // 进度明细
-        var reqHtml = '';
-        var curVal = t.current_value || 0;
-        if (t.acquire_type === 'auto' && t.star_thresholds && t.star_thresholds.length > 0) {
-            var rows = '<div class="rq-row"><span class="rq-lv">📊</span><span class="rq-txt now">当前：' + fmtBig(curVal) + '</span></div>';
-            t.star_thresholds.forEach(function (th, i) {
-                var level = i + 1;
-                var cls = 'rq-txt', mark = '🔒  ';
-                if (t.owned && level <= t.stars) { cls = 'rq-txt done'; mark = '✅ '; }
-                else if (t.owned && level === t.stars + 1) { cls = 'rq-txt next'; mark = '🎯 '; }
-                else if (!t.owned && level === 1) { cls = 'rq-txt next'; mark = '🎯 '; }
-                var remain = curVal < th ? '（还差 ' + fmtBig(th - curVal) + '）' : '';
-                rows += '<div class="rq-row"><span class="rq-lv">★' + level + '</span><span class="' + cls + '">' + mark + fmtBig(th) + remain + '</span></div>';
-            });
-            reqHtml = '<div class="tt-req"><div class="rq-title">📈 升星要求</div>' + rows + '</div>';
-        } else if (t.acquire_type === 'buy' && t.star_prices && t.star_prices.length > 0) {
-            var allPrices = [t.price].concat(t.star_prices);
-            var bRows = '<div class="rq-row"><span class="rq-lv">📊</span><span class="rq-txt now">当前：已花费 ' + fmtBig(t.spent || 0) + ' NB币（★' + (t.stars || 0) + '）</span></div>';
-            allPrices.forEach(function (p, i) {
-                var lv = i + 1;
-                var cls2 = 'rq-txt', mark2 = '🔒  ';
-                if (t.owned && lv <= t.stars) { cls2 = 'rq-txt done'; mark2 = '✅ '; }
-                else if (t.owned && lv === t.stars + 1) { cls2 = 'rq-txt next'; mark2 = '🎯 '; }
-                else if (!t.owned && lv === 1) { cls2 = 'rq-txt next'; mark2 = '🎯 '; }
-                bRows += '<div class="rq-row"><span class="rq-lv">★' + lv + '</span><span class="' + cls2 + '">' + mark2 + '花费 ' + fmtBig(p) + ' NB币' + (i > 0 ? '（再花）' : '') + '</span></div>';
-            });
-            reqHtml = '<div class="tt-req"><div class="rq-title">💰 升级价格</div>' + bRows + '</div>';
-        } else if (t.acquire_type === 'manual') {
-            reqHtml = '<div class="tt-req"><div class="rq-title">👑 获取方式</div><div class="rq-row"><span class="rq-lv">⭐</span><span class="rq-txt">去 B 站给 UP 主充电,由管理员颁发（固定 5 星）</span></div></div>';
-        }
-
-        return '<div class="tt-card ' + (t.equipped ? 'equipped' : (t.owned ? '' : 'locked')) + '" style="animation-delay:' + Math.min(idx * 55, 550) + 'ms">' +
-            '<div class="tc-imgbox"><img loading="lazy" src="' + esc(t.image_url) + '" alt="' + esc(t.name) + '" onerror="this.style.display=\'none\'"></div>' +
-            '<div class="tc-body">' +
-                '<div class="tc-top"><span class="tc-name">' + esc(t.name) + '</span>' + renderStars(t.stars, t.owned) + '</div>' +
-                '<div class="tc-desc">📌 ' + esc(t.acquire_desc) + '</div>' +
-                '<span class="tc-type ' + typeCls + '">' + typeLabel + '</span>' +
-                reqHtml +
-                '<div class="tt-actions">' + actions + '</div>' +
-            '</div></div>';
-    }
-
-    function equipTitle(key) {
-        var user = getUser();
-        if (!user) return;
-        supabaseClient.rpc('equip_title', { p_user_id: user.id, p_title_key: key }).then(function (res) {
-            if (res.error || !res.data || !res.data.success) {
-                alert((res.error && res.error.message) || (res.data && res.data.message) || '操作失败');
-                return;
-            }
-            showToast('✅ 已佩戴称号');
-            loadTitles();
-        });
-    }
-    function unequipTitle() {
-        var user = getUser();
-        if (!user) return;
-        supabaseClient.rpc('equip_title', { p_user_id: user.id, p_title_key: '' }).then(function (res) {
-            if (res.error || !res.data || !res.data.success) {
-                alert((res.error && res.error.message) || (res.data && res.data.message) || '操作失败');
-                return;
-            }
-            showToast('✅ 已取消佩戴');
-            loadTitles();
-        });
-    }
-    function buyTitle(key) {
-        var user = getUser();
-        if (!user) return;
-        if (!confirm('确认购买该称号？将扣除相应 NB币。')) return;
-        supabaseClient.rpc('buy_title', { p_user_id: user.id, p_title_key: key }).then(function (res) {
-            if (res.error || !res.data || !res.data.success) {
-                alert((res.error && res.error.message) || (res.data && res.data.message) || '购买失败');
-                return;
-            }
-            showToast('🎉 ' + ((res.data && res.data.message) || '购买成功'));
-            loadTitles();
-        });
-    }
-    function setTitleSlot(key) {
-        var user = getUser();
-        if (!user) return;
-        supabaseClient.rpc('set_title_slot', { p_user_id: user.id, p_title_key: key }).then(function (res) {
-            if (res.error || !res.data || !res.data.success) {
-                alert((res.error && res.error.message) || (res.data && res.data.message) || '设置失败');
-                return;
-            }
-            showToast('🎖️ 已设为展示位称号');
-            loadTitles();
-        });
-    }
-    function clearTitleSlot() {
-        var user = getUser();
-        if (!user) return;
-        if (!confirm('取消展示位称号？（主页展示位将自动显示最高星称号）')) return;
-        supabaseClient.rpc('set_title_slot', { p_user_id: user.id, p_title_key: '' }).then(function (res) {
-            if (res.error || !res.data || !res.data.success) {
-                alert((res.error && res.error.message) || (res.data && res.data.message) || '操作失败');
-                return;
-            }
-            showToast('✅ 已取消展示位称号');
-            loadTitles();
-        });
-    }
-    document.getElementById('refreshBtn').addEventListener('click', function () {
-        var btn = document.getElementById('refreshBtn');
-        btn.classList.remove('spin');
-        void btn.offsetWidth;
-        btn.classList.add('spin');
-        loadTitles();
+    // 登录页自身导航:把"登录/注册/个人中心"入口改为回首页/去注册,避免自我跳转
+    var navRewrite = { betaAuthBtn: '🏠 回首页', betaProfileBtn: '🏠 回首页', dAuthBtn: '🏠 回首页', dProfileBtn: '🏠 回首页' };
+    Object.keys(navRewrite).forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) { el.textContent = navRewrite[id]; el.href = 'index-Beta.html'; el.onclick = null; }
     });
-    loadTitles();
+
 </script>
 <script>
     // ===== 鼠标特效:跟随光晕 + 点击波纹与彩色粒子(仅鼠标设备) =====
@@ -1066,7 +1145,6 @@ html.dark .tt-toast { background: #1e293b; border: 1px solid rgba(148,163,184,.2
         (function loop() {
             gx += (tx - gx) * 0.14;
             gy += (ty - gy) * 0.14;
-            // 静止时跳过写入:避免每帧重复改 style 白白触发样式计算
             if (Math.abs(gx - lx) > 0.2 || Math.abs(gy - ly) > 0.2) {
                 glow.style.left = gx + 'px';
                 glow.style.top = gy + 'px';
@@ -1133,7 +1211,7 @@ html.dark .tt-toast { background: #1e293b; border: 1px solid rgba(148,163,184,.2
             if (!rows || !rows.length) return;
             var raw = String(rows[0].value || '').trim();
             if (!raw) return;
-            bar.style.display = 'flex';   // 先显示再测量(display:none 时 offsetWidth 恒为 0)
+            bar.style.display = 'flex';
             var one = '<span class="ba-item">' + linkify(escA(raw)) + '</span>';
             track.innerHTML = one;
             var item = track.querySelector('.ba-item');

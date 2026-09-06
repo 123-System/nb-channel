@@ -823,7 +823,7 @@ html.dark .sk-toast.err { background: #991b1b; }
                 pbEl.href = 'profile-Beta.html';
             }
         } else {
-            var loginHref = '/login.html?redirect=' + encodeURIComponent(location.href);
+            var loginHref = 'login-Beta.html?redirect=' + encodeURIComponent(location.href);
             if (abEl) { abEl.href = loginHref; abEl.textContent = '登录 / 注册'; }
             if (pbEl) { pbEl.href = loginHref; pbEl.textContent = '👤 个人中心'; }
         }
@@ -1078,8 +1078,8 @@ html.dark .sk-toast.err { background: #991b1b; }
             body.innerHTML = '<div class="sk-state"><div class="sk-st-ico">🔒</div><h3>登录后逛商店</h3>' +
                 '<p>用 NB币购买道具,装点你的频道生活</p>' +
                 '<div class="sk-st-actions">' +
-                '<a class="sk-st-btn login" href="/login.html?redirect=' + encodeURIComponent(location.href) + '">去登录</a>' +
-                '<a class="sk-st-btn ghost" href="/login.html?register=1&redirect=' + encodeURIComponent(location.href) + '">注册新账号</a>' +
+                '<a class="sk-st-btn login" href="login-Beta.html?redirect=' + encodeURIComponent(location.href) + '">去登录</a>' +
+                '<a class="sk-st-btn ghost" href="login-Beta.html?register=1&redirect=' + encodeURIComponent(location.href) + '">注册新账号</a>' +
                 '</div></div>';
             return;
         }

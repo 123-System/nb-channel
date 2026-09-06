@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -100,13 +100,15 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // redirect 白名单校验：只允许站内相对路径，防止开放重定向和伪协议注入
-    function safeRedirect(raw) {
+        function safeRedirect(raw) {
         if (!raw) return null;
-        if (raw.startsWith('//')) return null;                    // 协议相对 URL
-        if (/^(https?:|javascript:|data:|vbscript:|file:)/i.test(raw)) return null;  // 绝对 URL / 伪协议
-        if (raw.indexOf('\\') !== -1 || /[\r\n]/.test(raw)) return null;
-        if (!/^[a-zA-Z0-9_\-./?&=#%]+$/.test(raw)) return null;  // 只允许普通 URL 字符
-        return raw;
+        if (raw.indexOf('\\\\') !== -1 || /[\\r\\n]/.test(raw)) return null;
+        try {
+            const u = new URL(raw, window.location.href);   // 以当前页为基准解析相对路径
+            if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+            if (u.origin !== window.location.origin) return null;
+            return u.pathname + u.search + u.hash;
+        } catch (e) { return null; }
     }
     const redirectUrl = safeRedirect(new URLSearchParams(window.location.search).get('redirect'));
 

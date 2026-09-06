@@ -2271,7 +2271,7 @@ textarea, .reply-form textarea, .edit-form textarea { border-radius: 12px; }
                     localStorage.removeItem('nb_user');
                     showMessage('提示', '登录信息已失效，请重新登录');
                     currentUser = null;
-                    userStatusSpan.innerHTML = `<a href="/login.html?redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="/login.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
+                    userStatusSpan.innerHTML = `<a href="login-Beta.html?redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login-Beta.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
                     newCommentArea.style.display = 'none';
                     fetchComments();
                     return;
@@ -2306,7 +2306,7 @@ textarea, .reply-form textarea, .edit-form textarea { border-radius: 12px; }
             }
         }
         currentUser = null;
-        userStatusSpan.innerHTML = `<a href="/login.html?redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="/login.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
+        userStatusSpan.innerHTML = `<a href="login-Beta.html?redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login-Beta.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
         newCommentArea.style.display = 'none';
         fetchComments();
     }
@@ -2466,7 +2466,7 @@ textarea, .reply-form textarea, .edit-form textarea { border-radius: 12px; }
                 pbEl.href = 'profile-Beta.html';
             }
         } else {
-            var loginHref = '/login.html?redirect=' + encodeURIComponent(location.href);
+            var loginHref = 'login-Beta.html?redirect=' + encodeURIComponent(location.href);
             if (abEl) { abEl.href = loginHref; abEl.textContent = '登录 / 注册'; }
             if (pbEl) { pbEl.href = loginHref; pbEl.textContent = '👤 个人中心'; }
         }

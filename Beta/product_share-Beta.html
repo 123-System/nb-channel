@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -708,7 +708,7 @@ input[type="text"], input[type="number"], textarea, select {
             const balance = await fetchUserBalance();
             balanceSpan.innerHTML = `💰 NB币: ${balance}`;
         } else {
-            statusSpan.innerHTML = `<a href="/login.html?redirect=${encodeURIComponent(window.location.href)}" style="color:var(--status-border);">登录</a> / <a href="login.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="color:var(--status-border);">注册</a>`;
+            statusSpan.innerHTML = `<a href="login-Beta.html?redirect=${encodeURIComponent(window.location.href)}" style="color:var(--status-border);">登录</a> / <a href="login-Beta.html?register=1&redirect=${encodeURIComponent(window.location.href)}" style="color:var(--status-border);">注册</a>`;
             balanceSpan.innerHTML = '💰 NB币: --';
             uploadSection.style.display = 'none';
         }
@@ -1340,7 +1340,7 @@ html += `
                 pbEl.href = 'profile-Beta.html';
             }
         } else {
-            var loginHref = '/login.html?redirect=' + encodeURIComponent(location.href);
+            var loginHref = 'login-Beta.html?redirect=' + encodeURIComponent(location.href);
             if (abEl) { abEl.href = loginHref; abEl.textContent = '登录 / 注册'; }
             if (pbEl) { pbEl.href = loginHref; pbEl.textContent = '👤 个人中心'; }
         }

@@ -842,7 +842,7 @@ html.dark .bk-toast.err { background: #991b1b; }
                 pbEl.href = 'profile-Beta.html';
             }
         } else {
-            var loginHref = '/login.html?redirect=' + encodeURIComponent(location.href);
+            var loginHref = 'login-Beta.html?redirect=' + encodeURIComponent(location.href);
             if (abEl) { abEl.href = loginHref; abEl.textContent = '登录 / 注册'; }
             if (pbEl) { pbEl.href = loginHref; pbEl.textContent = '👤 个人中心'; }
         }
@@ -1015,10 +1015,10 @@ html.dark .bk-toast.err { background: #991b1b; }
         return { name: '优秀', cls: 'lv-green', limit: score * 1500 };
     }
     function bkLoginButtons() {
-        var base = '/login.html?redirect=' + encodeURIComponent(location.href);
+        var base = 'login-Beta.html?redirect=' + encodeURIComponent(location.href);
         return '<div class="bk-st-actions">' +
             '<a class="bk-st-btn login" href="' + base + '">去登录</a>' +
-            '<a class="bk-st-btn ghost" href="/login.html?register=1&redirect=' + encodeURIComponent(location.href) + '">注册新账号</a>' +
+            '<a class="bk-st-btn ghost" href="login-Beta.html?register=1&redirect=' + encodeURIComponent(location.href) + '">注册新账号</a>' +
             '</div>';
     }
     function loadBalance() {

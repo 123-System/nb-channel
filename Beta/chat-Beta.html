@@ -668,7 +668,7 @@ button { border-radius: 999px; }
 
 <div id="notLoggedIn" style="text-align:center; padding:60px 0; display:none;">
         <p style="color:var(--count-text); margin-bottom:20px;">请先登录后再使用好友与私信功能</p>
-        <a href="/login.html?redirect=" id="loginLink" style="background:var(--nav-btn-hover-bg); color:white; border-radius:30px; padding:10px 30px; text-decoration:none;">去登录</a>
+        <a href="login-Beta.html?redirect=" id="loginLink" style="background:var(--nav-btn-hover-bg); color:white; border-radius:30px; padding:10px 30px; text-decoration:none;">去登录</a>
     </div>
 
     <div id="chatMain" class="chat-container" style="display:none;">
@@ -864,7 +864,7 @@ button { border-radius: 999px; }
         const user = getCurrentUser();
         if (!user) {
             document.getElementById('notLoggedIn').style.display = 'block';
-            document.getElementById('loginLink').href = '/login.html?redirect=' + encodeURIComponent(window.location.href);
+            document.getElementById('loginLink').href = 'login-Beta.html?redirect=' + encodeURIComponent(window.location.href);
             return;
         }
         currentUser = user;
@@ -2178,7 +2178,7 @@ button { border-radius: 999px; }
                 pbEl.href = 'profile-Beta.html';
             }
         } else {
-            var loginHref = '/login.html?redirect=' + encodeURIComponent(location.href);
+            var loginHref = 'login-Beta.html?redirect=' + encodeURIComponent(location.href);
             if (abEl) { abEl.href = loginHref; abEl.textContent = '登录 / 注册'; }
             if (pbEl) { pbEl.href = loginHref; pbEl.textContent = '👤 个人中心'; }
         }

@@ -837,7 +837,7 @@ html.dark .pk-total { color: #fbbf24; }
                 pbEl.href = 'profile-Beta.html';
             }
         } else {
-            var loginHref = '/login.html?redirect=' + encodeURIComponent(location.href);
+            var loginHref = 'login-Beta.html?redirect=' + encodeURIComponent(location.href);
             if (abEl) { abEl.href = loginHref; abEl.textContent = '登录 / 注册'; }
             if (pbEl) { pbEl.href = loginHref; pbEl.textContent = '👤 个人中心'; }
         }
@@ -1009,8 +1009,8 @@ html.dark .pk-total { color: #fbbf24; }
             body.innerHTML = '<div class="pk-state"><div class="pk-st-ico">🔒</div><h3>登录后查看背包</h3>' +
                 '<p>你的商店道具都在这里</p>' +
                 '<div class="pk-st-actions">' +
-                '<a class="pk-st-btn login" href="/login.html?redirect=' + encodeURIComponent(location.href) + '">去登录</a>' +
-                '<a class="pk-st-btn ghost" href="/login.html?register=1&redirect=' + encodeURIComponent(location.href) + '">注册新账号</a>' +
+                '<a class="pk-st-btn login" href="login-Beta.html?redirect=' + encodeURIComponent(location.href) + '">去登录</a>' +
+                '<a class="pk-st-btn ghost" href="login-Beta.html?register=1&redirect=' + encodeURIComponent(location.href) + '">注册新账号</a>' +
                 '</div></div>';
             return;
         }

@@ -2285,7 +2285,7 @@ button { border-radius: 999px; }
             }
         } else {
             const redirectUrl = encodeURIComponent(window.location.href);
-            document.getElementById('userStatusSpan').innerHTML = `未登录 <a href="/login.html?redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="/login.html?register=1&redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
+            document.getElementById('userStatusSpan').innerHTML = `未登录 <a href="login-Beta.html?redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">登录</a> / <a href="login-Beta.html?register=1&redirect=${redirectUrl}" style="background:none; border:none; color:var(--status-border); cursor:pointer;">注册</a>`;
             const companies = await fetchAllCompanies();
             if (companies.length) {
                 rawData.names = companies.map(c => c.company_name);
@@ -2531,7 +2531,7 @@ button { border-radius: 999px; }
                 pbEl.href = 'profile-Beta.html';
             }
         } else {
-            var loginHref = '/login.html?redirect=' + encodeURIComponent(location.href);
+            var loginHref = 'login-Beta.html?redirect=' + encodeURIComponent(location.href);
             if (abEl) { abEl.href = loginHref; abEl.textContent = '登录 / 注册'; }
             if (pbEl) { pbEl.href = loginHref; pbEl.textContent = '👤 个人中心'; }
         }
