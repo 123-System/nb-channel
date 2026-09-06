@@ -621,6 +621,21 @@ input[type="text"], input[type="number"], textarea, select {
     </div>
 </div>
 
+
+<!-- 作品举报弹窗 -->
+<div id="reportProductModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:20000;">
+    <div style="background:var(--card-bg); border-radius:20px; padding:24px; max-width:380px; width:92%; box-shadow:0 20px 40px rgba(0,0,0,0.25);">
+        <h3 style="margin:0 0 6px; color:var(--text-color);">🚩 举报作品</h3>
+        <div id="reportProductName" style="font-size:0.9rem; color:var(--count-text); margin-bottom:14px;"></div>
+        <textarea id="reportProductReason" rows="4" maxlength="100" placeholder="请填写举报原因(例如:违禁内容、侵权、虚假作品等,≤100字)" style="width:100%; padding:10px 14px; border:1px solid var(--card-border); border-radius:12px; background:var(--bg-color); color:var(--text-color); font-family:inherit; font-size:0.9rem; box-sizing:border-box; resize:vertical;"></textarea>
+        <div style="display:flex; gap:10px; margin-top:14px; justify-content:flex-end;">
+            <button id="reportProductCancel" style="background:var(--nav-btn-bg); color:var(--nav-btn-text); border:none; border-radius:30px; padding:9px 22px; cursor:pointer;">取消</button>
+            <button id="reportProductSubmit" style="background:#e74c3c; color:#fff; border:none; border-radius:30px; padding:9px 22px; cursor:pointer;">提交举报</button>
+        </div>
+        <div id="reportProductStatus" style="font-size:0.85rem; color:#e74c3c; margin-top:10px;"></div>
+    </div>
+</div>
+
 <!-- 支付方式选择弹窗（付费作品） -->
 <div class="pay-modal-overlay" id="payModal">
     <div class="pay-modal">
@@ -758,7 +773,8 @@ input[type="text"], input[type="number"], textarea, select {
                 actionHtml = `<span style="color:var(--count-text);">请登录后下载</span>`;
             }
 
-            html += `
+                        const reportTag = isOwner ? '' : `<button type="button" class="action-btn report-btn" data-id="${p.id}" data-title="${escapeHtml(p.title)}" style="background:none;border:1px solid var(--card-border);color:var(--count-text);font-size:0.78rem;padding:4px 12px;" title="举报违规作品">🚩 举报</button>`;
+html += `
                 <div class="product-card">
                     <div class="product-title">${escapeHtml(p.title)}</div>
                     <div class="product-meta">👤 ${escapeHtml(p.author_username)} · 📅 ${new Date(p.created_at).toLocaleDateString()} · 📥 ${p.downloads || 0} 次下载${sizeText}</div>
@@ -766,7 +782,7 @@ input[type="text"], input[type="number"], textarea, select {
                     <div style="margin-top:auto;">
                         <span>${priceText}</span>
                         <div class="product-actions">
-                            ${actionHtml}
+                            ${actionHtml}${reportTag}
                         </div>
                     </div>
                 </div>
@@ -774,6 +790,15 @@ input[type="text"], input[type="number"], textarea, select {
         }
         container.innerHTML = html;
 
+        // 举报(容器级委托,避免重复渲染重复绑定)
+        if (!container.__reportBound) {
+            container.__reportBound = true;
+            container.addEventListener('click', function (e) {
+                const b = e.target.closest && e.target.closest('.report-btn');
+                if (!b) return;
+                openReportProduct(parseInt(b.dataset.id, 10), b.dataset.title || '该作品', b);
+            });
+        }
         container.querySelectorAll('.download-btn, .buy-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const productId = parseInt(btn.dataset.id);
@@ -1091,6 +1116,58 @@ input[type="text"], input[type="number"], textarea, select {
         checkBackendHealth();
     }
 
+
+    // ==================== 作品举报 ====================
+    let pendingReportProductId = null;
+    let pendingReportProductBtn = null;
+    function openReportProduct(productId, title, btn) {
+        if (!currentUser) { alert('请先登录后再举报'); return; }
+        pendingReportProductId = productId;
+        pendingReportProductBtn = btn || null;
+        document.getElementById('reportProductName').textContent = '《' + title + '》';
+        document.getElementById('reportProductReason').value = '';
+        document.getElementById('reportProductStatus').innerText = '';
+        document.getElementById('reportProductModal').style.display = 'flex';
+        document.getElementById('reportProductReason').focus();
+    }
+    function closeReportProduct() {
+        document.getElementById('reportProductModal').style.display = 'none';
+        pendingReportProductId = null;
+    }
+    document.getElementById('reportProductCancel').addEventListener('click', closeReportProduct);
+    document.getElementById('reportProductSubmit').addEventListener('click', async function () {
+        const pid = pendingReportProductId;
+        const reason = document.getElementById('reportProductReason').value.trim();
+        const statusEl = document.getElementById('reportProductStatus');
+        if (!pid) return;
+        if (!reason) { statusEl.innerText = '请填写举报原因'; return; }
+        if (reason.length > 100) { statusEl.innerText = '举报原因不能超过100字'; return; }
+        try {
+            const { data: dup, error: dupErr } = await supabaseClient
+                .from('reports')
+                .select('id')
+                .eq('product_id', pid)
+                .eq('reporter_user_id', currentUser.id)
+                .maybeSingle();
+            if (dupErr) throw dupErr;
+            if (dup) { statusEl.innerText = '你已经举报过该作品,管理员会尽快处理'; return; }
+            const { error } = await supabaseClient.from('reports').insert({
+                target_type: 'product',
+                product_id: pid,
+                reporter_user_id: currentUser.id,
+                reason: reason
+            });
+            if (error) throw error;
+            closeReportProduct();
+            if (pendingReportProductBtn) {
+                pendingReportProductBtn.disabled = true;
+                pendingReportProductBtn.textContent = '已举报';
+            }
+            alert('举报已提交,感谢维护社区环境');
+        } catch (err) {
+            statusEl.innerText = '提交失败: ' + (err.message || err);
+        }
+    });
     init();
 </script>
 <footer class="footer">

@@ -258,6 +258,7 @@
         <button id="tabComments" class="tab-btn active">📝 评论举报</button>
         <button id="tabCompanies" class="tab-btn">🏢 公司举报</button>
         <button id="tabVerification" class="tab-btn">🏢 公司认证审核</button>
+        <button id="tabProduct" class="tab-btn">🚩 作品举报</button>
         <button id="tabAnnounce" class="tab-btn">📢 公告管理</button>
         <button id="tabApi" class="tab-btn">📊 API 日志</button>
     </div>
@@ -301,6 +302,8 @@
         <button id="vbReject" class="danger">❌ 批量驳回认证</button>
         <button id="vbClear">清空选择</button>
     </div>
+
+    <div id="productReportsContainer" style="display: none;">加载中...</div>
 
     <div id="announcePanel" style="display:none;">
         <div style="background:#fff8e6;border:1px solid #ffd591;border-left:4px solid #ff9800;border-radius:12px;padding:10px 16px;font-size:0.9rem;margin-bottom:16px;">💡 公告显示在首页与全站页面顶部的滚动公告条。留空保存 = 清除公告。</div>
@@ -996,6 +999,88 @@
         loadDashboard();
     }
 
+    // ==================== 作品举报 ====================
+    async function loadProductReports() {
+        const container = document.getElementById('productReportsContainer');
+        container.innerHTML = '<div class="loading">加载中...</div>';
+        try {
+            const { data, error } = await supabaseClient
+                .from('reports')
+                .select(`
+                    id, reason, created_at, product_id,
+                    reporter:profiles!reports_reporter_user_id_fkey (username),
+                    products!inner ( id, title, author_id, profiles!inner (username) )
+                `)
+                .eq('target_type', 'product')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="loading">暂无作品举报记录</div>';
+                return;
+            }
+            let html = '';
+            for (const report of data) {
+                const prod = report.products;
+                const productId = prod?.id || report.product_id;
+                const authorName = prod?.profiles?.username || '未知用户';
+                const reporterName = report.reporter?.username || '未知';
+                const title = prod?.title || '已删除作品';
+                html += `
+                    <div class="report-card" data-report-id="${report.id}">
+                        <div class="card-header">
+                            <strong>🚩 作品举报 #${report.id}</strong>
+                            <div class="report-time">📅 ${formatDate(report.created_at)}</div>
+                        </div>
+                        <div class="company-info">
+                            <strong>被举报作品：</strong> ${escapeHtml(title)} (ID: ${productId || '未知'})<br>
+                            <strong>作者：</strong> ${escapeHtml(authorName)} (ID: ${prod?.author_id || '未知'})
+                        </div>
+                        <div class="report-meta">
+                            <span>📢 <strong>举报原因：</strong> ${escapeHtml(report.reason)}</span>
+                            <span>🔍 <strong>举报人：</strong> ${escapeHtml(reporterName)}</span>
+                        </div>
+                        <div class="report-actions">
+                            <button class="prod-ignore" data-report-id="${report.id}">🙈 忽略举报</button>
+                            <button class="prod-delete" data-product-id="${productId}" data-product-name="${escapeHtml(title)}" data-report-id="${report.id}">🗑️ 删除作品</button>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+            container.querySelectorAll('.prod-ignore').forEach(btn => {
+                btn.onclick = async function () {
+                    const reportId = parseInt(this.dataset.reportId, 10);
+                    if (!confirm('确定忽略此作品举报吗？')) return;
+                    const { data, error } = await supabaseClient.rpc('admin_ignore_report', { p_report_id: reportId, p_token: getToken() });
+                    if (error || !data || !data.success) {
+                        if (!handleAdminError(error || (data && data.message))) alert('忽略失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+                        return;
+                    }
+                    alert('已忽略'); loadProductReports();
+                };
+            });
+            container.querySelectorAll('.prod-delete').forEach(btn => {
+                btn.onclick = async function () {
+                    const productId = parseInt(this.dataset.productId, 10);
+                    const name = this.dataset.productName || '未知作品';
+                    const reportId = parseInt(this.dataset.reportId, 10);
+                    if (isNaN(productId) || productId <= 0) { alert('作品ID无效'); return; }
+                    if (!confirm('确定删除作品「' + name + '」吗？购买记录与举报将一并清理！')) return;
+                    const { data, error } = await supabaseClient.rpc('admin_delete_product', { p_product_id: productId, p_token: getToken() });
+                    if (error || !data || !data.success) {
+                        if (!handleAdminError(error || (data && data.message))) alert('删除失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+                        return;
+                    }
+                    await supabaseClient.rpc('admin_batch_ignore', { p_report_ids: [reportId], p_token: getToken() });
+                    alert('作品已删除'); loadProductReports();
+                };
+            });
+        } catch (err) {
+            console.error('加载失败:', err);
+            container.innerHTML = '<div class="error">加载失败: ' + escapeHtml(err.message) + '</div>';
+        }
+    }
+
     // ==================== 封禁用户列表 ====================
     async function loadBannedUsers() {
         const container = document.getElementById('bannedUsersList');
@@ -1082,7 +1167,7 @@
 
     function switchTab(tab) {
         currentTab = tab;
-        const panels = ['commentFilters','batchActions','reportsContainer','pagination','companyReportsContainer','verificationContainer','companyBatch','verifyBatch'];
+        const panels = ['commentFilters','batchActions','reportsContainer','pagination','companyReportsContainer','verificationContainer','companyBatch','verifyBatch','productReportsContainer'];
         const tabs = ['tabComments','tabCompanies','tabVerification','tabAnnounce','tabApi'];
         function hideAll() { panels.forEach(function (id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }); }
         function hidePanels() { ['announcePanel','apiPanel'].forEach(function (id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }); }
@@ -1102,6 +1187,9 @@
         } else if (tab === 'verification') {
             document.getElementById('verificationContainer').style.display = 'block';
             loadVerificationRequests();
+        } else if (tab === 'product') {
+            document.getElementById('productReportsContainer').style.display = 'block';
+            loadProductReports();
         } else if (tab === 'announce') {
             document.getElementById('announcePanel').style.display = 'block';
             if (typeof window.__annLoad === 'function') window.__annLoad();
@@ -1135,6 +1223,7 @@
         document.getElementById('tabComments').onclick = () => switchTab('comments');
         document.getElementById('tabCompanies').onclick = () => switchTab('companies');
         document.getElementById('tabVerification').onclick = () => switchTab('verification');
+        document.getElementById('tabProduct').onclick = () => switchTab('product');
         document.getElementById('tabAnnounce').onclick = () => switchTab('announce');
         document.getElementById('tabApi').onclick = () => switchTab('api');
         const st = document.getElementById('sessionState');
