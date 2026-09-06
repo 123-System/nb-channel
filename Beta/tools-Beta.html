@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="NB频道化学工具——118 元素周期表、摩尔质量计算、化学方程式配平、纯物质与溶液换算,全部在浏览器内即时完成。">
+<meta name="theme-color" content="#0f172a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233b82f6'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='26' font-weight='800' fill='%23fff' text-anchor='middle'%3ENB%3C/text%3E%3C/svg%3E">
+<title>化学工具 - NB频道官网</title>
+<script>
+    (function () {
+        try {
+            var t = localStorage.getItem('theme');
+            if (t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        } catch (e) {}
+    })();
+</script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+    --bg: #f7f8fa;
+    --ink: #1a1d23;
+    --ink-soft: #5a6270;
+    --ink-faint: #8b93a3;
+    --line: #e8eaee;
+    --brand: #3b82f6;
+    --brand-deep: #2563eb;
+    --card: #ffffff;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --shadow-1: 0 1px 2px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.06);
+    --shadow-2: 0 2px 4px rgba(16,24,40,.05), 0 24px 48px -20px rgba(16,24,40,.18);
+}
+html.dark { color-scheme: dark; }
+html.dark {
+    --bg: #0a101f;
+    --ink: #e5eaf3;
+    --ink-soft: #9aa7bd;
+    --ink-faint: #64748b;
+    --line: rgba(148,163,184,.16);
+    --card: #101a2e;
+    --shadow-1: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.28);
+    --shadow-2: 0 2px 6px rgba(0,0,0,.35), 0 28px 60px -24px rgba(0,0,0,.6);
+}
+html.dark .nav { background: rgba(10,16,31,.72); border-bottom-color: rgba(148,163,184,.12); }
+html.dark .nav.scrolled { background: rgba(10,16,31,.9); }
+html.dark .logo-img { filter: brightness(1.4) saturate(1.15); }
+html.dark .drawer { background: #0f1a30; }
+html.dark .drawer .d-close { background: rgba(255,255,255,.06); color: var(--ink); }
+html.dark .drawer a.d-item { color: var(--ink-soft); }
+html.dark .drawer a.d-item:hover, html.dark .drawer a.d-item.active { background: rgba(59,130,246,.14); color: #fff; }
+html.dark .drawer .d-brand { color: var(--ink); }
+html.dark .backtop { background: rgba(15,23,42,.85); color: #cbd5e1; border-color: rgba(148,163,184,.25); }
+html.dark .backtop:hover { background: var(--brand); color: #fff; }
+html.dark .footer-bottom { border-color: rgba(255,255,255,.06); }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+a { text-decoration: none; color: inherit; }
+::selection { background: rgba(59,130,246,.22); }
+
+/* ============ 导航 ============ */
+.nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 48px; height: 64px;
+    background: rgba(255,255,255,.72);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    backdrop-filter: blur(20px) saturate(1.5);
+    border-bottom: 1px solid var(--line);
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; font-weight: 800; letter-spacing: .3px; margin-left: 12px; }
+.logo-img { display: block; height: 32px; width: auto; }
+.logo-text { color: var(--ink); }
+.nav-menu { display: flex; gap: 2px; }
+.nav-menu a {
+    position: relative; padding: 10px 14px;
+    font-size: .92rem; font-weight: 500; letter-spacing: .4px;
+    color: var(--ink-soft); white-space: nowrap; transition: color .3s ease;
+}
+.nav-menu a:hover { color: var(--ink); }
+.nav-menu a.active { color: var(--brand); font-weight: 600; }
+.nav-menu a.active::after {
+    content: ''; position: absolute; left: 14px; right: 14px; bottom: 4px;
+    height: 1px; background: var(--brand);
+}
+.nav-menu a.nav-api { color: var(--brand); font-weight: 600; font-size: .86rem; }
+.nav-right-group { display: flex; align-items: center; gap: 10px; }
+.nav-auth-group { display: flex; gap: 8px; align-items: center; }
+.nav-clock {
+    display: flex; flex-direction: column; align-items: flex-end;
+    margin-right: 8px; flex-shrink: 0; user-select: none; line-height: 1.35;
+}
+.nav-clock .nc-time { font-size: 15.5px; font-weight: 800; letter-spacing: 1.5px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.nav-clock .nc-row { display: flex; align-items: baseline; gap: 6px; font-style: normal; }
+.nav-clock .nc-date { font-size: 10.5px; font-weight: 600; letter-spacing: .4px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.nav-clock .nc-label { font-size: 8.5px; font-weight: 600; letter-spacing: 2px; color: var(--ink-faint); }
+.nav-auth {
+    padding: 8px 18px; border-radius: 999px;
+    background: rgba(255,255,255,.6); color: var(--ink);
+    border: 1px solid var(--line);
+    font-size: .88rem; font-weight: 600; cursor: pointer;
+    transition: all .25s ease; white-space: nowrap;
+}
+.nav-auth:hover { background: #fff; border-color: rgba(59,130,246,.4); }
+.nav-auth.primary {
+    background: linear-gradient(135deg, var(--brand), #6366f1);
+    border-color: transparent; color: #fff;
+    box-shadow: 0 8px 20px -8px rgba(59,130,246,.5);
+}
+.nav-auth.primary:hover { background: linear-gradient(135deg, #2563eb, #4f46e5); color: #fff; }
+html.dark .nav-auth { background: rgba(255,255,255,.05); color: var(--ink); border-color: rgba(148,163,184,.25); }
+html.dark .nav-auth:hover { background: rgba(255,255,255,.1); border-color: rgba(59,130,246,.5); }
+.theme-btn {
+    width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--bg); cursor: pointer; font-size: .95rem;
+    display: flex; align-items: center; justify-content: center; transition: all .25s ease;
+}
+.theme-btn:hover { border-color: rgba(59,130,246,.4); transform: translateY(-1px); }
+.nav-burger {
+    display: none; width: 38px; height: 38px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg);
+    font-size: .95rem; cursor: pointer; color: var(--ink);
+    align-items: center; justify-content: center;
+}
+@media (max-width: 900px) { .nav-menu { display: none; } .nav-burger { display: flex; } .nav-clock, .nav-auth-group { display: none; } }
+
+/* ============ Hero(化学工具) ============ */
+.vhero {
+    position: relative; color: #fff; overflow: hidden;
+    padding: 110px 48px 150px;
+    background:
+        radial-gradient(760px 460px at 12% 4%, rgba(59,130,246,.16), transparent 62%),
+        radial-gradient(640px 420px at 96% 60%, rgba(139,92,246,.12), transparent 60%),
+        linear-gradient(168deg, #0b1220 0%, #101c33 58%, #1c1745 100%);
+}
+.vhero::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+    background-image: radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px);
+    background-size: 34px 34px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,.5), transparent 72%);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.5), transparent 72%);
+}
+.vhero-inner {
+    position: relative; z-index: 2; max-width: 1180px; margin: 0 auto;
+    display: grid; grid-template-columns: 1.05fr .95fr; gap: 70px; align-items: center;
+}
+.hero-eyebrow {
+    display: block; font-size: 11px; font-weight: 400;
+    letter-spacing: 8px; color: rgba(255,255,255,.42); margin-bottom: 40px;
+}
+.vhero h1 { font-size: clamp(2.7rem, 5.2vw, 4.6rem); font-weight: 800; letter-spacing: 8px; color: #fff; line-height: 1.12; }
+.vhero h1 .light { font-weight: 200; letter-spacing: 4px; color: #9cc0ff; }
+.vhero-sub {
+    margin: 34px 0 0; max-width: 480px;
+    font-size: .98rem; font-weight: 300; line-height: 2.15;
+    letter-spacing: .6px; color: rgba(255,255,255,.6);
+}
+.vhero-actions { margin-top: 48px; display: flex; gap: 44px; align-items: center; flex-wrap: wrap; }
+.hero-link {
+    font-size: .9rem; letter-spacing: 3px; font-weight: 600; color: #fff;
+    padding: 12px 2px; border-bottom: 1px solid rgba(255,255,255,.32);
+    transition: border-color .35s ease, color .35s ease;
+}
+.hero-link:hover { border-color: #7cb4ff; color: #7cb4ff; }
+.pd-stats {
+    background: rgba(255,255,255,.045);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 24px; padding: 10px 26px;
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+.pd-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 13px 0; border-bottom: 1px dashed rgba(255,255,255,.1);
+}
+.pd-row:last-child { border-bottom: none; }
+.pd-row .k { font-size: .72rem; letter-spacing: 2.5px; color: rgba(255,255,255,.5); }
+.pd-row b { font-size: 1.12rem; font-weight: 700; color: #fff; letter-spacing: .5px; }
+.pd-row b small { font-size: .72rem; font-weight: 400; color: rgba(255,255,255,.55); letter-spacing: 1px; }
+.pd-tip { margin-top: 14px; font-size: .74rem; color: rgba(255,255,255,.4); letter-spacing: 1.2px; text-align: center; }
+.vhero-fade {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 130px; z-index: 1;
+    background: linear-gradient(to bottom, transparent, var(--bg));
+    pointer-events: none;
+}
+
+/* ============ 正文 ============ */
+.tl-wrap { max-width: 1180px; margin: 0 auto; padding: 66px 40px 70px; }
+/* Tab 切换(品牌胶囊) */
+.tl-tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 30px; flex-wrap: wrap; }
+.tl-tab {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 34px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink-soft);
+    font-size: 1rem; font-weight: 700; letter-spacing: .5px;
+    box-shadow: var(--shadow-1); transition: all .25s ease;
+}
+.tl-tab:hover { border-color: rgba(59,130,246,.45); color: var(--brand); transform: translateY(-1px); }
+.tl-tab.active {
+    background: linear-gradient(135deg, var(--brand), #6366f1);
+    color: #fff; border-color: transparent;
+    box-shadow: 0 12px 28px -12px rgba(59,130,246,.65);
+}
+.tl-panel { display: none; }
+.tl-panel.active { display: block; animation: tlfade .45s cubic-bezier(.16,1,.3,1) both; }
+@keyframes tlfade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* 通用卡片 */
+.tl-card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow-1);
+    padding: 24px;
+}
+.tl-card h3 { font-size: 1.12rem; font-weight: 800; letter-spacing: .5px; display: flex; align-items: center; gap: 8px; }
+.tl-help { font-size: .8rem; color: var(--ink-faint); margin: 8px 0 4px; line-height: 1.8; }
+.tl-inrow { display: flex; gap: 10px; margin: 12px 0 4px; flex-wrap: wrap; align-items: center; }
+.tl-field {
+    flex: 1; min-width: 190px; padding: 11px 18px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    font-size: .98rem; font-family: Consolas, Menlo, monospace; outline: none;
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+.tl-field:focus { border-color: rgba(59,130,246,.55); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+.tl-field.num { flex: none; width: 128px; }
+.tl-field.wide { flex: 1; min-width: 190px; }
+.tl-btn {
+    border: none; border-radius: 999px; padding: 11px 26px; cursor: pointer;
+    background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff;
+    font-size: .95rem; font-weight: 700; letter-spacing: 1px;
+    box-shadow: 0 8px 20px -8px rgba(59,130,246,.55);
+    transition: all .22s ease; flex-shrink: 0;
+}
+.tl-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 26px -8px rgba(59,130,246,.6); }
+.tl-out {
+    margin-top: 14px; padding: 15px 18px; border-radius: 16px;
+    background: var(--bg); border: 1px solid var(--line);
+    font-size: .9rem; line-height: 2; min-height: 26px; white-space: pre-wrap;
+    color: var(--ink-soft); word-break: break-word;
+}
+.tl-out .big { font-size: 1.28rem; font-weight: 800; color: var(--brand); letter-spacing: .3px; }
+.tl-out .big.gold { color: #d97706; }
+html.dark .tl-out .big.gold { color: #fbbf24; }
+.tl-out sub { font-size: .72em; }
+.tl-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 2px; }
+.tl-chip {
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink-soft);
+    border-radius: 999px; padding: 5px 14px; font-size: .78rem;
+    cursor: pointer; font-family: Consolas, Menlo, monospace;
+    transition: all .2s ease;
+}
+.tl-chip:hover { border-color: rgba(59,130,246,.5); color: var(--brand); background: rgba(59,130,246,.06); }
+
+/* 计算器宫格 */
+.tl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+/* 溶液换算模式段选 */
+.tl-seg { display: inline-flex; gap: 6px; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 5px; }
+.tl-seg button {
+    border: none; background: transparent; color: var(--ink-soft);
+    border-radius: 999px; padding: 8px 18px; cursor: pointer; font-size: .86rem; font-weight: 700;
+    transition: all .22s ease;
+}
+.tl-seg button.on { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; box-shadow: 0 6px 16px -8px rgba(59,130,246,.6); }
+
+/* ============ 周期表 ============ */
+.pt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.pt-note { font-size: .76rem; color: var(--ink-faint); }
+.pt-scroll { overflow-x: auto; padding: 4px 0 8px; -webkit-overflow-scrolling: touch; }
+.ptable {
+    display: grid; grid-template-columns: repeat(18, 1fr); gap: 4px;
+    min-width: 940px;
+}
+.pcell {
+    position: relative; min-height: 52px; border-radius: 8px; padding: 5px 3px 3px;
+    text-align: center; cursor: pointer; color: #172033;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    transition: transform .15s ease, box-shadow .15s ease;
+    user-select: none;
+}
+.pcell:hover { transform: scale(1.14); box-shadow: 0 6px 16px rgba(0,0,0,.28); z-index: 6; }
+.pcell .pnum { position: absolute; top: 2px; left: 4px; font-size: .58rem; opacity: .72; font-weight: 600; }
+.pcell .psym { font-size: .95rem; font-weight: 800; line-height: 1.15; }
+.pcell .pmass { font-size: .56rem; opacity: .82; line-height: 1; }
+.pcell.empty, .pcell.hole { background: transparent; cursor: default; box-shadow: none; transition: none; }
+.pcell.empty:hover, .pcell.hole:hover { transform: none; box-shadow: none; }
+.pcell.hole { border: 1px dashed var(--line); }
+.pcell.hole .psym { font-size: .62rem; opacity: .6; }
+html.dark .pcell { color: #0f172a; }
+html.dark .pcell.empty, html.dark .pcell.hole { color: var(--ink-faint); }
+.cat-alkali { background: #ff8a80; } .cat-alkaline { background: #ffcc80; }
+.cat-transition { background: #80d8ff; } .cat-post { background: #b9f6ca; }
+.cat-metalloid { background: #a5d6a7; } .cat-nonmetal { background: #e1bee7; }
+.cat-halogen { background: #80cbc4; } .cat-noble { background: #cfd8dc; }
+.cat-lanthanide { background: #ffd1dc; } .cat-actinide { background: #ffb3ba; }
+.pt-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); font-size: .76rem; color: var(--ink-faint); }
+.pt-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.pt-legend i { width: 13px; height: 13px; border-radius: 4px; display: inline-block; }
+
+/* 元素详情弹窗 */
+.el-ov {
+    display: none; position: fixed; inset: 0; z-index: 9500;
+    background: rgba(10,15,28,.55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    justify-content: center; align-items: center; padding: 24px;
+}
+.el-ov.show { display: flex; }
+.el-box {
+    background: var(--card); border-radius: 24px; padding: 30px 34px;
+    width: min(400px, 92vw); text-align: center;
+    box-shadow: var(--shadow-2); border: 1px solid var(--line);
+    animation: tlfade .3s cubic-bezier(.16,1,.3,1) both;
+}
+.el-box .el-sym { font-size: 3.4rem; font-weight: 900; letter-spacing: 2px; color: var(--brand); line-height: 1.2; }
+.el-box .el-name { font-size: 1.15rem; color: var(--ink-soft); margin-bottom: 16px; letter-spacing: 2px; }
+.el-box table { width: 100%; font-size: .9rem; border-collapse: collapse; margin: 4px 0 16px; }
+.el-box td { padding: 9px 8px; border-bottom: 1px dashed var(--line); text-align: left; }
+.el-box tr:last-child td { border-bottom: none; }
+.el-box td:first-child { color: var(--ink-faint); width: 38%; font-size: .82rem; }
+.el-box td:last-child { font-weight: 700; text-align: right; }
+.el-close {
+    border: none; border-radius: 999px; padding: 10px 38px; cursor: pointer;
+    background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff;
+    font-size: .92rem; font-weight: 700; letter-spacing: 2px;
+    box-shadow: 0 8px 20px -8px rgba(59,130,246,.55); transition: all .22s ease;
+}
+.el-close:hover { transform: translateY(-1px); }
+
+/* 页脚 */
+.footer { background: linear-gradient(180deg, #0f172a 0%, #0a0f1e 100%); color: #94a3b8; padding: 64px 48px 30px; }
+.footer-grid { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 44px; }
+.footer .brand { font-size: 1.1rem; font-weight: 800; color: #fff; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; letter-spacing: .5px; }
+.footer .desc { font-size: .85rem; font-weight: 300; line-height: 2; margin-bottom: 20px; color: #7c8ba5; }
+.footer h5 { color: #e2e8f0; font-size: .88rem; font-weight: 700; margin-bottom: 18px; letter-spacing: 2px; }
+.footer a { display: block; color: #8fa0b8; font-size: .86rem; margin-bottom: 12px; transition: color .3s ease; }
+.footer a:hover { color: #fff; }
+.footer-bottom {
+    max-width: 1180px; margin: 44px auto 0; padding-top: 22px;
+    border-top: 1px solid rgba(255,255,255,.07);
+    font-size: .76rem; letter-spacing: 1px; color: #5b6a85; text-align: center;
+}
+
+/* 抽屉 */
+.drawer-mask { display: none; position: fixed; inset: 0; z-index: 9000; background: rgba(10,15,28,.5); }
+.drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 9001;
+    width: 300px; max-width: 84vw; background: #fff;
+    box-shadow: -20px 0 60px -30px rgba(0,0,0,.4);
+    transform: translateX(105%); transition: transform .35s cubic-bezier(.16,1,.3,1);
+    padding: 22px 20px; overflow-y: auto;
+}
+.drawer.open { transform: none; }
+.drawer .d-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.drawer .d-brand { font-weight: 800; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+.drawer .d-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: var(--bg); font-size: .95rem; cursor: pointer; color: var(--ink); }
+.drawer a.d-item { display: block; padding: 12px 16px; border-radius: 12px; color: var(--ink-soft); font-size: .98rem; font-weight: 600; }
+.drawer a.d-item:hover, .drawer a.d-item.active { background: rgba(59,130,246,.1); color: var(--brand); }
+.drawer .d-auth { margin-top: 14px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; gap: 10px; }
+.drawer .d-auth a { flex: 1; text-align: center; padding: 11px; border-radius: 999px; font-size: .9rem; font-weight: 600; }
+.drawer .d-auth .ga { background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+.drawer .d-auth .gab { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; }
+
+/* 回到顶部 */
+.backtop {
+    position: fixed; right: 26px; bottom: 26px; z-index: 5000;
+    width: 46px; height: 46px; border-radius: 50%;
+    background: rgba(255,255,255,.92); color: var(--brand);
+    border: 1px solid var(--line); cursor: pointer; font-size: 1.05rem;
+    opacity: 0; transform: translateY(12px); transition: all .3s ease;
+    box-shadow: var(--shadow-1);
+}
+.backtop.show { opacity: 1; transform: none; }
+.backtop:hover { background: var(--brand); color: #fff; }
+
+/* 入场 */
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
+
+/* 响应式 */
+@media (max-width: 900px) {
+    .vhero { padding: 84px 24px 120px; }
+    .tl-wrap { padding: 50px 22px 40px; }
+    .footer { padding: 48px 24px 26px; }
+}
+@media (max-width: 760px) {
+    .nav { padding: 0 20px; }
+    .vhero { padding: 72px 20px 110px; }
+    .vhero-inner { grid-template-columns: 1fr; gap: 40px; }
+    .vhero h1 { font-size: 2.4rem; letter-spacing: 5px; }
+    .pd-stats { display: none; }
+    .tl-wrap { padding: 36px 14px 30px; }
+    .tl-grid { grid-template-columns: 1fr; }
+    .tl-card { padding: 18px 16px; }
+    .footer-grid { grid-template-columns: 1fr; gap: 26px; }
+    .backtop { right: 18px; bottom: 18px; width: 42px; height: 42px; }
+}
+        .ui-fx-glow {
+            position: fixed; left: -999px; top: -999px; width: 240px; height: 240px;
+            border-radius: 50%; pointer-events: none; z-index: 9997;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(59,130,246,.18), rgba(139,92,246,.10) 45%, transparent 65%);
+            opacity: 0;
+        }
+
+
+        /* ===== Hero 入场动画(全站统一,与首页一致的错峰淡入) ===== */
+        @keyframes heroFadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+        .vhero .hero-eyebrow, .vhero h1, .vhero .vhero-sub, .vhero .vhero-actions,
+        .vhero .pd-stats, .vhero .cl-stats, .vhero .acard, .vhero .vhcard, .vhero .com-rules {
+            animation: heroFadeUp .95s cubic-bezier(.16,1,.3,1) both;
+        }
+        .vhero .hero-eyebrow { animation-delay: .08s; }
+        .vhero h1 { animation-delay: .2s; }
+        .vhero .vhero-sub { animation-delay: .34s; }
+        .vhero .vhero-actions { animation-delay: .48s; }
+        .vhero .pd-stats, .vhero .cl-stats, .vhero .acard, .vhero .vhcard, .vhero .com-rules { animation-delay: .32s; }
+        @media (prefers-reduced-motion: reduce) {
+            .vhero .hero-eyebrow, .vhero h1, .vhero .vhero-sub, .vhero .vhero-actions,
+            .vhero .pd-stats, .vhero .cl-stats, .vhero .acard, .vhero .vhcard, .vhero .com-rules { animation: none; }
+        }
+
+        /* ===== 全站公告条(与首页一致) ===== */
+        .beta-announce {
+            display: flex; align-items: center; gap: 14px;
+            max-width: 1080px; margin: 34px auto 0; padding: 15px 24px;
+            background: var(--card);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-1);
+            position: relative;
+        }
+        .beta-announce::before {
+            content: ''; position: absolute; left: 0; top: 18px; bottom: 18px; width: 3px;
+            border-radius: 3px; background: var(--brand);
+        }
+        .beta-announce .ba-title {
+            flex-shrink: 0; font-size: .82rem; font-weight: 700; color: var(--brand);
+            background: rgba(59,130,246,.08); border-radius: 999px; padding: 4px 12px;
+        }
+        .beta-announce .ba-track-wrap { flex: 1; overflow: hidden; min-width: 0; }
+        .beta-announce .ba-track { display: inline-block; white-space: nowrap; will-change: transform; }
+        .beta-announce .ba-item {
+            display: inline-block; white-space: nowrap; padding-right: 80px;
+            font-size: .92rem; color: var(--ink-soft);
+        }
+        .beta-announce a { color: var(--brand); text-decoration: underline; }
+        .beta-announce a:hover { color: var(--brand-deep); }
+        html.dark .beta-announce { background: var(--card); }
+        html.dark .beta-announce .ba-item { color: var(--ink-soft); }
+        @media (max-width: 760px) { .beta-announce { align-items: flex-start; flex-wrap: wrap; } }
+        html { scroll-behavior: smooth; }
+        [id] { scroll-margin-top: 86px; }
+</style>
+</head>
+<body>
+
+<!-- 导航 -->
+<nav class="nav">
+    <a class="nav-logo" href="index-Beta.html"><img class="logo-img" src="/images/NB频道LOGO.png" alt="NB频道"><span class="logo-text">NB频道</span></a>
+    <div class="nav-menu">
+        <a href="index-Beta.html">首页</a>
+        <a href="videos-Beta.html">视频</a>
+        <a href="about-Beta.html">关于</a>
+        <a href="changelog-Beta.html">更新日志</a>
+        <a href="product-Beta.html">我的产品</a>
+        <a href="APP-Beta.html">软件/APP</a>
+        <a href="index-Beta.html#friends">友商</a>
+        <a class="nav-api" href="/api-sdk/" target="_blank" rel="noopener noreferrer" title="NB频道 API 文档">API<i>↗</i></a>
+    </div>
+    <div class="nav-right-group">
+        <div class="nav-clock" id="navClock" title="北京时间（UTC+8）">
+            <span class="nc-time" id="bjTime">--:--:--</span>
+            <span class="nc-row"><i class="nc-date" id="bjDate">----.--.--</i><em class="nc-label">北京时间</em></span>
+        </div>
+        <button class="theme-btn" id="themeBtn" aria-label="切换夜间模式">🌙</button>
+        <div class="nav-auth-group" id="betaAuthGroup">
+            <a class="nav-auth" id="betaProfileBtn" href="#">👤 个人中心</a>
+            <a class="nav-auth primary" id="betaAuthBtn" href="#">登录 / 注册</a>
+        </div>
+    </div>
+    <button class="nav-burger" id="navBurger" aria-label="打开菜单">☰</button>
+</nav>
+
+<!-- Hero -->
+<header class="vhero">
+    <div class="vhero-inner">
+        <div class="hero-copy">
+            <span class="hero-eyebrow">CHEM LAB · 理科工具箱</span>
+            <h1>化学<span class="light">工具</span></h1>
+            <p class="vhero-sub">118 种元素周期表、摩尔质量、方程式配平与溶液换算——全部在浏览器里即时完成。支持括号、下标、结晶水合物,配平精确到有理数</p>
+            <div class="vhero-actions">
+                <a class="hero-link" href="#tabPeriodic">元素周期表 ↓</a>
+                <a class="hero-link" href="#calcPanel">化学计算器 ↓</a>
+            </div>
+        </div>
+        <div class="pd-stats">
+            <div class="pd-row"><span class="k">元素收录</span><b>118 种</b></div>
+            <div class="pd-row"><span class="k">化学式解析</span><b>括号 · 下标 · 水合物</b></div>
+            <div class="pd-row"><span class="k">方程式配平</span><b>高斯消元 · 有理数精确</b></div>
+            <div class="pd-row"><span class="k">溶液换算</span><b>% ↔ mol/L 双向</b></div>
+            <div class="pd-tip">登录后配平成功累计「化学狂人」称号进度</div>
+        </div>
+    </div>
+    <div class="vhero-fade"></div>
+</header>
+
+<!-- 全站公告(与首页一致;admin_config key=announcement) -->
+<div class="beta-announce" id="betaAnnounce" style="display:none;">
+    <div class="ba-title">公告</div>
+    <div class="ba-track-wrap"><div class="ba-track" id="baTrack"></div></div>
+</div>
+
+<!-- 正文 -->
+<main class="tl-wrap">
+
+    <div class="tl-tabs reveal">
+        <button class="tl-tab active" id="tabPeriodic" type="button">⚗️ 元素周期表</button>
+        <button class="tl-tab" id="tabCalc" type="button">🧮 化学计算器</button>
+    </div>
+
+    <!-- 周期表面板 -->
+    <section class="tl-panel active" id="panelPeriodic">
+        <div class="tl-card reveal">
+            <div class="pt-head">
+                <h3>🧪 元素周期表</h3>
+                <div class="pt-note">点击任意元素查看详情 · 手机端可左右滑动</div>
+            </div>
+            <div class="pt-scroll">
+                <div id="periodicTable" class="ptable"></div>
+            </div>
+            <div class="pt-legend">
+                <span><i style="background:#ff8a80;"></i>碱金属</span>
+                <span><i style="background:#ffcc80;"></i>碱土金属</span>
+                <span><i style="background:#80d8ff;"></i>过渡金属</span>
+                <span><i style="background:#b9f6ca;"></i>后过渡金属</span>
+                <span><i style="background:#a5d6a7;"></i>类金属</span>
+                <span><i style="background:#e1bee7;"></i>非金属</span>
+                <span><i style="background:#80cbc4;"></i>卤素</span>
+                <span><i style="background:#cfd8dc;"></i>稀有气体</span>
+                <span><i style="background:#ffd1dc;"></i>镧系</span>
+                <span><i style="background:#ffb3ba;"></i>锕系</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 计算器面板 -->
+    <section class="tl-panel" id="panelCalc">
+        <div class="tl-grid">
+            <div class="tl-card reveal">
+                <h3>🧪 摩尔质量计算</h3>
+                <div class="tl-help">输入化学式,支持括号、下标与结晶水合物(如 CuSO4·5H2O)</div>
+                <div class="tl-inrow">
+                    <input type="text" id="formulaInput" class="tl-field" placeholder="例：H2O" value="H2O">
+                    <button class="tl-btn" id="calcMassBtn" type="button">计算</button>
+                </div>
+                <div class="tl-chips" id="formulaExamples"></div>
+                <div class="tl-out" id="massResult">👆 输入化学式开始计算</div>
+            </div>
+
+            <div class="tl-card reveal">
+                <h3>⚖️ 方程式配平</h3>
+                <div class="tl-help">输入化学方程式(+ 和 = 连接,如 H2+O2=H2O;支持 → 与 Unicode 下标)</div>
+                <div class="tl-inrow">
+                    <input type="text" id="eqInput" class="tl-field" placeholder="例：H2+O2=H2O">
+                    <button class="tl-btn" id="balanceBtn" type="button">配平</button>
+                </div>
+                <div class="tl-chips" id="eqExamples"></div>
+                <div class="tl-out" id="balanceResult">👆 输入方程式开始配平</div>
+            </div>
+
+            <div class="tl-card reveal">
+                <h3>📏 纯物质换算</h3>
+                <div class="tl-help">n = m / M —— 质量 ↔ 物质的量,顺带算出分子个数</div>
+                <div class="tl-inrow">
+                    <input type="text" id="convFormula" class="tl-field num" placeholder="化学式" value="NaCl">
+                    <input type="number" id="convMass" class="tl-field" placeholder="质量 (g)" value="10">
+                    <button class="tl-btn" id="convBtn" type="button">换算</button>
+                </div>
+                <div class="tl-out" id="convResult">👆 输入化学式与质量开始换算</div>
+            </div>
+
+            <div class="tl-card reveal">
+                <h3>🧴 溶液换算</h3>
+                <div class="tl-help">质量分数 ↔ 物质的量浓度 互转,密度可选可算</div>
+                <div class="tl-inrow">
+                    <div class="tl-seg">
+                        <button type="button" id="pctMode1" class="on">① % → mol/L</button>
+                        <button type="button" id="pctMode2">② mol/L → %</button>
+                    </div>
+                </div>
+                <div id="pctForm1" class="tl-inrow">
+                    <input type="text" id="pctFormula" class="tl-field" placeholder="溶质化学式" value="NaCl">
+                    <input type="number" id="pctW" class="tl-field num" placeholder="质量分数%" value="10" step="0.01" min="0" max="100">
+                    <input type="number" id="pctMass" class="tl-field num" placeholder="溶液质量g" value="100">
+                    <input type="number" id="pctDensity" class="tl-field num" placeholder="密度g/mL(可选)">
+                    <button class="tl-btn" id="pctBtn" type="button">计算</button>
+                </div>
+                <div id="pctForm2" class="tl-inrow" style="display:none;">
+                    <input type="text" id="revFormula" class="tl-field" placeholder="溶质化学式" value="HCl">
+                    <input type="number" id="revC" class="tl-field num" placeholder="浓度c mol/L" value="11.8" step="0.001" min="0">
+                    <input type="number" id="revDensity" class="tl-field num" placeholder="密度ρ g/mL" value="1.18" step="0.001" min="0">
+                    <button class="tl-btn" id="revBtn" type="button">计算</button>
+                </div>
+                <div class="tl-chips" id="pctExamples"></div>
+                <div class="tl-out" id="pctResult">👆 选择方向并输入参数开始计算</div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- 页脚 -->
+<footer class="footer">
+    <div class="footer-grid">
+        <div>
+            <div class="brand"><img class="logo-img" src="/images/NB频道LOGO.png" alt="NB频道"><span class="logo-text">NB频道</span></div>
+            <p class="desc">NB频道（NoBook频道）——热爱理科（和作死）的 UP主建立的虚拟公司。化学物理实验、日常作死、虚拟经济，一个有趣的数字世界</p>
+        </div>
+        <div>
+            <h5>功能</h5>
+            <a href="stock-Beta.html">虚拟股票</a><a href="/bank.html">NB银行</a><a href="comments-Beta.html">评论区</a><a href="/shop.html">NB商店</a><a href="tools-Beta.html">化学工具</a><a href="titles-Beta.html">称号系统</a>
+        </div>
+        <div>
+            <h5>友商</h5>
+            <a href="https://orgent.pythonanywhere.com/" target="_blank" rel="noopener noreferrer">Orgent（已注销）</a>
+            <a href="https://45d.cn/AWM/" target="_blank" rel="noopener noreferrer">AWM</a>
+            <a href="https://fafat.uuk.pp.ua/" target="_blank" rel="noopener noreferrer">Fafat</a>
+            <a href="https://nb-qx.top/" target="_blank" rel="noopener noreferrer">Lemon（齐喜）</a>
+            <a href="https://gaohantu.cn/" target="_blank" rel="noopener noreferrer">GaoHanTu</a>
+            <a href="https://utw.pages.dev" target="_blank" rel="noopener noreferrer">Utw</a>
+            <a href="https://pipetrainingcamp.github.io/" target="_blank" rel="noopener noreferrer">PTC（GoodPTC）</a>
+            <a href="https://yoyo-user-awa.github.io/UVS/" target="_blank" rel="noopener noreferrer">UVS</a>
+            <a href="https://3f7ceb4e.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">UwLS</a>
+            <a href="https://45d.cn/nb-og.top/" target="_blank" rel="noopener noreferrer">Oganesson</a>
+            <a href="https://78439049.pinit.eth.limo/" target="_blank" rel="noopener noreferrer">SOT</a>
+        </div>
+        <div>
+            <h5>联系</h5>
+            <a href="mailto:nbchannel@163.com">nbchannel@163.com</a><a href="https://space.bilibili.com/3493259582114264" target="_blank" rel="noopener noreferrer">B站：NB搞事局</a><a href="https://nb-channel.top" target="_blank" rel="noopener noreferrer">nb-channel.top</a>
+        </div>
+    </div>
+    <div class="footer-bottom">© 2026 NB频道 · 虚拟公司 · 制作：NB搞事局 · 由 GitHub Pages / Cloudflare / PythonAnywhere 提供支持</div>
+</footer>
+
+<!-- 移动端抽屉 -->
+<div class="drawer-mask" id="drawerMask"></div>
+<aside class="drawer" id="drawer">
+    <div class="d-head">
+        <span class="d-brand"><img class="logo-img" src="/images/NB频道LOGO.png" alt="NB频道"><span class="logo-text">NB频道</span></span>
+        <button class="d-close" id="drawerClose" aria-label="关闭菜单">✕</button>
+    </div>
+    <a class="d-item" href="index-Beta.html">首页</a>
+    <a class="d-item" href="videos-Beta.html">视频</a>
+    <a class="d-item" href="about-Beta.html">关于</a>
+    <a class="d-item" href="changelog-Beta.html">更新日志</a>
+    <a class="d-item" href="product-Beta.html">我的产品</a>
+    <a class="d-item" href="APP-Beta.html">软件/APP</a>
+    <a class="d-item" href="index-Beta.html#friends">友商</a>
+    <a class="d-item" href="/api-sdk/" target="_blank" rel="noopener noreferrer">API ↗</a>
+    <div class="d-auth">
+        <a class="ga" id="dProfileBtn" href="#">👤 个人中心</a>
+        <a class="gab" id="dAuthBtn" href="#">登录 / 注册</a>
+    </div>
+</aside>
+
+<!-- 回到顶部 -->
+<button class="backtop" id="backTop" aria-label="回到顶部">↑</button>
+
+<!-- 元素详情弹窗 -->
+<div class="el-ov" id="elModal">
+    <div class="el-box" role="dialog" aria-modal="true" aria-label="元素详情">
+        <div class="el-sym" id="elSym"></div>
+        <div class="el-name" id="elName"></div>
+        <table>
+            <tr><td>原子序数</td><td id="elNum"></td></tr>
+            <tr><td>原子量</td><td id="elMass"></td></tr>
+            <tr><td>类别</td><td id="elCat"></td></tr>
+            <tr><td>周期 / 族</td><td id="elPeriod"></td></tr>
+            <tr><td>电子排布</td><td id="elConf"></td></tr>
+        </table>
+        <button class="el-close" id="elClose" type="button">关闭</button>
+    </div>
+</div>
+
+<script>
+    // ===== 入场渐显 =====
+    (function () {
+        var els = document.querySelectorAll('.reveal');
+        var io = new IntersectionObserver(function (es) {
+            es.forEach(function (e) {
+                if (e.isIntersecting) {
+                    var i = Array.prototype.indexOf.call(e.target.parentNode.children, e.target);
+                    e.target.style.transitionDelay = Math.min(i * 80, 300) + 'ms';
+                    e.target.classList.add('in');
+                    io.unobserve(e.target);
+                }
+            });
+        }, { threshold: 0.12 });
+        els.forEach(function (el, i) {
+            var r = el.getBoundingClientRect();
+            if (r.top < window.innerHeight * 0.9) { el.style.transitionDelay = (i * 90) + 'ms'; el.classList.add('in'); }
+            else io.observe(el);
+        });
+    })();
+
+    // ===== 登录区绑定(与全站一致) =====
+    function bindAuthPair(pbEl, abEl) {
+        if (!pbEl && !abEl) return;
+        var storedU = null;
+        try { storedU = JSON.parse(localStorage.getItem('nb_user')); } catch (e) {}
+        if (storedU && storedU.id) {
+            if (abEl) {
+                abEl.textContent = '登出账号';
+                abEl.onclick = function () { localStorage.removeItem('nb_user'); location.reload(); };
+            }
+            if (pbEl) {
+                pbEl.textContent = '👤 ' + (storedU.username || storedU.name || '个人中心');
+                pbEl.href = '/profile.html';
+            }
+        } else {
+            var loginHref = '/login.html?redirect=' + encodeURIComponent(location.href);
+            if (abEl) { abEl.href = loginHref; abEl.textContent = '登录 / 注册'; }
+            if (pbEl) { pbEl.href = loginHref; pbEl.textContent = '👤 个人中心'; }
+        }
+    }
+    bindAuthPair(document.getElementById('betaProfileBtn'), document.getElementById('betaAuthBtn'));
+    bindAuthPair(document.getElementById('dProfileBtn'), document.getElementById('dAuthBtn'));
+
+    // ===== 导航栏北京时间(与全站一致) =====
+    (function () {
+        var tEl = document.getElementById('bjTime');
+        var dEl = document.getElementById('bjDate');
+        if (!tEl) return;
+        var fmtT = new Intl.DateTimeFormat('zh-CN', {
+            timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit',
+            second: '2-digit', hour12: false, hourCycle: 'h23'
+        });
+        var fmtD = new Intl.DateTimeFormat('zh-CN', {
+            timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit',
+            day: '2-digit', weekday: 'short'
+        });
+        function tick() {
+            var now = new Date();
+            tEl.textContent = fmtT.format(now);
+            if (dEl) dEl.textContent = fmtD.format(now).replace(/\//g, '.');
+        }
+        tick();
+        setInterval(tick, 1000);
+    })();
+
+    // ===== 导航滚动态 + 回到顶部 =====
+    (function () {
+        var nav = document.querySelector('.nav');
+        var backTop = document.getElementById('backTop');
+        function onScroll() {
+            var y = window.scrollY || document.documentElement.scrollTop;
+            if (nav) nav.classList.toggle('scrolled', y > 10);
+            if (backTop) backTop.classList.toggle('show', y > 700);
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+        if (backTop) backTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    })();
+
+    // ===== 夜间模式切换 =====
+    (function () {
+        var btn = document.getElementById('themeBtn');
+        var root = document.documentElement;
+        function isDark() { return root.classList.contains('dark'); }
+        function render() {
+            if (btn) { btn.textContent = isDark() ? '☀️' : '🌙'; btn.title = isDark() ? '切换到日间模式' : '切换到夜间模式'; }
+        }
+        function apply(dark) {
+            root.classList.toggle('dark', dark);
+            try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+            render();
+        }
+        if (btn) btn.addEventListener('click', function () {
+            var dark = !isDark();
+            if (document.startViewTransition) {
+                try { document.startViewTransition(function () { apply(dark); }); } catch (e) { apply(dark); }
+            } else apply(dark);
+        });
+        render();
+    })();
+
+    // ===== 移动端抽屉 =====
+    (function () {
+        var burger = document.getElementById('navBurger');
+        var drawer = document.getElementById('drawer');
+        var mask = document.getElementById('drawerMask');
+        var closeBtn = document.getElementById('drawerClose');
+        if (!burger || !drawer || !mask) return;
+        function open() { drawer.classList.add('open'); mask.style.display = 'block'; document.body.classList.add('locked'); }
+        function close() { drawer.classList.remove('open'); mask.style.display = 'none'; document.body.classList.remove('locked'); }
+        burger.addEventListener('click', open);
+        closeBtn.addEventListener('click', close);
+        mask.addEventListener('click', close);
+        drawer.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', close); });
+    })();
+
+    // ===== 防查看代码(反调试,静默无提示) =====
+    (function () {
+        var DEV = window.__allowDevTools ||
+                  /(?:^|[?&#])dev=1(?=&|#|$)/.test(location.href) ||
+                  /#dev\b/.test(location.hash);
+        if (DEV) return;
+        document.addEventListener('keydown', function (e) {
+            var k = e.keyCode || e.which;
+            var ctrl = e.ctrlKey || e.metaKey;
+            if (k === 123 || e.key === 'F12' ||
+                (ctrl && e.shiftKey && (k === 73 || k === 74 || k === 67)) ||
+                (ctrl && k === 85)) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
+        document.addEventListener('contextmenu', function (e) { e.preventDefault(); return false; });
+        setInterval(function () { debugger; }, 600);
+    })();
+</script>
+<script>
+// js/elements.js — 118 个化学元素数据（周期表 + 摩尔质量计算共用）
+// 字段：n=原子序数, sym=符号, name=中文名, mass=原子量(g/mol), cat=类别, per=周期, grp=族, conf=电子排布(简写)
+const ELEMENTS = [
+{n:1,sym:'H',name:'氢',mass:1.008,cat:'非金属',per:1,grp:1,conf:'1s¹'},
+{n:2,sym:'He',name:'氦',mass:4.0026,cat:'稀有气体',per:1,grp:18,conf:'1s²'},
+{n:3,sym:'Li',name:'锂',mass:6.94,cat:'碱金属',per:2,grp:1,conf:'[He]2s¹'},
+{n:4,sym:'Be',name:'铍',mass:9.0122,cat:'碱土金属',per:2,grp:2,conf:'[He]2s²'},
+{n:5,sym:'B',name:'硼',mass:10.81,cat:'类金属',per:2,grp:13,conf:'[He]2s²2p¹'},
+{n:6,sym:'C',name:'碳',mass:12.011,cat:'非金属',per:2,grp:14,conf:'[He]2s²2p²'},
+{n:7,sym:'N',name:'氮',mass:14.007,cat:'非金属',per:2,grp:15,conf:'[He]2s²2p³'},
+{n:8,sym:'O',name:'氧',mass:15.999,cat:'非金属',per:2,grp:16,conf:'[He]2s²2p⁴'},
+{n:9,sym:'F',name:'氟',mass:18.998,cat:'卤素',per:2,grp:17,conf:'[He]2s²2p⁵'},
+{n:10,sym:'Ne',name:'氖',mass:20.180,cat:'稀有气体',per:2,grp:18,conf:'[He]2s²2p⁶'},
+{n:11,sym:'Na',name:'钠',mass:22.990,cat:'碱金属',per:3,grp:1,conf:'[Ne]3s¹'},
+{n:12,sym:'Mg',name:'镁',mass:24.305,cat:'碱土金属',per:3,grp:2,conf:'[Ne]3s²'},
+{n:13,sym:'Al',name:'铝',mass:26.982,cat:'后过渡金属',per:3,grp:13,conf:'[Ne]3s²3p¹'},
+{n:14,sym:'Si',name:'硅',mass:28.085,cat:'类金属',per:3,grp:14,conf:'[Ne]3s²3p²'},
+{n:15,sym:'P',name:'磷',mass:30.974,cat:'非金属',per:3,grp:15,conf:'[Ne]3s²3p³'},
+{n:16,sym:'S',name:'硫',mass:32.06,cat:'非金属',per:3,grp:16,conf:'[Ne]3s²3p⁴'},
+{n:17,sym:'Cl',name:'氯',mass:35.45,cat:'卤素',per:3,grp:17,conf:'[Ne]3s²3p⁵'},
+{n:18,sym:'Ar',name:'氩',mass:39.948,cat:'稀有气体',per:3,grp:18,conf:'[Ne]3s²3p⁶'},
+{n:19,sym:'K',name:'钾',mass:39.098,cat:'碱金属',per:4,grp:1,conf:'[Ar]4s¹'},
+{n:20,sym:'Ca',name:'钙',mass:40.078,cat:'碱土金属',per:4,grp:2,conf:'[Ar]4s²'},
+{n:21,sym:'Sc',name:'钪',mass:44.956,cat:'过渡金属',per:4,grp:3,conf:'[Ar]3d¹4s²'},
+{n:22,sym:'Ti',name:'钛',mass:47.867,cat:'过渡金属',per:4,grp:4,conf:'[Ar]3d²4s²'},
+{n:23,sym:'V',name:'钒',mass:50.942,cat:'过渡金属',per:4,grp:5,conf:'[Ar]3d³4s²'},
+{n:24,sym:'Cr',name:'铬',mass:51.996,cat:'过渡金属',per:4,grp:6,conf:'[Ar]3d⁵4s¹'},
+{n:25,sym:'Mn',name:'锰',mass:54.938,cat:'过渡金属',per:4,grp:7,conf:'[Ar]3d⁵4s²'},
+{n:26,sym:'Fe',name:'铁',mass:55.845,cat:'过渡金属',per:4,grp:8,conf:'[Ar]3d⁶4s²'},
+{n:27,sym:'Co',name:'钴',mass:58.933,cat:'过渡金属',per:4,grp:9,conf:'[Ar]3d⁷4s²'},
+{n:28,sym:'Ni',name:'镍',mass:58.693,cat:'过渡金属',per:4,grp:10,conf:'[Ar]3d⁸4s²'},
+{n:29,sym:'Cu',name:'铜',mass:63.546,cat:'过渡金属',per:4,grp:11,conf:'[Ar]3d¹⁰4s¹'},
+{n:30,sym:'Zn',name:'锌',mass:65.38,cat:'过渡金属',per:4,grp:12,conf:'[Ar]3d¹⁰4s²'},
+{n:31,sym:'Ga',name:'镓',mass:69.723,cat:'后过渡金属',per:4,grp:13,conf:'[Ar]3d¹⁰4s²4p¹'},
+{n:32,sym:'Ge',name:'锗',mass:72.630,cat:'类金属',per:4,grp:14,conf:'[Ar]3d¹⁰4s²4p²'},
+{n:33,sym:'As',name:'砷',mass:74.922,cat:'类金属',per:4,grp:15,conf:'[Ar]3d¹⁰4s²4p³'},
+{n:34,sym:'Se',name:'硒',mass:78.971,cat:'非金属',per:4,grp:16,conf:'[Ar]3d¹⁰4s²4p⁴'},
+{n:35,sym:'Br',name:'溴',mass:79.904,cat:'卤素',per:4,grp:17,conf:'[Ar]3d¹⁰4s²4p⁵'},
+{n:36,sym:'Kr',name:'氪',mass:83.798,cat:'稀有气体',per:4,grp:18,conf:'[Ar]3d¹⁰4s²4p⁶'},
+{n:37,sym:'Rb',name:'铷',mass:85.468,cat:'碱金属',per:5,grp:1,conf:'[Kr]5s¹'},
+{n:38,sym:'Sr',name:'锶',mass:87.62,cat:'碱土金属',per:5,grp:2,conf:'[Kr]5s²'},
+{n:39,sym:'Y',name:'钇',mass:88.906,cat:'过渡金属',per:5,grp:3,conf:'[Kr]4d¹5s²'},
+{n:40,sym:'Zr',name:'锆',mass:91.224,cat:'过渡金属',per:5,grp:4,conf:'[Kr]4d²5s²'},
+{n:41,sym:'Nb',name:'铌',mass:92.906,cat:'过渡金属',per:5,grp:5,conf:'[Kr]4d⁴5s¹'},
+{n:42,sym:'Mo',name:'钼',mass:95.95,cat:'过渡金属',per:5,grp:6,conf:'[Kr]4d⁵5s¹'},
+{n:43,sym:'Tc',name:'锝',mass:98,cat:'过渡金属',per:5,grp:7,conf:'[Kr]4d⁵5s²'},
+{n:44,sym:'Ru',name:'钌',mass:101.07,cat:'过渡金属',per:5,grp:8,conf:'[Kr]4d⁷5s¹'},
+{n:45,sym:'Rh',name:'铑',mass:102.91,cat:'过渡金属',per:5,grp:9,conf:'[Kr]4d⁸5s¹'},
+{n:46,sym:'Pd',name:'钯',mass:106.42,cat:'过渡金属',per:5,grp:10,conf:'[Kr]4d¹⁰'},
+{n:47,sym:'Ag',name:'银',mass:107.87,cat:'过渡金属',per:5,grp:11,conf:'[Kr]4d¹⁰5s¹'},
+{n:48,sym:'Cd',name:'镉',mass:112.41,cat:'过渡金属',per:5,grp:12,conf:'[Kr]4d¹⁰5s²'},
+{n:49,sym:'In',name:'铟',mass:114.82,cat:'后过渡金属',per:5,grp:13,conf:'[Kr]4d¹⁰5s²5p¹'},
+{n:50,sym:'Sn',name:'锡',mass:118.71,cat:'后过渡金属',per:5,grp:14,conf:'[Kr]4d¹⁰5s²5p²'},
+{n:51,sym:'Sb',name:'锑',mass:121.76,cat:'类金属',per:5,grp:15,conf:'[Kr]4d¹⁰5s²5p³'},
+{n:52,sym:'Te',name:'碲',mass:127.60,cat:'类金属',per:5,grp:16,conf:'[Kr]4d¹⁰5s²5p⁴'},
+{n:53,sym:'I',name:'碘',mass:126.90,cat:'卤素',per:5,grp:17,conf:'[Kr]4d¹⁰5s²5p⁵'},
+{n:54,sym:'Xe',name:'氙',mass:131.29,cat:'稀有气体',per:5,grp:18,conf:'[Kr]4d¹⁰5s²5p⁶'},
+{n:55,sym:'Cs',name:'铯',mass:132.91,cat:'碱金属',per:6,grp:1,conf:'[Xe]6s¹'},
+{n:56,sym:'Ba',name:'钡',mass:137.33,cat:'碱土金属',per:6,grp:2,conf:'[Xe]6s²'},
+{n:57,sym:'La',name:'镧',mass:138.91,cat:'镧系',per:9,grp:3,conf:'[Xe]5d¹6s²'},
+{n:58,sym:'Ce',name:'铈',mass:140.12,cat:'镧系',per:9,grp:4,conf:'[Xe]4f¹5d¹6s²'},
+{n:59,sym:'Pr',name:'镨',mass:140.91,cat:'镧系',per:9,grp:5,conf:'[Xe]4f³6s²'},
+{n:60,sym:'Nd',name:'钕',mass:144.24,cat:'镧系',per:9,grp:6,conf:'[Xe]4f⁴6s²'},
+{n:61,sym:'Pm',name:'钷',mass:145,cat:'镧系',per:9,grp:7,conf:'[Xe]4f⁵6s²'},
+{n:62,sym:'Sm',name:'钐',mass:150.36,cat:'镧系',per:9,grp:8,conf:'[Xe]4f⁶6s²'},
+{n:63,sym:'Eu',name:'铕',mass:151.96,cat:'镧系',per:9,grp:9,conf:'[Xe]4f⁷6s²'},
+{n:64,sym:'Gd',name:'钆',mass:157.25,cat:'镧系',per:9,grp:10,conf:'[Xe]4f⁷5d¹6s²'},
+{n:65,sym:'Tb',name:'铽',mass:158.93,cat:'镧系',per:9,grp:11,conf:'[Xe]4f⁹6s²'},
+{n:66,sym:'Dy',name:'镝',mass:162.50,cat:'镧系',per:9,grp:12,conf:'[Xe]4f¹⁰6s²'},
+{n:67,sym:'Ho',name:'钬',mass:164.93,cat:'镧系',per:9,grp:13,conf:'[Xe]4f¹¹6s²'},
+{n:68,sym:'Er',name:'铒',mass:167.26,cat:'镧系',per:9,grp:14,conf:'[Xe]4f¹²6s²'},
+{n:69,sym:'Tm',name:'铥',mass:168.93,cat:'镧系',per:9,grp:15,conf:'[Xe]4f¹³6s²'},
+{n:70,sym:'Yb',name:'镱',mass:173.05,cat:'镧系',per:9,grp:16,conf:'[Xe]4f¹⁴6s²'},
+{n:71,sym:'Lu',name:'镥',mass:174.97,cat:'镧系',per:9,grp:17,conf:'[Xe]4f¹⁴5d¹6s²'},
+{n:72,sym:'Hf',name:'铪',mass:178.49,cat:'过渡金属',per:6,grp:4,conf:'[Xe]4f¹⁴5d²6s²'},
+{n:73,sym:'Ta',name:'钽',mass:180.95,cat:'过渡金属',per:6,grp:5,conf:'[Xe]4f¹⁴5d³6s²'},
+{n:74,sym:'W',name:'钨',mass:183.84,cat:'过渡金属',per:6,grp:6,conf:'[Xe]4f¹⁴5d⁴6s²'},
+{n:75,sym:'Re',name:'铼',mass:186.21,cat:'过渡金属',per:6,grp:7,conf:'[Xe]4f¹⁴5d⁵6s²'},
+{n:76,sym:'Os',name:'锇',mass:190.23,cat:'过渡金属',per:6,grp:8,conf:'[Xe]4f¹⁴5d⁶6s²'},
+{n:77,sym:'Ir',name:'铱',mass:192.22,cat:'过渡金属',per:6,grp:9,conf:'[Xe]4f¹⁴5d⁷6s²'},
+{n:78,sym:'Pt',name:'铂',mass:195.08,cat:'过渡金属',per:6,grp:10,conf:'[Xe]4f¹⁴5d⁹6s¹'},
+{n:79,sym:'Au',name:'金',mass:196.97,cat:'过渡金属',per:6,grp:11,conf:'[Xe]4f¹⁴5d¹⁰6s¹'},
+{n:80,sym:'Hg',name:'汞',mass:200.59,cat:'过渡金属',per:6,grp:12,conf:'[Xe]4f¹⁴5d¹⁰6s²'},
+{n:81,sym:'Tl',name:'铊',mass:204.38,cat:'后过渡金属',per:6,grp:13,conf:'[Xe]4f¹⁴5d¹⁰6s²6p¹'},
+{n:82,sym:'Pb',name:'铅',mass:207.2,cat:'后过渡金属',per:6,grp:14,conf:'[Xe]4f¹⁴5d¹⁰6s²6p²'},
+{n:83,sym:'Bi',name:'铋',mass:208.98,cat:'后过渡金属',per:6,grp:15,conf:'[Xe]4f¹⁴5d¹⁰6s²6p³'},
+{n:84,sym:'Po',name:'钋',mass:209,cat:'类金属',per:6,grp:16,conf:'[Xe]4f¹⁴5d¹⁰6s²6p⁴'},
+{n:85,sym:'At',name:'砹',mass:210,cat:'卤素',per:6,grp:17,conf:'[Xe]4f¹⁴5d¹⁰6s²6p⁵'},
+{n:86,sym:'Rn',name:'氡',mass:222,cat:'稀有气体',per:6,grp:18,conf:'[Xe]4f¹⁴5d¹⁰6s²6p⁶'},
+{n:87,sym:'Fr',name:'钫',mass:223,cat:'碱金属',per:7,grp:1,conf:'[Rn]7s¹'},
+{n:88,sym:'Ra',name:'镭',mass:226,cat:'碱土金属',per:7,grp:2,conf:'[Rn]7s²'},
+{n:89,sym:'Ac',name:'锕',mass:227,cat:'锕系',per:10,grp:3,conf:'[Rn]6d¹7s²'},
+{n:90,sym:'Th',name:'钍',mass:232.04,cat:'锕系',per:10,grp:4,conf:'[Rn]6d²7s²'},
+{n:91,sym:'Pa',name:'镤',mass:231.04,cat:'锕系',per:10,grp:5,conf:'[Rn]5f²6d¹7s²'},
+{n:92,sym:'U',name:'铀',mass:238.03,cat:'锕系',per:10,grp:6,conf:'[Rn]5f³6d¹7s²'},
+{n:93,sym:'Np',name:'镎',mass:237,cat:'锕系',per:10,grp:7,conf:'[Rn]5f⁴6d¹7s²'},
+{n:94,sym:'Pu',name:'钚',mass:244,cat:'锕系',per:10,grp:8,conf:'[Rn]5f⁶7s²'},
+{n:95,sym:'Am',name:'镅',mass:243,cat:'锕系',per:10,grp:9,conf:'[Rn]5f⁷7s²'},
+{n:96,sym:'Cm',name:'锔',mass:247,cat:'锕系',per:10,grp:10,conf:'[Rn]5f⁷6d¹7s²'},
+{n:97,sym:'Bk',name:'锫',mass:247,cat:'锕系',per:10,grp:11,conf:'[Rn]5f⁹7s²'},
+{n:98,sym:'Cf',name:'锎',mass:251,cat:'锕系',per:10,grp:12,conf:'[Rn]5f¹⁰7s²'},
+{n:99,sym:'Es',name:'锿',mass:252,cat:'锕系',per:10,grp:13,conf:'[Rn]5f¹¹7s²'},
+{n:100,sym:'Fm',name:'镄',mass:257,cat:'锕系',per:10,grp:14,conf:'[Rn]5f¹²7s²'},
+{n:101,sym:'Md',name:'钔',mass:258,cat:'锕系',per:10,grp:15,conf:'[Rn]5f¹³7s²'},
+{n:102,sym:'No',name:'锘',mass:259,cat:'锕系',per:10,grp:16,conf:'[Rn]5f¹⁴7s²'},
+{n:103,sym:'Lr',name:'铹',mass:266,cat:'锕系',per:10,grp:17,conf:'[Rn]5f¹⁴7s²7p¹'},
+{n:104,sym:'Rf',name:'𬬻',mass:267,cat:'过渡金属',per:7,grp:4,conf:'[Rn]5f¹⁴6d²7s²'},
+{n:105,sym:'Db',name:'𬭊',mass:268,cat:'过渡金属',per:7,grp:5,conf:'—'},
+{n:106,sym:'Sg',name:'𬭳',mass:269,cat:'过渡金属',per:7,grp:6,conf:'—'},
+{n:107,sym:'Bh',name:'𬭛',mass:270,cat:'过渡金属',per:7,grp:7,conf:'—'},
+{n:108,sym:'Hs',name:'𬭶',mass:269,cat:'过渡金属',per:7,grp:8,conf:'—'},
+{n:109,sym:'Mt',name:'鿏',mass:278,cat:'过渡金属',per:7,grp:9,conf:'—'},
+{n:110,sym:'Ds',name:'𫟼',mass:281,cat:'过渡金属',per:7,grp:10,conf:'—'},
+{n:111,sym:'Rg',name:'𬬭',mass:282,cat:'过渡金属',per:7,grp:11,conf:'—'},
+{n:112,sym:'Cn',name:'鎶',mass:285,cat:'过渡金属',per:7,grp:12,conf:'—'},
+{n:113,sym:'Nh',name:'鉨',mass:286,cat:'后过渡金属',per:7,grp:13,conf:'—'},
+{n:114,sym:'Fl',name:'鈇',mass:289,cat:'后过渡金属',per:7,grp:14,conf:'—'},
+{n:115,sym:'Mc',name:'镆',mass:290,cat:'后过渡金属',per:7,grp:15,conf:'—'},
+{n:116,sym:'Lv',name:'鉝',mass:293,cat:'后过渡金属',per:7,grp:16,conf:'—'},
+{n:117,sym:'Ts',name:'鿬',mass:294,cat:'卤素',per:7,grp:17,conf:'—'},
+{n:118,sym:'Og',name:'鿫',mass:294,cat:'稀有气体',per:7,grp:18,conf:'—'}
+];
+
+// 按符号索引（化学式解析用）
+const ELEMENT_BY_SYM = {};
+ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    // ===== 化学工具:周期表与计算器 =====
+    // Supabase 客户端(配平计数上报用,失败不影响使用)
+    var supabaseClient = null;
+    try {
+        supabaseClient = supabase.createClient(
+            'https://pbaafgjkwdbwcmsikcmg.supabase.co',
+            'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg'
+        );
+    } catch (e) { supabaseClient = null; }
+
+    // ========== 周期表渲染 ==========
+    var CAT_CLASS = {
+        '碱金属': 'cat-alkali', '碱土金属': 'cat-alkaline', '过渡金属': 'cat-transition',
+        '后过渡金属': 'cat-post', '类金属': 'cat-metalloid', '非金属': 'cat-nonmetal',
+        '卤素': 'cat-halogen', '稀有气体': 'cat-noble', '镧系': 'cat-lanthanide', '锕系': 'cat-actinide'
+    };
+    var PT = document.getElementById('periodicTable');
+
+    function renderPeriodicTable() {
+        var cells = {};
+        ELEMENTS.forEach(function (el) {
+            var row = el.per, col = el.grp;
+            if (el.per === 9) { row = 9; col = el.grp - 2; }
+            if (el.per === 10) { row = 10; col = el.grp - 2; }
+            if (!cells[row]) cells[row] = {};
+            cells[row][col] = el;
+        });
+        var html = '';
+        for (var r = 1; r <= 10; r++) {
+            for (var c = 1; c <= 18; c++) {
+                var el = cells[r] && cells[r][c];
+                if (el) {
+                    var cls = CAT_CLASS[el.cat] || 'cat-nonmetal';
+                    html += '<div class="pcell ' + cls + '" data-n="' + el.n + '" title="' + el.name + ' ' + el.sym + '" role="button" tabindex="0">' +
+                        '<span class="pnum">' + el.n + '</span>' +
+                        '<span class="psym">' + el.sym + '</span>' +
+                        '<span class="pmass">' + el.mass + '</span>' +
+                        '</div>';
+                } else if (r <= 7 && ((c === 3 && (r === 6 || r === 7)) || (c === 1 && r > 7))) {
+                    var mark = (r === 6 && c === 3) ? '<span class="psym">57-71</span>' :
+                        (r === 7 && c === 3) ? '<span class="psym">89-103</span>' : '';
+                    html += '<div class="pcell hole">' + mark + '</div>';
+                } else {
+                    html += '<div class="pcell empty"></div>';
+                }
+            }
+        }
+        PT.innerHTML = html;
+        PT.querySelectorAll('.pcell[data-n]').forEach(function (cell) {
+            var open = function () { showElement(parseInt(cell.dataset.n)); };
+            cell.addEventListener('click', open);
+            cell.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+        });
+    }
+
+    function showElement(n) {
+        var el = null;
+        for (var i = 0; i < ELEMENTS.length; i++) { if (ELEMENTS[i].n === n) { el = ELEMENTS[i]; break; } }
+        if (!el) return;
+        document.getElementById('elSym').innerText = el.sym;
+        document.getElementById('elName').innerText = el.name;
+        document.getElementById('elNum').innerText = el.n;
+        document.getElementById('elMass').innerText = el.mass + ' g/mol';
+        document.getElementById('elCat').innerText = el.cat;
+        document.getElementById('elPeriod').innerText = '第 ' + (el.per === 9 ? 6 : el.per === 10 ? 7 : el.per) + ' 周期 / 第 ' + el.grp + ' 族';
+        document.getElementById('elConf').innerText = el.conf || '—';
+        document.getElementById('elModal').classList.add('show');
+    }
+    document.getElementById('elClose').addEventListener('click', function () { document.getElementById('elModal').classList.remove('show'); });
+    document.getElementById('elModal').addEventListener('click', function (e) {
+        if (e.target === document.getElementById('elModal')) document.getElementById('elModal').classList.remove('show');
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') document.getElementById('elModal').classList.remove('show');
+    });
+
+    // ========== 化学式解析 ==========
+    function parseFormula(f) {
+        function err(m) { throw new Error(m); }
+        var s = f.replace(/\s+/g, '');
+        if (!s) err('化学式为空');
+        var hydrate = null;
+        var hydM = s.match(/[·.＊*]([0-9]*)([A-Z][a-z]?[0-9]*)$/);
+        if (hydM) {
+            var n = hydM[1] === '' ? 1 : parseInt(hydM[1]);
+            var sub = hydM[2];
+            var mm = sub.match(/^([A-Z][a-z]?)([0-9]*)$/);
+            if (!mm) err('水合物格式错误');
+            hydrate = { sym: mm[1], count: (mm[2] === '' ? 1 : parseInt(mm[2])) * n };
+            s = s.slice(0, hydM.index);
+        }
+        var atoms = {};
+        var i = 0;
+        var parseGroup = function () {
+            var group = {};
+            while (i < s.length) {
+                var ch = s[i];
+                if (ch === '(') {
+                    i++;
+                    var inner = parseGroup();
+                    var mult = 0;
+                    while (i < s.length && /[0-9]/.test(s[i])) { mult = mult * 10 + parseInt(s[i]); i++; }
+                    if (mult === 0) mult = 1;
+                    for (var k in inner) group[k] = (group[k] || 0) + inner[k] * mult;
+                } else if (ch === ')') {
+                    i++;
+                    return group;
+                } else if (/[A-Z]/.test(ch)) {
+                    var sym = ch;
+                    i++;
+                    if (i < s.length && /[a-z]/.test(s[i])) { sym += s[i]; i++; }
+                    if (!ELEMENT_BY_SYM[sym]) err('未知元素符号: ' + sym);
+                    var cnt = 0;
+                    while (i < s.length && /[0-9]/.test(s[i])) { cnt = cnt * 10 + parseInt(s[i]); i++; }
+                    group[sym] = (group[sym] || 0) + (cnt === 0 ? 1 : cnt);
+                } else {
+                    err('无法识别的字符: ' + ch);
+                }
+            }
+            return group;
+        };
+        var main = parseGroup();
+        if (hydrate) main[hydrate.sym] = (main[hydrate.sym] || 0) + hydrate.count;
+        var mass = 0;
+        var comp = [];
+        for (var sym2 in main) {
+            var m2 = ELEMENT_BY_SYM[sym2].mass * main[sym2];
+            mass += m2;
+            comp.push({ sym: sym2, count: main[sym2], mass: m2 });
+        }
+        comp.sort(function (a, b) { return b.mass - a.mass; });
+        return { mass: mass, comp: comp, hydrate: hydrate };
+    }
+
+    // ========== 摩尔质量计算 ==========
+    function calcMass() {
+        var out = document.getElementById('massResult');
+        var f = document.getElementById('formulaInput').value.trim();
+        try {
+            var r = parseFormula(f);
+            var parts = r.comp.map(function (c) {
+                return c.sym + (c.count > 1 ? '<sub>' + c.count + '</sub>' : '');
+            }).join('');
+            var lines = '🧪 <strong>' + f + '</strong> 的摩尔质量：<span class="big">' + r.mass.toFixed(3) + ' g/mol</span>\n';
+            lines += '组成：' + parts + '(' + r.comp.length + ' 种元素)\n';
+            lines += r.comp.map(function (c) {
+                return '  ' + c.sym + ':' + c.count + ' × ' + ELEMENT_BY_SYM[c.sym].mass + ' = ' + c.mass.toFixed(3) + ' g(占 ' + (c.mass / r.mass * 100).toFixed(1) + '%)';
+            }).join('\n');
+            if (r.hydrate) lines += '\n含结晶水:' + r.hydrate.count + ' 个 H2O';
+            out.innerHTML = lines;
+        } catch (e) {
+            out.innerText = '❌ ' + e.message;
+        }
+    }
+
+    // ========== 方程式配平(高斯消元 + 有理数精确) ==========
+    function balanceEquation() {
+        var out = document.getElementById('balanceResult');
+        var raw = document.getElementById('eqInput').value.replace(/\s+/g, '');
+        raw = raw.replace(/＝|→|⇒|=>|⟶/g, '=');
+        raw = raw.replace(/[\u2080-\u2089]/g, function (ch) { return String.fromCharCode(48 + ch.charCodeAt(0) - 0x2080); });
+        try {
+            if (!raw) throw new Error('方程式为空');
+            var sides = raw.split('=');
+            if (sides.length !== 2) throw new Error('请用 = 连接左右两边(支持 → 箭头)');
+            var left = sides[0].split('+').filter(function (x) { return x; });
+            var right = sides[1].split('+').filter(function (x) { return x; });
+            if (!left.length || !right.length) throw new Error('方程式格式错误');
+            var comps = [];
+            var parseC = function (t) {
+                var atoms2 = {};
+                var i2 = 0;
+                var lead = 0;
+                while (i2 < t.length && /[0-9]/.test(t[i2])) { lead = lead * 10 + parseInt(t[i2]); i2++; }
+                if (lead === 0) lead = 1;
+                var pg = function () {
+                    var g = {};
+                    while (i2 < t.length) {
+                        var ch = t[i2];
+                        if (ch === '(') { i2++; var inn = pg(); var m = 0; while (i2 < t.length && /[0-9]/.test(t[i2])) { m = m * 10 + parseInt(t[i2]); i2++; } if (!m) m = 1; for (var k in inn) g[k] = (g[k] || 0) + inn[k] * m; }
+                        else if (ch === ')') { i2++; return g; }
+                        else if (/[A-Z]/.test(ch)) { var sym = ch; i2++; if (i2 < t.length && /[a-z]/.test(t[i2])) { sym += t[i2]; i2++; } if (!ELEMENT_BY_SYM[sym]) throw new Error('未知元素: ' + sym); var c = 0; while (i2 < t.length && /[0-9]/.test(t[i2])) { c = c * 10 + parseInt(t[i2]); i2++; } g[sym] = (g[sym] || 0) + (c || 1); }
+                        else throw new Error('无法识别的字符: ' + ch);
+                    }
+                    return g;
+                };
+                var g = pg();
+                for (var k in g) g[k] *= lead;
+                return g;
+            };
+            left.concat(right).forEach(function (t) { comps.push(parseC(t)); });
+            var allSyms = [];
+            comps.forEach(function (c) { Object.keys(c).forEach(function (s) { if (allSyms.indexOf(s) === -1) allSyms.push(s); }); });
+            var rows = allSyms.length, cols = comps.length;
+            var A = [];
+            for (var r = 0; r < rows; r++) {
+                A.push([]);
+                for (var c = 0; c < cols; c++) {
+                    var v = comps[c][allSyms[r]] || 0;
+                    A[r].push(c < left.length ? v : -v);
+                }
+            }
+            var gcd = function (a, b) { return b ? gcd(b, a % b) : Math.abs(a); };
+            var F = function (nn, d) { if (d === undefined) d = 1; if (d < 0) { nn = -nn; d = -d; } var g = gcd(Math.abs(nn), Math.abs(d)) || 1; return { n: nn / g, d: d / g }; };
+            var Fadd = function (a, b) { return F(a.n * b.d + b.n * a.d, a.d * b.d); };
+            var Fsub = function (a, b) { return F(a.n * b.d - b.n * a.d, a.d * b.d); };
+            var Fmul = function (a, b) { return F(a.n * b.n, a.d * b.d); };
+            var Fdiv = function (a, b) { return F(a.n * b.d, a.d * b.n); };
+            var Fzero = function () { return F(0, 1); };
+            var FisZero = function (a) { return a.n === 0; };
+            var M = A.map(function (row) { return row.map(function (v) { return F(v); }); });
+            var pivots = [];
+            var cur = 0;
+            for (var p = 0; p < cols && cur < rows; p++) {
+                var rr = -1;
+                for (var r2 = cur; r2 < rows; r2++) { if (!FisZero(M[r2][p])) { rr = r2; break; } }
+                if (rr === -1) continue;
+                if (rr !== cur) { var tmp = M[cur]; M[cur] = M[rr]; M[rr] = tmp; }
+                var inv = Fdiv(F(1), M[cur][p]);
+                for (var c2 = 0; c2 < cols; c2++) M[cur][c2] = Fmul(M[cur][c2], inv);
+                for (var r3 = 0; r3 < rows; r3++) {
+                    if (r3 !== cur && !FisZero(M[r3][p])) {
+                        var ff = M[r3][p];
+                        for (var c3 = 0; c3 < cols; c3++) M[r3][c3] = Fsub(M[r3][c3], Fmul(ff, M[cur][c3]));
+                    }
+                }
+                pivots.push([cur, p]);
+                cur++;
+            }
+            var sol = [];
+            for (var si = 0; si < cols; si++) sol.push(Fzero());
+            var pivotCols = pivots.map(function (x) { return x[1]; });
+            for (var c4 = 0; c4 < cols; c4++) if (pivotCols.indexOf(c4) === -1) sol[c4] = F(1);
+            for (var k = pivots.length - 1; k >= 0; k--) {
+                var rp = pivots[k][0], pc = pivots[k][1];
+                var s = Fzero();
+                for (var c5 = 0; c5 < cols; c5++) {
+                    if (c5 === pc) continue;
+                    s = Fadd(s, Fmul(M[rp][c5], sol[c5]));
+                }
+                sol[pc] = Fsub(Fzero(), s);
+            }
+            var allNeg = sol.every(function (v) { return v.n < 0; });
+            if (allNeg) sol.forEach(function (v) { v.n = -v.n; });
+            if (sol.some(function (v) { return v.n < 0; }) || sol.some(function (v) { return v.n === 0; }))
+                throw new Error('无法配平:请检查方程式(可能存在多种解或反应不可能)');
+            var lcmOf = function (a, b) { return Math.abs(a * b) / (gcd(a, b) || 1); };
+            var lcm = 1;
+            sol.forEach(function (v) { lcm = lcmOf(lcm, v.d); });
+            var ints = sol.map(function (v) { return v.n * (lcm / v.d); });
+            var g2 = ints.reduce(function (acc, v) { return gcd(acc, v); }, 0);
+            if (g2 === 0) g2 = 1;
+            var final = ints.map(function (v) { return v / g2; });
+            var fmt = function (i) { var v = final[i]; return v === 1 ? '' : v; };
+            var pretty = [];
+            left.concat(right).forEach(function (t, i) { var v = final[i]; pretty.push((v === 1 ? '' : v) + t); });
+            out.innerHTML = '✅ 配平结果:<span class="big gold">' + pretty.slice(0, left.length).join(' + ') + ' = ' + pretty.slice(left.length).join(' + ') + '</span>';
+            try {
+                var u = localStorage.getItem('nb_user');
+                if (u && supabaseClient) {
+                    var user = JSON.parse(u);
+                    if (user && user.id) {
+                        supabaseClient.rpc('record_balance_count', { p_user_id: user.id }).then(function () {}).catch(function () {});
+                    }
+                }
+            } catch (e) {}
+        } catch (e) {
+            out.innerText = '❌ ' + e.message;
+        }
+    }
+
+    // ========== 质量 ↔ 物质的量 ==========
+    function doConv() {
+        var out = document.getElementById('convResult');
+        var f = document.getElementById('convFormula').value.trim();
+        var m = parseFloat(document.getElementById('convMass').value);
+        try {
+            if (!f) throw new Error('请输入化学式');
+            if (isNaN(m) || m <= 0) throw new Error('请输入有效的质量');
+            var r = parseFormula(f);
+            var n = m / r.mass;
+            out.innerHTML = '🧪 <strong>' + f + '</strong> 摩尔质量 = ' + r.mass.toFixed(3) + ' g/mol\n' +
+                '📏 n = m / M = ' + m + ' g ÷ ' + r.mass.toFixed(3) + ' g/mol = <span class="big">' + n.toFixed(4) + ' mol</span>\n' +
+                '🧮 分子数 = ' + (n * 6.022e23).toExponential(2) + ' 个';
+        } catch (e) {
+            out.innerText = '❌ ' + e.message;
+        }
+    }
+
+    // ========== 溶液换算 ==========
+    var pctMode = 1;
+    function switchPctMode(md) {
+        pctMode = md;
+        document.getElementById('pctMode1').classList.toggle('on', md === 1);
+        document.getElementById('pctMode2').classList.toggle('on', md === 2);
+        document.getElementById('pctForm1').style.display = md === 1 ? 'flex' : 'none';
+        document.getElementById('pctForm2').style.display = md === 2 ? 'flex' : 'none';
+    }
+    function doPct() {
+        var out = document.getElementById('pctResult');
+        if (pctMode === 2) { doPctRev(); return; }
+        var f = document.getElementById('pctFormula').value.trim();
+        var w = parseFloat(document.getElementById('pctW').value);
+        var m = parseFloat(document.getElementById('pctMass').value);
+        var d = parseFloat(document.getElementById('pctDensity').value);
+        try {
+            if (!f) throw new Error('请输入溶质化学式');
+            if (isNaN(w) || w <= 0 || w >= 100) throw new Error('质量分数需在 0~100 之间(不含0和100)');
+            if (isNaN(m) || m <= 0) throw new Error('请输入有效的溶液质量');
+            var r = parseFormula(f);
+            var soluteMass = m * w / 100;
+            var n = soluteMass / r.mass;
+            var lines = '🧪 溶质 <strong>' + f + '</strong> 摩尔质量 = ' + r.mass.toFixed(3) + ' g/mol\n';
+            lines += '🧂 溶质质量 = ' + m + ' g × ' + w + '% = ' + soluteMass.toFixed(3) + ' g\n';
+            lines += '📏 物质的量 n = ' + soluteMass.toFixed(3) + ' g ÷ ' + r.mass.toFixed(3) + ' g/mol = <span class="big">' + n.toFixed(4) + ' mol</span>';
+            if (!isNaN(d) && d > 0) {
+                var c = 1000 * d * w / 100 / r.mass;
+                lines += '\n🧴 物质的量浓度 c = 1000×ρ×w% ÷ M = 1000 × ' + d + ' × ' + w + '% ÷ ' + r.mass.toFixed(3) + ' = <span class="big gold">' + c.toFixed(4) + ' mol/L</span>';
+            } else {
+                lines += '\n💡 填写密度可同时算出物质的量浓度(mol/L)';
+            }
+            out.innerHTML = lines;
+        } catch (e) {
+            out.innerText = '❌ ' + e.message;
+        }
+    }
+    function doPctRev() {
+        var out = document.getElementById('pctResult');
+        var f = document.getElementById('revFormula').value.trim();
+        var c = parseFloat(document.getElementById('revC').value);
+        var d = parseFloat(document.getElementById('revDensity').value);
+        try {
+            if (!f) throw new Error('请输入溶质化学式');
+            if (isNaN(c) || c <= 0) throw new Error('请输入有效的物质的量浓度');
+            if (isNaN(d) || d <= 0) throw new Error('请输入有效的密度(g/mL)');
+            var r = parseFormula(f);
+            var w = c * r.mass / (10 * d);
+            var solutePerL = c * r.mass;
+            out.innerHTML =
+                '🧪 溶质 <strong>' + f + '</strong> 摩尔质量 = ' + r.mass.toFixed(3) + ' g/mol\n' +
+                '📐 w% = c×M ÷ (10×ρ) = ' + c + ' × ' + r.mass.toFixed(3) + ' ÷ (10 × ' + d + ') = <span class="big gold">' + w.toFixed(2) + '%</span>\n' +
+                '🧂 每升溶液含溶质 = c×M = ' + c + ' × ' + r.mass.toFixed(3) + ' = ' + solutePerL.toFixed(2) + ' g/L\n' +
+                '🧴 每 100 g 溶液中含溶质 ≈ ' + w.toFixed(2) + ' g';
+        } catch (e) {
+            out.innerText = '❌ ' + e.message;
+        }
+    }
+
+    // ========== Tab 切换 ==========
+    function switchToolTab(which) {
+        document.getElementById('tabPeriodic').classList.toggle('active', which === 'periodic');
+        document.getElementById('tabCalc').classList.toggle('active', which === 'calc');
+        document.getElementById('panelPeriodic').classList.toggle('active', which === 'periodic');
+        document.getElementById('panelCalc').classList.toggle('active', which === 'calc');
+    }
+    document.getElementById('tabPeriodic').addEventListener('click', function () { switchToolTab('periodic'); });
+    document.getElementById('tabCalc').addEventListener('click', function () { switchToolTab('calc'); });
+
+    // ========== 示例按钮 ==========
+    var formulaExamples = ['H2O', 'CO2', 'NaCl', 'CaCO3', 'H2SO4', 'Ca(OH)2', '(NH4)2SO4', 'CuSO4·5H2O', 'CH3COOH', 'C6H12O6'];
+    var eqExamples = ['H2+O2=H2O', 'Fe+O2=Fe3O4', 'Al+Fe2O3=Al2O3+Fe', 'CH4+O2=CO2+H2O', 'NaOH+H2SO4=Na2SO4+H2O', 'KMnO4=K2MnO4+MnO2+O2', 'FeS2+O2=Fe2O3+SO2', 'C2H5OH+O2=CO2+H2O'];
+    var fe = document.getElementById('formulaExamples');
+    fe.innerHTML = formulaExamples.map(function (e) { return '<button class="tl-chip" type="button">' + e + '</button>'; }).join('');
+    fe.querySelectorAll('button').forEach(function (b) {
+        b.addEventListener('click', function () { document.getElementById('formulaInput').value = b.innerText; calcMass(); });
+    });
+    var ee = document.getElementById('eqExamples');
+    ee.innerHTML = eqExamples.map(function (e) { return '<button class="tl-chip" type="button">' + e + '</button>'; }).join('');
+    ee.querySelectorAll('button').forEach(function (b) {
+        b.addEventListener('click', function () { document.getElementById('eqInput').value = b.innerText; balanceEquation(); });
+    });
+
+    // ========== 溶液示例 ==========
+    var pctExamples = [
+        { label: '① NaCl 10% (ρ=1.07)', f: 'NaCl', w: 10, m: 100, d: 1.07, rev: false },
+        { label: '① HCl 36.5% (ρ=1.18)', f: 'HCl', w: 36.5, m: 100, d: 1.18, rev: false },
+        { label: '① H2SO4 98% (ρ=1.84)', f: 'H2SO4', w: 98, m: 100, d: 1.84, rev: false },
+        { label: '② HCl 11.8 mol/L (ρ=1.18)', f: 'HCl', c: 11.8, d: 1.18, rev: true },
+        { label: '② H2SO4 18.4 mol/L (ρ=1.84)', f: 'H2SO4', c: 18.4, d: 1.84, rev: true },
+        { label: '② NaCl 1.71 mol/L (ρ=1.07)', f: 'NaCl', c: 1.71, d: 1.07, rev: true }
+    ];
+    var pe = document.getElementById('pctExamples');
+    pe.innerHTML = pctExamples.map(function (x) { return '<button class="tl-chip" type="button">' + x.label + '</button>'; }).join('');
+    pe.querySelectorAll('button').forEach(function (b, i) {
+        b.addEventListener('click', function () {
+            var x = pctExamples[i];
+            switchPctMode(x.rev ? 2 : 1);
+            if (x.rev) {
+                document.getElementById('revFormula').value = x.f;
+                document.getElementById('revC').value = x.c;
+                document.getElementById('revDensity').value = x.d;
+                doPctRev();
+            } else {
+                document.getElementById('pctFormula').value = x.f;
+                document.getElementById('pctW').value = x.w;
+                document.getElementById('pctMass').value = x.m;
+                document.getElementById('pctDensity').value = x.d || '';
+                doPct();
+            }
+        });
+    });
+
+    // ========== 事件绑定 ==========
+    document.getElementById('calcMassBtn').addEventListener('click', calcMass);
+    document.getElementById('balanceBtn').addEventListener('click', balanceEquation);
+    document.getElementById('convBtn').addEventListener('click', doConv);
+    document.getElementById('pctBtn').addEventListener('click', doPct);
+    document.getElementById('revBtn').addEventListener('click', doPctRev);
+    document.getElementById('pctMode1').addEventListener('click', function () { switchPctMode(1); });
+    document.getElementById('pctMode2').addEventListener('click', function () { switchPctMode(2); });
+    document.getElementById('formulaInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') calcMass(); });
+    document.getElementById('eqInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') balanceEquation(); });
+    document.getElementById('convFormula').addEventListener('keydown', function (e) { if (e.key === 'Enter') doConv(); });
+    document.getElementById('convMass').addEventListener('keydown', function (e) { if (e.key === 'Enter') doConv(); });
+    document.getElementById('pctFormula').addEventListener('keydown', function (e) { if (e.key === 'Enter') doPct(); });
+    document.getElementById('pctW').addEventListener('keydown', function (e) { if (e.key === 'Enter') doPct(); });
+    document.getElementById('pctMass').addEventListener('keydown', function (e) { if (e.key === 'Enter') doPct(); });
+    document.getElementById('pctDensity').addEventListener('keydown', function (e) { if (e.key === 'Enter') doPct(); });
+    document.getElementById('revFormula').addEventListener('keydown', function (e) { if (e.key === 'Enter') doPctRev(); });
+    document.getElementById('revC').addEventListener('keydown', function (e) { if (e.key === 'Enter') doPctRev(); });
+    document.getElementById('revDensity').addEventListener('keydown', function (e) { if (e.key === 'Enter') doPctRev(); });
+
+    // ========== 初始化 ==========
+    renderPeriodicTable();
+    calcMass();
+</script>
+<script>
+    // ===== 鼠标特效:跟随光晕 + 点击波纹与彩色粒子(仅鼠标设备) =====
+    (function () {
+        if (!(window.matchMedia && window.matchMedia('(pointer: fine)').matches)) return;
+        var glow = document.createElement('div');
+        glow.className = 'ui-fx-glow';
+        document.body.appendChild(glow);
+        var gx = -999, gy = -999, tx = -999, ty = -999;
+        document.addEventListener('mousemove', function (e) { tx = e.clientX; ty = e.clientY; });
+        document.addEventListener('mouseenter', function () { glow.style.opacity = '1'; });
+        document.addEventListener('mouseleave', function () { glow.style.opacity = '0'; });
+        var lx = -1e9, ly = -1e9;
+        (function loop() {
+            gx += (tx - gx) * 0.14;
+            gy += (ty - gy) * 0.14;
+            if (Math.abs(gx - lx) > 0.2 || Math.abs(gy - ly) > 0.2) {
+                glow.style.left = gx + 'px';
+                glow.style.top = gy + 'px';
+                lx = gx; ly = gy;
+            }
+            requestAnimationFrame(loop);
+        })();
+        var colors = ['#3b82f6', '#8b5cf6', '#6366f1', '#06b6d4', '#f59e0b'];
+        document.addEventListener('click', function (e) {
+            var ring = document.createElement('div');
+            ring.style.cssText = 'position:fixed; left:' + e.clientX + 'px; top:' + e.clientY + 'px; width:12px; height:12px; border:2px solid rgba(59,130,246,.75); border-radius:50%; pointer-events:none; z-index:9999; transform:translate(-50%,-50%);';
+            document.body.appendChild(ring);
+            setTimeout(function () { if (ring.parentNode) ring.remove(); }, 900);
+            try {
+                ring.animate([
+                    { transform: 'translate(-50%,-50%) scale(1)', opacity: 0.9 },
+                    { transform: 'translate(-50%,-50%) scale(5.5)', opacity: 0 }
+                ], { duration: 600, easing: 'ease-out', fill: 'forwards' });
+            } catch (err) { ring.remove(); }
+            for (var i = 0; i < 8; i++) {
+                var p = document.createElement('div');
+                var size = 4 + Math.random() * 6;
+                var ang = Math.random() * Math.PI * 2;
+                var dist = 28 + Math.random() * 52;
+                p.style.cssText = 'position:fixed; left:' + e.clientX + 'px; top:' + e.clientY + 'px; width:' + size + 'px; height:' + size + 'px; border-radius:50%; background:' + colors[i % colors.length] + '; pointer-events:none; z-index:9999;';
+                document.body.appendChild(p);
+                var dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
+                var dur = 500 + Math.random() * 250;
+                setTimeout(function (el) {
+                    return function () { if (el.parentNode) el.remove(); };
+                }(p), dur + 250);
+                try {
+                    p.animate([
+                        { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                        { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(0.1)', opacity: 0 }
+                    ], { duration: dur, easing: 'cubic-bezier(0.15,0.8,0.25,1)', fill: 'forwards' });
+                } catch (err) { p.remove(); }
+            }
+        });
+    })();
+</script>
+<script>
+    // ===== 全站公告条:supabase REST 单次拉取(无需加载 SDK),失败静默隐藏 =====
+    (function () {
+        var bar = document.getElementById('betaAnnounce');
+        var track = document.getElementById('baTrack');
+        if (!bar || !track) return;
+        function escA(s) {
+            return String(s).replace(/[&<>"']/g, function (m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
+        function linkify(s) {
+            return s.replace(/(https?:\/\/[^\s<>"']+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:var(--brand); text-decoration:underline;">$1</a>');
+        }
+        fetch('https://pbaafgjkwdbwcmsikcmg.supabase.co/rest/v1/admin_config?select=value&key=eq.announcement', {
+            headers: {
+                'apikey': 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg',
+                'Authorization': 'Bearer sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg'
+            }
+        })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (rows) {
+            if (!rows || !rows.length) return;
+            var raw = String(rows[0].value || '').trim();
+            if (!raw) return;
+            bar.style.display = 'flex';
+            var one = '<span class="ba-item">' + linkify(escA(raw)) + '</span>';
+            track.innerHTML = one;
+            var item = track.querySelector('.ba-item');
+            var itemW = item ? item.offsetWidth : 0;
+            if (itemW <= 0) return;
+            var wrapEl = bar.querySelector('.ba-track-wrap');
+            var barW = wrapEl ? wrapEl.clientWidth : 0;
+            var copies = Math.max(2, Math.ceil(barW / itemW) + 1);
+            var all = '';
+            for (var ci = 0; ci < copies; ci++) all += '<span class="ba-item">' + linkify(escA(raw)) + '</span>';
+            track.innerHTML = all;
+            var dur = Math.max(8, itemW / 45);
+            if (track.animate) {
+                track.animate(
+                    [{ transform: 'translateX(0)' }, { transform: 'translateX(-' + itemW + 'px)' }],
+                    { duration: dur * 1000, iterations: Infinity, easing: 'linear' }
+                );
+            }
+        })
+        .catch(function () {});
+    })();
+</script>
+</body>
+</html>
