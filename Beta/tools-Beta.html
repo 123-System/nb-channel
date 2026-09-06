@@ -347,6 +347,11 @@ html.dark .pcell.empty, html.dark .pcell.hole { color: var(--ink-faint); }
     font-size: .68rem; color: var(--ink-faint); margin: 0 0 8px; letter-spacing: 1px;
 }
 .sh-note .sh-txt { opacity: .92; }
+.sh-disclaimer {
+    font-size: .63rem; color: var(--ink-faint); opacity: .85;
+    text-align: center; line-height: 1.8; letter-spacing: .2px;
+    margin: -2px 0 10px; padding: 0 6px;
+}
 .sh-toggle {
     display: inline-flex; align-items: center; gap: 5px;
     border: 1px solid var(--line); background: var(--bg); color: var(--ink-soft);
@@ -728,6 +733,7 @@ html.dark .pcell.empty, html.dark .pcell.hole { color: var(--ink-faint); }
             <span class="sh-txt">简化电子层模型 · 圆点 = 电子</span>
             <button class="sh-toggle" id="orbitToggle" type="button" aria-pressed="false">⏵ 静止</button>
         </div>
+        <div class="sh-disclaimer">※ 科普示意:真实的电子并不像行星沿固定轨道公转,而是以「电子云」概率分布在原子核周围</div>
         <table>
             <tr><td>原子序数</td><td id="elNum"></td></tr>
             <tr><td>原子量</td><td id="elMass"></td></tr>
