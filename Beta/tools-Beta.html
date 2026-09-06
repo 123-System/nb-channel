@@ -369,10 +369,10 @@ html.dark .pcell.empty, html.dark .pcell.hole { color: var(--ink-faint); }
     background: linear-gradient(135deg, var(--brand), #6366f1);
     color: #fff; box-shadow: 0 5px 14px -6px rgba(59,130,246,.6);
 }
-/* 电子公转动画:默认静止;快速=各环基准周期 --t;慢速=2.4 倍 */
+/* 电子公转动画:默认静止;快速=各环基准周期 --t;慢速=2 倍 */
 .sh-orbit { transform-box: view-box; transform-origin: 50% 50%; }
 .sh-svg.spd-fast .sh-orbit { animation: shspin var(--t, 4s) linear infinite; }
-.sh-svg.spd-slow .sh-orbit { animation: shspin calc(var(--t, 4s) * 2.4) linear infinite; }
+.sh-svg.spd-slow .sh-orbit { animation: shspin calc(var(--t, 4s) * 2) linear infinite; }
 @keyframes shspin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
     .sh-svg.spd-fast .sh-orbit, .sh-svg.spd-slow .sh-orbit { animation: none; }
@@ -1167,7 +1167,7 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
             s += '<circle class="sh-ring" cx="' + CX + '" cy="' + CY + '" r="' + r + '"></circle>';
             var cnt = shells[i];
             // 每层电子包进独立轨道组:开启转动时整组绕中心旋转(内层快外层慢)
-            var dur = (2.2 + i * 1.15).toFixed(1);
+            var dur = (0.9 + i * 0.55).toFixed(1);
             s += '<g class="sh-orbit" style="--t:' + dur + 's">';
             for (var j = 0; j < cnt; j++) {
                 var ang = (j / cnt) * Math.PI * 2 - Math.PI / 2 + (i % 2) * 0.06;
