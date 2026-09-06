@@ -662,8 +662,6 @@
     async function loadCompanyReports() {
     const container = document.getElementById('companyReportsContainer');
     container.innerHTML = '<div class="loading">加载中...</div>';
-    companySel.clear();
-    document.getElementById('companySelCount').textContent = 0;
     try {
         const { data, error } = await supabaseClient
             .from('reports')
@@ -700,8 +698,10 @@
             html += `
                 <div class="report-card" data-report-id="${report.id}">
                     <div class="card-header">
-                        <label style="margin-right:12px; cursor:pointer; user-select:none;"><input type="checkbox" class="cb-company" data-id="${report.id}" data-cid="${companyId}" data-owner="${company?.user_id || ''}" title="选择用于批量操作"> 选择</label>
-                        <strong>🏢 公司举报 #${report.id}</strong>
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" class="cb-company" data-id="${report.id}" data-cid="${companyId}" data-owner="${company?.user_id || ''}" ${companySel.has(report.id) ? 'checked' : ''}>
+                            <strong>🏢 公司举报 #${report.id}</strong>
+                        </div>
                         <div class="report-time">📅 ${formatDate(report.created_at)}</div>
                     </div>
                     <div class="company-info">
@@ -721,6 +721,7 @@
             `;
         }
         container.innerHTML = html;
+        updateCompanyBatchBar();
 
         // 直接在这里绑定事件
         container.querySelectorAll('.ignore-company').forEach(btn => {
@@ -793,8 +794,6 @@
     async function loadVerificationRequests() {
         const container = document.getElementById('verificationContainer');
         container.innerHTML = '<div class="loading">加载中...</div>';
-        verifySel.clear();
-        document.getElementById('verifySelCount').textContent = 0;
         try {
             const { data, error } = await supabaseClient
                 .from('user_companies')
@@ -814,8 +813,10 @@
                 html += `
                     <div class="report-card" data-company-id="${company.id}">
                         <div class="card-header">
-                            <label style="margin-right:12px; cursor:pointer; user-select:none;"><input type="checkbox" class="cb-verify" data-id="${company.id}" title="选择用于批量操作"> 选择</label>
-                            <strong>🏢 公司名称：${escapeHtml(company.company_name)}</strong>
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" class="cb-verify" data-id="${company.id}" ${verifySel.has(company.id) ? 'checked' : ''}>
+                                <strong>🏢 公司名称：${escapeHtml(company.company_name)}</strong>
+                            </div>
                             <div class="report-time">📅 申请时间：${formatDate(company.created_at)}</div>
                         </div>
                         <div class="company-info">
@@ -830,6 +831,7 @@
             }
             container.innerHTML = html;
             attachVerificationEvents();
+            updateVerifyBatchBar();
         } catch (err) {
             console.error(err);
             container.innerHTML = `<div class="error">加载失败: ${err.message}</div>`;
@@ -880,32 +882,46 @@
     // ==================== 公司举报 & 认证审核:批量选择与操作 ====================
     let companySel = new Set();
     let verifySel = new Set();
+    function updateCompanyBatchBar() {
+        const count = companySel.size;
+        const el = document.getElementById('companySelCount');
+        if (el) el.innerText = count;
+        const bar = document.getElementById('companyBatch');
+        if (bar) bar.style.display = count > 0 ? 'flex' : 'none';
+    }
+    function updateVerifyBatchBar() {
+        const count = verifySel.size;
+        const el = document.getElementById('verifySelCount');
+        if (el) el.innerText = count;
+        const bar = document.getElementById('verifyBatch');
+        if (bar) bar.style.display = count > 0 ? 'flex' : 'none';
+    }
     (function initBatchUI() {
         const cCont = document.getElementById('companyReportsContainer');
         if (cCont) cCont.addEventListener('change', function (e) {
             const box = e.target;
             if (!box || !box.classList || !box.classList.contains('cb-company')) return;
-            if (box.checked) companySel.add(box.dataset.id); else companySel.delete(box.dataset.id);
-            const el = document.getElementById('companySelCount');
-            if (el) el.textContent = companySel.size;
+            if (box.checked) companySel.add(parseInt(box.dataset.id, 10));
+            else companySel.delete(parseInt(box.dataset.id, 10));
+            updateCompanyBatchBar();
         });
         const vCont = document.getElementById('verificationContainer');
         if (vCont) vCont.addEventListener('change', function (e) {
             const box = e.target;
             if (!box || !box.classList || !box.classList.contains('cb-verify')) return;
-            if (box.checked) verifySel.add(box.dataset.id); else verifySel.delete(box.dataset.id);
-            const el = document.getElementById('verifySelCount');
-            if (el) el.textContent = verifySel.size;
+            if (box.checked) verifySel.add(parseInt(box.dataset.id, 10));
+            else verifySel.delete(parseInt(box.dataset.id, 10));
+            updateVerifyBatchBar();
         });
         document.getElementById('cbClear').onclick = function () {
             companySel.clear();
             document.querySelectorAll('.cb-company').forEach(function (b) { b.checked = false; });
-            document.getElementById('companySelCount').textContent = 0;
+            updateCompanyBatchBar();
         };
         document.getElementById('vbClear').onclick = function () {
             verifySel.clear();
             document.querySelectorAll('.cb-verify').forEach(function (b) { b.checked = false; });
-            document.getElementById('verifySelCount').textContent = 0;
+            updateVerifyBatchBar();
         };
         document.getElementById('cbIgnore').onclick = async function () {
             if (!companySel.size) { alert('请先勾选要忽略的举报'); return; }
@@ -1068,11 +1084,9 @@
             loadCommentReports();
         } else if (tab === 'companies') {
             document.getElementById('companyReportsContainer').style.display = 'block';
-            document.getElementById('companyBatch').style.display = 'flex';
             loadCompanyReports();
         } else if (tab === 'verification') {
             document.getElementById('verificationContainer').style.display = 'block';
-            document.getElementById('verifyBatch').style.display = 'flex';
             loadVerificationRequests();
         } else if (tab === 'announce') {
             document.getElementById('announcePanel').style.display = 'block';
