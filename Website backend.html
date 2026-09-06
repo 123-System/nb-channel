@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理 - NB频道</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* 样式保持简洁 */
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        h1 { margin-top: 0; color: #00a1d6; }
+        .dashboard {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px 20px;
+            flex: 1;
+            min-width: 150px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .card h3 { margin: 0 0 8px 0; font-size: 14px; color: #6c757d; }
+        .card .number { font-size: 28px; font-weight: bold; margin: 0; color: #00a1d6; }
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 20px;
+            gap: 8px;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 24px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 30px 30px 0 0;
+            transition: all 0.2s;
+            color: #6c757d;
+        }
+        .tab-btn.active {
+            background: #00a1d6;
+            color: white;
+        }
+        .filters {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .filters select, .filters button {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            background: white;
+            cursor: pointer;
+        }
+        .filters button {
+            background: #00a1d6;
+            color: white;
+            border: none;
+        }
+        .filters button:hover { background: #008bb5; }
+        .batch-actions {
+            margin: 15px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .batch-actions button {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .batch-actions button.danger { background: #dc3545; }
+        .batch-actions button.warning { background: #fd7e14; }
+        .batch-actions button.success { background: #28a745; }
+        .reports-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .report-card {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: box-shadow 0.2s;
+        }
+        .report-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .report-time {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .comment-content {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-size: 0.95rem;
+            border-left: 3px solid #00a1d6;
+        }
+        .company-info {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+            border-left: 3px solid #fd7e14;
+        }
+        .report-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin: 12px 0;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+        .report-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        button {
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        button.delete { background: #fd7e14; }
+        button.delete:hover { background: #e67e22; }
+        button.ban { background: #dc3545; }
+        button.ban:hover { background: #c82333; }
+        button.ignore { background: #28a745; }
+        button.ignore:hover { background: #218838; }
+        button.refresh-btn { background: #28a745; margin-bottom: 15px; }
+        button.delete-company { background: #dc3545; }
+        button.delete-company:hover { background: #c82333; }
+        button.approve { background: #28a745; }
+        button.reject { background: #dc3545; }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        .pagination button {
+            background: #6c757d;
+            padding: 5px 12px;
+        }
+        .pagination button.active {
+            background: #00a1d6;
+        }
+        .loading { text-align: center; padding: 40px; color: #666; }
+        .error { color: red; margin: 10px 0; }
+        .unban-section {
+            margin-top: 40px;
+            border-top: 2px solid #e9ecef;
+            padding-top: 20px;
+        }
+        .banned-user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+        }
+        .modal-content input {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+        @media (max-width: 600px) {
+            .container { padding: 12px; }
+            .report-card { padding: 12px; }
+            .report-meta { flex-direction: column; gap: 6px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container" id="mainContainer">
+    <h1>🛠️ 后台管理 <span style="font-size:0.82rem;font-weight:400;color:#8a94a6;">举报 · 公告 · API 访问日志</span></h1>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+        <div style="font-size:0.85rem;color:#6c757d;">当前会话：<b id="sessionState">未登录</b></div>
+        <button id="logoutBtn" style="border:none;background:#e74c3c;color:#fff;border-radius:30px;padding:6px 20px;cursor:pointer;font-size:0.85rem;">退出登录</button>
+    </div>
+    <div id="dashboard" class="dashboard"></div>
+
+    <div class="tabs">
+        <button id="tabComments" class="tab-btn active">📝 评论举报</button>
+        <button id="tabCompanies" class="tab-btn">🏢 公司举报</button>
+        <button id="tabVerification" class="tab-btn">🏢 公司认证审核</button>
+        <button id="tabAnnounce" class="tab-btn">📢 公告管理</button>
+        <button id="tabApi" class="tab-btn">📊 API 日志</button>
+    </div>
+
+    <div id="commentFilters" class="filters">
+        <label>时间范围：</label>
+        <select id="dateRange">
+            <option value="all">全部</option>
+            <option value="today">今天</option>
+            <option value="week">本周</option>
+            <option value="month">本月</option>
+        </select>
+        <button id="applyFilter">应用筛选</button>
+        <button id="refreshBtn" class="refresh-btn">🔄 刷新</button>
+    </div>
+
+    <div id="batchActions" class="batch-actions" style="display: none;">
+        <span>批量操作已选中 <span id="selectedCount">0</span> 条举报</span>
+        <button id="batchIgnore" class="success">🙈 批量忽略</button>
+        <button id="batchDelete" class="warning">🗑️ 批量删除评论</button>
+        <button id="batchBan" class="danger">🚫 批量封禁用户</button>
+        <button id="clearSelection">清空选择</button>
+    </div>
+
+    <div id="reportsContainer" class="reports-list">加载中...</div>
+    <div id="pagination" class="pagination"></div>
+
+    <div id="companyReportsContainer" style="display: none;">加载中...</div>
+    <div id="verificationContainer" style="display: none;">加载中...</div>
+
+    <div id="announcePanel" style="display:none;">
+        <div style="background:#fff8e6;border:1px solid #ffd591;border-left:4px solid #ff9800;border-radius:12px;padding:10px 16px;font-size:0.9rem;margin-bottom:16px;">💡 公告显示在首页与全站页面顶部的滚动公告条。留空保存 = 清除公告。</div>
+        <div style="margin-bottom:16px;">
+            <label style="display:block;font-weight:600;margin-bottom:8px;color:#333;">公告内容(≤2000 字)</label>
+            <textarea id="announcementText" placeholder="在这里输入公告内容,支持换行与链接……" style="width:100%;min-height:160px;padding:12px;border:1px solid #ddd;border-radius:10px;font-size:0.95rem;font-family:inherit;line-height:1.7;box-sizing:border-box;" oninput="renderAnnouncePreview()"></textarea>
+            <div style="text-align:right;font-size:0.8rem;color:#6c757d;margin-top:4px;"><span id="charCount">0</span> / 2000 字</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+            <button id="annSaveBtn" style="background:#00a1d6;color:#fff;border:none;border-radius:30px;padding:9px 26px;cursor:pointer;">💾 保存公告</button>
+            <button id="annClearBtn" style="background:#e74c3c;color:#fff;border:none;border-radius:30px;padding:9px 26px;cursor:pointer;">🗑️ 清除公告</button>
+            <button id="annReloadBtn" style="background:#e9ecef;color:#333;border:none;border-radius:30px;padding:9px 26px;cursor:pointer;">🔄 重新载入</button>
+        </div>
+        <div id="annStatus" style="font-size:0.9rem;margin-bottom:12px;"></div>
+        <div style="background:#fff8e6;border:1px solid #ffd591;border-radius:12px;padding:14px 18px;">
+            <div style="font-weight:600;margin-bottom:8px;font-size:0.9rem;">👀 前台预览(滚动公告条内容)</div>
+            <div id="annPreview" style="color:#8a94a6;">(暂无公告)</div>
+        </div>
+    </div>
+
+    <div id="apiPanel" style="display:none;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px;">
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;"><div id="sToday" style="font-size:1.5rem;font-weight:700;color:#00a1d6;">-</div><div style="font-size:0.8rem;color:#6c757d;">今日请求(北京)</div></div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;"><div id="s429" style="font-size:1.5rem;font-weight:700;color:#e74c3c;">-</div><div style="font-size:0.8rem;color:#6c757d;">429 限流拦截</div></div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;"><div id="sTotal" style="font-size:1.5rem;font-weight:700;color:#333;">-</div><div style="font-size:0.8rem;color:#6c757d;">日志总数</div></div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;"><div id="sLast" style="font-size:0.95rem;font-weight:700;color:#333;padding-top:4px;">-</div><div style="font-size:0.8rem;color:#6c757d;">最近记录(北京)</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;"><div style="font-weight:600;margin-bottom:6px;font-size:0.92rem;">请求最多的端点</div><div id="topEndpoints">加载中...</div></div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;"><div style="font-weight:600;margin-bottom:6px;font-size:0.92rem;">请求最多的 IP(疑似爬虫)</div><div id="topIps">加载中...</div></div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+            <input type="text" id="fEndpoint" placeholder="端点包含,如 /api/market" style="padding:8px 12px;border:1px solid #ddd;border-radius:30px;font-size:0.9rem;min-width:170px;">
+            <input type="text" id="fIp" placeholder="IP 精确" style="padding:8px 12px;border:1px solid #ddd;border-radius:30px;font-size:0.9rem;min-width:130px;">
+            <select id="fStatus" style="padding:8px 12px;border:1px solid #ddd;border-radius:30px;font-size:0.9rem;"><option value="">全部状态</option><option value="200">200</option><option value="429">429</option><option value="401">401</option><option value="502">502</option></select>
+            <select id="fLimit" style="padding:8px 12px;border:1px solid #ddd;border-radius:30px;font-size:0.9rem;"><option value="100">100 条</option><option value="300" selected>300 条</option><option value="1000">1000 条</option></select>
+            <button id="apiApply" style="border:none;background:#00a1d6;color:#fff;border-radius:30px;padding:8px 18px;cursor:pointer;">🔍 查询</button>
+            <button id="apiRefresh" style="border:none;background:#6c757d;color:#fff;border-radius:30px;padding:8px 18px;cursor:pointer;">🔄 刷新</button>
+            <button id="apiPurge" style="border:none;background:#e74c3c;color:#fff;border-radius:30px;padding:8px 18px;cursor:pointer;margin-left:auto;">🗑️ 清理 30 天前</button>
+        </div>
+        <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                <thead><tr style="text-align:left;"><th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;color:#6c757d;">时间(北京)</th><th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;color:#6c757d;">端点</th><th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;color:#6c757d;">方法</th><th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;color:#6c757d;">IP</th><th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;color:#6c757d;">状态</th><th style="padding:8px 10px;border-bottom:2px solid #e2e8f0;color:#6c757d;">UA</th></tr></thead>
+                <tbody id="apiBody"><tr><td colspan="6">登录后此处显示日志</td></tr></tbody>
+            </table>
+        </div>
+        <div style="font-size:0.78rem;color:#8a94a6;margin-top:8px;">后端每 20 秒批量写入表 api_logs;进程内存统计见 /api/stats。本页为持久历史。</div>
+    </div>
+
+    <div class="unban-section">
+        <h2>🔓 已封禁用户列表 & 手动解封</h2>
+        <div id="bannedUsersList">加载中...</div>
+    </div>
+</div>
+
+<div id="loginModal" class="modal">
+    <div class="modal-content">
+        <h3>管理员登录</h3>
+        <input type="password" id="adminPassword" placeholder="请输入管理密码">
+        <div id="loginError" style="color:red; font-size:0.9rem;"></div>
+        <button id="doLogin">登录</button>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://pbaafgjkwdbwcmsikcmg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_tv7YVJEisnvs3hvU8ImYUw_b0p6bmRg';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let isLoggedIn = false;
+    let currentTab = 'comments';
+    let currentPage = 1;
+    const pageSize = 10;
+    let currentDateRange = 'all';
+    let totalReports = 0;
+    let currentReports = [];
+    let selectedReportIds = new Set();
+    // 管理员会话 token（服务端签发，30分钟有效；不再信任纯前端标记）
+    let adminToken = sessionStorage.getItem('admin_token') || '';
+
+    function getToken() { return adminToken; }
+
+    async function getClientIP() {
+        const services = [
+            'https://icanhazip.com',
+            'https://api.ipify.org?format=text'
+        ];
+        for (const url of services) {
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    const ip = await response.text();
+                    return ip.trim();
+                }
+            } catch (e) { /* 尝试下一个 */ }
+        }
+        return 'unknown';
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
+    }
+    function formatDate(dateStr) {
+        if (!dateStr) return '';
+        return new Date(dateStr).toLocaleString();
+    }
+    function getDateRangeFilter(range) {
+        const now = new Date();
+        let startDate;
+        if (range === 'today') {
+            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        } else if (range === 'week') {
+            const day = now.getDay();
+            startDate = new Date(now);
+            startDate.setDate(now.getDate() - day + (day === 0 ? -6 : 1));
+            startDate.setHours(0,0,0,0);
+        } else if (range === 'month') {
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        } else {
+            return null;
+        }
+        return startDate.toISOString();
+    }
+
+    async function loadDashboard() {
+        try {
+            const { count: bannedCount } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('is_banned', true);
+            const { count: commentReports } = await supabaseClient.from('reports').select('*', { count: 'exact', head: true }).eq('target_type', 'comment');
+            const { count: companyReports } = await supabaseClient.from('reports').select('*', { count: 'exact', head: true }).eq('target_type', 'company');
+            const { count: pendingVerification } = await supabaseClient.from('user_companies').select('*', { count: 'exact', head: true }).eq('verification_status', 'pending');
+            document.getElementById('dashboard').innerHTML = `
+                <div class="card"><h3>被封禁用户数</h3><div class="number">${bannedCount || 0}</div></div>
+                <div class="card"><h3>评论举报数</h3><div class="number">${commentReports || 0}</div></div>
+                <div class="card"><h3>公司举报数</h3><div class="number">${companyReports || 0}</div></div>
+                <div class="card"><h3>待认证公司</h3><div class="number">${pendingVerification || 0}</div></div>
+            `;
+        } catch (err) { console.error(err); }
+    }
+
+    // ==================== 评论举报相关（与原功能一致，只改忽略为RPC） ====================
+    async function loadCommentReports() {
+        const container = document.getElementById('reportsContainer');
+        container.innerHTML = '<div class="loading">加载中...</div>';
+        try {
+            let query = supabaseClient.from('reports').select(`
+                id, reason, created_at, comment_id,
+                comments!inner ( id, content, user_id, profiles!inner (username) ),
+                reporter_user_id, reporter:profiles!reports_reporter_user_id_fkey (username)
+            `, { count: 'exact' }).eq('target_type', 'comment');
+            const dateFilter = getDateRangeFilter(currentDateRange);
+            if (dateFilter) query = query.gte('created_at', dateFilter);
+            const from = (currentPage - 1) * pageSize;
+            query = query.range(from, from + pageSize - 1).order('created_at', { ascending: false });
+            const { data, error, count } = await query;
+            if (error) throw error;
+            totalReports = count || 0;
+            currentReports = data || [];
+            if (!currentReports.length) {
+                container.innerHTML = '<div class="loading">暂无评论举报记录</div>';
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+            let html = '';
+            for (const report of currentReports) {
+                const comment = report.comments;
+                const commentAuthor = comment?.profiles?.username || '匿名用户';
+                const reporterName = report.reporter?.username || '未知';
+                const commentContent = comment?.content || '【评论已删除】';
+                const commentId = comment?.id;
+                const isChecked = selectedReportIds.has(report.id) ? 'checked' : '';
+                html += `
+                    <div class="report-card" data-report-id="${report.id}">
+                        <div class="card-header">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" class="report-checkbox" data-id="${report.id}" ${isChecked}>
+                                <strong>举报 #${report.id}</strong>
+                            </div>
+                            <div class="report-time">📅 ${formatDate(report.created_at)}</div>
+                        </div>
+                        <div class="comment-content">
+                            💬 <strong>被举报评论：</strong><br>
+                            ${escapeHtml(commentContent)}
+                        </div>
+                        <div class="report-meta">
+                            <span>👤 <strong>评论作者：</strong> ${escapeHtml(commentAuthor)}</span>
+                            <span>📢 <strong>举报原因：</strong> ${escapeHtml(report.reason)}</span>
+                            <span>🔍 <strong>举报人：</strong> ${escapeHtml(reporterName)}</span>
+                        </div>
+                        <div class="report-actions">
+                            ${commentId ? `<button class="delete" data-comment-id="${commentId}" data-report-id="${report.id}">🗑️ 删除评论</button>` : '<span style="color:#999;">评论已删除</span>'}
+                            ${comment?.user_id ? `<button class="ban" data-user-id="${comment.user_id}" data-report-id="${report.id}">🚫 封禁用户</button>` : ''}
+                            <button class="ignore" data-report-id="${report.id}">🙈 忽略举报</button>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+            attachCommentEvents();
+            updateBatchBar();
+            renderPagination();
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = `<div class="error">加载失败: ${err.message}</div>`;
+        }
+    }
+
+    // 统一处理管理员操作错误（会话过期时回到登录框）
+    function handleAdminError(err, fallback) {
+        const msg = (err && err.message) || fallback || '操作失败';
+        if (msg.indexOf('登录已过期') !== -1 || msg.indexOf('会话') !== -1) {
+            alert('登录已过期，请重新登录');
+            adminToken = '';
+            sessionStorage.removeItem('admin_token');
+            showLoginModal();
+            return true;
+        }
+        return false;
+    }
+
+    function attachCommentEvents() {
+        document.querySelectorAll('.delete').forEach(btn => {
+            btn.onclick = async () => {
+                const commentId = parseInt(btn.dataset.commentId);
+                const reportId = parseInt(btn.dataset.reportId);
+                if (!confirm('确定删除这条评论吗？')) return;
+                const { data, error } = await supabaseClient.rpc('admin_batch_delete_comments', {
+                    p_comment_ids: [commentId],
+                    p_token: getToken()
+                });
+                if (error || !data || !data.success) {
+                    if (!handleAdminError(error || (data && data.message))) alert('删除失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+                    return;
+                }
+                await supabaseClient.rpc('admin_batch_ignore', { p_report_ids: [reportId], p_token: getToken() });
+                alert('删除成功');
+                selectedReportIds.delete(reportId);
+                loadCommentReports(); loadDashboard(); loadBannedUsers();
+            };
+        });
+        document.querySelectorAll('.ban').forEach(btn => {
+            btn.onclick = async () => {
+                const userId = btn.dataset.userId;
+                const reportId = parseInt(btn.dataset.reportId);
+                if (!confirm('确定封禁该用户吗？')) return;
+                const { data, error } = await supabaseClient.rpc('admin_batch_ban_users', {
+                    p_user_ids: [userId],
+                    p_token: getToken()
+                });
+                if (error || !data || !data.success) {
+                    if (!handleAdminError(error || (data && data.message))) alert('封禁失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+                    return;
+                }
+                await supabaseClient.rpc('admin_batch_ignore', { p_report_ids: [reportId], p_token: getToken() });
+                alert('用户已封禁');
+                selectedReportIds.delete(reportId);
+                loadCommentReports(); loadDashboard(); loadBannedUsers();
+            };
+        });
+        document.querySelectorAll('.ignore').forEach(btn => {
+            btn.onclick = async () => {
+                const reportId = parseInt(btn.dataset.reportId);
+                if (!confirm('确定忽略此举报吗？')) return;
+                const { data, error } = await supabaseClient.rpc('admin_ignore_report', {
+                    p_report_id: reportId,
+                    p_token: getToken()
+                });
+                if (error || !data || !data.success) {
+                    if (!handleAdminError(error || (data && data.message))) alert('忽略失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+                    return;
+                }
+                alert('已忽略');
+                loadCommentReports(); loadDashboard();
+            };
+        });
+        document.querySelectorAll('.report-checkbox').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const id = parseInt(e.target.dataset.id);
+                if (e.target.checked) selectedReportIds.add(id);
+                else selectedReportIds.delete(id);
+                updateBatchBar();
+            });
+        });
+    }
+
+    function updateBatchBar() {
+        const count = selectedReportIds.size;
+        document.getElementById('selectedCount').innerText = count;
+        document.getElementById('batchActions').style.display = count > 0 ? 'flex' : 'none';
+    }
+
+    async function batchIgnore() {
+        if (!confirm(`确定忽略 ${selectedReportIds.size} 条举报吗？`)) return;
+        const ids = Array.from(selectedReportIds);
+        const { data, error } = await supabaseClient.rpc('admin_batch_ignore', {
+            p_report_ids: ids,
+            p_token: getToken()
+        });
+        if (error || !data || !data.success) {
+            if (!handleAdminError(error || (data && data.message))) alert('批量忽略失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+            return;
+        }
+        alert('批量忽略完成');
+        selectedReportIds.clear();
+        loadCommentReports(); loadDashboard();
+    }
+    async function batchDeleteComments() {
+        const commentIds = new Set();
+        for (let report of currentReports) if (selectedReportIds.has(report.id) && report.comments?.id) commentIds.add(report.comments.id);
+        if (commentIds.size === 0) { alert('无有效评论'); return; }
+        if (!confirm(`确定删除 ${commentIds.size} 条评论吗？`)) return;
+        const { data, error } = await supabaseClient.rpc('admin_batch_delete_comments', {
+            p_comment_ids: Array.from(commentIds),
+            p_token: getToken()
+        });
+        if (error || !data || !data.success) {
+            if (!handleAdminError(error || (data && data.message))) alert('批量删除失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+            return;
+        }
+        await supabaseClient.rpc('admin_batch_ignore', { p_report_ids: Array.from(selectedReportIds), p_token: getToken() });
+        alert('批量删除完成');
+        selectedReportIds.clear();
+        loadCommentReports(); loadDashboard(); loadBannedUsers();
+    }
+    async function batchBanUsers() {
+        const userIds = new Set();
+        for (let report of currentReports) if (selectedReportIds.has(report.id) && report.comments?.user_id) userIds.add(report.comments.user_id);
+        if (userIds.size === 0) { alert('无有效用户'); return; }
+        if (!confirm(`确定封禁 ${userIds.size} 个用户吗？`)) return;
+        const { data, error } = await supabaseClient.rpc('admin_batch_ban_users', {
+            p_user_ids: Array.from(userIds),
+            p_token: getToken()
+        });
+        if (error || !data || !data.success) {
+            if (!handleAdminError(error || (data && data.message))) alert('批量封禁失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+            return;
+        }
+        await supabaseClient.rpc('admin_batch_ignore', { p_report_ids: Array.from(selectedReportIds), p_token: getToken() });
+        alert('批量封禁完成');
+        selectedReportIds.clear();
+        loadCommentReports(); loadDashboard(); loadBannedUsers();
+    }
+
+    function renderPagination() {
+        const totalPages = Math.ceil(totalReports / pageSize);
+        if (totalPages <= 1) return;
+        let html = '';
+        for (let i = 1; i <= totalPages; i++) {
+            html += `<button class="${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+        }
+        const paginationDiv = document.getElementById('pagination');
+        paginationDiv.innerHTML = html;
+        paginationDiv.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => { currentPage = parseInt(btn.dataset.page); loadCommentReports(); });
+        });
+    }
+
+    // ==================== 公司举报相关 ====================
+    async function loadCompanyReports() {
+    const container = document.getElementById('companyReportsContainer');
+    container.innerHTML = '<div class="loading">加载中...</div>';
+    try {
+        const { data, error } = await supabaseClient
+            .from('reports')
+            .select(`
+                id,
+                reason,
+                created_at,
+                company_id,
+                reporter:profiles!reports_reporter_user_id_fkey (username),
+                companies:user_companies!inner (
+                    id,
+                    company_name,
+                    user_id,
+                    profiles!inner (username)
+                )
+            `)
+            .eq('target_type', 'company')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="loading">暂无公司举报记录</div>';
+            return;
+        }
+
+        let html = '';
+        for (const report of data) {
+            const company = report.companies;
+            const companyId = company?.id || report.company_id;
+            const ownerName = company?.profiles?.username || '未知用户';
+            const reporterName = report.reporter?.username || '未知';
+            const companyName = company?.company_name || '已删除公司';
+
+            html += `
+                <div class="report-card" data-report-id="${report.id}">
+                    <div class="card-header">
+                        <strong>🏢 公司举报 #${report.id}</strong>
+                        <div class="report-time">📅 ${formatDate(report.created_at)}</div>
+                    </div>
+                    <div class="company-info">
+                        <strong>被举报公司：</strong> ${escapeHtml(companyName)}<br>
+                        <strong>所有者：</strong> ${escapeHtml(ownerName)} (ID: ${company?.user_id || '未知'})
+                    </div>
+                    <div class="report-meta">
+                        <span>📢 <strong>举报原因：</strong> ${escapeHtml(report.reason)}</span>
+                        <span>🔍 <strong>举报人：</strong> ${escapeHtml(reporterName)}</span>
+                    </div>
+                    <div class="report-actions">
+                        <button class="ignore-company" data-report-id="${report.id}">🙈 忽略举报</button>
+                        <button class="ban-owner" data-user-id="${company?.user_id}" data-report-id="${report.id}">🚫 封禁所有者</button>
+                        <button class="delete-company" data-company-id="${companyId}" data-company-name="${escapeHtml(companyName)}" data-report-id="${report.id}" data-owner-id="${company?.user_id}">🗑️ 删除公司</button>
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+
+        // 直接在这里绑定事件
+        container.querySelectorAll('.ignore-company').forEach(btn => {
+            btn.onclick = async function() {
+                const reportId = parseInt(this.dataset.reportId);
+                if (!confirm('确定忽略此公司举报吗？')) return;
+                const { data, error } = await supabaseClient.rpc('admin_ignore_report', {
+                    p_report_id: reportId,
+                    p_token: getToken()
+                });
+                if (error || !data || !data.success) {
+                    if (!handleAdminError(error || (data && data.message))) alert('忽略失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+                    return;
+                }
+                alert('已忽略'); loadCompanyReports(); loadDashboard();
+            };
+        });
+
+        container.querySelectorAll('.ban-owner').forEach(btn => {
+            btn.onclick = async function() {
+                const userId = this.dataset.userId;
+                const reportId = parseInt(this.dataset.reportId);
+                if (!confirm('确定封禁该用户吗？')) return;
+                const { data, error } = await supabaseClient.rpc('admin_batch_ban_users', {
+                    p_user_ids: [userId],
+                    p_token: getToken()
+                });
+                if (error || !data || !data.success) {
+                    if (!handleAdminError(error || (data && data.message))) alert('封禁失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+                    return;
+                }
+                await supabaseClient.rpc('admin_batch_ignore', { p_report_ids: [reportId], p_token: getToken() });
+                alert('用户已封禁');
+                loadCompanyReports(); loadDashboard(); loadBannedUsers();
+            };
+        });
+
+        container.querySelectorAll('.delete-company').forEach(btn => {
+            btn.onclick = async function() {
+                const companyId = parseInt(this.dataset.companyId);
+                const companyName = this.dataset.companyName || '未知公司';
+                const reportId = parseInt(this.dataset.reportId);
+
+                if (isNaN(companyId) || companyId <= 0) {
+                    alert('公司ID无效');
+                    return;
+                }
+                if (!confirm(`确定删除公司“${companyName}”吗？`)) return;
+
+                const { data, error } = await supabaseClient.rpc('admin_delete_company', {
+                    p_company_id: companyId,
+                    p_token: getToken()
+                });
+                if (error || !data || !data.success) {
+                    if (!handleAdminError(error || (data && data.message))) alert('删除失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+                    return;
+                }
+                await supabaseClient.rpc('admin_batch_ignore', { p_report_ids: [reportId], p_token: getToken() });
+                alert('公司已删除');
+                loadCompanyReports(); loadDashboard(); loadBannedUsers();
+            };
+        });
+    } catch (err) {
+        console.error('加载失败:', err);
+        container.innerHTML = `<div class="error">加载失败: ${err.message}</div>`;
+    }
+}
+
+    // ==================== 公司认证审核 ====================
+    async function loadVerificationRequests() {
+        const container = document.getElementById('verificationContainer');
+        container.innerHTML = '<div class="loading">加载中...</div>';
+        try {
+            const { data, error } = await supabaseClient
+                .from('user_companies')
+                .select(`
+                    id, company_name, created_at, user_id,
+                    profiles!inner(username)
+                `)
+                .eq('verification_status', 'pending')
+                .order('created_at', { ascending: true });
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="loading">暂无待认证的公司</div>';
+                return;
+            }
+            let html = '';
+            for (const company of data) {
+                html += `
+                    <div class="report-card" data-company-id="${company.id}">
+                        <div class="card-header">
+                            <strong>🏢 公司名称：${escapeHtml(company.company_name)}</strong>
+                            <div class="report-time">📅 申请时间：${formatDate(company.created_at)}</div>
+                        </div>
+                        <div class="company-info">
+                            <strong>所有者：</strong> ${escapeHtml(company.profiles.username)} (ID: ${company.user_id})
+                        </div>
+                        <div class="report-actions">
+                            <button class="approve-company" data-company-id="${company.id}" data-company-name="${escapeHtml(company.company_name)}">✅ 通过认证</button>
+                            <button class="reject-company" data-company-id="${company.id}" data-company-name="${escapeHtml(company.company_name)}">❌ 拒绝认证</button>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+            attachVerificationEvents();
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = `<div class="error">加载失败: ${err.message}</div>`;
+        }
+    }
+
+    function attachVerificationEvents() {
+        document.querySelectorAll('.approve-company').forEach(btn => {
+            btn.onclick = async () => {
+                const companyId = parseInt(btn.dataset.companyId);
+                const companyName = btn.dataset.companyName;
+                if (!confirm(`确定通过公司“${companyName}”的认证申请吗？`)) return;
+                const { data, error } = await supabaseClient.rpc('admin_verify_company', {
+                    p_company_id: companyId,
+                    p_approved: true,
+                    p_token: getToken()
+                });
+                if (error || !data || !data.success) {
+                    if (!handleAdminError(error || (data && data.message))) alert('操作失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+                    return;
+                }
+                alert('已通过认证');
+                loadVerificationRequests();
+                loadDashboard();
+            };
+        });
+        document.querySelectorAll('.reject-company').forEach(btn => {
+            btn.onclick = async () => {
+                const companyId = parseInt(btn.dataset.companyId);
+                const companyName = btn.dataset.companyName;
+                if (!confirm(`确定拒绝公司“${companyName}”的认证申请吗？`)) return;
+                const { data, error } = await supabaseClient.rpc('admin_verify_company', {
+                    p_company_id: companyId,
+                    p_approved: false,
+                    p_token: getToken()
+                });
+                if (error || !data || !data.success) {
+                    if (!handleAdminError(error || (data && data.message))) alert('操作失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+                    return;
+                }
+                alert('已拒绝认证');
+                loadVerificationRequests();
+                loadDashboard();
+            };
+        });
+    }
+
+    // ==================== 封禁用户列表 ====================
+    async function loadBannedUsers() {
+        const container = document.getElementById('bannedUsersList');
+        container.innerHTML = '加载中...';
+        try {
+            const { data, error } = await supabaseClient.from('profiles').select('id, username, is_banned').eq('is_banned', true);
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div>暂无封禁用户</div>';
+                return;
+            }
+            let html = '';
+            for (const user of data) {
+                html += `<div class="banned-user-item">
+                    <span><strong>${escapeHtml(user.username)}</strong> (ID: ${user.id})</span>
+                    <button class="unban-btn" data-user-id="${user.id}" style="background:#28a745;">🔓 解封</button>
+                </div>`;
+            }
+            container.innerHTML = html;
+            document.querySelectorAll('.unban-btn').forEach(btn => {
+                btn.onclick = async () => {
+                    if (!confirm('确定解封该用户吗？')) return;
+                    const { data, error } = await supabaseClient.rpc('admin_unban_user', {
+                        p_user_id: btn.dataset.userId,
+                        p_token: getToken()
+                    });
+                    if (error || !data || !data.success) {
+                        if (!handleAdminError(error || (data && data.message))) alert('解封失败：' + ((error && error.message) || (data && data.message) || '未知错误'));
+                        return;
+                    }
+                    alert('解封成功');
+                    loadDashboard(); loadBannedUsers();
+                    if (currentTab === 'comments') loadCommentReports();
+                    else if (currentTab === 'companies') loadCompanyReports();
+                    else loadVerificationRequests();
+                };
+            });
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = '<div>加载封禁用户失败: ' + err.message + '</div>';
+        }
+    }
+
+    // ==================== 登录和标签页切换 ====================
+    async function checkPassword(pwd) {
+        // 先校验密码（复用原 RPC），通过后由服务端签发会话 token
+        const { data, error } = await supabaseClient.rpc('check_admin_password_plain', { input_pwd: pwd });
+        if (error) throw new Error(error.message);
+        if (!data) return false;
+        const ip = await getClientIP();
+        const sessionRes = await supabaseClient.rpc('admin_create_session', {
+            p_pwd: pwd,
+            p_ip: ip
+        });
+        if (sessionRes.error) throw new Error(sessionRes.error.message);
+        if (!sessionRes.data || !sessionRes.data.success) {
+            throw new Error((sessionRes.data && sessionRes.data.message) || '创建会话失败');
+        }
+        adminToken = sessionRes.data.token;
+        sessionStorage.setItem('admin_token', adminToken);
+        return true;
+    }
+
+    function showLoginModal() {
+        const modal = document.getElementById('loginModal');
+        modal.style.display = 'flex';
+        document.getElementById('doLogin').onclick = async () => {
+            const pwd = document.getElementById('adminPassword').value;
+            const errorDiv = document.getElementById('loginError');
+            try {
+                const ok = await checkPassword(pwd);
+                if (ok) {
+                    isLoggedIn = true;
+                    modal.style.display = 'none';
+                    initAdminPage();
+                } else {
+                    errorDiv.innerText = '密码错误';
+                }
+            } catch (err) {
+                errorDiv.innerText = '验证失败: ' + err.message;
+            }
+        };
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        const panels = ['commentFilters','batchActions','reportsContainer','pagination','companyReportsContainer','verificationContainer'];
+        const tabs = ['tabComments','tabCompanies','tabVerification','tabAnnounce','tabApi'];
+        function hideAll() { panels.forEach(function (id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }); }
+        function hidePanels() { ['announcePanel','apiPanel'].forEach(function (id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }); }
+        tabs.forEach(function (id) { const el = document.getElementById(id); if (el) el.classList.remove('active'); });
+        const tabEl = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+        if (tabEl) tabEl.classList.add('active');
+        hideAll(); hidePanels();
+        if (tab === 'comments') {
+            document.getElementById('commentFilters').style.display = 'flex';
+            document.getElementById('batchActions').style.display = selectedReportIds.size > 0 ? 'flex' : 'none';
+            document.getElementById('reportsContainer').style.display = 'block';
+            document.getElementById('pagination').style.display = 'flex';
+            loadCommentReports();
+        } else if (tab === 'companies') {
+            document.getElementById('companyReportsContainer').style.display = 'block';
+            loadCompanyReports();
+        } else if (tab === 'verification') {
+            document.getElementById('verificationContainer').style.display = 'block';
+            loadVerificationRequests();
+        } else if (tab === 'announce') {
+            document.getElementById('announcePanel').style.display = 'block';
+            if (typeof window.__annLoad === 'function') window.__annLoad();
+        } else if (tab === 'api') {
+            document.getElementById('apiPanel').style.display = 'block';
+            if (typeof window.__apiLoadAll === 'function') window.__apiLoadAll();
+        }
+    }
+
+    async function initAdminPage() {
+        await loadDashboard();
+        await loadBannedUsers();
+        switchTab('comments');
+        document.getElementById('applyFilter').onclick = () => {
+            currentDateRange = document.getElementById('dateRange').value;
+            currentPage = 1;
+            selectedReportIds.clear();
+            loadCommentReports();
+        };
+        document.getElementById('refreshBtn').onclick = () => {
+            if (currentTab === 'comments') loadCommentReports();
+            else if (currentTab === 'companies') loadCompanyReports();
+            else loadVerificationRequests();
+            loadDashboard();
+            loadBannedUsers();
+        };
+        document.getElementById('batchIgnore').onclick = batchIgnore;
+        document.getElementById('batchDelete').onclick = batchDeleteComments;
+        document.getElementById('batchBan').onclick = batchBanUsers;
+        document.getElementById('clearSelection').onclick = () => { selectedReportIds.clear(); loadCommentReports(); };
+        document.getElementById('tabComments').onclick = () => switchTab('comments');
+        document.getElementById('tabCompanies').onclick = () => switchTab('companies');
+        document.getElementById('tabVerification').onclick = () => switchTab('verification');
+        document.getElementById('tabAnnounce').onclick = () => switchTab('announce');
+        document.getElementById('tabApi').onclick = () => switchTab('api');
+        const st = document.getElementById('sessionState');
+        if (st) st.textContent = '已登录(30 分钟有效)';
+        const lo = document.getElementById('logoutBtn');
+        if (lo) lo.onclick = function () {
+            adminToken = '';
+            sessionStorage.removeItem('admin_token');
+            location.reload();
+        };
+    }
+
+    // 启动：token 需通过服务端校验，伪造 sessionStorage 无效
+    (async function bootstrap() {
+        if (adminToken) {
+            const { data: valid, error } = await supabaseClient.rpc('admin_check_session', { p_token: adminToken });
+            if (!error && valid) {
+                isLoggedIn = true;
+                initAdminPage();
+                return;
+            }
+            // 会话失效或伪造：清除并回到登录框
+            adminToken = '';
+            sessionStorage.removeItem('admin_token');
+        }
+        showLoginModal();
+    })();
+
+
+// ==================== 公告管理(合并自 admin-announcement) ====================
+(function () {
+    const MAX_LEN = 2000;
+    const textEl = document.getElementById('announcementText');
+    const statusEl = document.getElementById('annStatus');
+    function setStatus(msg, ok) {
+        if (!statusEl) return;
+        statusEl.innerText = msg;
+        statusEl.style.color = ok ? '#1a7f37' : '#e74c3c';
+    }
+    function escapeHtml(s) {
+        if (!s) return '';
+        return String(s).replace(/[&<>"']/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]; });
+    }
+    function linkify(s) {
+        if (!s) return '';
+        return s.replace(/(https?:\/\/[^\s<>"']+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#00a1d6;text-decoration:underline;">$1</a>');
+    }
+    window.renderAnnouncePreview = function () {
+        const t = textEl ? textEl.value : '';
+        const pc = document.getElementById('annPreview');
+        const cc = document.getElementById('charCount');
+        if (cc) cc.innerText = t.length;
+        if (pc) pc.innerHTML = t.trim() ? '📢 <strong>公告：</strong>' + linkify(escapeHtml(t)) : '<span style="color:#8a94a6;">(暂无公告)</span>';
+    };
+    async function loadAnnouncement() {
+        try {
+            const { data, error } = await supabaseClient.from('admin_config').select('value').eq('key', 'announcement').maybeSingle();
+            if (error) throw error;
+            if (textEl) textEl.value = (data && data.value) || '';
+            window.renderAnnouncePreview();
+        } catch (err) {
+            setStatus('读取当前公告失败：' + err.message, false);
+        }
+    }
+    async function saveAnnouncement(clear) {
+        const txt = clear ? '' : (textEl ? textEl.value : '');
+        if (!clear && txt.length > MAX_LEN) { setStatus('内容太长(' + txt.length + ' 字),最多 ' + MAX_LEN + ' 字', false); return; }
+        try {
+            const { data, error } = await supabaseClient.rpc('admin_update_announcement', { p_token: getToken(), p_text: txt });
+            if (error) throw error;
+            if (!data || !data.success) throw new Error((data && data.message) || '保存失败');
+            setStatus('✅ ' + (data.message || '已保存'), true);
+            if (clear && textEl) textEl.value = '';
+            window.renderAnnouncePreview();
+        } catch (err) {
+            setStatus('保存失败：' + err.message, false);
+        }
+    }
+    const sb = document.getElementById('annSaveBtn');
+    const cb = document.getElementById('annClearBtn');
+    const rb = document.getElementById('annReloadBtn');
+    if (sb) sb.onclick = function () { saveAnnouncement(false); };
+    if (cb) cb.onclick = function () { saveAnnouncement(true); };
+    if (rb) rb.onclick = loadAnnouncement;
+    window.__annLoad = loadAnnouncement;
+})();
+
+// ==================== API 访问日志(合并自 admin-api-logs) ====================
+(function () {
+    function statusBadge(s) {
+        s = Number(s);
+        const cls = s === 200 ? 'background:#e6f7e6;color:#1a7f37;' : (s === 429 ? 'background:#ffe9e9;color:#c0392b;' : (s >= 500 ? 'background:#fde8e8;color:#b91c1c;' : 'background:#fff3d6;color:#b7791f;'));
+        return '<span style="display:inline-block;padding:1px 9px;border-radius:20px;font-size:0.76rem;font-weight:700;' + cls + '">' + s + '</span>';
+    }
+    function renderKV(elId, rows) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        if (!rows || !rows.length) { el.innerHTML = '<div style="padding:6px 0;color:#8a94a6;">暂无数据</div>'; return; }
+        el.innerHTML = rows.map(function (r) {
+            return '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed #e2e8f0;font-size:0.86rem;"><span style="color:#6c757d;word-break:break-all;">' + (r.ip || r.endpoint || '(空)') + '</span><b>' + r.n + '</b></div>';
+        }).join('');
+    }
+    async function loadSummary() {
+        const { data, error } = await supabaseClient.rpc('admin_api_log_summary', { p_token: getToken() });
+        if (error || !data || !data.ok) return;
+        const set = function (id, v) { const el = document.getElementById(id); if (el) el.textContent = v; };
+        set('sToday', data.today); set('s429', data.rate_limited); set('sTotal', data.total); set('sLast', data.last || '暂无');
+        renderKV('topEndpoints', data.endpoints); renderKV('topIps', data.ips);
+    }
+    async function loadLogs() {
+        const body = document.getElementById('apiBody');
+        if (body) body.innerHTML = '<tr><td colspan="6">加载中...</td></tr>';
+        const { data, error } = await supabaseClient.rpc('admin_get_api_logs', {
+            p_token: getToken(),
+            p_limit: parseInt((document.getElementById('fLimit') || {}).value, 10) || 300,
+            p_endpoint: ((document.getElementById('fEndpoint') || {}).value || '').trim() || null,
+            p_ip: ((document.getElementById('fIp') || {}).value || '').trim() || null,
+            p_status: ((document.getElementById('fStatus') || {}).value) ? parseInt(document.getElementById('fStatus').value, 10) : null
+        });
+        if (error || !data || !data.ok) {
+            if (body) body.innerHTML = '<tr><td colspan="6" style="color:#e74c3c;">查询失败: ' + ((error && error.message) || (data && data.message) || '未知') + '</td></tr>';
+            return;
+        }
+        const rows = data.rows || [];
+        if (body) {
+            if (!rows.length) { body.innerHTML = '<tr><td colspan="6">没有符合条件的记录</td></tr>'; return; }
+            body.innerHTML = rows.map(function (r) {
+                return '<tr><td style="padding:7px 10px;border-bottom:1px solid #eef1f5;white-space:nowrap;color:#6c757d;">' + (r.ts || '') + '</td>' +
+                    '<td style="padding:7px 10px;border-bottom:1px solid #eef1f5;"><b>' + (r.endpoint || '') + '</b></td>' +
+                    '<td style="padding:7px 10px;border-bottom:1px solid #eef1f5;">' + (r.method || '') + '</td>' +
+                    '<td style="padding:7px 10px;border-bottom:1px solid #eef1f5;">' + (r.ip || '') + '</td>' +
+                    '<td style="padding:7px 10px;border-bottom:1px solid #eef1f5;">' + statusBadge(r.status) + '</td>' +
+                    '<td style="padding:7px 10px;border-bottom:1px solid #eef1f5;color:#8a94a6;">' + ((r.ua || '').slice(0, 60)) + '</td></tr>';
+            }).join('');
+        }
+    }
+    window.__apiLoadAll = function () { loadSummary(); loadLogs(); };
+    const af = document.getElementById('apiApply');
+    const ar = document.getElementById('apiRefresh');
+    const ap = document.getElementById('apiPurge');
+    if (af) af.onclick = loadLogs;
+    if (ar) ar.onclick = window.__apiLoadAll;
+    if (ap) ap.onclick = async function () {
+        if (!confirm('确认删除 30 天前的全部 API 日志?不可恢复')) return;
+        const { data, error } = await supabaseClient.rpc('admin_api_logs_purge', { p_token: getToken(), p_keep_days: 30 });
+        if (error || !data || !data.ok) { alert('清理失败: ' + ((error && error.message) || (data && data.message) || '未知')); return; }
+        alert('已删除 ' + data.deleted + ' 条旧日志');
+        loadSummary(); loadLogs();
+    };
+})();
+
+</script>
+</body>
+</html>
