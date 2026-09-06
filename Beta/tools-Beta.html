@@ -273,9 +273,25 @@ html.dark .tl-out .big.gold { color: #fbbf24; }
 .pt-note { font-size: .76rem; color: var(--ink-faint); }
 .pt-scroll { overflow-x: auto; padding: 4px 0 8px; -webkit-overflow-scrolling: touch; }
 .ptable {
-    display: grid; grid-template-columns: repeat(18, 1fr); gap: 4px;
-    min-width: 940px;
+    display: grid; grid-template-columns: 30px repeat(18, minmax(42px, 1fr)); gap: 4px;
+    min-width: 880px;
 }
+/* 行列坐标:顶部族号 + 左侧周期号 */
+.pcorner { height: 24px; }
+.pgrp {
+    height: 24px; display: grid; place-items: center;
+    font-size: .68rem; font-weight: 700; color: var(--ink-faint);
+    user-select: none; letter-spacing: .5px;
+    border-bottom: 1px dashed var(--line); align-self: end;
+}
+.pper {
+    display: grid; place-items: center;
+    font-size: .74rem; font-weight: 800; color: var(--ink-faint);
+    user-select: none; letter-spacing: .5px; min-height: 52px;
+}
+.pper.per-f { writing-mode: vertical-rl; font-size: 11px; font-weight: 700; letter-spacing: 3px; opacity: .9; }
+.pper.spacer { min-height: 12px; }
+.psep { min-height: 12px; }
 .pcell {
     position: relative; min-height: 52px; border-radius: 8px; padding: 5px 3px 3px;
     text-align: center; cursor: pointer; color: #172033;
@@ -316,7 +332,16 @@ html.dark .pcell.empty, html.dark .pcell.hole { color: var(--ink-faint); }
     animation: tlfade .3s cubic-bezier(.16,1,.3,1) both;
 }
 .el-box .el-sym { font-size: 3.4rem; font-weight: 900; letter-spacing: 2px; color: var(--brand); line-height: 1.2; }
-.el-box .el-name { font-size: 1.15rem; color: var(--ink-soft); margin-bottom: 16px; letter-spacing: 2px; }
+.el-box .el-name { font-size: 1.15rem; color: var(--ink-soft); margin-bottom: 6px; letter-spacing: 2px; }
+/* 电子层示意图 */
+.el-shellbox { display: flex; justify-content: center; margin: 2px 0 0; position: relative; }
+.sh-svg { width: min(100%, 290px); height: auto; display: block; margin: 0 auto; }
+.sh-ring { stroke: var(--ink-faint); stroke-width: 1.3; fill: none; opacity: .5; }
+.sh-dot { fill: var(--brand); }
+.sh-core { fill: var(--ink); }
+.sh-sym { fill: var(--bg); font-weight: 800; font-size: 15px; }
+.sh-letter { fill: var(--ink-faint); font-size: 8.5px; font-weight: 700; }
+.sh-note { font-size: .68rem; color: var(--ink-faint); margin: 0 0 8px; letter-spacing: 1px; }
 .el-box table { width: 100%; font-size: .9rem; border-collapse: collapse; margin: 4px 0 16px; }
 .el-box td { padding: 9px 8px; border-bottom: 1px dashed var(--line); text-align: left; }
 .el-box tr:last-child td { border-bottom: none; }
@@ -674,11 +699,14 @@ html.dark .pcell.empty, html.dark .pcell.hole { color: var(--ink-faint); }
     <div class="el-box" role="dialog" aria-modal="true" aria-label="元素详情">
         <div class="el-sym" id="elSym"></div>
         <div class="el-name" id="elName"></div>
+        <div class="el-shellbox" id="elShellBox"></div>
+        <div class="sh-note" id="elShellNote" style="display:none;">简化电子层模型 · 每个圆点 = 1 个电子</div>
         <table>
             <tr><td>原子序数</td><td id="elNum"></td></tr>
             <tr><td>原子量</td><td id="elMass"></td></tr>
             <tr><td>类别</td><td id="elCat"></td></tr>
             <tr><td>周期 / 族</td><td id="elPeriod"></td></tr>
+            <tr><td>电子层分布</td><td id="elShells"></td></tr>
             <tr><td>电子排布</td><td id="elConf"></td></tr>
         </table>
         <button class="el-close" id="elClose" type="button">关闭</button>
@@ -980,8 +1008,19 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
             if (!cells[row]) cells[row] = {};
             cells[row][col] = el;
         });
-        var html = '';
+        var html = '<div class="pcorner" title="列=族 · 行=周期"></div>';
+        for (var gc = 1; gc <= 18; gc++) {
+            html += '<div class="pgrp" title="第 ' + gc + ' 族">' + gc + '</div>';
+        }
         for (var r = 1; r <= 10; r++) {
+            // 行首:周期号(1-7),第8行为分隔留空,9/10 行标镧系/锕系
+            if (r === 8) {
+                html += '<div class="pper spacer"></div>';
+            } else if (r <= 7) {
+                html += '<div class="pper" title="第 ' + r + ' 周期">' + r + '</div>';
+            } else {
+                html += '<div class="pper per-f" title="' + (r === 9 ? '镧系 · 属第 6 周期' : '锕系 · 属第 7 周期') + '">' + (r === 9 ? '镧系' : '锕系') + '</div>';
+            }
             for (var c = 1; c <= 18; c++) {
                 var el = cells[r] && cells[r][c];
                 if (el) {
@@ -995,6 +1034,8 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
                     var mark = (r === 6 && c === 3) ? '<span class="psym">57-71</span>' :
                         (r === 7 && c === 3) ? '<span class="psym">89-103</span>' : '';
                     html += '<div class="pcell hole">' + mark + '</div>';
+                } else if (r === 8) {
+                    html += '<div class="pcell empty psep"></div>';
                 } else {
                     html += '<div class="pcell empty"></div>';
                 }
@@ -1019,7 +1060,73 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
         document.getElementById('elCat').innerText = el.cat;
         document.getElementById('elPeriod').innerText = '第 ' + (el.per === 9 ? 6 : el.per === 10 ? 7 : el.per) + ' 周期 / 第 ' + el.grp + ' 族';
         document.getElementById('elConf').innerText = el.conf || '—';
+        // 电子层分布(示意图 + 文字)
+        var sh = electronShells(el.n);
+        document.getElementById('elShells').innerText = sh.join(' · ');
+        document.getElementById('elShellBox').innerHTML = renderShellFig(el.sym, el.name, sh);
+        document.getElementById('elShellNote').style.display = 'block';
         document.getElementById('elModal').classList.add('show');
+    }
+
+    // ========== 电子层分布(按构造原理填充;标注已知例外) ==========
+    var SHELL_EX = {
+        24: [2, 8, 13, 1], 29: [2, 8, 18, 1],          // Cr Cu:4s¹ 3d⁵/³d¹⁰
+        41: [2, 8, 18, 12, 1], 42: [2, 8, 18, 13, 1],  // Nb Mo
+        44: [2, 8, 18, 15, 1], 45: [2, 8, 18, 16, 1], 46: [2, 8, 18, 18], 47: [2, 8, 18, 18, 1], // Ru Rh Pd Ag
+        57: [2, 8, 18, 18, 9, 2], 58: [2, 8, 18, 19, 9, 2], 64: [2, 8, 18, 25, 9, 2], // La Ce Gd:4f/5d 例外
+        78: [2, 8, 18, 32, 17, 1], 79: [2, 8, 18, 32, 18, 1], // Pt Au
+        89: [2, 8, 18, 32, 18, 9, 2], 90: [2, 8, 18, 32, 18, 10, 2], 91: [2, 8, 18, 32, 20, 9, 2],
+        92: [2, 8, 18, 32, 21, 9, 2], 93: [2, 8, 18, 32, 22, 9, 2], 96: [2, 8, 18, 32, 25, 9, 2],
+        103: [2, 8, 18, 32, 32, 8, 3]                 // Ac Th Pa U Np Cm / Lr
+    };
+    var SUB_CAPS = [
+        { n: 1, cap: 2 }, { n: 2, cap: 2 }, { n: 2, cap: 6 }, { n: 3, cap: 2 }, { n: 3, cap: 6 },
+        { n: 4, cap: 2 }, { n: 3, cap: 10 }, { n: 4, cap: 6 }, { n: 5, cap: 2 }, { n: 4, cap: 10 },
+        { n: 5, cap: 6 }, { n: 6, cap: 2 }, { n: 4, cap: 14 }, { n: 5, cap: 10 }, { n: 6, cap: 6 },
+        { n: 7, cap: 2 }, { n: 5, cap: 14 }, { n: 6, cap: 10 }, { n: 7, cap: 6 }
+    ];
+    function electronShells(z) {
+        if (SHELL_EX[z]) return SHELL_EX[z].slice();
+        var left = z;
+        var byN = {};
+        for (var i = 0; i < SUB_CAPS.length && left > 0; i++) {
+            var take = Math.min(SUB_CAPS[i].cap, left);
+            if (take > 0) {
+                byN[SUB_CAPS[i].n] = (byN[SUB_CAPS[i].n] || 0) + take;
+                left -= take;
+            }
+        }
+        var out = [];
+        for (var k = 1; k <= 7; k++) {
+            if (byN[k] === undefined && out.length === 0) continue;
+            out.push(byN[k] || 0);
+        }
+        while (out.length > 1 && out[out.length - 1] === 0) out.pop();
+        return out;
+    }
+    // ========== 电子层抽象图:同心环 + 电子点(SVG) ==========
+    var SHELL_LETTERS = ['K', 'L', 'M', 'N', 'O', 'P', 'Q'];
+    function renderShellFig(sym, name, shells) {
+        var CX = 150, CY = 150, R0 = 30, STEP = 17;
+        var s = '<svg class="sh-svg" viewBox="0 0 300 300" role="img" aria-label="' + name + '(' + sym + ')电子层模型">';
+        for (var i = 0; i < shells.length; i++) {
+            var r = R0 + i * STEP;
+            s += '<circle class="sh-ring" cx="' + CX + '" cy="' + CY + '" r="' + r + '"></circle>';
+            var cnt = shells[i];
+            for (var j = 0; j < cnt; j++) {
+                var ang = (j / cnt) * Math.PI * 2 - Math.PI / 2 + (i % 2) * 0.06;
+                var dx = CX + Math.cos(ang) * r;
+                var dy = CY + Math.sin(ang) * r;
+                s += '<circle class="sh-dot" cx="' + dx.toFixed(1) + '" cy="' + dy.toFixed(1) + '" r="4.4"></circle>';
+            }
+            if (shells.length > 1) {
+                s += '<text class="sh-letter" x="' + CX + '" y="' + (CY - r - 4) + '">' + SHELL_LETTERS[i] + '</text>';
+            }
+        }
+        s += '<circle class="sh-core" cx="' + CX + '" cy="' + CY + '" r="16"></circle>';
+        s += '<text class="sh-sym" x="' + CX + '" y="' + (CY + 5.5) + '" text-anchor="middle">' + sym + '</text>';
+        s += '</svg>';
+        return s;
     }
     document.getElementById('elClose').addEventListener('click', function () { document.getElementById('elModal').classList.remove('show'); });
     document.getElementById('elModal').addEventListener('click', function (e) {
