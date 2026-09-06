@@ -1036,7 +1036,7 @@ input:focus { border-color: rgba(59,130,246,.55); box-shadow: 0 0 0 3px rgba(59,
     </div>
 
     <div class="back-link">
-        <a href="index.html">← 返回首页</a>
+        <a href="index-Beta.html">← 返回首页</a>
     </div>
     </div><!-- /settingsSection -->
 </div>
@@ -1132,10 +1132,10 @@ input:focus { border-color: rgba(59,130,246,.55); box-shadow: 0 0 0 3px rgba(59,
             }
             if (pbEl) {
                 pbEl.textContent = '👤 ' + (storedU.username || storedU.name || '个人中心');
-                pbEl.href = '/profile.html';
+                pbEl.href = 'profile-Beta.html';
             }
         } else {
-            var loginHref = 'login-Beta.html?redirect=' + encodeURIComponent(location.href);
+            var loginHref = '/login.html?redirect=' + encodeURIComponent(location.href);
             if (abEl) { abEl.href = loginHref; abEl.textContent = '登录 / 注册'; }
             if (pbEl) { pbEl.href = loginHref; pbEl.textContent = '👤 个人中心'; }
         }
@@ -1294,7 +1294,7 @@ function uiHref(p) { return (p && p.indexOf('login.html') === 0) ? '/' + p : p; 
     async function loadSupporters() {
         const container = document.getElementById('supportersContainer');
         if (!myCompany) {
-            container.innerHTML = '<div class="no-data">您还没有注册虚拟公司，<a href="Virtual stock.html" style="color:var(--status-border);">前往注册</a></div>';
+            container.innerHTML = '<div class="no-data">您还没有注册虚拟公司，<a href="stock-Beta.html" style="color:var(--status-border);">前往注册</a></div>';
             return;
         }
         const { data, error } = await supabaseClient
@@ -1358,7 +1358,7 @@ function uiHref(p) { return (p && p.indexOf('login.html') === 0) ? '/' + p : p; 
             isOwner = true;
         } else {
             // 未登录且无参数：跳登录
-            window.location.href = uiHref('login-Beta.html?redirect=') + encodeURIComponent(window.location.href);
+            window.location.href = uiHref('login.html?redirect=') + encodeURIComponent(window.location.href);
             return;
         }
 
@@ -1855,7 +1855,7 @@ function uiHref(p) { return (p && p.indexOf('login.html') === 0) ? '/' + p : p; 
     }
     
     if (!rules || rules.length === 0) {
-        container.innerHTML = '<div class="no-data">暂无自动支持规则，<a href="Virtual stock.html" style="color:var(--status-border);">前往股票页面</a> 设置。</div>';
+        container.innerHTML = '<div class="no-data">暂无自动支持规则，<a href="stock-Beta.html" style="color:var(--status-border);">前往股票页面</a> 设置。</div>';
         return;
     }
     
@@ -2101,7 +2101,7 @@ function uiHref(p) { return (p && p.indexOf('login.html') === 0) ? '/' + p : p; 
             if (!data.success) throw new Error(data.message);
             await showMessage('成功', '密码修改成功，请重新登录');
             localStorage.removeItem('nb_user');
-            window.location.href = uiHref('login-Beta.html?redirect=') + encodeURIComponent('/index.html');
+            window.location.href = uiHref('login.html?redirect=') + encodeURIComponent('/index.html');
         } catch (err) {
             errorDiv.innerText = err.message;
         }
