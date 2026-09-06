@@ -554,7 +554,7 @@ html.dark .pcell.empty, html.dark .pcell.hole { color: var(--ink-faint); }
             <p class="vhero-sub">118 种元素周期表、摩尔质量、方程式配平与溶液换算——全部在浏览器里即时完成。支持括号、下标、结晶水合物,配平精确到有理数</p>
             <div class="vhero-actions">
                 <a class="hero-link" href="#tabPeriodic">元素周期表 ↓</a>
-                <a class="hero-link" href="#calcPanel">化学计算器 ↓</a>
+                <a class="hero-link" href="#tabCalc">化学计算器 ↓</a>
             </div>
         </div>
         <div class="pd-stats">
@@ -683,7 +683,7 @@ html.dark .pcell.empty, html.dark .pcell.hole { color: var(--ink-faint); }
         </div>
         <div>
             <h5>功能</h5>
-            <a href="stock-Beta.html">虚拟股票</a><a href="bank-Beta.html">NB银行</a><a href="comments-Beta.html">评论区</a><a href="/shop.html">NB商店</a><a href="tools-Beta.html">化学工具</a><a href="titles-Beta.html">称号系统</a>
+            <a href="stock-Beta.html">虚拟股票</a><a href="/bank.html">NB银行</a><a href="comments-Beta.html">评论区</a><a href="/shop.html">NB商店</a><a href="tools-Beta.html">化学工具</a><a href="titles-Beta.html">称号系统</a>
         </div>
         <div>
             <h5>友商</h5>
@@ -1555,6 +1555,15 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
     }
     document.getElementById('tabPeriodic').addEventListener('click', function () { switchToolTab('periodic'); });
     document.getElementById('tabCalc').addEventListener('click', function () { switchToolTab('calc'); });
+
+    // Hero 区快捷链接:跳转同时自动切换到对应面板
+    document.querySelectorAll('.vhero .hero-link').forEach(function (a) {
+        a.addEventListener('click', function () {
+            var h = a.getAttribute('href') || '';
+            if (h === '#tabPeriodic') switchToolTab('periodic');
+            else if (h === '#tabCalc') switchToolTab('calc');
+        });
+    });
 
     // ========== 示例按钮 ==========
     var formulaExamples = ['H2O', 'CO2', 'NaCl', 'CaCO3', 'H2SO4', 'Ca(OH)2', '(NH4)2SO4', 'CuSO4·5H2O', 'CH3COOH', 'C6H12O6'];
