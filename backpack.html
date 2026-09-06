@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -235,6 +235,9 @@
                         status = `待使用 ×${count}`;
                         statusCls = 'st-active';
                     }
+                } else {
+                    status = `待使用 ×${count}`;
+                    statusCls = 'st-active';
                 }
                 // 改色类道具（选一条生效中的）
                 if (['comment_color', 'nickname_color', 'chat_bubble', 'particle_fx'].includes(i.item_key)) {
@@ -250,8 +253,8 @@
                     const activeOne = list.find(x => x.active);
                     if (activeOne) actions += `<button data-act="checkin" data-id="${activeOne.id}">📝 去补签</button>`;
                 }
-                // 出售（未使用未过期的才能卖）
-                const sellable = list.filter(x => x.active);
+                // 出售：只有"待使用"的道具能卖（未启用、无到期时间）；正在使用的不可卖
+                const sellable = list.filter(x => x.active && !x.expires_at);
                 if (sellable.length > 0) {
                     actions += `<button data-act="sell" data-key="${i.item_key}" data-name="${escapeHtml(i.name)}" class="gray">💰 出售</button>`;
                 }
@@ -304,8 +307,8 @@
         const user = getCurrentUser();
         const { data, error } = await supabaseClient.rpc('get_my_items', { p_user_id: user.id });
         if (error || !data || !data.success) return;
-        // 可卖数量 + 单价80%
-        const sellable = (data.items || []).filter(i => i.item_key === itemKey && i.active);
+        // 可卖数量（仅"待使用"：未启用且无到期时间；正在使用的不回收）+ 单价80%
+        const sellable = (data.items || []).filter(i => i.item_key === itemKey && i.active && !i.expires_at);
         const count = sellable.length;
         if (count === 0) { await showMessage('提示', '没有可出售的道具'); return; }
         // 查购买价
