@@ -952,16 +952,30 @@
         };
         document.getElementById('cbDel').onclick = async function () {
             if (!companySel.size) { alert('请先勾选要删除的公司'); return; }
-            if (!confirm('删除选中的 ' + companySel.size + ' 家公司(连同举报记录)?此操作不可恢复!')) return;
+            if (!confirm('删除选中的 ' + companySel.size + ' 家公司(连同举报/持仓/蓝标)?此操作不可恢复!')) return;
             const boxes = Array.from(document.querySelectorAll('.cb-company:checked'));
+            let okCount = 0;
+            const errs = [];
             for (const b of boxes) {
                 const cid = parseInt(b.dataset.cid, 10);
-                if (isNaN(cid) || cid <= 0) continue;
-                await supabaseClient.rpc('admin_delete_company', { p_company_id: cid, p_token: getToken() });
+                if (isNaN(cid) || cid <= 0) { errs.push('ID 无效: ' + (b.dataset.cid || '空')); continue; }
+                const { data, error } = await supabaseClient.rpc('admin_delete_company', { p_company_id: cid, p_token: getToken() });
+                if (error || !data || !data.success) {
+                    const msg = (error && error.message) || (data && data.message) || '未知错误';
+                    if (handleAdminError(error || (data && data.message))) return;
+                    errs.push('公司 ' + cid + ': ' + msg);
+                } else {
+                    okCount++;
+                }
             }
             const ids = Array.from(companySel).map(Number);
             await supabaseClient.rpc('admin_batch_ignore', { p_report_ids: ids, p_token: getToken() });
-            alert('已删除'); loadCompanyReports(); loadDashboard(); loadBannedUsers();
+            if (errs.length) {
+                alert((okCount ? '成功删除 ' + okCount + ' 家;' : '') + '以下删除失败:\n- ' + errs.slice(0, 5).join('\n- ') + (errs.length > 5 ? '\n…共 ' + errs.length + ' 条失败' : ''));
+            } else {
+                alert('已删除 ' + okCount + ' 家公司');
+            }
+            loadCompanyReports(); loadDashboard(); loadBannedUsers();
         };
         document.getElementById('vbApprove').onclick = function () { batchVerify(true); };
         document.getElementById('vbReject').onclick = function () { batchVerify(false); };
