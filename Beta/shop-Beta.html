@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="NB频道银行——活期/定期存款吃利息、抵押贷/信用贷周转,信誉分决定信用额度,存钱有利息·贷款可救急。">
+<meta name="description" content="NB频道商店——评论颜色、昵称变色、气泡皮肤、主页头图、称号展示位…用 NB币装点你的频道生活,装饰与功能道具一应俱全。">
 <meta name="theme-color" content="#0f172a">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233b82f6'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='43' font-family='Arial,sans-serif' font-size='26' font-weight='800' fill='%23fff' text-anchor='middle'%3ENB%3C/text%3E%3C/svg%3E">
-<title>NB银行 - NB频道官网</title>
+<title>NB商店 - NB频道官网</title>
 <script>
     (function () {
         try {
@@ -192,81 +192,81 @@ html.dark .nav-auth:hover { background: rgba(255,255,255,.1); border-color: rgba
 }
 
 /* ============ 正文 ============ */
-.bk-wrap { max-width: 1180px; margin: 0 auto; padding: 66px 40px 70px; }
+.sk-wrap { max-width: 1180px; margin: 0 auto; padding: 66px 40px 70px; }
 /* Tab 切换(品牌胶囊) */
-.bk-tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 30px; flex-wrap: wrap; }
-.bk-tab {
+.sk-tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 30px; flex-wrap: wrap; }
+.sk-tab {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 12px 34px; border-radius: 999px; cursor: pointer;
     border: 1px solid var(--line); background: var(--card); color: var(--ink-soft);
     font-size: 1rem; font-weight: 700; letter-spacing: .5px;
     box-shadow: var(--shadow-1); transition: all .25s ease;
 }
-.bk-tab:hover { border-color: rgba(59,130,246,.45); color: var(--brand); transform: translateY(-1px); }
-.bk-tab.active {
+.sk-tab:hover { border-color: rgba(59,130,246,.45); color: var(--brand); transform: translateY(-1px); }
+.sk-tab.active {
     background: linear-gradient(135deg, var(--brand), #6366f1);
     color: #fff; border-color: transparent;
     box-shadow: 0 12px 28px -12px rgba(59,130,246,.65);
 }
-.bk-panel { display: none; }
-.bk-panel.active { display: block; animation: tlfade .45s cubic-bezier(.16,1,.3,1) both; }
+.sk-panel { display: none; }
+.sk-panel.active { display: block; animation: tlfade .45s cubic-bezier(.16,1,.3,1) both; }
 @keyframes tlfade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
 /* 通用卡片 */
-.bk-card {
+.sk-card {
     background: var(--card); border: 1px solid var(--line);
     border-radius: var(--radius-lg); box-shadow: var(--shadow-1);
     padding: 24px;
 }
-.bk-card h3 { font-size: 1.12rem; font-weight: 800; letter-spacing: .5px; display: flex; align-items: center; gap: 8px; }
-.bk-help { font-size: .8rem; color: var(--ink-faint); margin: 8px 0 4px; line-height: 1.8; }
-.bk-inrow { display: flex; gap: 10px; margin: 12px 0 4px; flex-wrap: wrap; align-items: center; }
-.bk-field {
+.sk-card h3 { font-size: 1.12rem; font-weight: 800; letter-spacing: .5px; display: flex; align-items: center; gap: 8px; }
+.sk-help { font-size: .8rem; color: var(--ink-faint); margin: 8px 0 4px; line-height: 1.8; }
+.sk-inrow { display: flex; gap: 10px; margin: 12px 0 4px; flex-wrap: wrap; align-items: center; }
+.sk-field {
     flex: 1; min-width: 190px; padding: 11px 18px; border-radius: 999px;
     border: 1px solid var(--line); background: var(--bg); color: var(--ink);
     font-size: .98rem; font-family: Consolas, Menlo, monospace; outline: none;
     transition: border-color .2s ease, box-shadow .2s ease;
 }
-.bk-field:focus { border-color: rgba(59,130,246,.55); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
-.bk-field.num { flex: none; width: 128px; }
-.bk-field.wide { flex: 1; min-width: 190px; }
-.bk-btn {
+.sk-field:focus { border-color: rgba(59,130,246,.55); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+.sk-field.num { flex: none; width: 128px; }
+.sk-field.wide { flex: 1; min-width: 190px; }
+.sk-btn {
     border: none; border-radius: 999px; padding: 11px 26px; cursor: pointer;
     background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff;
     font-size: .95rem; font-weight: 700; letter-spacing: 1px;
     box-shadow: 0 8px 20px -8px rgba(59,130,246,.55);
     transition: all .22s ease; flex-shrink: 0;
 }
-.bk-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 26px -8px rgba(59,130,246,.6); }
-.bk-out {
+.sk-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 26px -8px rgba(59,130,246,.6); }
+.sk-out {
     margin-top: 14px; padding: 15px 18px; border-radius: 16px;
     background: var(--bg); border: 1px solid var(--line);
     font-size: .9rem; line-height: 2; min-height: 26px; white-space: pre-wrap;
     color: var(--ink-soft); word-break: break-word;
 }
-.bk-out .big { font-size: 1.28rem; font-weight: 800; color: var(--brand); letter-spacing: .3px; }
-.bk-out .big.gold { color: #d97706; }
-html.dark .bk-out .big.gold { color: #fbbf24; }
-.bk-out sub { font-size: .72em; }
-.bk-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 2px; }
-.bk-chip {
+.sk-out .big { font-size: 1.28rem; font-weight: 800; color: var(--brand); letter-spacing: .3px; }
+.sk-out .big.gold { color: #d97706; }
+html.dark .sk-out .big.gold { color: #fbbf24; }
+.sk-out sub { font-size: .72em; }
+.sk-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 2px; }
+.sk-chip {
     border: 1px solid var(--line); background: var(--bg); color: var(--ink-soft);
     border-radius: 999px; padding: 5px 14px; font-size: .78rem;
     cursor: pointer; font-family: Consolas, Menlo, monospace;
     transition: all .2s ease;
 }
-.bk-chip:hover { border-color: rgba(59,130,246,.5); color: var(--brand); background: rgba(59,130,246,.06); }
+.sk-chip:hover { border-color: rgba(59,130,246,.5); color: var(--brand); background: rgba(59,130,246,.06); }
 
 /* 计算器宫格 */
-.bk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.sk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 /* 溶液换算模式段选 */
-.bk-seg { display: inline-flex; gap: 6px; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 5px; }
-.bk-seg button {
+.sk-seg { display: inline-flex; gap: 6px; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 5px; }
+.sk-seg button {
     border: none; background: transparent; color: var(--ink-soft);
     border-radius: 999px; padding: 8px 18px; cursor: pointer; font-size: .86rem; font-weight: 700;
     transition: all .22s ease;
 }
-.bk-seg button.on { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; box-shadow: 0 6px 16px -8px rgba(59,130,246,.6); }
+.sk-seg button.on { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; box-shadow: 0 6px 16px -8px rgba(59,130,246,.6); }
 
 /* ============ 周期表 ============ */
 .pt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
@@ -444,7 +444,7 @@ html.dark .pcell.empty, html.dark .pcell.hole { color: var(--ink-faint); }
 /* 响应式 */
 @media (max-width: 900px) {
     .vhero { padding: 84px 24px 120px; }
-    .bk-wrap { padding: 50px 22px 40px; }
+    .sk-wrap { padding: 50px 22px 40px; }
     .footer { padding: 48px 24px 26px; }
 }
 @media (max-width: 760px) {
@@ -453,9 +453,9 @@ html.dark .pcell.empty, html.dark .pcell.hole { color: var(--ink-faint); }
     .vhero-inner { grid-template-columns: 1fr; gap: 40px; }
     .vhero h1 { font-size: 2.4rem; letter-spacing: 5px; }
     .pd-stats { display: none; }
-    .bk-wrap { padding: 36px 14px 30px; }
-    .bk-grid { grid-template-columns: 1fr; }
-    .bk-card { padding: 18px 16px; }
+    .sk-wrap { padding: 36px 14px 30px; }
+    .sk-grid { grid-template-columns: 1fr; }
+    .sk-card { padding: 18px 16px; }
     .footer-grid { grid-template-columns: 1fr; gap: 26px; }
     .backtop { right: 18px; bottom: 18px; width: 42px; height: 42px; }
 }
@@ -515,157 +515,138 @@ html.dark .pcell.empty, html.dark .pcell.hole { color: var(--ink-faint); }
         html { scroll-behavior: smooth; }
         [id] { scroll-margin-top: 86px; }
 
-/* ==================== NB银行 页面专用样式 ==================== */
-.bk-toolbar {
+/* ==================== NB商店 页面专用样式 ==================== */
+.sk-toolbar {
     display: flex; align-items: center; justify-content: space-between; gap: 14px;
-    flex-wrap: wrap; margin: 0 0 20px; padding: 16px 20px;
+    flex-wrap: wrap; margin: 0 0 26px; padding: 16px 20px;
     background: var(--card); border: 1px solid var(--line);
     border-radius: var(--radius-lg); box-shadow: var(--shadow-1);
 }
-.bk-tb-title { font-size: 1.12rem; font-weight: 800; letter-spacing: 1px; }
-.bk-tb-sub { font-size: .8rem; color: var(--ink-faint); margin-top: 3px; }
-.bk-tb-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.bk-balance-chip {
+.sk-tb-title { font-size: 1.12rem; font-weight: 800; letter-spacing: 1px; }
+.sk-tb-sub { font-size: .8rem; color: var(--ink-faint); margin-top: 3px; }
+.sk-tb-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sk-balance {
     display: inline-flex; align-items: center; gap: 6px;
     background: var(--bg); border: 1px solid var(--line); border-radius: 999px;
     padding: 7px 16px; font-size: .86rem; color: var(--ink-soft); font-weight: 600;
 }
-.bk-balance-chip b { color: #d97706; font-weight: 800; }
-html.dark .bk-balance-chip b { color: #fbbf24; }
-.bk-refresh {
+.sk-balance b { color: #d97706; font-weight: 800; }
+html.dark .sk-balance b { color: #fbbf24; }
+.sk-refresh {
     display: inline-flex; align-items: center; gap: 6px;
     border: 1px solid var(--line); background: var(--bg); color: var(--ink-soft);
     padding: 8px 18px; border-radius: 999px; cursor: pointer;
     font-size: .85rem; font-weight: 700; transition: all .25s ease;
 }
-.bk-refresh:hover { border-color: var(--brand); color: var(--brand); transform: translateY(-1px); }
-.bk-refresh.spin { animation: bkSpin .6s linear; }
-@keyframes bkSpin { to { transform: rotate(360deg); } }
+.sk-refresh:hover { border-color: var(--brand); color: var(--brand); transform: translateY(-1px); }
+.sk-refresh.spin { animation: skSpin .6s linear; }
+@keyframes skSpin { to { transform: rotate(360deg); } }
 
-.bk-state { text-align: center; padding: 80px 20px; color: var(--ink-faint); }
-.bk-state .bk-st-ico { font-size: 3rem; margin-bottom: 16px; }
-.bk-state h3 { color: var(--ink); font-size: 1.25rem; margin-bottom: 10px; letter-spacing: 1px; }
-.bk-state p { font-size: .92rem; line-height: 2; margin-bottom: 26px; }
-.bk-st-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-.bk-st-btn { display: inline-block; padding: 11px 30px; border-radius: 999px; font-size: .92rem; font-weight: 700; letter-spacing: 1px; }
-.bk-st-btn.login { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; box-shadow: 0 10px 24px -10px rgba(59,130,246,.6); }
-.bk-st-btn.ghost { background: var(--bg); color: var(--ink-soft); border: 1px solid var(--line); }
-.bk-dot { animation: bkDot 1.2s infinite both; }
-.bk-dot:nth-child(2) { animation-delay: .15s; }
-.bk-dot:nth-child(3) { animation-delay: .3s; }
-@keyframes bkDot { 0%, 60%, 100% { opacity: .2; } 30% { opacity: 1; } }
+.sk-state { text-align: center; padding: 80px 20px; color: var(--ink-faint); }
+.sk-state .sk-st-ico { font-size: 3rem; margin-bottom: 16px; }
+.sk-state h3 { color: var(--ink); font-size: 1.25rem; margin-bottom: 10px; letter-spacing: 1px; }
+.sk-state p { font-size: .92rem; line-height: 2; margin-bottom: 26px; }
+.sk-st-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.sk-st-btn { display: inline-block; padding: 11px 30px; border-radius: 999px; font-size: .92rem; font-weight: 700; letter-spacing: 1px; }
+.sk-st-btn.login { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; box-shadow: 0 10px 24px -10px rgba(59,130,246,.6); }
+.sk-st-btn.ghost { background: var(--bg); color: var(--ink-soft); border: 1px solid var(--line); }
+.sk-dot { animation: skDot 1.2s infinite both; }
+.sk-dot:nth-child(2) { animation-delay: .15s; }
+.sk-dot:nth-child(3) { animation-delay: .3s; }
+@keyframes skDot { 0%, 60%, 100% { opacity: .2; } 30% { opacity: 1; } }
 
-.bk-ov { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 22px; }
-@media (max-width: 1000px) { .bk-ov { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 640px) { .bk-ov { grid-template-columns: repeat(2, 1fr); } }
-.bk-ovc {
+.sk-sec { margin-bottom: 30px; }
+.sk-sec-h {
+    font-size: 1.1rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+}
+.sk-sec-h::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
+.sk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 16px; }
+.sk-card {
     background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-1); padding: 18px 10px; text-align: center;
+    box-shadow: var(--shadow-1); padding: 20px; display: flex; flex-direction: column; gap: 10px;
     transition: transform .3s ease, box-shadow .3s ease;
-    border-top: 3px solid var(--brand);
+    position: relative; overflow: hidden;
 }
-.bk-ovc:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
-.bk-ovc.dep { border-top-color: #22c55e; }
-.bk-ovc.fx { border-top-color: var(--brand); }
-.bk-ovc.loan { border-top-color: #f97316; }
-.bk-num { font-size: 1.5rem; font-weight: 800; color: var(--ink); word-break: break-all; line-height: 1.4; }
-.bk-num.long { font-size: 1.05rem; }
-.bk-lbl { font-size: .8rem; color: var(--ink-soft); margin-top: 5px; letter-spacing: 1px; }
-.bk-tip { font-size: .68rem; color: var(--ink-faint); margin-top: 3px; }
-
-.bk-sec {
-    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-1); padding: 22px 24px; margin-bottom: 20px;
+.sk-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); }
+.sk-card .sk-ico {
+    width: 52px; height: 52px; border-radius: 16px; font-size: 1.7rem;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(140deg, rgba(59,130,246,.12), rgba(139,92,246,.12));
 }
-.bk-sec-h { font-size: 1.08rem; font-weight: 800; letter-spacing: 1px; margin-bottom: 14px; }
-.bk-table { width: 100%; border-collapse: collapse; font-size: .88rem; min-width: 560px; }
-.bk-table th { padding: 9px 12px; text-align: left; background: var(--bg); border-bottom: 1px solid var(--line); color: var(--ink-faint); font-size: .8rem; letter-spacing: 1px; }
-.bk-table td { padding: 8px 12px; border-bottom: 1px dashed var(--line); color: var(--ink-soft); }
-.bk-table tr:last-child td { border-bottom: none; }
-.bk-table .td-up { color: #16a34a; font-weight: 700; white-space: nowrap; }
-.bk-table .td-down { color: #e11d48; font-weight: 700; white-space: nowrap; }
-html.dark .bk-table .td-up { color: #4ade80; }
-html.dark .bk-table .td-down { color: #fb7185; }
-.bk-alert {
-    background: rgba(231,76,60,.08); border: 1px solid rgba(231,76,60,.25);
-    color: #e11d48; border-radius: var(--radius-lg); padding: 12px 16px;
-    font-size: .86rem; line-height: 1.8; margin-bottom: 20px;
+.sk-card .sk-name { font-weight: 800; font-size: 1.08rem; letter-spacing: .3px; }
+.sk-card .sk-desc { font-size: .84rem; color: var(--ink-soft); line-height: 1.8; flex: 1; }
+.sk-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+.sk-badge { font-size: .7rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; letter-spacing: .3px; }
+.sk-badge.deco { background: rgba(124,77,255,.13); color: #7c4dff; }
+.sk-badge.func { background: rgba(59,130,246,.13); color: var(--brand); }
+.sk-badge.dur { background: rgba(34,197,94,.13); color: #16a34a; }
+.sk-badge.once { background: rgba(245,158,11,.15); color: #d97706; }
+html.dark .sk-badge.deco { color: #a78bfa; }
+html.dark .sk-badge.dur { color: #4ade80; }
+html.dark .sk-badge.once { color: #fbbf24; }
+.sk-rule-link { font-size: .76rem; color: var(--brand); text-decoration: underline; cursor: pointer; align-self: flex-start; }
+.sk-price { font-weight: 800; font-size: 1.08rem; color: #d97706; }
+html.dark .sk-price { color: #fbbf24; }
+.sk-buy-row { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+.sk-qty {
+    display: inline-flex; align-items: center; gap: 2px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px 4px;
+    flex-shrink: 0;
 }
-html.dark .bk-alert { color: #fb7185; }
-
-.bk-inrow { display: flex; gap: 10px; margin: 0 0 12px; flex-wrap: wrap; align-items: center; }
-.bk-field {
-    padding: 10px 16px; border-radius: 999px;
-    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
-    font-size: .95rem; outline: none; min-width: 150px;
-    transition: border-color .2s ease, box-shadow .2s ease;
-    font-family: inherit;
+.sk-qty button {
+    border: none; background: none; cursor: pointer; width: 30px; height: 30px;
+    border-radius: 50%; font-size: 1.15rem; line-height: 1; color: var(--ink);
+    transition: background .2s ease;
 }
-.bk-field:focus { border-color: rgba(59,130,246,.55); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
-.bk-field.num { min-width: 130px; }
-.bk-field.sel { min-width: 170px; cursor: pointer; }
-.bk-btn {
-    border: none; border-radius: 999px; padding: 10px 22px; cursor: pointer;
+.sk-qty button:hover { background: var(--line); filter: none; transform: none; }
+.sk-qty span { min-width: 28px; text-align: center; font-weight: 800; color: var(--brand); font-size: .95rem; }
+.sk-buy-btn {
+    flex: 1; border: none; border-radius: 999px; padding: 10px 8px; cursor: pointer;
     background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff;
-    font-size: .9rem; font-weight: 700; letter-spacing: .5px; font-family: inherit;
+    font-size: .92rem; font-weight: 700; letter-spacing: .5px; font-family: inherit;
     box-shadow: 0 8px 20px -8px rgba(59,130,246,.55); transition: all .22s ease;
 }
-.bk-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 26px -8px rgba(59,130,246,.6); }
-.bk-btn.green { background: linear-gradient(135deg, #22c55e, #16a34a); box-shadow: 0 8px 20px -8px rgba(34,197,94,.5); }
-.bk-btn.green:hover { box-shadow: 0 12px 26px -8px rgba(34,197,94,.6); }
-.bk-btn.gold { background: linear-gradient(135deg, #f59e0b, #f97316); box-shadow: 0 8px 20px -8px rgba(245,158,11,.5); }
-.bk-btn.gold:hover { box-shadow: 0 12px 26px -8px rgba(245,158,11,.6); }
-.bk-btn.ghost { background: var(--bg); color: var(--ink-soft); box-shadow: none; border: 1px solid var(--line); }
-.bk-btn.ghost:hover { border-color: var(--brand); color: var(--brand); }
-.bk-btn:disabled { opacity: .45; cursor: not-allowed; transform: none !important; }
-.bk-help { font-size: .8rem; color: var(--ink-faint); line-height: 1.9; }
-.bk-help.bk-red { color: #e11d48; }
-html.dark .bk-help.bk-red { color: #fb7185; }
-.bk-tag { display: inline-block; border-radius: 999px; padding: 2px 12px; font-size: .78rem; font-weight: 700; margin: 0 2px; }
-.bk-tag.green { background: rgba(34,197,94,.12); color: #16a34a; }
-.bk-tag.orange { background: rgba(245,158,11,.15); color: #d97706; }
-html.dark .bk-tag.green { color: #4ade80; }
-html.dark .bk-tag.orange { color: #fbbf24; }
+.sk-buy-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 26px -8px rgba(59,130,246,.6); }
 
-.bk-credit { background: var(--bg); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; }
-.bk-crow { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
-.bk-cscore { font-size: 2.2rem; font-weight: 900; color: var(--ink); line-height: 1.2; }
-.bk-cmax { color: var(--ink-faint); font-size: .9rem; }
-.bk-level { font-size: .95rem; font-weight: 800; padding: 4px 16px; border-radius: 999px; letter-spacing: 1px; }
-.bk-level.lv-red { background: rgba(231,76,60,.14); color: #e11d48; }
-.bk-level.lv-orange { background: rgba(255,152,0,.15); color: #d97706; }
-.bk-level.lv-yellow { background: rgba(255,193,7,.18); color: #b45309; }
-.bk-level.lv-green { background: rgba(34,197,94,.14); color: #16a34a; }
-html.dark .bk-level.lv-red { color: #f87171; }
-html.dark .bk-level.lv-orange { color: #fbbf24; }
-html.dark .bk-level.lv-yellow { color: #fcd34d; }
-html.dark .bk-level.lv-green { color: #4ade80; }
-.bk-cbar { height: 10px; background: var(--line); border-radius: 10px; margin-top: 12px; overflow: hidden; }
-.bk-cfill { height: 100%; background: linear-gradient(90deg, #ef4444, #f59e0b, #eab308, #22c55e); border-radius: 10px; transition: width .6s ease; }
-.bk-crules { font-size: .76rem; color: var(--ink-faint); line-height: 1.9; margin-top: 12px; }
-
-.bk-logs { max-height: 320px; overflow-y: auto; }
-.bk-log { display: flex; justify-content: space-between; gap: 12px; padding: 8px 4px; border-bottom: 1px dashed var(--line); font-size: .84rem; }
-.bk-log:last-child { border-bottom: none; }
-.bk-ld { color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; }
-.bk-la { font-weight: 800; white-space: nowrap; }
-.bk-la.in { color: #16a34a; }
-.bk-la.out { color: #e11d48; }
-html.dark .bk-la.in { color: #4ade80; }
-html.dark .bk-la.out { color: #fb7185; }
-
-.bk-toast {
+.sk-toast {
     position: fixed; top: 84px; left: 50%; transform: translateX(-50%) translateY(-8px);
     background: #0f172a; color: #fff; border-radius: 999px;
     padding: 12px 26px; font-size: .92rem; font-weight: 600;
-    box-shadow: 0 12px 30px rgba(0,0,0,.28); z-index: 9998;
+    box-shadow: 0 12px 30px rgba(0,0,0,.28); z-index: 9600;
     opacity: 0; pointer-events: none; transition: all .3s ease;
     max-width: 92vw; text-align: center; letter-spacing: .3px;
 }
-.bk-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.bk-toast.err { background: #dc2626; }
-html.dark .bk-toast { background: #1e293b; border: 1px solid rgba(148,163,184,.2); }
-html.dark .bk-toast.err { background: #991b1b; }
+.sk-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.sk-toast.err { background: #dc2626; }
+html.dark .sk-toast { background: #1e293b; border: 1px solid rgba(148,163,184,.2); }
+html.dark .sk-toast.err { background: #991b1b; }
+
+/* 规则 / 确认 弹窗 */
+.sk-ov {
+    display: none; position: fixed; inset: 0; z-index: 10000;
+    background: rgba(10,15,28,.55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    justify-content: center; align-items: center; padding: 22px;
+}
+.sk-ov.show { display: flex; }
+.sk-box {
+    background: var(--card); border-radius: 22px; padding: 26px 28px;
+    width: min(460px, 94vw); box-shadow: var(--shadow-2); border: 1px solid var(--line);
+    max-height: 84vh; display: flex; flex-direction: column;
+    animation: skPop .28s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes skPop { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+.sk-box h3 { font-size: 1.1rem; font-weight: 800; text-align: center; margin-bottom: 14px; letter-spacing: .5px; }
+.sk-box .sk-rules { overflow-y: auto; font-size: .88rem; color: var(--ink-soft); line-height: 1.9; }
+.sk-box .sk-rules p { margin: 5px 0; }
+.sk-box .sk-actions { display: flex; gap: 10px; justify-content: center; margin-top: 18px; }
+.sk-modal-btn {
+    border: none; border-radius: 999px; padding: 9px 30px; cursor: pointer; font-family: inherit;
+    font-size: .92rem; font-weight: 700; letter-spacing: 1px;
+}
+.sk-modal-btn.primary { background: linear-gradient(135deg, var(--brand), #6366f1); color: #fff; box-shadow: 0 8px 20px -8px rgba(59,130,246,.55); }
+.sk-modal-btn.gray { background: var(--bg); color: var(--ink-soft); border: 1px solid var(--line); }
+.sk-box .sk-msg { margin: 6px 0 4px; font-size: .92rem; line-height: 1.9; color: var(--ink-soft); text-align: center; white-space: pre-wrap; }
 
 </style>
 </head>
@@ -703,20 +684,20 @@ html.dark .bk-toast.err { background: #991b1b; }
 <header class="vhero">
     <div class="vhero-inner">
         <div class="hero-copy">
-            <span class="hero-eyebrow">NB BANK · 虚拟金融</span>
-            <h1>NB<span class="light">银行</span></h1>
-            <p class="vhero-sub">存钱有利息、贷款可救急、信誉分决定信用额度——虚拟公司的金融中枢,活期/定期/抵押贷/信用贷,每一笔都有记录</p>
+            <span class="hero-eyebrow">NB SHOP · 频道周边商城</span>
+            <h1>NB<span class="light">商店</span></h1>
+            <p class="vhero-sub">评论专属颜色、昵称变色卡、私信气泡皮肤、主页头图与粒子特效、称号展示位……用 NB币装点你的频道生活</p>
             <div class="vhero-actions">
-                <a class="hero-link" href="#content">进入银行 ↓</a>
-                <a class="hero-link" href="shop-Beta.html">NB商店 ↗</a>
+                <a class="hero-link" href="#shop">逛商店 ↓</a>
+                <a class="hero-link" href="/backpack.html">我的背包 ↗</a>
             </div>
         </div>
         <div class="pd-stats">
-            <div class="pd-row"><span class="k">活期利率</span><b>0.1% / 天</b></div>
-            <div class="pd-row"><span class="k">定期利率</span><b>7天 2% · 30天 10%</b></div>
-            <div class="pd-row"><span class="k">贷款</span><b>抵押 10% · 信用 12%</b></div>
-            <div class="pd-row"><span class="k">信用额度</span><b>信誉分 × 500~1500</b></div>
-            <div class="pd-tip">登录后查看存款 · 信誉 800+ 信用贷利率 9 折</div>
+            <div class="pd-row"><span class="k">商品分类</span><b>装饰 · 功能</b></div>
+            <div class="pd-row"><span class="k">计费方式</span><b>一次性 · 计时(天)</b></div>
+            <div class="pd-row"><span class="k">多件购买</span><b>可叠加 / 数量选择</b></div>
+            <div class="pd-row"><span class="k">续期</span><b>部分商品自动续期</b></div>
+            <div class="pd-tip">购买后到「背包」使用 · 规则以卡片内说明为准</div>
         </div>
     </div>
     <div class="vhero-fade"></div>
@@ -729,22 +710,22 @@ html.dark .bk-toast.err { background: #991b1b; }
 </div>
 
 
-<main class="bk-wrap">
-    <div class="bk-toolbar" id="content">
+<main class="sk-wrap">
+    <div class="sk-toolbar" id="shop">
         <div>
-            <div class="bk-tb-title">🏦 NB银行</div>
-            <div class="bk-tb-sub" id="bkUserNote">加载账号信息…</div>
+            <div class="sk-tb-title">🛍️ NB商店</div>
+            <div class="sk-tb-sub" id="skUserNote">用 NB币购买道具,装点你的频道生活</div>
         </div>
-        <div class="bk-tb-right">
-            <span class="bk-balance-chip" title="账户 NB币余额(非银行存款)">💰 NB币: <b id="balanceDisplay">--</b></span>
-            <button class="bk-refresh" id="refreshBtn" type="button">↻ 刷新</button>
+        <div class="sk-tb-right">
+            <span class="sk-balance" title="账户 NB币余额">💰 NB币: <b id="balanceDisplay">--</b></span>
+            <button class="sk-refresh" id="refreshBtn" type="button">↻ 刷新</button>
         </div>
     </div>
-    <div id="bkBody">
-        <div class="bk-state" id="bkLoading">
-            <div class="bk-st-ico">🏦</div>
-            <h3>银行数据加载中<span class="bk-dot">.</span><span class="bk-dot">.</span><span class="bk-dot">.</span></h3>
-            <p>正在同步存款与贷款信息</p>
+    <div id="skBody">
+        <div class="sk-state" id="skLoading">
+            <div class="sk-st-ico">🛍️</div>
+            <h3>商品加载中<span class="sk-dot">.</span><span class="sk-dot">.</span><span class="sk-dot">.</span></h3>
+            <p>正在上架今天的货品</p>
         </div>
     </div>
 </main>
@@ -757,7 +738,7 @@ html.dark .bk-toast.err { background: #991b1b; }
         </div>
         <div>
             <h5>功能</h5>
-            <a href="stock-Beta.html">虚拟股票</a><a href="bank-Beta.html">NB银行</a><a href="comments-Beta.html">评论区</a><a href="shop-Beta.html">NB商店</a><a href="tools-Beta.html">化学工具</a><a href="titles-Beta.html">称号系统</a>
+            <a href="stock-Beta.html">虚拟股票</a><a href="/bank.html">NB银行</a><a href="comments-Beta.html">评论区</a><a href="shop-Beta.html">NB商店</a><a href="tools-Beta.html">化学工具</a><a href="titles-Beta.html">称号系统</a>
         </div>
         <div>
             <h5>友商</h5>
@@ -805,7 +786,7 @@ html.dark .bk-toast.err { background: #991b1b; }
 <!-- 回到顶部 -->
 <button class="backtop" id="backTop" aria-label="回到顶部">↑</button>
 
-<div class="bk-toast" id="bkToast"></div>
+<div class="sk-toast" id="skToast"></div>
 <script>
     // ===== 入场渐显 =====
     (function () {
@@ -946,7 +927,7 @@ html.dark .bk-toast.err { background: #991b1b; }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-    // ===== NB银行:数据与应用逻辑(与经典版一致,全部走 Supabase RPC) =====
+    // ===== NB商店:数据与应用逻辑(与经典版一致) =====
     var supabaseClient = null;
     try {
         supabaseClient = supabase.createClient(
@@ -966,241 +947,272 @@ html.dark .bk-toast.err { background: #991b1b; }
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
         });
     }
-    function fmtBig(n) {
-        n = Number(n) || 0;
+    function fmtPrice(n) {
         if (n >= 100000000) return (n / 100000000).toFixed(2).replace(/\.?0+$/, '') + '亿';
         if (n >= 10000) return (n / 10000).toFixed(2).replace(/\.?0+$/, '') + '万';
         return String(n);
     }
-    function fmtFull(n) {
-        n = Number(n) || 0;
-        return n.toLocaleString('zh-CN');
-    }
-    function fmtTime(ts) {
-        try { return new Date(ts).toLocaleString('zh-CN', { hour12: false }); } catch (e) { return ''; }
-    }
-    var LOG_OUT_TYPES = {};
-    ['withdraw', 'fixed7_withdraw', 'fixed30_withdraw', 'repay', 'repay_credit', 'penalty'].forEach(function (k) { LOG_OUT_TYPES[k] = true; });
-    function fmtLogAmount(l) {
-        var n = Number(l.amount) || 0;
-        if (l.type === 'credit_change') return (n > 0 ? '+' : '') + n;
-        if (LOG_OUT_TYPES[l.type]) return '-' + fmtBig(n);
-        return '+' + fmtBig(n);
-    }
     var toastTimer = null;
-    function showToast(text, ok) {
-        var t = document.getElementById('bkToast');
+    function showToast(text, err) {
+        var t = document.getElementById('skToast');
         if (!t) { alert(text); return; }
         t.innerHTML = text;
-        t.classList.toggle('err', ok === false);
+        t.classList.toggle('err', !!err);
         t.classList.add('show');
         clearTimeout(toastTimer);
-        toastTimer = setTimeout(function () { t.classList.remove('show'); }, 4200);
+        toastTimer = setTimeout(function () { t.classList.remove('show'); }, 3800);
     }
-    function callRpc(name, params) {
-        var user = getUser();
-        if (!user) return Promise.reject(new Error('请先登录'));
-        params = params || {};
-        params.p_user_id = user.id;
-        return supabaseClient.rpc(name, params).then(function (res) {
-            if (res.error) throw res.error;
-            if (!res.data || !res.data.success) throw new Error((res.data && res.data.message) || '操作失败');
-            return res.data;
+    // ---- 通用弹窗(模态 Promise) ----
+    function skModal(html) {
+        var ov = document.createElement('div');
+        ov.className = 'sk-ov';
+        ov.innerHTML = '<div class="sk-box">' + html + '</div>';
+        document.body.appendChild(ov);
+        requestAnimationFrame(function () { ov.classList.add('show'); });
+        function close() { ov.classList.remove('show'); setTimeout(function () { ov.remove(); }, 220); }
+        ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+        return { el: ov, close: close };
+    }
+    function showMessage(title, msg) {
+        return new Promise(function (resolve) {
+            var m = skModal('<h3>' + esc(title) + '</h3>' +
+                '<div class="sk-msg">' + esc(msg) + '</div>' +
+                '<div class="sk-actions"><button class="sk-modal-btn primary" id="skMsgOk">确定</button></div>');
+            m.el.querySelector('#skMsgOk').addEventListener('click', function () { m.close(); resolve(); });
         });
     }
-    function creditLevel(score) {
-        if (score < 300) return { name: '失信', cls: 'lv-red', limit: 0 };
-        if (score < 600) return { name: '普通', cls: 'lv-orange', limit: score * 500 };
-        if (score < 800) return { name: '良好', cls: 'lv-yellow', limit: score * 1000 };
-        return { name: '优秀', cls: 'lv-green', limit: score * 1500 };
+    function showConfirm(title, msg) {
+        return new Promise(function (resolve) {
+            var m = skModal('<h3>' + esc(title) + '</h3>' +
+                '<div class="sk-msg">' + esc(msg) + '</div>' +
+                '<div class="sk-actions">' +
+                '<button class="sk-modal-btn gray" id="skCfmNo">取消</button>' +
+                '<button class="sk-modal-btn primary" id="skCfmYes">确定</button></div>');
+            m.el.querySelector('#skCfmYes').addEventListener('click', function () { m.close(); resolve(true); });
+            m.el.querySelector('#skCfmNo').addEventListener('click', function () { m.close(); resolve(false); });
+        });
     }
-    function bkLoginButtons() {
-        var base = '/login.html?redirect=' + encodeURIComponent(location.href);
-        return '<div class="bk-st-actions">' +
-            '<a class="bk-st-btn login" href="' + base + '">去登录</a>' +
-            '<a class="bk-st-btn ghost" href="/login.html?register=1&redirect=' + encodeURIComponent(location.href) + '">注册新账号</a>' +
-            '</div>';
+    function showRulesModal(itemKey, rules) {
+        var lines = rules.map(function (r) { return '<p>' + esc(r) + '</p>'; }).join('');
+        var title = (RULES[itemKey] && RULES[itemKey][0]) || '📖 使用规则';
+        var m = skModal('<h3>📖 使用规则</h3><div class="sk-rules">' + esc(title) + lines + '</div>' +
+            '<div class="sk-actions"><button class="sk-modal-btn primary" id="skRuleOk">知道了</button></div>');
+        m.el.querySelector('#skRuleOk').addEventListener('click', function () { m.close(); });
+    }
+
+    // 完整规则说明(与经典版一致)
+    const RULES = {
+        checkin_fix: [
+            '📝 补签卡使用规则：',
+            '1. 使用后补回"最近漏签"的 1 天（只能补今天之前 1~5 天内的漏签）',
+            '2. 每次补签消耗 1 张卡，同一日期不能重复补',
+            '3. 连续签到按"真实签到"计算：补签日 + 之前连续的真实签到天数（补签只能接上断掉的连续，不能凭空堆天数）',
+            '4. 补签不计入签到总次数、不计入签到热力图、不影响"签到之神"称号',
+            '5. 每自然月最多补签 5 次；最多同时持有 5 张卡',
+            '6. 补签不奖励 NB 币'
+        ],
+        lottery_extra: [
+            '🎰 抽奖次数增加券使用规则：',
+            '1. 使用后当日抽奖次数 +10（在背包点"⚡ 使用"生效）',
+            '2. 与每日基础次数（默认10次）叠加，当天有效，隔天失效',
+            '3. 多张可叠加：用 2 张 = 当日 +20 次'
+        ],
+        fee_discount: [
+            '📉 股票手续费减免券使用规则：',
+            '1. 买入/卖出时，在交易弹窗勾选"使用手续费减免券"',
+            '2. 手续费从 5% 降至 2%',
+            '3. 一次交易消耗 1 张，未勾选则保留'
+        ],
+        title_slot: [
+            '🏅 称号展示位使用规则：',
+            '1. 生效期间，主页额外展示 1 个称号（自动取"最高星级的未佩戴称号"）',
+            '2. 自动续期：到期前余额充足自动扣费续期',
+            '3. 仅 1 个展示位，重复购买会顺延到期时间'
+        ],
+        bio_extend: [
+            '✏️ 个性签名扩展使用规则：',
+            '1. 生效期间，主页简介字数上限从 100 字提升到 200 字',
+            '2. 自动续期：到期前余额充足自动扣费续期'
+        ],
+        comment_color: [
+            '💬 评论专属颜色券使用规则：',
+            '1. 生效期间，你的评论文字显示自选颜色',
+            '2. 在背包点"🎨 更换样式"可随时改色（支持任意颜色）',
+            '3. 叠加购买 = 时长叠加（2张=14天）'
+        ],
+        nickname_color: [
+            '📛 昵称变色卡使用规则：',
+            '1. 生效期间，评论区你的名字显示颜色（红/金/🌈彩虹）',
+            '2. 在背包点"🎨 更换样式"可随时更换',
+            '3. 叠加购买 = 时长叠加（2张=14天）'
+        ],
+        chat_bubble: [
+            '💬 私信气泡皮肤使用规则：',
+            '1. 生效期间，私信聊天气泡显示颜色（蓝/粉/绿/🌈彩虹）',
+            '2. 对方也能看到你的气泡颜色',
+            '3. 在背包点"🎨 更换样式"可随时更换',
+            '4. 叠加购买 = 时长叠加（2张=14天）'
+        ],
+        profile_skin: [
+            '🎪 主页皮肤使用规则：',
+            '1. 生效期间，主页解锁头图区',
+            '2. 在个人中心主页可上传头图（支持图片/GIF，≤5MB）',
+            '3. 自动续期：到期前余额充足自动扣费续期',
+            '4. 叠加购买 = 时长叠加'
+        ],
+        particle_fx: [
+            '🔮 主页粒子特效卡使用规则：',
+            '1. 生效期间，主页有鼠标粒子特效：移动鼠标产生拖尾、点击产生爆发（手机触摸同样生效）',
+            '2. 在背包点"🎨 更换样式"选择特效：🔥火焰 / ⚡闪电 / 🫧气泡 / ✨星光',
+            '3. 自动续期：到期前余额充足自动扣费续期',
+            '4. 叠加购买 = 时长叠加'
+        ]
+    };;
+
+    function loadShop() {
+        var user = getUser();
+        var body = document.getElementById('skBody');
+        var note = document.getElementById('skUserNote');
+        if (!user) {
+            note.textContent = '未登录';
+            body.innerHTML = '<div class="sk-state"><div class="sk-st-ico">🔒</div><h3>登录后逛商店</h3>' +
+                '<p>用 NB币购买道具,装点你的频道生活</p>' +
+                '<div class="sk-st-actions">' +
+                '<a class="sk-st-btn login" href="/login.html?redirect=' + encodeURIComponent(location.href) + '">去登录</a>' +
+                '<a class="sk-st-btn ghost" href="/login.html?register=1&redirect=' + encodeURIComponent(location.href) + '">注册新账号</a>' +
+                '</div></div>';
+            return;
+        }
+        note.textContent = '当前账号: ' + user.username;
+        body.innerHTML = '<div class="sk-state"><div class="sk-st-ico">🛍️</div><h3>商品加载中<span class="sk-dot">.</span><span class="sk-dot">.</span><span class="sk-dot">.</span></h3><p>正在上架今天的货品</p></div>';
+        loadBalance();
+        supabaseClient.from('shop_items')
+            .select('key, name, icon, price, category, duration_days, stackable, auto_renew, max_hold, desc_text')
+            .eq('enabled', true)
+            .order('price', { ascending: true })
+            .then(function (res) {
+                if (res.error) throw res.error;
+                var items = res.data || [];
+                if (!items.length) {
+                    body.innerHTML = '<div class="sk-state"><div class="sk-st-ico">📦</div><h3>商品暂未上架</h3><p>请稍后再来逛逛</p></div>';
+                    return;
+                }
+                var deco = items.filter(function (i) { return i.category === 'decoration'; });
+                var func = items.filter(function (i) { return i.category === 'function'; });
+                var h = '';
+                if (deco.length) h += '<div class="sk-sec"><div class="sk-sec-h">🎨 装饰道具</div><div class="sk-grid">' + deco.map(cardHtml).join('') + '</div></div>';
+                if (func.length) h += '<div class="sk-sec"><div class="sk-sec-h">⚡ 功能道具</div><div class="sk-grid">' + func.map(cardHtml).join('') + '</div></div>';
+                body.innerHTML = h || '<div class="sk-state"><p>商品暂未上架</p></div>';
+                bindShop(body, user);
+            })
+            .catch(function (err) {
+                console.error(err);
+                body.innerHTML = '<div class="sk-state"><div class="sk-st-ico">😵</div><h3>加载失败</h3><p>' + esc((err && err.message) || err) + '</p></div>';
+            });
+    }
+    function cardHtml(i) {
+        var cat = i.category === 'decoration'
+            ? '<span class="sk-badge deco">🎨 装饰</span>'
+            : '<span class="sk-badge func">⚡ 功能</span>';
+        var dur = i.duration_days
+            ? '<span class="sk-badge dur">' + i.duration_days + '天</span>'
+            : '<span class="sk-badge once">一次性</span>';
+        var renew = i.auto_renew ? '<span class="sk-badge dur">自动续期</span>' : '';
+        var stack = i.stackable ? '<span class="sk-badge dur">可叠加</span>' : '';
+        var ruleBtn = RULES[i.key]
+            ? '<a class="sk-rule-link" data-rule="' + esc(i.key) + '">📖 查看完整规则</a>'
+            : '';
+        var buyRow = i.stackable
+            ? '<div class="sk-buy-row">' +
+              '<div class="sk-qty">' +
+              '<button type="button" data-act="minus" data-key="' + esc(i.key) + '" aria-label="减少">−</button>' +
+              '<span data-qty="' + esc(i.key) + '">1</span>' +
+              '<button type="button" data-act="plus" data-key="' + esc(i.key) + '" aria-label="增加">+</button>' +
+              '</div>' +
+              '<button type="button" class="sk-buy-btn" data-key="' + esc(i.key) + '" data-name="' + esc(i.name) + '" data-price="' + (Number(i.price) || 0) + '">🛒 购买</button>' +
+              '</div>'
+            : '<button type="button" class="sk-buy-btn" data-key="' + esc(i.key) + '" data-name="' + esc(i.name) + '" data-price="' + (Number(i.price) || 0) + '">🛒 购买</button>';
+        return '<div class="sk-card">' +
+            '<div class="sk-ico">' + (i.icon || '🎁') + '</div>' +
+            '<div class="sk-name">' + esc(i.name) + '</div>' +
+            '<div class="sk-badges">' + cat + dur + renew + stack + '</div>' +
+            '<div class="sk-desc">' + esc(i.desc_text) + '</div>' +
+            ruleBtn +
+            '<div class="sk-price" data-price-line="' + esc(i.key) + '">💰 ' + fmtPrice(Number(i.price) || 0) + ' NB币</div>' +
+            buyRow + '</div>';
+    }
+    function bindShop(body, user) {
+        body.querySelectorAll('[data-rule]').forEach(function (a) {
+            a.addEventListener('click', function () {
+                var rules = RULES[a.dataset.rule] || [];
+                showRulesModal(a.dataset.rule, rules);
+            });
+        });
+        body.querySelectorAll('[data-act]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var key = btn.dataset.key;
+                var qtyEl = body.querySelector('[data-qty="' + key + '"]');
+                var priceLine = body.querySelector('[data-price-line="' + key + '"]');
+                var buyBtn = body.querySelector('.sk-buy-btn[data-key="' + key + '"]');
+                var price = parseInt(buyBtn ? buyBtn.dataset.price : 0);
+                var qty = parseInt(qtyEl ? qtyEl.innerText : 1) || 1;
+                if (btn.dataset.act === 'plus') qty += 1;
+                else qty = Math.max(1, qty - 1);
+                qtyEl.innerText = qty;
+                if (priceLine) priceLine.innerHTML = '💰 ' + fmtPrice(price * qty) + ' NB币' + (qty > 1 ? '(' + qty + '件)' : '');
+            });
+        });
+        body.querySelectorAll('.sk-buy-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var key = btn.dataset.key;
+                var name = btn.dataset.name;
+                var price = parseInt(btn.dataset.price) || 0;
+                var qtyEl = body.querySelector('[data-qty="' + key + '"]');
+                var qty = qtyEl ? (parseInt(qtyEl.innerText) || 1) : 1;
+                var total = price * qty;
+                showConfirm('购买「' + name + '」', '确认花费 ' + fmtPrice(total) + ' NB币购买「' + name + '」' + (qty > 1 ? ' ×' + qty : '') + ' 吗?')
+                    .then(function (ok) {
+                        if (!ok) return;
+                        var doNext = function (k) {
+                            if (k >= qty) return finish();
+                            supabaseClient.rpc('buy_shop_item', { p_user_id: user.id, p_item_key: key })
+                                .then(function (res) {
+                                    if (res.error || !res.data || !res.data.success) {
+                                        showMessage('购买失败', (res.error && res.error.message) || (res.data && res.data.message) || '未知错误');
+                                        return finish();
+                                    }
+                                    doNext(k + 1);
+                                })
+                                .catch(function (e) { showMessage('购买失败', e.message || String(e)); finish(); });
+                        };
+                        var finish = function () {
+                            loadBalance();
+                            if (qtyEl) qtyEl.innerText = '1';
+                            var priceLine = body.querySelector('[data-price-line="' + key + '"]');
+                            if (priceLine) priceLine.innerHTML = '💰 ' + fmtPrice(price) + ' NB币';
+                            showToast('✅ 购买成功');
+                        };
+                        doNext(0);
+                    });
+            });
+        });
     }
     function loadBalance() {
         var user = getUser();
         var el = document.getElementById('balanceDisplay');
         if (!user || !el) return;
-        supabaseClient.from('profiles').select('nb_balance').eq('id', user.id).single().then(function (res) {
-            if (res.data) el.innerText = Number(res.data.nb_balance).toLocaleString('zh-CN');
-        }).catch(function () {});
+        supabaseClient.from('profiles').select('nb_balance').eq('id', user.id).maybeSingle()
+            .then(function (res) { if (res.data) el.innerText = Number(res.data.nb_balance).toLocaleString('zh-CN'); })
+            .catch(function () {});
     }
-    function loadBank() {
-        var body = document.getElementById('bkBody');
-        var note = document.getElementById('bkUserNote');
-        var user = getUser();
-        if (!user) {
-            note.textContent = '未登录';
-            body.innerHTML = '<div class="bk-state">' +
-                '<div class="bk-st-ico">🔒</div><h3>登录后使用 NB银行</h3>' +
-                '<p>存款计息、贷款周转、信誉分积累——你的虚拟金融账户在这里</p>' +
-                bkLoginButtons() + '</div>';
-            return;
-        }
-        note.textContent = '当前账号: ' + user.username;
-        body.innerHTML = '<div class="bk-state"><div class="bk-st-ico">🏦</div><h3>银行数据加载中<span class="bk-dot">.</span><span class="bk-dot">.</span><span class="bk-dot">.</span></h3><p>正在同步存款与贷款信息</p></div>';
-        callRpc('get_bank_account', {})
-            .then(function (acc) {
-                return supabaseClient.rpc('get_bank_logs', { p_user_id: user.id, p_limit: 30 })
-                    .then(function (logsRes) { return { acc: acc, logs: (logsRes.data || []) }; });
-            })
-            .then(function (S) { body.innerHTML = renderBank(S.acc, S.logs); loadBalance(); })
-            .catch(function (err) {
-                console.error(err);
-                body.innerHTML = '<div class="bk-state"><div class="bk-st-ico">😵</div><h3>加载失败</h3><p>' + esc((err && err.message) || err || '未知错误') + ',请稍后刷新重试</p></div>';
-            });
-    }
-    function renderBank(acc, logs) {
-        var lv = creditLevel(acc.credit_score);
-        var frozenTip = acc.frozen
-            ? '<div class="bk-alert">🔒 有抵押贷款未还清:冻结 <b>' + fmtBig(acc.frozen_amount) + '</b> NB币,冻结后新存入的部分(' + fmtBig(acc.free_deposit) + ' NB币)可自由取出;还清贷款后全部解冻。</div>'
-            : '';
-        var frozenFixedBtn = acc.frozen ? ' disabled style="opacity:.45;"' : '';
-        var frozenHint = acc.frozen
-            ? '<span class="bk-help bk-red" style="margin:0;">🔒 冻结 ' + fmtBig(acc.frozen_amount) + ' NB币 · 可自由取出 ' + fmtBig(acc.free_deposit) + ' NB币</span>'
-            : '<span class="bk-help" style="margin:0;">今日存入上限 1000万/天</span>';
-
-        var h = '<div class="bk-ov">' +
-            ovCard('活期存款', fmtFull(acc.deposit), '日利率 0.1%', 'dep') +
-            ovCard('定期 7 天', fmtFull(acc.fixed7), acc.fixed7_until ? fmtTime(acc.fixed7_until).slice(5, 16) + ' 到期' : '到期 2%', 'fx') +
-            ovCard('定期 30 天', fmtFull(acc.fixed30), acc.fixed30_until ? fmtTime(acc.fixed30_until).slice(5, 16) + ' 到期' : '到期 10%', 'fx') +
-            ovCard('抵押贷款', fmtFull(acc.loan_principal), '到期 10%', 'loan') +
-            ovCard('信用贷款', fmtFull(acc.loan_credit), '到期 ' + (acc.credit_score >= 800 ? '10.8%' : '12%'), 'loan') +
-            '</div>';
-
-        h += '<div class="bk-sec"><div class="bk-sec-h">📋 利率表</div><div style="overflow-x:auto;">' +
-            '<table class="bk-table"><thead><tr><th>类型</th><th>利率</th><th>说明</th></tr></thead><tbody>' +
-            '<tr><td>💵 活期</td><td class="td-up">0.1% / 天</td><td>每日凌晨自动结算,随时存取</td></tr>' +
-            '<tr><td>📅 定期 7 天</td><td class="td-up">2%(到期总)</td><td>锁定 7 天,到期本息自动转活期;提前支取按活期 0.1%/天算</td></tr>' +
-            '<tr><td>📅 定期 30 天</td><td class="td-up">10%(到期总)</td><td>锁定 30 天,到期本息自动转活期;提前支取按活期 0.1%/天算</td></tr>' +
-            '<tr><td>🏦 抵押贷款</td><td class="td-down">10%(到期总)</td><td>额度=存款×80%;提前还按实际天数折算(30天=10%)</td></tr>' +
-            '<tr><td>🤝 信用贷款</td><td class="td-down">12%(到期总) · 信誉800+打9折=10.8%</td><td>额度=信誉分×500~1500;提前还按实际天数折算</td></tr>' +
-            '</tbody></table></div></div>';
-
-        h += frozenTip;
-
-        h += '<div class="bk-sec"><div class="bk-sec-h">💰 存款</div>' +
-            '<div class="bk-inrow">' +
-            '<input type="number" id="depAmt" class="bk-field num" min="1" placeholder="金额" style="min-width:130px;">' +
-            '<button class="bk-btn green" type="button" onclick="doDeposit()">存入活期</button>' +
-            '<button class="bk-btn ghost" type="button" onclick="doWithdraw()">取出活期</button>' +
-            '<button class="bk-btn ghost" type="button" onclick="doWithdrawAll()">全部取出</button>' +
-            frozenHint +
-            '</div>' +
-            '<div class="bk-inrow">' +
-            '<input type="number" id="fixedAmt" class="bk-field num" min="1" placeholder="定期金额" style="min-width:130px;">' +
-            '<select id="fixedDays" class="bk-field sel"><option value="7">定期 7 天(到期 2%)</option><option value="30">定期 30 天(到期 10%)</option></select>' +
-            '<button class="bk-btn green" type="button" onclick="doFixedDeposit()">存定期</button>' +
-            '<button class="bk-btn ghost" type="button" onclick="doFixedWithdraw()"' + frozenFixedBtn + '>取出定期</button>' +
-            '</div>' +
-            '<div class="bk-help">📅 定期到期自动转入活期并结算利息;提前支取按活期利率算已存天数。</div>' +
-            '</div>';
-
-        var creditMult = lv.limit && acc.credit_score ? lv.limit / acc.credit_score : 0;
-        h += '<div class="bk-sec"><div class="bk-sec-h">🏦 贷款</div>' +
-            '<div class="bk-help">抵押贷额度:<span class="bk-tag green">' + fmtBig(acc.collateral_limit) + ' NB币</span>(存款×80%,到期10%)' +
-            '&nbsp;信用贷额度:<span class="bk-tag orange">' + fmtBig(lv.limit) + ' NB币</span>(信誉分×' + creditMult + ',到期' + (acc.credit_score >= 800 ? '10.8%' : '12%') + ')</div>' +
-            '<div class="bk-inrow">' +
-            '<input type="number" id="loanAmt" class="bk-field num" min="1" placeholder="贷款金额" style="min-width:130px;">' +
-            '<select id="loanDays" class="bk-field sel"><option value="7">7 天</option><option value="30">30 天</option></select>' +
-            '<button class="bk-btn" type="button" onclick="doLoan(\'loan\')">🏦 抵押贷</button>' +
-            '<button class="bk-btn gold" type="button" onclick="doLoan(\'credit\')">🤝 信用贷</button>' +
-            '<button class="bk-btn ghost" type="button" onclick="doRepay(\'loan\')">还抵押贷</button>' +
-            '<button class="bk-btn ghost" type="button" onclick="doRepay(\'credit\')">还信用贷</button>' +
-            '</div>' +
-            '<div class="bk-help">💡 到期自动从余额扣本息(总利率10%);余额不足则逾期:每天罚息 0.1% + 信誉 -15,抵押贷期间存款部分冻结。提前还利息按实际天数折算。</div>' +
-            '</div>';
-
-        h += '<div class="bk-sec"><div class="bk-sec-h">⭐ 信誉分</div>' +
-            '<div class="bk-credit">' +
-            '<div class="bk-crow"><div><span class="bk-cscore">' + acc.credit_score + '</span><span class="bk-cmax"> / 1000</span></div>' +
-            '<span class="bk-level ' + lv.cls + '">' + lv.name + '</span></div>' +
-            '<div class="bk-cbar"><div class="bk-cfill" style="width:' + (Math.min(acc.credit_score, 1000) / 10) + '%;"></div></div>' +
-            '<div class="bk-crules">加减分规则:按时还款 +5/次 · 逾期 -15/天 · 新成就 +3/个 · 连续签到7天 +2/次 · 发布评论 +0.5/条(每日上限+2) · 被举报核实 -10/次 · 封禁清零<br>' +
-            '等级:失信 &lt;300(不能信用贷) · 普通 300~599(额度=信誉分×500) · 良好 600~799(×1000) · 优秀 800+(×1500 且利率9折)</div>' +
-            '</div></div>';
-
-        h += '<div class="bk-sec"><div class="bk-sec-h">📜 最近记录</div><div class="bk-logs">' +
-            (logs.length
-                ? logs.map(function (l) {
-                    var isOut = LOG_OUT_TYPES[l.type] || (l.type === 'credit_change' && (Number(l.amount) || 0) < 0);
-                    return '<div class="bk-log"><span class="bk-ld">' + fmtTime(l.created_at) + ' · ' + esc(l.detail) + '</span>' +
-                        '<span class="bk-la ' + (isOut ? 'out' : 'in') + '">' + fmtLogAmount(l) + '</span></div>';
-                }).join('')
-                : '<div class="bk-help">暂无记录</div>') +
-            '</div></div>';
-        return h;
-    }
-    function ovCard(label, val, tip, tone) {
-        return '<div class="bk-ovc ' + tone + '"><div class="bk-num' + (val.length > 9 ? ' long' : '') + '">' + val + '</div>' +
-            '<div class="bk-lbl">' + label + '</div><div class="bk-tip">' + tip + '</div></div>';
-    }
-
-    // ===== 操作(与经典版 RPC 完全一致) =====
-    function doDeposit() {
-        var amt = parseInt(document.getElementById('depAmt').value);
-        if (!amt || amt <= 0) { showToast('⚠️ 请输入金额', false); return; }
-        callRpc('bank_deposit', { p_amount: amt }).then(function (r) { showToast('✅ ' + r.message); loadBank(); loadBalance(); })
-            .catch(function (e) { showToast('❌ ' + e.message, false); });
-    }
-    function doWithdraw() {
-        var amt = parseInt(document.getElementById('depAmt').value);
-        if (!amt || amt <= 0) { showToast('⚠️ 请输入金额', false); return; }
-        callRpc('bank_withdraw', { p_amount: amt }).then(function (r) { showToast('✅ ' + r.message); loadBank(); loadBalance(); })
-            .catch(function (e) { showToast('❌ ' + e.message, false); });
-    }
-    function doWithdrawAll() {
-        callRpc('get_bank_account', {}).then(function (acc) {
-            var free = acc.free_deposit || 0;
-            if (free <= 0) { showToast('没有可取的活期存款', false); return null; }
-            if (!confirm('确认全部取出活期 ' + fmtFull(free) + ' NB币?')) return null;
-            return callRpc('bank_withdraw', { p_amount: free });
-        }).then(function (r) { if (r) { showToast('✅ ' + r.message); loadBank(); loadBalance(); } })
-            .catch(function (e) { showToast('❌ ' + e.message, false); });
-    }
-    function doFixedDeposit() {
-        var amt = parseInt(document.getElementById('fixedAmt').value);
-        var days = parseInt(document.getElementById('fixedDays').value);
-        if (!amt || amt <= 0) { showToast('⚠️ 请输入金额', false); return; }
-        callRpc('bank_fixed_deposit', { p_amount: amt, p_days: days }).then(function (r) { showToast('✅ ' + r.message); loadBank(); loadBalance(); })
-            .catch(function (e) { showToast('❌ ' + e.message, false); });
-    }
-    function doFixedWithdraw() {
-        var days = parseInt(document.getElementById('fixedDays').value);
-        callRpc('bank_fixed_withdraw', { p_days: days }).then(function (r) { showToast('✅ ' + r.message); loadBank(); loadBalance(); })
-            .catch(function (e) { showToast('❌ ' + e.message, false); });
-    }
-    function doLoan(type) {
-        var amt = parseInt(document.getElementById('loanAmt').value);
-        var days = parseInt(document.getElementById('loanDays').value);
-        if (!amt || amt <= 0) { showToast('⚠️ 请输入金额', false); return; }
-        var name = type === 'loan' ? '抵押贷' : '信用贷';
-        if (!confirm('确认申请' + name + ' ' + amt + ' NB币(' + days + '天)?')) return;
-        var p = { p_amount: amt, p_days: days };
-        var fn = type === 'loan' ? 'bank_loan' : 'bank_credit_loan';
-        callRpc(fn, p).then(function (r) { showToast('✅ ' + r.message); loadBank(); loadBalance(); })
-            .catch(function (e) { showToast('❌ ' + e.message, false); });
-    }
-    function doRepay(type) {
-        var name = type === 'loan' ? '抵押贷' : '信用贷';
-        if (!confirm('确认还清' + name + '?将按实际借款天数结算利息。')) return;
-        callRpc(type === 'loan' ? 'bank_repay' : 'bank_repay_credit', {})
-            .then(function (r) { showToast('✅ ' + r.message); loadBank(); loadBalance(); })
-            .catch(function (e) { showToast('❌ ' + e.message, false); });
-    }
-
     document.getElementById('refreshBtn').addEventListener('click', function () {
         var btn = document.getElementById('refreshBtn');
         btn.classList.remove('spin');
         void btn.offsetWidth;
         btn.classList.add('spin');
-        loadBank();
+        loadShop();
     });
-    loadBank();
+    loadShop();
 </script>
 <script>
     // ===== 鼠标特效:跟随光晕 + 点击波纹与彩色粒子(仅鼠标设备) =====
