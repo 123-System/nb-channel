@@ -280,8 +280,8 @@ html.dark .tl-out .big.gold { color: #fbbf24; }
 .pcorner { height: 24px; }
 .pgrp {
     height: 24px; display: grid; place-items: center;
-    font-size: .68rem; font-weight: 700; color: var(--ink-faint);
-    user-select: none; letter-spacing: .5px;
+    font-size: .63rem; font-weight: 700; color: var(--ink-faint);
+    user-select: none; letter-spacing: .3px;
     border-bottom: 1px dashed var(--line); align-self: end;
 }
 .pper {
@@ -341,7 +341,31 @@ html.dark .pcell.empty, html.dark .pcell.hole { color: var(--ink-faint); }
 .sh-core { fill: var(--ink); }
 .sh-sym { fill: var(--bg); font-weight: 800; font-size: 15px; }
 .sh-letter { fill: var(--ink-faint); font-size: 8.5px; font-weight: 700; }
-.sh-note { font-size: .68rem; color: var(--ink-faint); margin: 0 0 8px; letter-spacing: 1px; }
+.sh-note {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; flex-wrap: wrap;
+    font-size: .68rem; color: var(--ink-faint); margin: 0 0 8px; letter-spacing: 1px;
+}
+.sh-note .sh-txt { opacity: .92; }
+.sh-toggle {
+    display: inline-flex; align-items: center; gap: 5px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink-soft);
+    border-radius: 999px; padding: 4px 14px; cursor: pointer;
+    font-size: .72rem; font-weight: 700; letter-spacing: .5px;
+    transition: all .2s ease;
+}
+.sh-toggle:hover { border-color: rgba(59,130,246,.5); color: var(--brand); }
+.sh-toggle.on {
+    background: linear-gradient(135deg, var(--brand), #6366f1);
+    border-color: transparent; color: #fff;
+}
+/* 电子公转动画:每环独立周期,仅当 .sh-orbit-on 时生效 */
+.sh-orbit { transform-box: view-box; transform-origin: 50% 50%; }
+.sh-orbit-on .sh-orbit { animation: shspin var(--t, 4s) linear infinite; }
+@keyframes shspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .sh-orbit-on .sh-orbit { animation: none; }
+}
 .el-box table { width: 100%; font-size: .9rem; border-collapse: collapse; margin: 4px 0 16px; }
 .el-box td { padding: 9px 8px; border-bottom: 1px dashed var(--line); text-align: left; }
 .el-box tr:last-child td { border-bottom: none; }
@@ -700,7 +724,10 @@ html.dark .pcell.empty, html.dark .pcell.hole { color: var(--ink-faint); }
         <div class="el-sym" id="elSym"></div>
         <div class="el-name" id="elName"></div>
         <div class="el-shellbox" id="elShellBox"></div>
-        <div class="sh-note" id="elShellNote" style="display:none;">简化电子层模型 · 每个圆点 = 1 个电子</div>
+        <div class="sh-note" id="elShellNote">
+            <span class="sh-txt">简化电子层模型 · 圆点 = 电子</span>
+            <button class="sh-toggle" id="orbitToggle" type="button" aria-pressed="false">⏵ 静止</button>
+        </div>
         <table>
             <tr><td>原子序数</td><td id="elNum"></td></tr>
             <tr><td>原子量</td><td id="elMass"></td></tr>
@@ -999,6 +1026,14 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
     };
     var PT = document.getElementById('periodicTable');
 
+    // 1-18 转罗马数字(族号显示用)
+    function toRoman(n) {
+        var units = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
+        if (n < 10) return units[n];
+        if (n === 10) return 'X';
+        return 'X' + units[n - 10];
+    }
+
     function renderPeriodicTable() {
         var cells = {};
         ELEMENTS.forEach(function (el) {
@@ -1010,7 +1045,7 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
         });
         var html = '<div class="pcorner" title="列=族 · 行=周期"></div>';
         for (var gc = 1; gc <= 18; gc++) {
-            html += '<div class="pgrp" title="第 ' + gc + ' 族">' + gc + '</div>';
+            html += '<div class="pgrp" title="第 ' + gc + ' 族">' + toRoman(gc) + '</div>';
         }
         for (var r = 1; r <= 10; r++) {
             // 行首:周期号(1-7),第8行为分隔留空,9/10 行标镧系/锕系
@@ -1064,7 +1099,9 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
         var sh = electronShells(el.n);
         document.getElementById('elShells').innerText = sh.join(' · ');
         document.getElementById('elShellBox').innerHTML = renderShellFig(el.sym, el.name, sh);
-        document.getElementById('elShellNote').style.display = 'block';
+        // 按偏好恢复转动状态
+        document.getElementById('elShellBox').querySelector('svg.sh-svg').classList.toggle('sh-orbit-on', orbitEnabled());
+        syncOrbitUI();
         document.getElementById('elModal').classList.add('show');
     }
 
@@ -1104,7 +1141,7 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
         while (out.length > 1 && out[out.length - 1] === 0) out.pop();
         return out;
     }
-    // ========== 电子层抽象图:同心环 + 电子点(SVG) ==========
+    // ========== 电子层抽象图:同心环 + 电子点(SVG),支持电子公转动画 ==========
     var SHELL_LETTERS = ['K', 'L', 'M', 'N', 'O', 'P', 'Q'];
     function renderShellFig(sym, name, shells) {
         var CX = 150, CY = 150, R0 = 30, STEP = 17;
@@ -1113,12 +1150,16 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
             var r = R0 + i * STEP;
             s += '<circle class="sh-ring" cx="' + CX + '" cy="' + CY + '" r="' + r + '"></circle>';
             var cnt = shells[i];
+            // 每层电子包进独立轨道组:开启转动时整组绕中心旋转(内层快外层慢)
+            var dur = (2.2 + i * 1.15).toFixed(1);
+            s += '<g class="sh-orbit" style="--t:' + dur + 's">';
             for (var j = 0; j < cnt; j++) {
                 var ang = (j / cnt) * Math.PI * 2 - Math.PI / 2 + (i % 2) * 0.06;
                 var dx = CX + Math.cos(ang) * r;
                 var dy = CY + Math.sin(ang) * r;
                 s += '<circle class="sh-dot" cx="' + dx.toFixed(1) + '" cy="' + dy.toFixed(1) + '" r="4.4"></circle>';
             }
+            s += '</g>';
             if (shells.length > 1) {
                 s += '<text class="sh-letter" x="' + CX + '" y="' + (CY - r - 4) + '">' + SHELL_LETTERS[i] + '</text>';
             }
@@ -1128,6 +1169,34 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
         s += '</svg>';
         return s;
     }
+    // ========== 电子转动偏好(默认开;尊重系统"减少动态效果") ==========
+    function orbitEnabled() {
+        try {
+            var v = localStorage.getItem('tools_orbit');
+            if (v !== null) return v !== 'off';
+        } catch (e) {}
+        return !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+    function orbitSet(on) {
+        try { localStorage.setItem('tools_orbit', on ? 'on' : 'off'); } catch (e) {}
+    }
+    function syncOrbitUI() {
+        var svg = (document.getElementById('elShellBox') || {}).querySelector ? document.getElementById('elShellBox').querySelector('svg.sh-svg') : null;
+        var on = svg ? svg.classList.contains('sh-orbit-on') : false;
+        var btn = document.getElementById('orbitToggle');
+        if (!btn) return;
+        btn.classList.toggle('on', on);
+        btn.textContent = on ? '⏸ 电子转动中' : '⏵ 电子静止';
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    document.getElementById('orbitToggle').addEventListener('click', function () {
+        var svg = document.getElementById('elShellBox').querySelector('svg.sh-svg');
+        if (!svg) return;
+        var on = !svg.classList.contains('sh-orbit-on');
+        svg.classList.toggle('sh-orbit-on', on);
+        orbitSet(on);
+        syncOrbitUI();
+    });
     document.getElementById('elClose').addEventListener('click', function () { document.getElementById('elModal').classList.remove('show'); });
     document.getElementById('elModal').addEventListener('click', function (e) {
         if (e.target === document.getElementById('elModal')) document.getElementById('elModal').classList.remove('show');
