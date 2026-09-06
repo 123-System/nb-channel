@@ -1378,14 +1378,14 @@ textarea, .reply-form textarea, .edit-form textarea { border-radius: 12px; }
         let titleTag = '';
         const titleInfo = window.titleMap?.get(node.user_id);
         if (titleInfo && titleInfo._img) {
-            titleTag = `<div class="comment-title"><img src="${titleInfo._img}" alt="${escapeHtml(titleInfo.name)}" title="点击查看称号大全" style="cursor:pointer;" onclick="location.href='/titles.html'" onerror="this.style.display='none'"><span class="comment-title-stars">称号：${escapeHtml(titleInfo.name)} · ${'★'.repeat(Math.min(titleInfo.stars || 1, 5))}</span></div>`;
+            titleTag = `<div class="comment-title"><img src="${titleInfo._img}" alt="${escapeHtml(titleInfo.name)}" title="点击查看称号大全" style="cursor:pointer;" onclick="location.href='titles-Beta.html'" onerror="this.style.display='none'"><span class="comment-title-stars">称号：${escapeHtml(titleInfo.name)} · ${'★'.repeat(Math.min(titleInfo.stars || 1, 5))}</span></div>`;
         }
         // 展示位称号（商店道具 title_slot，主页与评论区都展示第二个称号）
         const fxSlot = (shopFxMap[node.user_id] && shopFxMap[node.user_id].slot_title) || null;
         if (fxSlot && fxSlot.image_url) {
             const base = window.location.origin + '/';
             const sImg = /^https?:/.test(fxSlot.image_url) ? fxSlot.image_url : base + fxSlot.image_url;
-            titleTag += `<div class="comment-title"><img src="${sImg}" alt="" title="展示位称号" style="cursor:pointer;" onclick="location.href='/titles.html'" onerror="this.style.display='none'"><span class="comment-title-stars">展示位：${escapeHtml(fxSlot.name)} · ${'★'.repeat(Math.min(fxSlot.stars || 1, 5))}</span></div>`;
+            titleTag += `<div class="comment-title"><img src="${sImg}" alt="" title="展示位称号" style="cursor:pointer;" onclick="location.href='titles-Beta.html'" onerror="this.style.display='none'"><span class="comment-title-stars">展示位：${escapeHtml(fxSlot.name)} · ${'★'.repeat(Math.min(fxSlot.stars || 1, 5))}</span></div>`;
         }
 
         let reportButton = '';
@@ -2410,7 +2410,7 @@ textarea, .reply-form textarea, .edit-form textarea { border-radius: 12px; }
         </div>
         <div>
             <h5>功能</h5>
-            <a href="stock-Beta.html">虚拟股票</a><a href="/bank.html">NB银行</a><a href="/comments-beta.html">评论区</a><a href="/shop.html">NB商店</a><a href="/titles.html">称号系统</a>
+            <a href="stock-Beta.html">虚拟股票</a><a href="/bank.html">NB银行</a><a href="/comments-beta.html">评论区</a><a href="/shop.html">NB商店</a><a href="titles-Beta.html">称号系统</a>
         </div>
         <div>
             <h5>友商</h5>
