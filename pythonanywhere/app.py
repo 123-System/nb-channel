@@ -930,7 +930,57 @@ def after_request_api(resp):
     if remaining is not None:
         resp.headers['X-RateLimit-Limit'] = '60'
         resp.headers['X-RateLimit-Remaining'] = str(remaining)
+    # ---- API 访问日志:入队 + 节流批量落库(不阻塞响应,失败静默) ----
+    try:
+        path = request.path or ''
+        if path.startswith('/api/') and path != '/api/stats':
+            ip = (request.headers.get('X-Forwarded-For', '') or request.remote_addr or '')
+            if ',' in ip:
+                ip = ip.split(',')[0].strip()
+            with _api_log_lock:
+                _api_log_queue.append({
+                    'endpoint': path[:200],
+                    'method': (request.method or 'GET')[:10],
+                    'ip': ip[:60],
+                    'status': int(resp.status_code or 200),
+                    'ua': (request.headers.get('User-Agent') or '')[:200],
+                })
+            # 每 20 秒或攒够 300 条才批量写一次(攻击风暴不会拖垮请求)
+            now = datetime.datetime.now().timestamp()
+            if now - _api_log_flush_ts[0] >= 20 or len(_api_log_queue) >= 300:
+                _flush_api_logs()
+    except Exception:
+        pass
     return resp
+
+
+# ==================== API 访问日志(持久表 supabase.api_logs) ====================
+# 内存缓冲 + 请求驱动批量落库;表未建或网络异常时静默放弃,不影响任何 API。
+import collections as _collections
+
+_api_log_queue = _collections.deque(maxlen=4000)
+_api_log_lock = threading.Lock()
+_api_log_flush_ts = [0.0]
+
+
+def _flush_api_logs():
+    """取出缓冲(每次最多 800 条)批量写入;失败则留待下轮,静默。"""
+    try:
+        rows = []
+        with _api_log_lock:
+            while len(rows) < 800 and _api_log_queue:
+                rows.append(_api_log_queue.popleft())
+            if not rows:
+                return
+        for i in range(0, len(rows), 400):
+            try:
+                supabase.rpc('log_api_requests', {'p_rows': rows[i:i + 400]}).execute()
+            except Exception:
+                return
+        _api_log_flush_ts[0] = datetime.datetime.now().timestamp()
+    except Exception:
+        pass
+
 
 def _parse_owner(c):
     p = c.get('profiles')
