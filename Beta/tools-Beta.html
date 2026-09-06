@@ -1042,14 +1042,6 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
     };
     var PT = document.getElementById('periodicTable');
 
-    // 1-18 转罗马数字(族号显示用)
-    function toRoman(n) {
-        var units = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
-        if (n < 10) return units[n];
-        if (n === 10) return 'X';
-        return 'X' + units[n - 10];
-    }
-
     function renderPeriodicTable() {
         var cells = {};
         ELEMENTS.forEach(function (el) {
@@ -1059,9 +1051,31 @@ ELEMENTS.forEach(el => { ELEMENT_BY_SYM[el.sym] = el; });
             if (!cells[row]) cells[row] = {};
             cells[row][col] = el;
         });
+        // 顶部族标:旧式 A/B 制 + 0 族(Ⅷ族跨第 8-10 列),悬停显示现代编号
+        var GROUP_HEADS = [
+            { t: 'IA', span: 1, tip: '第 1 族（IA · 碱金属）' },
+            { t: 'IIA', span: 1, tip: '第 2 族（IIA · 碱土金属）' },
+            { t: 'IIIB', span: 1, tip: '第 3 族（IIIB）' },
+            { t: 'IVB', span: 1, tip: '第 4 族（IVB）' },
+            { t: 'VB', span: 1, tip: '第 5 族（VB）' },
+            { t: 'VIB', span: 1, tip: '第 6 族（VIB）' },
+            { t: 'VIIB', span: 1, tip: '第 7 族（VIIB）' },
+            { t: 'VIII', span: 3, tip: '第 8–10 族（Ⅷ族）' },
+            { t: 'IB', span: 1, tip: '第 11 族（IB）' },
+            { t: 'IIB', span: 1, tip: '第 12 族（IIB）' },
+            { t: 'IIIA', span: 1, tip: '第 13 族（IIIA · 硼族）' },
+            { t: 'IVA', span: 1, tip: '第 14 族（IVA · 碳族）' },
+            { t: 'VA', span: 1, tip: '第 15 族（VA · 氮族）' },
+            { t: 'VIA', span: 1, tip: '第 16 族（VIA · 氧族）' },
+            { t: 'VIIA', span: 1, tip: '第 17 族（VIIA · 卤素）' },
+            { t: '0', span: 1, tip: '第 18 族（0 族 · 稀有气体）' }
+        ];
         var html = '<div class="pcorner" title="列=族 · 行=周期"></div>';
-        for (var gc = 1; gc <= 18; gc++) {
-            html += '<div class="pgrp" title="第 ' + gc + ' 族">' + toRoman(gc) + '</div>';
+        for (var hi = 0; hi < GROUP_HEADS.length; hi++) {
+            var gh = GROUP_HEADS[hi];
+            html += '<div class="pgrp' + (gh.span > 1 ? ' pgrp-wide' : '') + '"' +
+                (gh.span > 1 ? ' style="grid-column: span ' + gh.span + ';"' : '') +
+                ' title="' + gh.tip + '">' + gh.t + '</div>';
         }
         for (var r = 1; r <= 10; r++) {
             // 行首:周期号(1-7),第8行为分隔留空,9/10 行标镧系/锕系
