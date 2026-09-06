@@ -1121,7 +1121,7 @@ html += `
     let pendingReportProductId = null;
     let pendingReportProductBtn = null;
     function openReportProduct(productId, title, btn) {
-        if (!currentUser) { alert('请先登录后再举报'); return; }
+        if (!getCurrentUser()) { alert('请先登录后再举报'); return; }
         pendingReportProductId = productId;
         pendingReportProductBtn = btn || null;
         document.getElementById('reportProductName').textContent = '《' + title + '》';
@@ -1139,6 +1139,8 @@ html += `
         const pid = pendingReportProductId;
         const reason = document.getElementById('reportProductReason').value.trim();
         const statusEl = document.getElementById('reportProductStatus');
+        const u = getCurrentUser();
+        if (!u) { statusEl.innerText = '请先登录'; return; }
         if (!pid) return;
         if (!reason) { statusEl.innerText = '请填写举报原因'; return; }
         if (reason.length > 100) { statusEl.innerText = '举报原因不能超过100字'; return; }
@@ -1147,14 +1149,14 @@ html += `
                 .from('reports')
                 .select('id')
                 .eq('product_id', pid)
-                .eq('reporter_user_id', currentUser.id)
+                .eq('reporter_user_id', u.id)
                 .maybeSingle();
             if (dupErr) throw dupErr;
             if (dup) { statusEl.innerText = '你已经举报过该作品,管理员会尽快处理'; return; }
             const { error } = await supabaseClient.from('reports').insert({
                 target_type: 'product',
                 product_id: pid,
-                reporter_user_id: currentUser.id,
+                reporter_user_id: u.id,
                 reason: reason
             });
             if (error) throw error;
